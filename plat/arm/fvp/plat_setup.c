@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -30,6 +30,8 @@ static const mmap_region_t mmap[] = {
 static const mmap_region_t mmap[] = {
 	MAP_REGION_FLAT(DEVICE0_BASE, DEVICE0_SIZE, MT_DEVICE | MT_RW | MT_NS),
 	MAP_REGION_FLAT(DEVICE1_BASE, DEVICE1_SIZE, MT_DEVICE | MT_RW | MT_NS),
+	MAP_REGION_FLAT(LS64_ATOMIC_DEVICE_BASE, LS64_ATOMIC_DEVICE_SIZE,
+			MT_DEVICE | MT_RW | MT_NS),
 #if USE_NVM
 	MAP_REGION_FLAT(FLASH_BASE, FLASH_SIZE, MT_DEVICE | MT_RW | MT_NS),
 #endif

@@ -419,4 +419,10 @@ static inline bool is_feat_lor_present(void)
 		!= ID_AA64MMFR1_EL1_LOR_NOT_SUPPORTED;
 }
 
+static inline unsigned int get_feat_ls64_support(void)
+{
+	return ((read_id_aa64isar1_el1() >> ID_AA64ISAR1_LS64_SHIFT) &
+		ID_AA64ISAR1_LS64_MASK);
+}
+
 #endif /* ARCH_FEATURES_H */

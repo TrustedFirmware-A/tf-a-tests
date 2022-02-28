@@ -394,10 +394,12 @@ static inline enum interrupt_pin cactus_get_interrupt_pin(struct ffa_value ret)
 #define CACTUS_DMA_SMMUv3_CMD           (0x534d4d55)
 
 static inline struct ffa_value cactus_send_dma_cmd(
-	ffa_id_t source, ffa_id_t dest)
+	ffa_id_t source, ffa_id_t dest, uint32_t operation,
+	uintptr_t base, size_t range, uint32_t attributes)
 {
-	return cactus_send_cmd(source, dest, CACTUS_DMA_SMMUv3_CMD, 0, 0, 0,
-			       0);
+	return cactus_send_cmd(source, dest, CACTUS_DMA_SMMUv3_CMD,
+			       (uint64_t)operation, (uint64_t)base,
+			       (uint64_t)range, attributes);
 }
 
 /*

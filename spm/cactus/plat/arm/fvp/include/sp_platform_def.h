@@ -25,8 +25,9 @@
 #define CACTUS_PL011_UART_CLK_IN_HZ	PL011_UART2_CLK_IN_HZ
 
 /* Scratch memory used for SMMUv3 driver testing purposes in Cactus SP */
-#define PLAT_CACTUS_MEMCPY_BASE		ULL(0x7400000)
-#define PLAT_CACTUS_MEMCPY_RANGE	ULL(0x8000)
+#define PLAT_CACTUS_MEMCPY_BASE			ULL(0x7400000)
+#define PLAT_CACTUS_SMMU_NS_MEMCPY_BASE		ULL(0x90000000)
+#define PLAT_CACTUS_MEMCPY_RANGE		ULL(0x8000)
 
 /* Base address of user and PRIV frames in SMMUv3TestEngine */
 #define USR_BASE_FRAME			ULL(0x2BFE0000)

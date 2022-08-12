@@ -614,4 +614,23 @@ static inline struct ffa_value cactus_resume_after_managed_exit(
 	return cactus_send_cmd(source, dest, CACTUS_RESUME_AFTER_MANAGED_EXIT,
 				 0, 0, 0, 0);
 }
+
+/**
+ * Request SP to pend an interrupt in the extended SPI range.
+ *
+ * The command is the hex representation of the string "espi".
+ */
+#define CACTUS_TRIGGER_ESPI_CMD U(0x65737069)
+static inline struct ffa_value cactus_trigger_espi_cmd(
+	ffa_id_t source, ffa_id_t dest, uint32_t espi_id)
+{
+	return cactus_send_cmd(source, dest, CACTUS_TRIGGER_ESPI_CMD,
+				 espi_id, 0, 0, 0);
+}
+
+static inline uint32_t cactus_get_espi_id(struct ffa_value ret)
+{
+	return (uint32_t)ret.arg4;
+}
+
 #endif

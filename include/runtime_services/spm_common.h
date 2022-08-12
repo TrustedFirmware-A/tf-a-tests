@@ -30,6 +30,9 @@
 /* INTID for the notification pending interrupt. */
 #define NOTIFICATION_PENDING_INTERRUPT_INTID 5
 
+/* Interrupt used for testing extended SPI handling. */
+#define IRQ_ESPI_TEST_INTID			5000
+
 /** IRQ/FIQ pin used for signaling a virtual interrupt. */
 enum interrupt_pin {
 	INTERRUPT_TYPE_IRQ,

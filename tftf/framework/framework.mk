@@ -25,6 +25,7 @@ TFTF_INCLUDES	:= 					\
 	-Iinclude/runtime_services			\
 	-Iinclude/runtime_services/secure_el0_payloads	\
 	-Iinclude/runtime_services/secure_el1_payloads	\
+	-Iinclude/runtime_services/host_realm_managment	\
 	-Ispm/cactus					\
 	-Ispm/ivy					\
 	-Irealm						\

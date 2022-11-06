@@ -63,7 +63,7 @@ test_result_t host_test_realm_create_enter(void)
 	}
 
 	realm_shared_data_set_host_val(HOST_SLEEP_INDEX, SLEEP_TIME_MS);
-	ret1 = host_enter_realm_execute(REALM_SLEEP_CMD, NULL);
+	ret1 = host_enter_realm_execute(REALM_SLEEP_CMD, NULL, RMI_EXIT_HOST_CALL);
 	ret2 = host_destroy_realm();
 
 	if (!ret1 || !ret2) {
@@ -172,7 +172,7 @@ static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 		return TEST_RESULT_FAIL;
 	}
 
-	ret1 = host_enter_realm_execute(cmd, &realm_ptr);
+	ret1 = host_enter_realm_execute(cmd, &realm_ptr, RMI_EXIT_IRQ);
 	if (!ret1 || (cmd != REALM_PMU_INTERRUPT)) {
 		goto test_exit;
 	}

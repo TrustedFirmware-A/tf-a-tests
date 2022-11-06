@@ -21,37 +21,6 @@ static const struct ffa_uuid expected_sp_uuids[] = {
 		{PRIMARY_UUID}, {SECONDARY_UUID}
 	};
 
-static bool configure_trusted_wdog_interrupt(ffa_id_t source, ffa_id_t dest,
-				bool enable)
-{
-	struct ffa_value ret_values;
-
-	ret_values = cactus_interrupt_cmd(source, dest, IRQ_TWDOG_INTID,
-					  enable, INTERRUPT_TYPE_IRQ);
-
-	if (!is_ffa_direct_response(ret_values)) {
-		ERROR("Expected a direct response message while configuring"
-			" TWDOG interrupt\n");
-		return false;
-	}
-
-	if (cactus_get_response(ret_values) != CACTUS_SUCCESS) {
-		ERROR("Failed to configure Trusted Watchdog interrupt\n");
-		return false;
-	}
-	return true;
-}
-
-static bool enable_trusted_wdog_interrupt(ffa_id_t source, ffa_id_t dest)
-{
-	return configure_trusted_wdog_interrupt(source, dest, true);
-}
-
-static bool disable_trusted_wdog_interrupt(ffa_id_t source, ffa_id_t dest)
-{
-	return configure_trusted_wdog_interrupt(source, dest, false);
-}
-
 /*
  * @Test_Aim@ Test secure interrupt handling while first Secure Partition is
  * in RUNNING state.

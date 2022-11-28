@@ -20,6 +20,8 @@
 #define MIDR_REV_BITS		U(4)
 #define MIDR_PN_MASK		U(0xfff)
 #define MIDR_PN_SHIFT		U(4)
+#define MIDR_VAR_MASK		U(0xf0)
+#define MIDR_REV_MASK		U(0xf)
 
 /*******************************************************************************
  * MPIDR macros

@@ -16,7 +16,7 @@
 #define MIDR_IMPL_SHIFT		U(0x18)
 #define MIDR_VAR_SHIFT		U(20)
 #define MIDR_VAR_BITS		U(4)
-#define MIDR_VAR_MASK		U(0xf)
+#define MIDR_VAR_MASK		U(0xf0)
 #define MIDR_REV_SHIFT		U(0)
 #define MIDR_REV_BITS		U(4)
 #define MIDR_REV_MASK		U(0xf)

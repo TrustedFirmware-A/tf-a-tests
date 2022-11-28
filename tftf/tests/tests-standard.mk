@@ -20,6 +20,7 @@ TESTS_MAKEFILE := $(addprefix tftf/tests/,	\
 	tests-template.mk			\
 	tests-tftf-validation.mk		\
 	tests-trng.mk				\
+	tests-errata_abi.mk                     \
 	tests-tsp.mk				\
 	tests-uncontainable.mk			\
 	tests-debugfs.mk			\

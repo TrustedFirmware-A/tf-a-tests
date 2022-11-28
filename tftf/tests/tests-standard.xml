@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2018-2021, Arm Limited. All rights reserved.
+  Copyright (c) 2018-2023, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -15,6 +15,7 @@
   <!ENTITY tests-sdei SYSTEM "tests-sdei.xml">
   <!ENTITY tests-rt-instr SYSTEM "tests-runtime-instrumentation.xml">
   <!ENTITY tests-trng SYSTEM "tests-trng.xml">
+  <!ENTITY tests-errata_abi SYSTEM "tests-errata_abi.xml">
   <!ENTITY tests-tsp SYSTEM "tests-tsp.xml">
   <!ENTITY tests-el3-pstate SYSTEM "tests-el3-power-state.xml">
   <!ENTITY tests-state-switch SYSTEM "tests-arm-state-switch.xml">
@@ -36,6 +37,7 @@
   &tests-sdei;
   &tests-rt-instr;
   &tests-trng;
+  &tests-errata_abi;
   &tests-tsp;
   &tests-el3-pstate;
   &tests-state-switch;

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2022, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+
+  <testsuite name="Stress tests" description="Validate all stress tests">
+     <testcase name="Stress test the timer framework" function="stress_test_timer_framework" />
+  </testsuite>
+
+</testsuites>

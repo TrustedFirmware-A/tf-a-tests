@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2022, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2023, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -84,7 +84,9 @@ FRAMEWORK_SOURCES	+=						\
 	lib/extensions/pauth/aarch64/pauth.c				\
 	lib/extensions/pauth/aarch64/pauth_helpers.S			\
 	lib/extensions/sme/aarch64/sme.c				\
-	lib/extensions/sme/aarch64/sme_helpers.S
+	lib/extensions/sme/aarch64/sme2.c				\
+	lib/extensions/sme/aarch64/sme_helpers.S			\
+	lib/extensions/sme/aarch64/sme2_helpers.S
 endif
 
 TFTF_LINKERFILE		:=	tftf/framework/tftf.ld.S

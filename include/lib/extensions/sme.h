@@ -7,16 +7,31 @@
 #ifndef SME_H
 #define SME_H
 
-#define SME_SMCR_LEN_MAX U(0x1FF)
+#define MAX_VL			(512)
+#define MAX_VL_B		(MAX_VL / 8)
+#define SME_SMCR_LEN_MAX	U(0x1FF)
 
-bool feat_sme_supported(void);
-bool feat_sme_fa64_supported(void);
-int sme_enable(void);
-void sme_smstart(bool enable_za);
-void sme_smstop(bool disable_za);
+typedef enum {
+	SMSTART,	/* enters streaming sve mode and enables SME ZA array */
+	SMSTART_SM,	/* enters streaming sve mode only */
+	SMSTART_ZA,	/* enables SME ZA array storage only */
+} smestart_instruction_type_t;
 
-/* Assembly function prototypes */
+typedef enum {
+	SMSTOP,		/* exits streaming sve mode, & disables SME ZA array */
+	SMSTOP_SM,	/* exits streaming sve mode only */
+	SMSTOP_ZA,	/* disables SME ZA array storage only */
+} smestop_instruction_type_t;
+
+/* SME feature related prototypes. */
+void sme_enable(void);
+void sme_smstart(smestart_instruction_type_t smstart_type);
+void sme_smstop(smestop_instruction_type_t smstop_type);
+
+/* Assembly function prototypes. */
 uint64_t sme_rdvl_1(void);
 void sme_try_illegal_instruction(void);
+void sme_vector_to_ZA(const uint64_t *input_vector);
+void sme_ZA_to_vector(const uint64_t *output_vector);
 
 #endif /* SME_H */

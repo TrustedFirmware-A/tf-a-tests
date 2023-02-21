@@ -63,7 +63,7 @@ endfunc inject_ras_error_record
 
 /*
  * Inject Unrecoverable error through fault record 0. Wait until serror_received
- * is set by the SDEI handler in response to receving the event.
+ * is set by the handler in response to receving the event.
  */
 func inject_unrecoverable_ras_error
 	/* Inject fault into record 0 */
@@ -107,7 +107,7 @@ endfunc inject_uncontainable_ras_error
  */
 func serror_sdei_event_handler
 	stp	x29, x30, [sp, #-16]!
-	bl	serror_handler
+	bl	sdei_handler
 	ldp	x29, x30, [sp], #16
 	mov_imm	x0, SDEI_EVENT_COMPLETE
 	mov	x1, xzr

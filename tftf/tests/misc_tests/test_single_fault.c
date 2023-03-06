@@ -11,7 +11,7 @@
 
 #ifdef __aarch64__
 
-uint64_t sdei_event_received;
+static volatile uint64_t sdei_event_received;
 extern void inject_unrecoverable_ras_error(void);
 extern int serror_sdei_event_handler(int ev, uint64_t arg);
 
@@ -50,6 +50,11 @@ test_result_t test_single_fault(void)
 	}
 
 	inject_unrecoverable_ras_error();
+
+	/* Wait until the SError fires */
+	do {
+		dmbish();
+	} while (sdei_event_received == 0);
 
 	return TEST_RESULT_SUCCESS;
 }

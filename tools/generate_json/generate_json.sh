@@ -25,74 +25,83 @@ CACTUS_PRESENT=false
 IVY_PRESENT=false
 IVY_SHIM_PRESENT=false
 
-for target in "$@"
-do
+for target in "$@"; do
 	case $target in
-		cactus)
-			CACTUS_PRESENT=true
-			;;
-		ivy)
-			IVY_PRESENT=true
-			;;
-		ivy_shim)
-			IVY_SHIM_PRESENT=true
-			;;
-		*)
-			echo "Invalid target $target"
-			exit 1
-			;;
+		cactus) CACTUS_PRESENT=true ;;
+		ivy) IVY_PRESENT=true ;;
+		ivy_shim) IVY_SHIM_PRESENT=true ;;
+		*) echo "Invalid target $target"; exit 1 ;;
 	esac
 done
 
-echo -e "{" > $GENERATED_JSON
+echo -e "{" > "$GENERATED_JSON"
 
 # To demonstrate communication between SP's, two cactus S-EL1 instances used.
 # To also test mapping of the RXTX region a third cactus S-EL1 instance is used.
 # cactus-primary, cactus-secondary and cactus-tertiary have same binary but
 # different partition manifests.
 if [ $CACTUS_PRESENT == "true" ]; then
-	echo -ne "\t\"cactus-primary\" : {\n \
-	\t\"image\": {\n \
-	\t\t\"file\": \"cactus.bin\",\n \
-	\t\t\"offset\":\"0x2000\"\n\
-	\t},\n \
-	\t\"pm\": {\n \
-	\t\t\"file\": \"cactus.dts\",\n \
-	\t\t\"offset\":\"0x1000\"\n\
-	\t},\n
-	\t\"physical-load-address\": \"0x7000000\",\n \
-	\t\"owner\": \"SiP\"\n\t},\n\n\t\"cactus-secondary\" : {\n \
-	\t\"image\": \"cactus.bin\",\n \
-	\t\"pm\": \"cactus-secondary.dts\",\n \
-	\t\"physical-load-address\": \"0x7100000\",\n \
-	\t\"owner\": \"Plat\"\n\t},\n\n\t\"cactus-tertiary\" : {\n \
-	\t\"image\": \"cactus.bin\",\n \
-	\t\"pm\": \"cactus-tertiary.dts\",\n \
-	\t\"physical-load-address\": \"0x7200000\",\n \
-	\t\"owner\": \"Plat\"\n\t}" \
-	>> "$GENERATED_JSON"
+	cat >> "$GENERATED_JSON" << EOF
+"cactus-primary" : {
+	"image": {
+		"file": "cactus.bin",
+		"offset":"0x2000"
+	},
+	"pm": {
+		"file": "cactus.dts",
+		"offset": "0x1000"
+	},
+	"physical-load-address": "0x7000000",
+	"owner": "SiP"
+},
+
+"cactus-secondary" : {
+	"image": "cactus.bin",
+	"pm": "cactus-secondary.dts",
+	"physical-load-address": "0x7100000",
+	"owner": "Plat"
+},
+
+"cactus-tertiary" : {
+	"image": "cactus.bin",
+	"pm": "cactus-tertiary.dts",
+	"physical-load-address": "0x7200000",
+	"owner": "Plat"
+EOF
 	PARTITION_ALREADY_PRESENT=true
 fi
+
 if [ $IVY_PRESENT == "true" ]; then
 	if [ $PARTITION_ALREADY_PRESENT == "true" ]; then
-		echo -ne ",\n\n" >> $GENERATED_JSON
+		echo -ne "\t},\n\n" >> "$GENERATED_JSON"
 	fi
-	echo -ne "\t\"ivy\" : {\n \
-	\t\"image\": \"ivy.bin\",\n \
-	\t\"pm\": \"ivy-sel0.dts\",\n \
-	\t\"physical-load-address\": \"0x7600000\",\n \
-	\t\"owner\": \"Plat\"\n\t}" >> "$GENERATED_JSON"
+
+	cat >> "$GENERATED_JSON" << EOF
+"ivy" : {
+	"image": "ivy.bin",
+	"pm": "ivy-sel0.dts",
+	"physical-load-address": "0x7600000",
+	"owner": "Plat"
+}
+EOF
+
 	PARTITION_ALREADY_PRESENT=true
 elif [ $IVY_SHIM_PRESENT == "true" ]; then
 	if [ $PARTITION_ALREADY_PRESENT == "true" ]; then
-		echo -ne ",\n\n" >> $GENERATED_JSON
+		echo -ne "\t},\n\n" >> "$GENERATED_JSON"
 	fi
-	echo -ne "\t\"ivy\" : {\n \
-	\t\"image\": \"ivy.bin\",\n \
-	\t\"pm\": \"ivy-sel1.dts\",\n \
-	\t\"physical-load-address\": \"0x7600000\",\n \
-	\t\"owner\": \"Plat\"\n\t}" >> "$GENERATED_JSON"
+cat >> "$GENERATED_JSON" << EOF
+"ivy" : {
+	"image": "ivy.bin",
+	"pm": "ivy-sel1.dts",
+	"physical-load-address": "0x7600000",
+	"owner": "Plat"
+}
+EOF
+
 	PARTITION_ALREADY_PRESENT=true
+else
+	echo -ne "\t},\n" >> "$GENERATED_JSON"
 fi
 
 echo -e "\n}" >> "$GENERATED_JSON"

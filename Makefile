@@ -234,7 +234,7 @@ COMMON_CFLAGS		+=	-ffunction-sections -fdata-sections
 # the options defined in the Makefile
 COMMON_CFLAGS 		+=	${CFLAGS} ${INCLUDES}
 
-COMMON_LDFLAGS		+=	--fatal-warnings -O1 --gc-sections --build-id=none
+COMMON_LDFLAGS		+=	${LDFLAGS} --fatal-warnings -O1 --gc-sections --build-id=none
 
 CC			:=	${CROSS_COMPILE}gcc
 CPP			:=	${CROSS_COMPILE}cpp

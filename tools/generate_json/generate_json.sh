@@ -60,12 +60,15 @@ if [ $CACTUS_PRESENT == "true" ]; then
 	\t\t\"file\": \"cactus.dts\",\n \
 	\t\t\"offset\":\"0x1000\"\n\
 	\t},\n
+	\t\"physical-load-address\": \"0x7000000\",\n \
 	\t\"owner\": \"SiP\"\n\t},\n\n\t\"cactus-secondary\" : {\n \
 	\t\"image\": \"cactus.bin\",\n \
 	\t\"pm\": \"cactus-secondary.dts\",\n \
+	\t\"physical-load-address\": \"0x7100000\",\n \
 	\t\"owner\": \"Plat\"\n\t},\n\n\t\"cactus-tertiary\" : {\n \
 	\t\"image\": \"cactus.bin\",\n \
 	\t\"pm\": \"cactus-tertiary.dts\",\n \
+	\t\"physical-load-address\": \"0x7200000\",\n \
 	\t\"owner\": \"Plat\"\n\t}" \
 	>> "$GENERATED_JSON"
 	PARTITION_ALREADY_PRESENT=true
@@ -77,6 +80,7 @@ if [ $IVY_PRESENT == "true" ]; then
 	echo -ne "\t\"ivy\" : {\n \
 	\t\"image\": \"ivy.bin\",\n \
 	\t\"pm\": \"ivy-sel0.dts\",\n \
+	\t\"physical-load-address\": \"0x7600000\",\n \
 	\t\"owner\": \"Plat\"\n\t}" >> "$GENERATED_JSON"
 	PARTITION_ALREADY_PRESENT=true
 elif [ $IVY_SHIM_PRESENT == "true" ]; then
@@ -86,6 +90,7 @@ elif [ $IVY_SHIM_PRESENT == "true" ]; then
 	echo -ne "\t\"ivy\" : {\n \
 	\t\"image\": \"ivy.bin\",\n \
 	\t\"pm\": \"ivy-sel1.dts\",\n \
+	\t\"physical-load-address\": \"0x7600000\",\n \
 	\t\"owner\": \"Plat\"\n\t}" >> "$GENERATED_JSON"
 	PARTITION_ALREADY_PRESENT=true
 fi

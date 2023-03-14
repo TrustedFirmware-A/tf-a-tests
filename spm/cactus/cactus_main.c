@@ -295,7 +295,7 @@ void __dead2 cactus_main(bool primary_cold_boot,
 
 		cactus_print_boot_info(boot_info_header);
 	} else {
-		set_putc_impl(HVC_CALL_AS_STDOUT);
+		set_putc_impl(FFA_SVC_SMC_CALL_AS_STDOUT);
 	}
 
 	/* Below string is monitored by CI expect script. */

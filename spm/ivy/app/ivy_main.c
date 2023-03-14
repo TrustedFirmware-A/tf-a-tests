@@ -24,7 +24,7 @@ void __dead2 ivy_main(void)
 	ffa_id_t my_id;
 	struct mailbox_buffers mb;
 
-	set_putc_impl(SVC_CALL_AS_STDOUT);
+	set_putc_impl(FFA_SVC_SMC_CALL_AS_STDOUT);
 
 	/* Get FF-A id. */
 	ret = ffa_id_get();

@@ -92,7 +92,7 @@ int shim_main(void)
 	assert(IS_IN_EL1() != 0);
 
 	/* Initialise console */
-	set_putc_impl(HVC_CALL_AS_STDOUT);
+	set_putc_impl(FFA_HVC_CALL_AS_STDOUT);
 
 	/* Configure and enable Stage-1 MMU, enable D-Cache */
 	shim_plat_configure_mmu();

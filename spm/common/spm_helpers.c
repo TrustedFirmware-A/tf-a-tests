@@ -21,16 +21,6 @@ uint32_t spm_interrupt_get(void)
 	return ret.ret0;
 }
 
-void spm_debug_log(char c)
-{
-	hvc_args args = {
-		.fid = SPM_DEBUG_LOG,
-		.arg1 = c
-	};
-
-	(void)tftf_hvc(&args);
-}
-
 /**
  * Hypervisor call to enable/disable SP delivery of a virtual interrupt of
  * int_id value through the IRQ or FIQ vector (pin).

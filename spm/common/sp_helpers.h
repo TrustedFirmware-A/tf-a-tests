@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -12,8 +12,8 @@
 #include <spm_common.h>
 #include <spinlock.h>
 
-/* Currently, Hafnium/SPM supports only 64 virtual interrupt IDs. */
-#define NUM_VINT_ID	64
+/* Currently, Hafnium/SPM supports 1024 virtual interrupt IDs. */
+#define NUM_VINT_ID	1024
 
 typedef struct {
 	u_register_t fid;
@@ -68,16 +68,18 @@ void sp_sleep(uint32_t ms);
 
 void sp_handler_spin_lock_init(void);
 
-/* Handler invoked at the tail end of interrupt processing by SP. */
-extern void (*sp_interrupt_tail_end_handler[NUM_VINT_ID])(void);
+/* Handler invoked by SP while processing interrupt. */
+extern void (*sp_interrupt_handler[NUM_VINT_ID])(void);
 
 /* Register the handler. */
-void sp_register_interrupt_tail_end_handler(void (*handler)(void),
+void sp_register_interrupt_handler(void (*handler)(void),
 						uint32_t interrupt_id);
 
 /* Un-register the handler. */
-void sp_unregister_interrupt_tail_end_handler(uint32_t interrupt_id);
+void sp_unregister_interrupt_handler(uint32_t interrupt_id);
 
 void discover_managed_exit_interrupt_id(void);
+
+void register_maintenance_interrupt_handlers(void);
 
 #endif /* SP_HELPERS_H */

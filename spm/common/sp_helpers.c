@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -15,7 +15,7 @@
 
 spinlock_t sp_handler_lock[NUM_VINT_ID];
 
-void (*sp_interrupt_tail_end_handler[NUM_VINT_ID])(void);
+void (*sp_interrupt_handler[NUM_VINT_ID])(void);
 
 uintptr_t bound_rand(uintptr_t min, uintptr_t max)
 {
@@ -92,7 +92,7 @@ void sp_handler_spin_lock_init(void)
 	}
 }
 
-void sp_register_interrupt_tail_end_handler(void (*handler)(void),
+void sp_register_interrupt_handler(void (*handler)(void),
 			uint32_t interrupt_id)
 {
 	if (interrupt_id >= NUM_VINT_ID) {
@@ -101,11 +101,11 @@ void sp_register_interrupt_tail_end_handler(void (*handler)(void),
 	}
 
 	spin_lock(&sp_handler_lock[interrupt_id]);
-	sp_interrupt_tail_end_handler[interrupt_id] = handler;
+	sp_interrupt_handler[interrupt_id] = handler;
 	spin_unlock(&sp_handler_lock[interrupt_id]);
 }
 
-void sp_unregister_interrupt_tail_end_handler(uint32_t interrupt_id)
+void sp_unregister_interrupt_handler(uint32_t interrupt_id)
 {
 	if (interrupt_id >= NUM_VINT_ID) {
 		ERROR("Cannot unregister handler for interrupt %u\n", interrupt_id);
@@ -113,6 +113,6 @@ void sp_unregister_interrupt_tail_end_handler(uint32_t interrupt_id)
 	}
 
 	spin_lock(&sp_handler_lock[interrupt_id]);
-	sp_interrupt_tail_end_handler[interrupt_id] = NULL;
+	sp_interrupt_handler[interrupt_id] = NULL;
 	spin_unlock(&sp_handler_lock[interrupt_id]);
 }

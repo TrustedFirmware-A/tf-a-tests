@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -45,20 +45,6 @@ void discover_managed_exit_interrupt_id(void)
 	     managed_exit_interrupt_id);
 }
 
-static void post_interrupt_handler(uint32_t intid)
-{
-	unsigned int core_pos = get_current_core_id();
-
-	last_serviced_interrupt[core_pos] = intid;
-
-	/* Invoke the tail end handler registered by the SP. */
-	spin_lock(&sp_handler_lock[intid]);
-	if (sp_interrupt_tail_end_handler[intid]) {
-		sp_interrupt_tail_end_handler[intid]();
-	}
-	spin_unlock(&sp_handler_lock[intid]);
-}
-
 /*
  * Cactus SP does not implement application threads. Hence, once the Cactus SP
  * sends the managed exit response to the direct request originator, execution
@@ -74,7 +60,11 @@ void send_managed_exit_response(void)
 	struct ffa_value ffa_ret;
 	bool waiting_resume_after_managed_exit;
 
-	/* Send managed exit response. */
+	/*
+	 * A secure partition performs its housekeeping and sends a direct
+	 * response to signal interrupt completion. This is a pure virtual
+	 * interrupt, no need for deactivation.
+	 */
 	ffa_ret = cactus_response(g_ffa_id, g_dir_req_source_id,
 			MANAGED_EXIT_INTERRUPT_ID);
 	waiting_resume_after_managed_exit = true;
@@ -99,53 +89,40 @@ void send_managed_exit_response(void)
 	VERBOSE("Resuming the suspended command\n");
 }
 
+void register_maintenance_interrupt_handlers(void)
+{
+	sp_register_interrupt_handler(send_managed_exit_response,
+		managed_exit_interrupt_id);
+	sp_register_interrupt_handler(notification_pending_interrupt_handler,
+		NOTIFICATION_PENDING_INTERRUPT_INTID);
+}
+
 void cactus_interrupt_handler_irq(void)
 {
 	uint32_t intid = spm_interrupt_get();
+	unsigned int core_pos = get_current_core_id();
 
-	if (intid == managed_exit_interrupt_id) {
-		/*
-		 * A secure partition performs its housekeeping and
-		 * sends a direct response to signal interrupt
-		 * completion. This is a pure virtual interrupt, no
-		 * need for deactivation.
-		 */
-		VERBOSE("vIRQ: Sending ME response to %x\n",
-			g_dir_req_source_id);
-		send_managed_exit_response();
+	last_serviced_interrupt[core_pos] = intid;
+
+	/* Invoke the handler registered by the SP. */
+	spin_lock(&sp_handler_lock[intid]);
+	if (sp_interrupt_handler[intid]) {
+		sp_interrupt_handler[intid]();
 	} else {
-		switch (intid) {
-		case IRQ_TWDOG_INTID:
-			/*
-			 * Interrupt triggered due to Trusted watchdog timer expiry.
-			 * Clear the interrupt and stop the timer.
-			 */
-			VERBOSE("Trusted WatchDog timer stopped\n");
-			sp805_twdog_stop();
-
-			/* Perform secure interrupt de-activation. */
-			spm_interrupt_deactivate(intid);
-
-			break;
-		case NOTIFICATION_PENDING_INTERRUPT_INTID:
-			notification_pending_interrupt_handler();
-			break;
-		default:
-			ERROR("%s: Interrupt ID %x not handled!\n", __func__,
-				 intid);
-			panic();
-			break;
-		}
+		ERROR("%s: Interrupt ID %x not handled!\n", __func__, intid);
+		panic();
 	}
-	post_interrupt_handler(intid);
+	spin_unlock(&sp_handler_lock[intid]);
 }
 
 void cactus_interrupt_handler_fiq(void)
 {
 	uint32_t intid = spm_interrupt_get();
+	unsigned int core_pos = get_current_core_id();
 
-	switch (intid) {
-	case MANAGED_EXIT_INTERRUPT_ID:
+	last_serviced_interrupt[core_pos] = intid;
+
+	if (intid == MANAGED_EXIT_INTERRUPT_ID) {
 		/*
 		 * A secure partition performs its housekeeping and sends a
 		 * direct response to signal interrupt completion.
@@ -154,13 +131,10 @@ void cactus_interrupt_handler_fiq(void)
 		VERBOSE("vFIQ: Sending ME response to %x\n",
 			g_dir_req_source_id);
 		send_managed_exit_response();
-		break;
-	default:
+	} else {
 		/*
 		 * Currently only managed exit interrupt is supported by vFIQ.
 		 */
 		panic();
-		break;
 	}
-	post_interrupt_handler(intid);
 }

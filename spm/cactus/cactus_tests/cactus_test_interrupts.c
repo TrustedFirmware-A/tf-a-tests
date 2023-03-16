@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -18,8 +18,22 @@
 extern uint32_t last_serviced_interrupt[PLATFORM_CORE_COUNT];
 static int flag_set;
 
-static void sec_wdog_interrupt_handled(void)
+static void handle_sec_wdog_interrupt(void)
 {
+	/*
+	 * Interrupt triggered due to Trusted watchdog timer expiry.
+	 * Clear the interrupt and stop the timer.
+	 */
+	VERBOSE("Trusted WatchDog timer stopped\n");
+	sp805_twdog_stop();
+
+	/* Perform secure interrupt de-activation. */
+	spm_interrupt_deactivate(IRQ_TWDOG_INTID);
+}
+
+static void check_sec_wdog_interrupt_triggered(void)
+{
+	handle_sec_wdog_interrupt();
 	expect(flag_set, 0);
 	flag_set = 1;
 }
@@ -137,6 +151,9 @@ CACTUS_CMD_HANDLER(twdog_cmd, CACTUS_TWDOG_START_CMD)
 
 	uint64_t time_ms = cactus_get_wdog_duration(*args);
 
+	sp_register_interrupt_handler(handle_sec_wdog_interrupt,
+				      IRQ_TWDOG_INTID);
+
 	VERBOSE("Starting TWDOG: %llums\n", time_ms);
 	sp805_twdog_refresh();
 	sp805_twdog_start((time_ms * ARM_SP805_TWDG_CLK_HZ) / 1000);
@@ -146,8 +163,8 @@ CACTUS_CMD_HANDLER(twdog_cmd, CACTUS_TWDOG_START_CMD)
 
 bool handle_twdog_interrupt_sp_sleep(uint32_t sleep_time, uint64_t *time_lapsed)
 {
-	sp_register_interrupt_tail_end_handler(sec_wdog_interrupt_handled,
-						IRQ_TWDOG_INTID);
+	sp_register_interrupt_handler(check_sec_wdog_interrupt_triggered,
+				      IRQ_TWDOG_INTID);
 	*time_lapsed += sp_sleep_elapsed_time(sleep_time);
 
 	if (flag_set == 0) {
@@ -156,7 +173,7 @@ bool handle_twdog_interrupt_sp_sleep(uint32_t sleep_time, uint64_t *time_lapsed)
 
 	/* Reset the flag and unregister the handler. */
 	flag_set = 0;
-	sp_unregister_interrupt_tail_end_handler(IRQ_TWDOG_INTID);
+	sp_unregister_interrupt_handler(IRQ_TWDOG_INTID);
 
 	return true;
 }

@@ -39,6 +39,65 @@ static bool check_written_words(uint32_t *ptr, uint32_t word, uint32_t wcount)
 	return true;
 }
 
+static bool test_memory_send_expect_denied(uint32_t mem_func,
+						   void *mem_ptr)
+{
+	struct ffa_value ret;
+	struct mailbox_buffers mb;
+	struct ffa_memory_region_constituent constituents[] = {
+						{(void *)mem_ptr, 1, 0}
+					};
+	ffa_memory_handle_t handle;
+
+	const uint32_t constituents_count = sizeof(constituents) /
+			sizeof(struct ffa_memory_region_constituent);
+	GET_TFTF_MAILBOX(mb);
+
+	handle = memory_init_and_send((struct ffa_memory_region *)mb.send,
+					MAILBOX_SIZE, SENDER, RECEIVER,
+					constituents, constituents_count,
+					mem_func, &ret);
+
+	if (handle != FFA_MEMORY_HANDLE_INVALID) {
+		ERROR("Received a valid FF-A memory handle, and that isn't"
+		       " expected.\n");
+		return false;
+	}
+
+	if (!is_expected_ffa_error(ret, FFA_ERROR_DENIED)) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Test invocation to FF-A memory sharing interfaces that should return in an
+ * error.
+ */
+test_result_t test_share_forbidden_ranges(void)
+{
+	const uintptr_t forbidden_address[] = {
+		/* Cactus SP memory. */
+		(uintptr_t)0x7200000,
+		/* SPMC Memory. */
+		(uintptr_t)0x6000000,
+		/* NS memory defined in cactus tertiary. */
+		(uintptr_t)0x0000880080001000,
+	};
+
+	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+
+	for (unsigned i = 0; i < 3; i++) {
+		if (!test_memory_send_expect_denied(
+			FFA_MEM_SHARE_SMC32, (void *)forbidden_address[i])) {
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
 /**
  * Tests that it is possible to share memory with SWd from NWd.
  * After calling the respective memory send API, it will expect a reply from

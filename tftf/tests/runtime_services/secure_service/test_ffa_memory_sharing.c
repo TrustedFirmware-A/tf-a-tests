@@ -40,7 +40,8 @@ static bool check_written_words(uint32_t *ptr, uint32_t word, uint32_t wcount)
 }
 
 static bool test_memory_send_expect_denied(uint32_t mem_func,
-						   void *mem_ptr)
+					   void *mem_ptr,
+					   ffa_id_t borrower)
 {
 	struct ffa_value ret;
 	struct mailbox_buffers mb;
@@ -54,7 +55,7 @@ static bool test_memory_send_expect_denied(uint32_t mem_func,
 	GET_TFTF_MAILBOX(mb);
 
 	handle = memory_init_and_send((struct ffa_memory_region *)mb.send,
-					MAILBOX_SIZE, SENDER, RECEIVER,
+					MAILBOX_SIZE, SENDER, borrower,
 					constituents, constituents_count,
 					mem_func, &ret);
 
@@ -90,7 +91,8 @@ test_result_t test_share_forbidden_ranges(void)
 
 	for (unsigned i = 0; i < 3; i++) {
 		if (!test_memory_send_expect_denied(
-			FFA_MEM_SHARE_SMC32, (void *)forbidden_address[i])) {
+			FFA_MEM_SHARE_SMC32, (void *)forbidden_address[i],
+			RECEIVER)) {
 			return TEST_RESULT_FAIL;
 		}
 	}
@@ -116,7 +118,9 @@ test_result_t test_share_forbidden_ranges(void)
  * Hypervisor (sitting in EL2) would relinquish access from EL1/EL0
  * FF-A endpoint at relevant moment.
  */
-static test_result_t test_memory_send_sp(uint32_t mem_func)
+static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
+					 struct ffa_memory_region_constituent *constituents,
+					 size_t constituents_count)
 {
 	struct ffa_value ret;
 	ffa_memory_handle_t handle;
@@ -133,17 +137,16 @@ static test_result_t test_memory_send_sp(uint32_t mem_func)
 
 	GET_TFTF_MAILBOX(mb);
 
-	struct ffa_memory_region_constituent constituents[] = {
-						{(void *)share_page, 1, 1}
-					};
+	if (constituents_count != 1) {
+		WARN("Test expects constituents_count to be 1\n");
+	}
 
-	const uint32_t constituents_count = sizeof(constituents) /
-			sizeof(struct ffa_memory_region_constituent);
-
-	VERBOSE("TFTF - Address: %p\n", constituents[0].address);
+	for (size_t i = 0; i < constituents_count; i++) {
+		VERBOSE("TFTF - Address: %p\n", constituents[0].address);
+	}
 
 	handle = memory_init_and_send((struct ffa_memory_region *)mb.send,
-					MAILBOX_SIZE, SENDER, RECEIVER,
+					MAILBOX_SIZE, SENDER, borrower,
 					constituents, constituents_count,
 					mem_func, &ret);
 
@@ -155,7 +158,7 @@ static test_result_t test_memory_send_sp(uint32_t mem_func)
 
 	ptr = (uint32_t *)constituents[0].address;
 
-	ret = cactus_mem_send_cmd(SENDER, RECEIVER, mem_func, handle, 0,
+	ret = cactus_mem_send_cmd(SENDER, borrower, mem_func, handle, 0,
 				  true, nr_words_to_write);
 
 	if (!is_ffa_direct_response(ret)) {
@@ -184,17 +187,39 @@ static test_result_t test_memory_send_sp(uint32_t mem_func)
 
 test_result_t test_mem_share_sp(void)
 {
-	return test_memory_send_sp(FFA_MEM_SHARE_SMC32);
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)share_page, 1, 0}
+	};
+
+	const uint32_t constituents_count = sizeof(constituents) /
+				sizeof(struct ffa_memory_region_constituent);
+
+	return test_memory_send_sp(FFA_MEM_SHARE_SMC32, RECEIVER, constituents,
+				   constituents_count);
 }
 
 test_result_t test_mem_lend_sp(void)
 {
-	return test_memory_send_sp(FFA_MEM_LEND_SMC32);
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)share_page, 1, 0}
+	};
+
+	const uint32_t constituents_count = sizeof(constituents) /
+				sizeof(struct ffa_memory_region_constituent);
+
+	return test_memory_send_sp(FFA_MEM_LEND_SMC32, RECEIVER, constituents,
+				   constituents_count);
 }
 
 test_result_t test_mem_donate_sp(void)
 {
-	return test_memory_send_sp(FFA_MEM_DONATE_SMC32);
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)share_page, 1, 0}
+	};
+	const uint32_t constituents_count = sizeof(constituents) /
+				sizeof(struct ffa_memory_region_constituent);
+	return test_memory_send_sp(FFA_MEM_DONATE_SMC32, RECEIVER, constituents,
+				   constituents_count);
 }
 
 /*

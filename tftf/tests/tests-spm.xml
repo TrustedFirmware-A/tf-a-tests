@@ -94,6 +94,8 @@
                function="test_req_mem_lend_sp_to_vm" />
      <testcase name="Share forbidden memory with SP"
                function="test_share_forbidden_ranges" />
+     <testcase name="Donate consecutively"
+               function="test_consecutive_donate" />
   </testsuite>
 
   <testsuite name="SIMD,SVE Registers context"

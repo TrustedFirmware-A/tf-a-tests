@@ -24,6 +24,7 @@ static const struct ffa_uuid expected_sp_uuids[] = {
 
 /* Memory section to be used for memory share operations */
 static __aligned(PAGE_SIZE) uint8_t share_page[PAGE_SIZE];
+static __aligned(PAGE_SIZE) uint8_t consecutive_donate_page[PAGE_SIZE];
 
 static bool check_written_words(uint32_t *ptr, uint32_t word, uint32_t wcount)
 {
@@ -220,6 +221,44 @@ test_result_t test_mem_donate_sp(void)
 				sizeof(struct ffa_memory_region_constituent);
 	return test_memory_send_sp(FFA_MEM_DONATE_SMC32, RECEIVER, constituents,
 				   constituents_count);
+}
+
+test_result_t test_consecutive_donate(void)
+{
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)consecutive_donate_page, 1, 0}
+	};
+	const uint32_t constituents_count = sizeof(constituents) /
+				sizeof(struct ffa_memory_region_constituent);
+
+	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+
+	test_result_t ret = test_memory_send_sp(FFA_MEM_DONATE_SMC32, SP_ID(1),
+						constituents,
+						constituents_count);
+
+	if (ret != TEST_RESULT_SUCCESS) {
+		ERROR("Failed at first attempting of sharing.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!test_memory_send_expect_denied(FFA_MEM_DONATE_SMC32,
+					    consecutive_donate_page,
+					    SP_ID(1))) {
+		ERROR("Memory was successfully donated again from the NWd, to "
+		      "the same borrower.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!test_memory_send_expect_denied(FFA_MEM_DONATE_SMC32,
+					    consecutive_donate_page,
+					    SP_ID(2))) {
+		ERROR("Memory was successfully donated again from the NWd, to "
+		      "another borrower.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }
 
 /*

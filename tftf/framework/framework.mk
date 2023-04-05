@@ -87,7 +87,8 @@ FRAMEWORK_SOURCES	+=						\
 	lib/extensions/sme/aarch64/sme.c				\
 	lib/extensions/sme/aarch64/sme2.c				\
 	lib/extensions/sme/aarch64/sme_helpers.S			\
-	lib/extensions/sme/aarch64/sme2_helpers.S
+	lib/extensions/sme/aarch64/sme2_helpers.S			\
+	lib/extensions/sve/aarch64/sve.c
 endif
 
 TFTF_LINKERFILE		:=	tftf/framework/tftf.ld.S

@@ -32,5 +32,20 @@
 	  function="host_realm_sec_interrupt_can_preempt_rl" />
 	  <testcase name="Check that FPU state registers context is preserved in RL/SE/NS"
 	  function="host_realm_fpu_access_in_rl_ns_se" />
+	  <!-- Test Realm with SVE support -->
+	  <testcase name="Check RMI reports proper SVE VL"
+	  function="host_check_rmi_reports_proper_sve_vl" />
+	  <testcase name="Create SVE Realm with invalid VL"
+	  function="host_sve_realm_test_invalid_vl" />
+	  <testcase name="Create SVE Realm and test ID registers"
+	  function="host_sve_realm_cmd_id_registers" />
+	  <testcase name="Create non SVE Realm and test ID registers"
+	  function="host_non_sve_realm_cmd_id_registers" />
+	  <testcase name="Create SVE Realm and check rdvl result"
+	  function="host_sve_realm_cmd_rdvl" />
+	  <testcase name="Create SVE Realm and probe all supported VLs"
+	  function="host_sve_realm_cmd_probe_vl" />
+	  <testcase name="Check whether RMM preserves NS ZCR_EL2 register"
+	  function="host_sve_realm_check_config_register" />
   </testsuite>
 </testsuites>

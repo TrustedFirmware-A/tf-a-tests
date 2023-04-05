@@ -72,6 +72,8 @@ func arch_init
 	mov	x1, CPACR_EL1_FPEN(CPACR_EL1_FP_TRAP_NONE)
 	mrs	x0, cpacr_el1
 	orr	x0, x0, x1
+	mov	x1, CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE)
+	orr	x0, x0, x1
 	msr	cpacr_el1, x0
 	isb
 

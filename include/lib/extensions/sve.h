@@ -1,11 +1,13 @@
 /*
- * Copyright (c) 2021-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef SVE_H
 #define SVE_H
+
+#include <arch.h>
 
 #define fill_sve_helper(num) "ldr z"#num", [%0, #"#num", MUL VL];"
 #define read_sve_helper(num) "str z"#num", [%0, #"#num", MUL VL];"
@@ -17,9 +19,20 @@
 #define SVE_VECTOR_LEN_BYTES		256
 #define SVE_NUM_VECTORS			32
 
+#define SVE_VQ_ARCH_MAX			((1 << ZCR_EL2_SVE_VL_WIDTH) - 1)
+
+/* convert SVE VL in bytes to VQ */
+#define SVE_VL_TO_VQ(vl_bytes)		(((vl_bytes) >> 4U) - 1)
+
+/* convert SVE VQ to bits */
+#define SVE_VQ_TO_BITS(vq)		(((vq) + 1U) << 7U)
+
 #ifndef __ASSEMBLY__
 
 typedef uint8_t sve_vector_t[SVE_VECTOR_LEN_BYTES];
+
+void sve_config_vq(uint8_t sve_vq);
+uint32_t sve_probe_vl(uint8_t sve_max_vq);
 
 #ifdef __aarch64__
 

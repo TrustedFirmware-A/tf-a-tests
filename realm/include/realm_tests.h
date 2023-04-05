@@ -12,6 +12,9 @@ bool test_pmuv3_cycle_works_realm(void);
 bool test_pmuv3_event_works_realm(void);
 bool test_pmuv3_rmm_preserves(void);
 bool test_pmuv3_overflow_interrupt(void);
+bool test_realm_sve_rdvl(void);
+bool test_realm_sve_read_id_registers(void);
+bool test_realm_sve_probe_vl(void);
 
 #endif /* REALM_TESTS_H */
 

@@ -32,6 +32,7 @@ REALM_SOURCES:=								\
 	realm_pmuv3.c							\
 	realm_rsi.c							\
 	realm_shared_data.c						\
+	realm_sve.c							\
 	)
 
 REALM_SOURCES += lib/${ARCH}/cache_helpers.S				\
@@ -41,7 +42,8 @@ REALM_SOURCES += lib/${ARCH}/cache_helpers.S				\
 	lib/exceptions/${ARCH}/sync.c					\
 	lib/locks/${ARCH}/spinlock.S					\
 	lib/delay/delay.c						\
-	lib/extensions/fpu/fpu.c
+	lib/extensions/fpu/fpu.c					\
+	lib/extensions/sve/aarch64/sve.c
 
 # TODO: Remove dependency on TFTF files.
 REALM_SOURCES	+=							\

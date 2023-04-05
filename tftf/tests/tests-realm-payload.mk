@@ -12,6 +12,7 @@ TESTS_SOURCES	+=							\
 	$(addprefix tftf/tests/runtime_services/realm_payload/,		\
 		host_realm_payload_tests.c				\
 		host_realm_spm.c					\
+		host_realm_payload_sve_tests.c				\
 	)
 
 TESTS_SOURCES	+=							\

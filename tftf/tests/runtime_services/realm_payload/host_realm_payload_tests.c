@@ -12,6 +12,7 @@
 #include <irq.h>
 #include <drivers/arm/arm_gic.h>
 #include <drivers/arm/gic_v3.h>
+#include <test_helpers.h>
 
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
@@ -28,26 +29,8 @@ extern const char *rmi_exit[];
 test_result_t host_test_realm_create_enter(void)
 {
 	bool ret1, ret2;
-	u_register_t retrmm;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		INFO("platform doesn't support RME\n");
-		return TEST_RESULT_SKIPPED;
-	}
-
-	host_rmi_init_cmp_result();
-
-	retrmm = host_rmi_version();
-	VERBOSE("RMM version is: %lu.%lu\n",
-			RMI_ABI_VERSION_GET_MAJOR(retrmm),
-			RMI_ABI_VERSION_GET_MINOR(retrmm));
-	/*
-	 * Skip the test if RMM is TRP, TRP version is always null.
-	 */
-	if (retrmm == 0UL) {
-		INFO("Test case not supported for TRP as RMM\n");
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (!host_create_realm_payload((u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
@@ -135,27 +118,9 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr)
 static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 {
 	struct realm *realm_ptr;
-	u_register_t retrmm;
 	bool ret1, ret2;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		INFO("platform doesn't support RME\n");
-		return TEST_RESULT_SKIPPED;
-	}
-
-	host_rmi_init_cmp_result();
-
-	retrmm = host_rmi_version();
-	VERBOSE("RMM version is: %lu.%lu\n",
-			RMI_ABI_VERSION_GET_MAJOR(retrmm),
-			RMI_ABI_VERSION_GET_MINOR(retrmm));
-	/*
-	 * Skip the test if RMM is TRP, TRP version is always null.
-	 */
-	if (retrmm == 0UL) {
-		INFO("Test case not supported for TRP as RMM\n");
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	host_set_pmu_state();
 

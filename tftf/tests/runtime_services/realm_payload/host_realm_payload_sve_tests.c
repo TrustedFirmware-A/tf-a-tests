@@ -37,7 +37,7 @@ static sve_vector_t ns_sve_vectors_read[SVE_NUM_VECTORS] __aligned(16);
 		}								\
 										\
 		/* SVE not supported in RMI features? */			\
-		if (EXTRACT(RMI_FEATURE_REGISTER_0_SVE_EN, _reg0) == 0UL) {	\
+		if ((_reg0 & RMI_FEATURE_REGISTER_0_SVE_EN) == 0UL) {		\
 			ERROR("SVE not in RMI features, skipping\n");		\
 			return TEST_RESULT_SKIPPED;				\
 		}								\
@@ -47,11 +47,11 @@ static test_result_t host_create_sve_realm_payload(bool sve_en, uint8_t sve_vq)
 {
 	u_register_t rmi_feat_reg0;
 
-	if (sve_en == true) {
-		rmi_feat_reg0 = INPLACE(RMI_FEATURE_REGISTER_0_SVE_EN, true);
-		rmi_feat_reg0 |= INPLACE(RMI_FEATURE_REGISTER_0_SVE_VL, sve_vq);
+	if (sve_en) {
+		rmi_feat_reg0 = RMI_FEATURE_REGISTER_0_SVE_EN |
+				INPLACE(RMI_FEATURE_REGISTER_0_SVE_VL, sve_vq);
 	} else {
-		rmi_feat_reg0 = INPLACE(RMI_FEATURE_REGISTER_0_SVE_EN, false);
+		rmi_feat_reg0 = 0UL;
 	}
 
 	/* Initialise Realm payload */

@@ -222,18 +222,18 @@ bool host_create_realm_payload(u_register_t realm_payload_adr,
 	if ((feature_flag & RMI_FEATURE_REGISTER_0_PMU_EN) == 0UL) {
 		realm.rmm_feat_reg0 &=
 			~(RMI_FEATURE_REGISTER_0_PMU_EN |
-			  RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS);
+			  MASK(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS));
 	}
 
 	/* Set SVE bits from feature_flag */
-	realm.rmm_feat_reg0 &= ~(MASK(RMI_FEATURE_REGISTER_0_SVE_EN) |
+	realm.rmm_feat_reg0 &= ~(RMI_FEATURE_REGISTER_0_SVE_EN |
 				 MASK(RMI_FEATURE_REGISTER_0_SVE_VL));
-	realm.rmm_feat_reg0 |= INPLACE(RMI_FEATURE_REGISTER_0_SVE_EN,
-				       EXTRACT(RMI_FEATURE_REGISTER_0_SVE_EN,
-					       feature_flag));
-	realm.rmm_feat_reg0 |= INPLACE(RMI_FEATURE_REGISTER_0_SVE_VL,
+	if ((feature_flag & RMI_FEATURE_REGISTER_0_SVE_EN) != 0UL) {
+		realm.rmm_feat_reg0 |= RMI_FEATURE_REGISTER_0_SVE_EN |
+				       INPLACE(RMI_FEATURE_REGISTER_0_SVE_VL,
 				       EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL,
-					       feature_flag));
+						feature_flag));
+	}
 
 	/* Create Realm */
 	if (host_realm_create(&realm) != REALM_SUCCESS) {

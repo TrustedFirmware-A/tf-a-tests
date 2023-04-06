@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -77,7 +77,7 @@ struct rsi_realm_config {
  * ret1 == Top of modified IPA range
  */
 
-#define RSI_HOST_CALL_NR_GPRS		7U
+#define RSI_HOST_CALL_NR_GPRS		31U
 
 struct rsi_host_call {
 	SET_MEMBER(struct {
@@ -89,7 +89,7 @@ struct rsi_host_call {
 };
 
 /*
- * arg0 == struct rsi_host_call addr
+ * arg0 == struct rsi_host_call address
  */
 #define RSI_HOST_CALL		SMC_RSI_FID(9U)
 

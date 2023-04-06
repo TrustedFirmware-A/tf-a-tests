@@ -146,6 +146,7 @@ static inline u_register_t host_rmi_rec_create(u_register_t rd,
 						u_register_t rec,
 						u_register_t params_ptr)
 {
+
 	return host_rmi_handler(&(smc_args) {RMI_REC_CREATE, rd, rec, params_ptr},
 				4U).ret0;
 }

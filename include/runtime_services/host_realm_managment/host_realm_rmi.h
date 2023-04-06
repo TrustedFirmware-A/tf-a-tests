@@ -307,12 +307,6 @@ typedef enum {
 	 * index: RTT level at which the walk terminated
 	 */
 	RMI_ERROR_RTT = 4,
-	/*
-	 * An operation cannot be completed because a resource is in use.
-	 *
-	 * index is zero.
-	 */
-	RMI_ERROR_IN_USE = 5,
 	RMI_ERROR_COUNT
 } status_t;
 

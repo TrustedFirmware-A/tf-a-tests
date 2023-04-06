@@ -53,16 +53,16 @@
 #define RMI_GRANULE_UNDELEGATE		SMC64_RMI_FID(U(0x2))
 
 /*
- * arg0 == data address
- * arg1 == RD address
+ * arg0 == RD address
+ * arg1 == data address
  * arg2 == map address
  * arg3 == SRC address
  */
 #define RMI_DATA_CREATE			SMC64_RMI_FID(U(0x3))
 
 /*
- * arg0 == data address
- * arg1 == RD address
+ * arg0 == RD address
+ * arg1 == data address
  * arg2 == map address
  */
 #define RMI_DATA_CREATE_UNKNOWN		SMC64_RMI_FID(U(0x4))
@@ -80,7 +80,7 @@
 
 /*
  * arg0 == RD address
- * arg1 == struct rmi_realm_params addr
+ * arg1 == struct rmi_realm_params address
  */
 #define RMI_REALM_CREATE		SMC64_RMI_FID(U(0x8))
 
@@ -90,8 +90,8 @@
 #define RMI_REALM_DESTROY		SMC64_RMI_FID(U(0x9))
 
 /*
- * arg0 == REC address
- * arg1 == RD address
+ * arg0 == RD address
+ * arg1 == REC address
  * arg2 == struct rmm_rec address
  */
 #define RMI_REC_CREATE			SMC64_RMI_FID(U(0xA))
@@ -103,13 +103,13 @@
 
 /*
  * arg0 == rec address
- * arg1 == rec_run address
+ * arg1 == struct rec_run address
  */
 #define RMI_REC_ENTER			SMC64_RMI_FID(U(0xC))
 
 /*
- * arg0 == RTT address
- * arg1 == RD address
+ * arg0 == RD address
+ * arg1 == RTT address
  * arg2 == map address
  * arg3 == level
  */
@@ -174,9 +174,9 @@
 #define RMI_REC_AUX_COUNT		SMC64_RMI_FID(U(0x17))
 
 /*
- * arg1 == RD address
- * arg2 == map address
- * arg3 == level
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == level
  */
 #define RMI_RTT_INIT_RIPAS		SMC64_RMI_FID(U(0x18))
 
@@ -512,8 +512,9 @@ u_register_t host_realm_map_ns_shared(struct realm *realm,
 u_register_t host_realm_rec_create(struct realm *realm);
 u_register_t host_realm_activate(struct realm *realm);
 u_register_t host_realm_destroy(struct realm *realm);
-u_register_t host_realm_rec_enter(struct realm *realm, u_register_t *exit_reason,
-		unsigned int *host_call_result);
+u_register_t host_realm_rec_enter(struct realm *realm,
+					u_register_t *exit_reason,
+					unsigned int *host_call_result);
 u_register_t host_realm_init_ipa_state(struct realm *realm, u_register_t level,
 					u_register_t start, uint64_t end);
 void host_rmi_init_cmp_result(void);

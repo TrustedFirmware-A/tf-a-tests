@@ -20,7 +20,6 @@
      <testcase name="Verify the timer interrupt generation" function="test_timer_framework_interrupt" />
      <testcase name="Target timer to a power down cpu" function="test_timer_target_power_down_cpu" />
      <testcase name="Test scenario where multiple CPUs call same timeout" function="test_timer_target_multiple_same_interval" />
-     <testcase name="Stress test the timer framework" function="stress_test_timer_framework" />
   </testsuite>
 
 </testsuites>

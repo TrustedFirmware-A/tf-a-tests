@@ -23,6 +23,7 @@
   <!ENTITY tests-performance SYSTEM "tests-performance.xml">
   <!ENTITY tests-smc SYSTEM "tests-smc.xml">
   <!ENTITY tests-pmu-leakage SYSTEM "tests-pmu-leakage.xml">
+  <!ENTITY tests-timer-stress SYSTEM "tests-timer-stress.xml">
 ]>
 
 <testsuites>
@@ -41,5 +42,6 @@
   &tests-performance;
   &tests-smc;
   &tests-pmu-leakage;
+  &tests-timer-stress;
 
 </testsuites>

@@ -102,6 +102,9 @@ void realm_payload_main(void)
 		case REALM_SVE_PROBE_VL:
 			test_succeed = test_realm_sve_probe_vl();
 			break;
+		case REALM_SVE_OPS:
+			test_succeed = test_realm_sve_ops();
+			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);
 			break;

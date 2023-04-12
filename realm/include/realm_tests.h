@@ -15,6 +15,7 @@ bool test_pmuv3_overflow_interrupt(void);
 bool test_realm_sve_rdvl(void);
 bool test_realm_sve_read_id_registers(void);
 bool test_realm_sve_probe_vl(void);
+bool test_realm_sve_ops(void);
 
 #endif /* REALM_TESTS_H */
 

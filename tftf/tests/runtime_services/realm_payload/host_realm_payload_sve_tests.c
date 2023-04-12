@@ -16,6 +16,12 @@
 #include <host_realm_sve.h>
 #include <host_shared_data.h>
 
+#define NS_SVE_OP_ARRAYSIZE		1024U
+#define SVE_TEST_ITERATIONS		50U
+
+static int ns_sve_op_1[NS_SVE_OP_ARRAYSIZE];
+static int ns_sve_op_2[NS_SVE_OP_ARRAYSIZE];
+
 /* Skip test if SVE is not supported in H/W or in RMI features */
 #define CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(_reg0)				\
 	do {									\
@@ -368,6 +374,90 @@ test_result_t host_sve_realm_check_config_register(void)
 		}
 	}
 
+	if (!host_destroy_realm()) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return rc;
+}
+
+/*
+ * Sends command to Realm to do SVE operations, while NS is also doing SVE
+ * operations.
+ * Returns:
+ *	false - On success
+ *	true  - On failure
+ */
+static bool callback_enter_realm(void)
+{
+	bool realm_rc;
+
+	realm_rc = host_enter_realm_execute(REALM_SVE_OPS, NULL,
+					    RMI_EXIT_HOST_CALL);
+	if (realm_rc != true) {
+		return true;
+	}
+
+	return false;
+}
+
+/* Intermittently switch to Realm while doing NS SVE ops */
+test_result_t host_sve_realm_check_vectors_operations(void)
+{
+	u_register_t rmi_feat_reg0;
+	test_result_t rc;
+	uint8_t sve_vq;
+	bool cb_err;
+	unsigned int i;
+	int val;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(rmi_feat_reg0);
+
+	sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
+
+	rc = host_create_sve_realm_payload(true, sve_vq);
+	if (rc != TEST_RESULT_SUCCESS) {
+		return rc;
+	}
+
+	/* get at random value to do sve_subtract */
+	val = rand();
+	for (i = 0U; i < NS_SVE_OP_ARRAYSIZE; i++) {
+		ns_sve_op_1[i] = val - i;
+		ns_sve_op_2[i] = 1;
+	}
+
+	for (i = 0U; i < SVE_TEST_ITERATIONS; i++) {
+		/* Config NS world with random SVE length */
+		sve_config_vq(SVE_GET_RANDOM_VQ);
+
+		/* Perform SVE operations with intermittent calls to Realm */
+		cb_err = sve_subtract_arrays_interleaved(ns_sve_op_1,
+							 ns_sve_op_1,
+							 ns_sve_op_2,
+							 NS_SVE_OP_ARRAYSIZE,
+							 &callback_enter_realm);
+		if (cb_err) {
+			ERROR("Callback to realm failed\n");
+			rc = TEST_RESULT_FAIL;
+			goto rm_realm;
+		}
+	}
+
+	/* Check result of SVE operations. */
+	rc = TEST_RESULT_SUCCESS;
+	for (i = 0U; i < NS_SVE_OP_ARRAYSIZE; i++) {
+		if (ns_sve_op_1[i] != (val - i - SVE_TEST_ITERATIONS)) {
+			ERROR("SVE op failed at idx: %u, expected: 0x%x "
+			      "received: 0x%x\n", i,
+			      (val - i - SVE_TEST_ITERATIONS), ns_sve_op_1[i]);
+			rc = TEST_RESULT_FAIL;
+		}
+	}
+
+rm_realm:
 	if (!host_destroy_realm()) {
 		return TEST_RESULT_FAIL;
 	}

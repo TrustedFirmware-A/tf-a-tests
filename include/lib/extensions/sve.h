@@ -8,6 +8,7 @@
 #define SVE_H
 
 #include <arch.h>
+#include <stdlib.h> /* for rand() */
 
 #define fill_sve_helper(num) "ldr z"#num", [%0, #"#num", MUL VL];"
 #define read_sve_helper(num) "str z"#num", [%0, #"#num", MUL VL];"
@@ -26,6 +27,9 @@
 
 /* convert SVE VQ to bits */
 #define SVE_VQ_TO_BITS(vq)		(((vq) + 1U) << 7U)
+
+/* get a random SVE VQ b/w 0 to SVE_VQ_ARCH_MAX */
+#define SVE_GET_RANDOM_VQ		(rand() % (SVE_VQ_ARCH_MAX + 1))
 
 #ifndef __ASSEMBLY__
 

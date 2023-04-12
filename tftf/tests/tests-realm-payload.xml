@@ -47,5 +47,7 @@
 	  function="host_sve_realm_cmd_probe_vl" />
 	  <testcase name="Check whether RMM preserves NS ZCR_EL2 register"
 	  function="host_sve_realm_check_config_register" />
+	  <testcase name="Intermittently switch to Realm while doing NS SVE ops"
+	  function="host_sve_realm_check_vectors_operations" />
   </testsuite>
 </testsuites>

@@ -8,10 +8,17 @@
 #include <arch_helpers.h>
 #include <assert.h>
 #include <debug.h>
+#include <stdlib.h>
 #include <lib/extensions/sve.h>
 
 #include <host_realm_sve.h>
 #include <host_shared_data.h>
+
+#define RL_SVE_OP_ARRAYSIZE		512U
+#define SVE_TEST_ITERATIONS		4U
+
+static int rl_sve_op_1[RL_SVE_OP_ARRAYSIZE];
+static int rl_sve_op_2[RL_SVE_OP_ARRAYSIZE];
 
 /* Returns the maximum supported VL. This test is called only by sve Realm */
 bool test_realm_sve_rdvl(void)
@@ -66,6 +73,39 @@ bool test_realm_sve_probe_vl(void)
 
 	/* Probe all VLs */
 	output->vl_bitmap = sve_probe_vl(SVE_VQ_ARCH_MAX);
+
+	return true;
+}
+
+bool test_realm_sve_ops(void)
+{
+	int val, i;
+
+	assert(is_armv8_2_sve_present());
+
+	/* get at random value to do sve_subtract */
+	val = rand();
+	for (i = 0; i < RL_SVE_OP_ARRAYSIZE; i++) {
+		rl_sve_op_1[i] = val - i;
+		rl_sve_op_2[i] = 1;
+	}
+
+	for (i = 0; i < SVE_TEST_ITERATIONS; i++) {
+		/* Config Realm with random SVE length */
+		sve_config_vq(SVE_GET_RANDOM_VQ);
+
+		/* Perform SVE operations, without world switch */
+		sve_subtract_arrays(rl_sve_op_1, rl_sve_op_1, rl_sve_op_2,
+				    RL_SVE_OP_ARRAYSIZE);
+	}
+
+	/* Check result of SVE operations. */
+	for (i = 0; i < RL_SVE_OP_ARRAYSIZE; i++) {
+		if (rl_sve_op_1[i] != (val - i - SVE_TEST_ITERATIONS)) {
+			realm_printf("Realm: SVE ops failed\n");
+			return false;
+		}
+	}
 
 	return true;
 }

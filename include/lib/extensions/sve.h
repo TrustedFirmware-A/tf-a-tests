@@ -33,6 +33,16 @@ typedef uint8_t sve_vector_t[SVE_VECTOR_LEN_BYTES];
 
 void sve_config_vq(uint8_t sve_vq);
 uint32_t sve_probe_vl(uint8_t sve_max_vq);
+void sve_fill_vector_regs(const sve_vector_t v[SVE_NUM_VECTORS]);
+void sve_read_vector_regs(sve_vector_t v[SVE_NUM_VECTORS]);
+
+/* Assembly routines */
+bool sve_subtract_arrays_interleaved(int *dst_array, int *src_array1,
+				     int *src_array2, int array_size,
+				     bool (*world_switch_cb)(void));
+
+void sve_subtract_arrays(int *dst_array, int *src_array1, int *src_array2,
+			 int array_size);
 
 #ifdef __aarch64__
 

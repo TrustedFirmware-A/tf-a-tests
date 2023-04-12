@@ -27,7 +27,6 @@ ifeq (${ARCH},aarch64)
 TESTS_SOURCES   +=                                                      \
         $(addprefix tftf/tests/runtime_services/secure_service/,        \
 	  test_spm_cpu_features.c					\
-	  sve_operations_cactus.S					\
 	 )
 
 TESTS_SOURCES	+=							\

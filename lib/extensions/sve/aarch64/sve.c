@@ -83,3 +83,87 @@ uint32_t sve_probe_vl(uint8_t sve_max_vq)
 
 	return vl_bitmap;
 }
+
+void sve_fill_vector_regs(const sve_vector_t v[SVE_NUM_VECTORS])
+{
+	assert(is_armv8_2_sve_present());
+
+	__asm__ volatile(
+		".arch_extension sve\n"
+		fill_sve_helper(0)
+		fill_sve_helper(1)
+		fill_sve_helper(2)
+		fill_sve_helper(3)
+		fill_sve_helper(4)
+		fill_sve_helper(5)
+		fill_sve_helper(6)
+		fill_sve_helper(7)
+		fill_sve_helper(8)
+		fill_sve_helper(9)
+		fill_sve_helper(10)
+		fill_sve_helper(11)
+		fill_sve_helper(12)
+		fill_sve_helper(13)
+		fill_sve_helper(14)
+		fill_sve_helper(15)
+		fill_sve_helper(16)
+		fill_sve_helper(17)
+		fill_sve_helper(18)
+		fill_sve_helper(19)
+		fill_sve_helper(20)
+		fill_sve_helper(21)
+		fill_sve_helper(22)
+		fill_sve_helper(23)
+		fill_sve_helper(24)
+		fill_sve_helper(25)
+		fill_sve_helper(26)
+		fill_sve_helper(27)
+		fill_sve_helper(28)
+		fill_sve_helper(29)
+		fill_sve_helper(30)
+		fill_sve_helper(31)
+		".arch_extension nosve\n"
+		: : "r" (v));
+}
+
+void sve_read_vector_regs(sve_vector_t v[SVE_NUM_VECTORS])
+{
+	assert(is_armv8_2_sve_present());
+
+	__asm__ volatile(
+		".arch_extension sve\n"
+		read_sve_helper(0)
+		read_sve_helper(1)
+		read_sve_helper(2)
+		read_sve_helper(3)
+		read_sve_helper(4)
+		read_sve_helper(5)
+		read_sve_helper(6)
+		read_sve_helper(7)
+		read_sve_helper(8)
+		read_sve_helper(9)
+		read_sve_helper(10)
+		read_sve_helper(11)
+		read_sve_helper(12)
+		read_sve_helper(13)
+		read_sve_helper(14)
+		read_sve_helper(15)
+		read_sve_helper(16)
+		read_sve_helper(17)
+		read_sve_helper(18)
+		read_sve_helper(19)
+		read_sve_helper(20)
+		read_sve_helper(21)
+		read_sve_helper(22)
+		read_sve_helper(23)
+		read_sve_helper(24)
+		read_sve_helper(25)
+		read_sve_helper(26)
+		read_sve_helper(27)
+		read_sve_helper(28)
+		read_sve_helper(29)
+		read_sve_helper(30)
+		read_sve_helper(31)
+		".arch_extension nosve\n"
+		: : "r" (v));
+}

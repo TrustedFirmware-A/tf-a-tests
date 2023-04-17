@@ -12,6 +12,7 @@
 #include <irq.h>
 #include <drivers/arm/arm_gic.h>
 #include <drivers/arm/gic_v3.h>
+#include <pauth.h>
 #include <test_helpers.h>
 
 #include <host_realm_helper.h>
@@ -57,6 +58,97 @@ test_result_t host_test_realm_create_enter(void)
 
 	return host_cmp_result();
 }
+
+/*
+ * @Test_Aim@ Test PAuth in realm
+ */
+test_result_t host_realm_enable_pauth(void)
+{
+#if ENABLE_PAUTH == 0
+	return TEST_RESULT_SKIPPED;
+#else
+	bool ret1, ret2;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	pauth_test_lib_fill_regs_and_template();
+	if (!host_create_realm_payload((u_register_t)REALM_IMAGE_BASE,
+				(u_register_t)PAGE_POOL_BASE,
+				(u_register_t)(PAGE_POOL_MAX_SIZE +
+					NS_REALM_SHARED_MEM_SIZE),
+				(u_register_t)PAGE_POOL_MAX_SIZE,
+				0UL)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!host_create_shared_mem(NS_REALM_SHARED_MEM_BASE,
+				NS_REALM_SHARED_MEM_SIZE)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	ret1 = host_enter_realm_execute(REALM_PAUTH_SET_CMD, NULL, RMI_EXIT_HOST_CALL);
+
+	if (ret1) {
+		/* Re-enter Realm to compare PAuth registers. */
+		ret1 = host_enter_realm_execute(REALM_PAUTH_CHECK_CMD, NULL, RMI_EXIT_HOST_CALL);
+	}
+
+	ret2 = host_destroy_realm();
+
+	if (!ret1) {
+		ERROR("%s(): enter=%d destroy=%d\n",
+				__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Check if PAuth keys are preserved. */
+	if (!pauth_test_lib_compare_template()) {
+		ERROR("%s(): NS PAuth keys not preserved\n",
+				__func__);
+		return TEST_RESULT_FAIL;
+	}
+
+	return host_cmp_result();
+#endif
+}
+
+/*
+ * @Test_Aim@ Test PAuth fault in Realm
+ */
+test_result_t host_realm_pauth_fault(void)
+{
+#if ENABLE_PAUTH == 0
+	return TEST_RESULT_SKIPPED;
+#else
+	bool ret1, ret2;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+	if (!host_create_realm_payload((u_register_t)REALM_IMAGE_BASE,
+				(u_register_t)PAGE_POOL_BASE,
+				(u_register_t)(PAGE_POOL_MAX_SIZE +
+					NS_REALM_SHARED_MEM_SIZE),
+				(u_register_t)PAGE_POOL_MAX_SIZE,
+				0UL)) {
+		return TEST_RESULT_FAIL;
+	}
+	if (!host_create_shared_mem(NS_REALM_SHARED_MEM_BASE,
+				NS_REALM_SHARED_MEM_SIZE)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	ret1 = host_enter_realm_execute(REALM_PAUTH_FAULT, NULL, RMI_EXIT_HOST_CALL);
+	ret2 = host_destroy_realm();
+
+	if (!ret1) {
+		ERROR("%s(): enter=%d destroy=%d\n",
+				__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return host_cmp_result();
+#endif
+}
+
 /*
  * This function is called on REC exit due to IRQ.
  * By checking Realm PMU state in RecExit object this finction

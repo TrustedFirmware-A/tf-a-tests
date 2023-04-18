@@ -251,7 +251,11 @@
 #define RMI_DESTROYED			1U
 #define RMI_ASSIGNED			2U
 #define RMI_TABLE			3U
-#define RMI_VALID_NS			4U
+
+/* The RmmRipas enumeration representing realm IPA state */
+#define RMI_EMPTY			0U
+#define RMI_RAM				1U
+#define RMI_UNDEFINED			2U
 
 #define RMI_FEATURE_REGISTER_0_S2SZ_SHIFT		0UL
 #define RMI_FEATURE_REGISTER_0_S2SZ_WIDTH		8UL
@@ -463,7 +467,8 @@ struct rmi_rec_run {
 struct rtt_entry {
 	uint64_t walk_level;
 	uint64_t out_addr;
-	int state;
+	unsigned int state;
+	unsigned int ripas;
 };
 
 enum realm_state {

@@ -240,6 +240,7 @@ static u_register_t host_rmi_rtt_readentry(u_register_t rd,
 	rtt->walk_level = rets.ret1;
 	rtt->state = rets.ret2 & 0xFF;
 	rtt->out_addr = rets.ret3;
+	rtt->ripas = rets.ret4 & 0xFF;
 	return rets.ret0;
 }
 
@@ -310,6 +311,7 @@ static u_register_t host_realm_fold_rtt(u_register_t rd, u_register_t addr,
 	u_register_t ret;
 
 	ret = host_rmi_rtt_readentry(rd, addr, level, &rtt);
+
 	if (ret != RMI_SUCCESS) {
 		ERROR("%s() failed, level=0x%lx addr=0x%lx ret=0x%lx\n",
 			"host_rmi_rtt_readentry", level, addr, ret);
@@ -579,10 +581,11 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 						   u_register_t start,
 						   u_register_t end)
 {
-	u_register_t rd = realm->rd, ret;
+	u_register_t rd = realm->rd;
 	u_register_t map_size = host_rtt_level_mapsize(level);
 	u_register_t map_addr, next_addr, rtt_out_addr, end_addr;
 	struct rtt_entry rtt;
+	u_register_t ret;
 
 	for (map_addr = start; map_addr < end; map_addr = next_addr) {
 		next_addr = ALIGN(map_addr + 1U, map_size);
@@ -598,9 +601,25 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 
 		switch (rtt.state) {
 		case RMI_ASSIGNED:
-			host_realm_destroy_undelegate_range(realm, map_addr,
-							    rtt_out_addr,
-							    map_size);
+			if (rtt.ripas == RMI_UNDEFINED) {
+				ret = host_rmi_rtt_unmap_unprotected(
+								rd,
+								map_addr,
+								level,
+								rtt_out_addr);
+				if (ret != RMI_SUCCESS) {
+					ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
+						"host_rmi_rtt_unmap_unprotected",
+						map_addr, ret);
+					return REALM_ERROR;
+				}
+			} else {
+				host_realm_destroy_undelegate_range(
+								realm,
+								map_addr,
+								rtt_out_addr,
+								map_size);
+			}
 			break;
 		case RMI_UNASSIGNED:
 		case RMI_DESTROYED:
@@ -622,16 +641,6 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 			if (ret != RMI_SUCCESS) {
 				ERROR("%s() failed, map_addr=0x%lx ret=0x%lx\n",
 					"host_realm_destroy_free_rtt",
-					map_addr, ret);
-				return REALM_ERROR;
-			}
-			break;
-		case RMI_VALID_NS:
-			ret = host_rmi_rtt_unmap_unprotected(rd, map_addr, level,
-								rtt_out_addr);
-			if (ret != RMI_SUCCESS) {
-				ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
-					"host_rmi_rtt_unmap_unprotected",
 					map_addr, ret);
 				return REALM_ERROR;
 			}

@@ -1,29 +1,45 @@
 /*
- * Copyright (c) 2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "cactus_message_loop.h"
 #include "cactus_test_cmds.h"
+#include <fpu.h>
 #include "spm_common.h"
 
 /*
+ * Note Test must exercise FILL and COMPARE command in
+ * sequence and on same CPU.
+ */
+static fpu_reg_state_t g_fpu_temp;
+static unsigned int core_pos;
+/*
  * Fill SIMD vectors from secure world side with a unique value.
- * 0x22 is just a dummy value to be distinguished from the value
- * in the normal world.
  */
 CACTUS_CMD_HANDLER(req_simd_fill, CACTUS_REQ_SIMD_FILL_CMD)
 {
-	simd_vector_t simd_vectors[SIMD_NUM_VECTORS];
-
-	for (unsigned int num = 0U; num < SIMD_NUM_VECTORS; num++) {
-		memset(simd_vectors[num], 0x22 * num, sizeof(simd_vector_t));
-	}
-
-	fill_simd_vector_regs(simd_vectors);
-
+	core_pos = platform_get_core_pos(read_mpidr_el1());
+	fpu_state_fill_regs_and_template(&g_fpu_temp);
 	return cactus_response(ffa_dir_msg_dest(*args),
 			       ffa_dir_msg_source(*args),
 			       CACTUS_SUCCESS);
+}
+
+/*
+ * compare FPU state(SIMD vectors, FPCR, FPSR) from secure world side with the previous
+ * SIMD_SECURE_VALUE unique value.
+ */
+CACTUS_CMD_HANDLER(req_simd_compare, CACTUS_CMP_SIMD_VALUE_CMD)
+{
+	bool test_succeed = false;
+
+	unsigned int core_pos1 = platform_get_core_pos(read_mpidr_el1());
+	if (core_pos1 == core_pos) {
+		test_succeed = fpu_state_compare_template(&g_fpu_temp);
+	}
+	return cactus_response(ffa_dir_msg_dest(*args),
+			ffa_dir_msg_source(*args),
+			test_succeed ? CACTUS_SUCCESS : CACTUS_ERROR);
 }

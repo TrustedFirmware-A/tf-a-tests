@@ -49,5 +49,7 @@
 	  function="host_sve_realm_check_config_register" />
 	  <testcase name="Intermittently switch to Realm while doing NS SVE ops"
 	  function="host_sve_realm_check_vectors_operations" />
+	  <testcase name="Check if RMM does not leak Realm SVE vector registers"
+	  function="host_sve_realm_check_vectors_leaked" />
   </testsuite>
 </testsuites>

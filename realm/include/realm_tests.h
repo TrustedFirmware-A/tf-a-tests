@@ -16,6 +16,7 @@ bool test_realm_sve_rdvl(void);
 bool test_realm_sve_read_id_registers(void);
 bool test_realm_sve_probe_vl(void);
 bool test_realm_sve_ops(void);
+bool test_realm_sve_fill_regs(void);
 
 #endif /* REALM_TESTS_H */
 

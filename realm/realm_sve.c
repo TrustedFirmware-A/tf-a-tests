@@ -20,6 +20,8 @@
 static int rl_sve_op_1[RL_SVE_OP_ARRAYSIZE];
 static int rl_sve_op_2[RL_SVE_OP_ARRAYSIZE];
 
+static sve_vector_t rl_sve_vectors_write[SVE_NUM_VECTORS] __aligned(16);
+
 /* Returns the maximum supported VL. This test is called only by sve Realm */
 bool test_realm_sve_rdvl(void)
 {
@@ -106,6 +108,23 @@ bool test_realm_sve_ops(void)
 			return false;
 		}
 	}
+
+	return true;
+}
+
+/* Fill SVE Z registers with known pattern */
+bool test_realm_sve_fill_regs(void)
+{
+	uint32_t vl;
+
+	assert(is_armv8_2_sve_present());
+
+	/* Config Realm with max SVE length */
+	sve_config_vq(SVE_VQ_ARCH_MAX);
+	vl = sve_vector_length_get();
+
+	memset((void *)&rl_sve_vectors_write, 0xcd, vl * SVE_NUM_VECTORS);
+	sve_fill_vector_regs(rl_sve_vectors_write);
 
 	return true;
 }

@@ -22,6 +22,9 @@
 static int ns_sve_op_1[NS_SVE_OP_ARRAYSIZE];
 static int ns_sve_op_2[NS_SVE_OP_ARRAYSIZE];
 
+static sve_vector_t ns_sve_vectors_write[SVE_NUM_VECTORS] __aligned(16);
+static sve_vector_t ns_sve_vectors_read[SVE_NUM_VECTORS] __aligned(16);
+
 /* Skip test if SVE is not supported in H/W or in RMI features */
 #define CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(_reg0)				\
 	do {									\
@@ -453,6 +456,92 @@ test_result_t host_sve_realm_check_vectors_operations(void)
 			ERROR("SVE op failed at idx: %u, expected: 0x%x "
 			      "received: 0x%x\n", i,
 			      (val - i - SVE_TEST_ITERATIONS), ns_sve_op_1[i]);
+			rc = TEST_RESULT_FAIL;
+		}
+	}
+
+rm_realm:
+	if (!host_destroy_realm()) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return rc;
+}
+
+/*
+ * Check if RMM leaks Realm SVE registers.
+ * This test is skipped if the supported max VQ is 128 bits, as we won't be able
+ * to run NS and Realm context with lower and higher VQ respectively.
+ * This test does the below steps:
+ *
+ * 1. Set NS SVE VQ to max and write known pattern
+ * 2. NS programs ZCR_EL2 with VQ as 0 (128 bits).
+ * 3. Create Realm with max VQ (higher than NS SVE VQ).
+ * 4. Call Realm to fill in Z registers
+ * 5. Once Realm returns, NS sets ZCR_EL2 with max VQ and reads the Z registers
+ * 6. The upper bits of Z registers must be either 0 or the old values filled by
+ *    NS world at step 1.
+ */
+test_result_t host_sve_realm_check_vectors_leaked(void)
+{
+	u_register_t rmi_feat_reg0;
+	uint8_t *regs_base_wr, *regs_base_rd;
+	test_result_t rc;
+	bool realm_rc;
+	uint8_t sve_vq;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(rmi_feat_reg0);
+
+	sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
+
+	/* Skip test if the supported max VQ is 128 bits */
+	if (sve_vq == SVE_VQ_ARCH_MIN) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/* 1. Set NS SVE VQ to max and write known pattern */
+	sve_config_vq(sve_vq);
+	(void)memset((void *)&ns_sve_vectors_write, 0xaa,
+		     SVE_VQ_TO_BYTES(sve_vq) * SVE_NUM_VECTORS);
+	sve_fill_vector_regs(ns_sve_vectors_write);
+
+	/* 2. NS programs ZCR_EL2 with VQ as 0  */
+	sve_config_vq(SVE_VQ_ARCH_MIN);
+
+	/* 3. Create Realm with max VQ (higher than NS SVE VQ). */
+	rc = host_create_sve_realm_payload(true, sve_vq);
+	if (rc != TEST_RESULT_SUCCESS) {
+		return rc;
+	}
+
+	/* 4. Call Realm to fill in Z registers */
+	realm_rc = host_enter_realm_execute(REALM_SVE_FILL_REGS, NULL,
+					    RMI_EXIT_HOST_CALL);
+	if (!realm_rc) {
+		rc = TEST_RESULT_FAIL;
+		goto rm_realm;
+	}
+
+	/* 5. NS sets ZCR_EL2 with max VQ and reads the Z registers */
+	sve_config_vq(sve_vq);
+	sve_read_vector_regs(ns_sve_vectors_read);
+
+	/*
+	 * 6. The upper bits in Z vectors (sve_vq - SVE_VQ_ARCH_MIN) must
+	 *    be either 0 or the old values filled by NS world.
+	 *    TODO: check if upper bits are zero
+	 */
+	regs_base_wr = (uint8_t *)&ns_sve_vectors_write;
+	regs_base_rd = (uint8_t *)&ns_sve_vectors_read;
+
+	rc = TEST_RESULT_SUCCESS;
+	for (int i = 0U; i < SVE_NUM_VECTORS; i++) {
+		if (memcmp(regs_base_wr + (i * SVE_VQ_TO_BYTES(sve_vq)),
+			   regs_base_rd + (i * SVE_VQ_TO_BYTES(sve_vq)),
+			   SVE_VQ_TO_BYTES(sve_vq)) != 0) {
+			ERROR("SVE Z%d mismatch\n", i);
 			rc = TEST_RESULT_FAIL;
 		}
 	}

@@ -20,6 +20,7 @@
 #define SVE_VECTOR_LEN_BYTES		256
 #define SVE_NUM_VECTORS			32
 
+#define SVE_VQ_ARCH_MIN			(0U)
 #define SVE_VQ_ARCH_MAX			((1 << ZCR_EL2_SVE_VL_WIDTH) - 1)
 
 /* convert SVE VL in bytes to VQ */
@@ -27,6 +28,9 @@
 
 /* convert SVE VQ to bits */
 #define SVE_VQ_TO_BITS(vq)		(((vq) + 1U) << 7U)
+
+/* convert SVE VQ to bytes */
+#define SVE_VQ_TO_BYTES(vq)		(SVE_VQ_TO_BITS(vq) / 8)
 
 /* get a random SVE VQ b/w 0 to SVE_VQ_ARCH_MAX */
 #define SVE_GET_RANDOM_VQ		(rand() % (SVE_VQ_ARCH_MAX + 1))

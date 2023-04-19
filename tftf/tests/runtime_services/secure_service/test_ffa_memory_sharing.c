@@ -81,6 +81,8 @@ static test_result_t test_memory_send_sp(uint32_t mem_func)
 	const uint32_t constituents_count = sizeof(constituents) /
 			sizeof(struct ffa_memory_region_constituent);
 
+	VERBOSE("TFTF - Address: %p\n", constituents[0].address);
+
 	handle = memory_init_and_send((struct ffa_memory_region *)mb.send,
 					MAILBOX_SIZE, SENDER, RECEIVER,
 					constituents, constituents_count,
@@ -90,8 +92,7 @@ static test_result_t test_memory_send_sp(uint32_t mem_func)
 		return TEST_RESULT_FAIL;
 	}
 
-	VERBOSE("TFTF - Handle: %llx\nTFTF - Address: %p\n",
-					handle, constituents[0].address);
+	VERBOSE("TFTF - Handle: %llx\n", handle);
 
 	ptr = (uint32_t *)constituents[0].address;
 

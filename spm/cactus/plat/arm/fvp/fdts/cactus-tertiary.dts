@@ -48,7 +48,7 @@
 			description = "NS share memory";
 			pages-count = <1>;
 			base-address = <0x00008800 0x80001000>;
-			attributes = <0x83>; /* NS / read-write */
+			attributes = <0xb>; /* NS / read-write */
 		};
 	};
 };

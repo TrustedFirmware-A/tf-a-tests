@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+ifeq (${ARCH},aarch64)
 TFTF_INCLUDES +=							\
 	-Iinclude/runtime_services/host_realm_managment
 
@@ -33,3 +34,9 @@ TESTS_SOURCES	+=							\
 	$(addprefix lib/heap/,						\
 		page_alloc.c						\
 	)
+
+TESTS_SOURCES	+=							\
+	$(addprefix lib/extensions/fpu/,				\
+		fpu.c							\
+	)
+endif

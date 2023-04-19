@@ -18,6 +18,7 @@
 
 #ifndef __ASSEMBLER__
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef struct fpu_reg_state {

@@ -8,13 +8,18 @@
 
 	.macro service_call _conduit
 	/*
-	 * Save the address of the ffa_value structure on the stack.
-	 *
-	 * Although x0 contains an 8-byte value, we are allocating 16 bytes
+	 * Use a callee saved register to point to ffa_value structure after
+	 * returning from the conduit.
+	 * Although x19 contains an 8-byte value, we are allocating 16 bytes
 	 * on the stack to respect the 16-byte stack-alignment.
 	 */
-	str	x0, [sp, #-16]!
+	str	x19, [sp, #-16]!
 
+	/*
+	 * Save pointed to ffa_value structure into x19, which is a callee saved
+	 * register.
+	 */
+	mov	x19, x0
 	/* Load the argument values into the appropriate registers. */
 	ldp	x6, x7, [x0, #48]
 	ldp	x4, x5, [x0, #32]
@@ -24,20 +29,19 @@
 	\_conduit	#0
 
 	/*
-	 * Pop the ffa_value structure address from the stack into a
-	 * caller-saved register.
+	 * The return values are stored in x0-x17, put them in the ffa_value
+	 * return structure. x19 points to the ffa_value structure.
 	 */
-	ldr	x9, [sp], #16
-
-	/*
-	 * The return values are stored in x0-x7, put them in the ffa_value
-	 * return structure.
-	 */
-	stp	x0, x1, [x9, #0]
-	stp	x2, x3, [x9, #16]
-	stp	x4, x5, [x9, #32]
-	stp	x6, x7, [x9, #48]
-
+	stp	x0, x1, [x19, #0]
+	stp	x2, x3, [x19, #16]
+	stp	x4, x5, [x19, #32]
+	stp	x6, x7, [x19, #48]
+	stp	x8, x9, [x19, #64]
+	stp	x10, x11, [x19, #80]
+	stp	x12, x13, [x19, #96]
+	stp	x14, x15, [x19, #112]
+	stp	x16, x17, [x19, #128]
+	ldr	x19, [sp], #16
 	.endm
 
 .globl ffa_svc

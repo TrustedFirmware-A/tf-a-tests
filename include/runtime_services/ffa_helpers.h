@@ -22,7 +22,7 @@ typedef uint64_t ffa_memory_handle_t;
 typedef uint8_t ffa_memory_receiver_flags_t;
 
 struct ffa_uuid {
-	const uint32_t uuid[4];
+	uint32_t uuid[4];
 };
 
 /** Length in bytes of the name in boot information descriptor. */
@@ -188,6 +188,16 @@ struct ffa_value {
 	u_register_t arg5;
 	u_register_t arg6;
 	u_register_t arg7;
+	u_register_t arg8;
+	u_register_t arg9;
+	u_register_t arg10;
+	u_register_t arg11;
+	u_register_t arg12;
+	u_register_t arg13;
+	u_register_t arg14;
+	u_register_t arg15;
+	u_register_t arg16;
+	u_register_t arg17;
 };
 
 /* Function to make an SMC or SVC service call depending on the exception
@@ -235,6 +245,47 @@ static inline uint32_t ffa_partition_info_desc_size(struct ffa_value val)
 static inline uint32_t ffa_feature_intid(struct ffa_value val)
 {
 	return (uint32_t)val.arg2;
+}
+
+static inline uint16_t ffa_partition_info_regs_get_last_idx(
+	struct ffa_value args)
+{
+	return args.arg2 & 0xFFFF;
+}
+
+static inline uint16_t ffa_partition_info_regs_get_curr_idx(
+	struct ffa_value args)
+{
+	return (args.arg2 >> 16) & 0xFFFF;
+}
+
+static inline uint16_t ffa_partition_info_regs_get_tag(struct ffa_value args)
+{
+	return (args.arg2 >> 32) & 0xFFFF;
+}
+
+static inline uint16_t ffa_partition_info_regs_get_desc_size(
+	struct ffa_value args)
+{
+	return (args.arg2 >> 48);
+}
+
+static inline uint32_t ffa_partition_info_regs_partition_count(
+		struct ffa_value args)
+{
+	return ffa_partition_info_regs_get_last_idx(args) + 1;
+}
+
+static inline uint32_t ffa_partition_info_regs_entry_count(
+		struct ffa_value args, uint16_t start_idx)
+{
+	return (ffa_partition_info_regs_get_curr_idx(args) - start_idx + 1);
+}
+
+static inline uint16_t ffa_partition_info_regs_entry_size(
+		struct ffa_value args)
+{
+	return (args.arg2 >> 48) & 0xFFFFU;
 }
 
 typedef uint64_t ffa_notification_bitmap_t;
@@ -703,7 +754,9 @@ struct ffa_value ffa_notification_get(ffa_id_t receiver, uint32_t vcpu_id,
 struct ffa_value ffa_notification_info_get(void);
 
 struct ffa_value ffa_console_log(const char* message, size_t char_count);
-
+struct ffa_value ffa_partition_info_get_regs(const struct ffa_uuid uuid,
+					     const uint16_t start_index,
+					     const uint16_t tag);
 #endif /* __ASSEMBLY__ */
 
 #endif /* FFA_HELPERS_H */

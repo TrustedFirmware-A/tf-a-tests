@@ -390,6 +390,149 @@ static bool ffa_uuid_equal(const struct ffa_uuid uuid1,
 	       (uuid2.uuid[3] == uuid2.uuid[3]);
 }
 
+static bool ffa_partition_info_regs_get_part_info(
+	struct ffa_value *args, uint8_t idx,
+	struct ffa_partition_info *partition_info)
+{
+	/*
+	 * The list of pointers to args in return value: arg0/func encodes ff-a
+	 * function, arg1 is reserved, arg2 encodes indices. arg3 and greater
+	 * values reflect partition properties.
+	 */
+	uint64_t *arg_ptrs = (uint64_t *)args + ((idx * 3) + 3);
+	uint64_t info, uuid_lo, uuid_high;
+
+	/*
+	 * Each partition information is encoded in 3 registers, so there can be
+	 * a maximum of 5 entries.
+	 */
+	if (idx >= 5 || !partition_info) {
+		return false;
+	}
+
+	info = *arg_ptrs;
+
+	arg_ptrs++;
+	uuid_lo = *arg_ptrs;
+
+	arg_ptrs++;
+	uuid_high = *arg_ptrs;
+
+	/*
+	 * As defined in FF-A 1.2 ALP0, 14.9 FFA_PARTITION_INFO_GET_REGS.
+	 */
+	partition_info->id = info & 0xFFFFU;
+	partition_info->exec_context = (info >> 16) & 0xFFFFU;
+	partition_info->properties = (info >> 32);
+	partition_info->uuid.uuid[0] = uuid_lo & 0xFFFFFFFFU;
+	partition_info->uuid.uuid[1] = (uuid_lo >> 32) & 0xFFFFFFFFU;
+	partition_info->uuid.uuid[2] = uuid_high & 0xFFFFFFFFU;
+	partition_info->uuid.uuid[3] = (uuid_high >> 32) & 0xFFFFFFFFU;
+
+	return true;
+}
+
+static bool ffa_compare_partition_info(
+		const struct ffa_uuid uuid,
+		const struct ffa_partition_info *info,
+		const struct ffa_partition_info *expected)
+{
+	bool result = true;
+	/*
+	 * If a UUID is specified then the UUID returned in the
+	 * partition info descriptor MBZ.
+	 */
+	struct ffa_uuid expected_uuid =
+		ffa_uuid_equal(uuid, NULL_UUID) ? expected->uuid : NULL_UUID;
+
+	if (info->id != expected->id) {
+		ERROR("Wrong ID. Expected %x, got %x\n", expected->id, info->id);
+		result = false;
+	}
+
+	if (info->exec_context != expected->exec_context) {
+		ERROR("Wrong context. Expected %d, got %d\n",
+		      expected->exec_context,
+		      info->exec_context);
+		result = false;
+	}
+	if (info->properties != expected->properties) {
+		ERROR("Wrong properties. Expected %d, got %d\n",
+		      expected->properties,
+		      info->properties);
+		result = false;
+	}
+
+	if (!ffa_uuid_equal(info->uuid, expected_uuid)) {
+		ERROR("Wrong UUID. Expected %x %x %x %x, "
+		      "got %x %x %x %x\n",
+		      expected_uuid.uuid[0],
+		      expected_uuid.uuid[1],
+		      expected_uuid.uuid[2],
+		      expected_uuid.uuid[3],
+		      info->uuid.uuid[0],
+		      info->uuid.uuid[1],
+		      info->uuid.uuid[2],
+		      info->uuid.uuid[3]);
+		result = false;
+	}
+
+	return result;
+}
+
+/**
+ * Sends a ffa_partition_info_get_regs request and returns the information
+ * returned in registers in the output parameters. Validation against
+ * expected results shall be done by the caller outside the function.
+ */
+bool ffa_partition_info_regs_helper(const struct ffa_uuid uuid,
+		       const struct ffa_partition_info *expected,
+		       const uint16_t expected_size)
+{
+	/*
+	 * TODO: For now, support only one invocation. Can be enhanced easily
+	 * to extend to arbitrary number of partitions.
+	 */
+	if (expected_size > 5) {
+		ERROR("%s only supports information received in"
+			" one invocation of the ABI (5 partitions)\n",
+			__func__);
+		return false;
+	}
+
+	struct ffa_value ret = ffa_partition_info_get_regs(uuid, 0, 0);
+
+	if (ffa_func_id(ret) != FFA_SUCCESS_SMC64) {
+		return false;
+	}
+
+	if (ffa_partition_info_regs_partition_count(ret) !=
+	    expected_size) {
+		ERROR("Unexpected number of partitions %d (expected %d)\n",
+		      ffa_partition_info_regs_partition_count(ret),
+		      expected_size);
+		return false;
+	}
+
+	if (ffa_partition_info_regs_entry_size(ret) !=
+	    sizeof(struct ffa_partition_info)) {
+		ERROR("Unexpected partition info descriptor size %d\n",
+		      ffa_partition_info_regs_entry_size(ret));
+		return false;
+	}
+
+	for (unsigned int i = 0U; i < expected_size; i++) {
+		struct ffa_partition_info info = { 0 };
+
+		ffa_partition_info_regs_get_part_info(&ret, i, &info);
+		if (!ffa_compare_partition_info(uuid, &info, &expected[i])) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /**
  * Sends a ffa_partition_info request and checks the response against the
  * target.
@@ -418,47 +561,8 @@ bool ffa_partition_info_helper(struct mailbox_buffers *mb,
 			(const struct ffa_partition_info *)(mb->recv);
 
 		for (unsigned int i = 0U; i < expected_size; i++) {
-			/*
-			 * If a UUID is specified then the UUID returned in the
-			 * partition info descriptor MBZ.
-			 */
-			struct ffa_uuid expected_uuid =
-				ffa_uuid_equal(uuid, NULL_UUID) ?
-				expected[i].uuid :
-				NULL_UUID;
-
-			if (info[i].id != expected[i].id) {
-				ERROR("Wrong ID. Expected %x, got %x\n",
-				      expected[i].id,
-				      info[i].id);
+			if (!ffa_compare_partition_info(uuid, &info[i], &expected[i]))
 				result = false;
-			}
-			if (info[i].exec_context != expected[i].exec_context) {
-				ERROR("Wrong context. Expected %d, got %d\n",
-				      expected[i].exec_context,
-				      info[i].exec_context);
-				result = false;
-			}
-			if (info[i].properties != expected[i].properties) {
-				ERROR("Wrong properties. Expected %d, got %d\n",
-				      expected[i].properties,
-				      info[i].properties);
-				result = false;
-			}
-
-			if (!ffa_uuid_equal(info[i].uuid, expected_uuid)) {
-				ERROR("Wrong UUID. Expected %x %x %x %x, "
-				      "got %x %x %x %x\n",
-				      expected_uuid.uuid[0],
-				      expected_uuid.uuid[1],
-				      expected_uuid.uuid[2],
-				      expected_uuid.uuid[3],
-				      info[i].uuid.uuid[0],
-				      info[i].uuid.uuid[1],
-				      info[i].uuid.uuid[2],
-				      info[i].uuid.uuid[3]);
-				result = false;
-			}
 		}
 	}
 

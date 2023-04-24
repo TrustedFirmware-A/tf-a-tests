@@ -265,10 +265,14 @@ static u_register_t host_rmi_rtt_readentry(u_register_t rd,
 static inline u_register_t host_rmi_rtt_unmap_unprotected(u_register_t rd,
 							  u_register_t map_addr,
 							  u_register_t level,
-							  u_register_t ns_pa)
+							  u_register_t *top)
 {
-	return host_rmi_handler(&(smc_args) {RMI_RTT_UNMAP_UNPROTECTED,
-					rd, map_addr, level, ns_pa}, 5U).ret0;
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {RMI_RTT_UNMAP_UNPROTECTED,
+					rd, map_addr, level}, 4U);
+	*top = rets.ret1;
+	return rets.ret0;
 }
 
 static inline u_register_t host_rtt_level_mapsize(u_register_t level)
@@ -605,7 +609,7 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 {
 	u_register_t rd = realm->rd;
 	u_register_t map_size = host_rtt_level_mapsize(level);
-	u_register_t map_addr, next_addr, rtt_out_addr, end_addr;
+	u_register_t map_addr, next_addr, rtt_out_addr, end_addr, top;
 	struct rtt_entry rtt;
 	u_register_t ret;
 
@@ -628,7 +632,7 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 								rd,
 								map_addr,
 								level,
-								rtt_out_addr);
+								&top);
 				if (ret != RMI_SUCCESS) {
 					ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
 						"host_rmi_rtt_unmap_unprotected",

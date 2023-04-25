@@ -25,8 +25,6 @@ static struct realm realm;
 static bool realm_payload_created;
 static bool shared_mem_created;
 static bool realm_payload_mmaped;
-static u_register_t exit_reason = RMI_EXIT_INVALID;
-static unsigned int host_call_result = TEST_RESULT_FAIL;
 static volatile bool timer_enabled;
 
 /* From the TFTF_BASE offset, memory used by TFTF + Shared + Realm + POOL should
@@ -310,10 +308,10 @@ bool host_destroy_realm(void)
 	return true;
 }
 
-bool host_enter_realm_execute(uint8_t cmd, struct realm **realm_ptr)
+bool host_enter_realm_execute(uint8_t cmd, struct realm **realm_ptr, int test_exit_reason)
 {
-	exit_reason = RMI_EXIT_INVALID;
-	host_call_result = TEST_RESULT_FAIL;
+	u_register_t exit_reason = RMI_EXIT_INVALID;
+	unsigned int host_call_result = TEST_RESULT_FAIL;
 
 	realm_shared_data_set_realm_cmd(cmd);
 	if (!host_enter_realm(&exit_reason, &host_call_result)) {
@@ -324,11 +322,12 @@ bool host_enter_realm_execute(uint8_t cmd, struct realm **realm_ptr)
 		*realm_ptr = &realm;
 	}
 
-	if (((exit_reason == RMI_EXIT_IRQ) &&
-	     (cmd == REALM_PMU_INTERRUPT)) ||
-	    ((exit_reason == RMI_EXIT_HOST_CALL) &&
-	     (host_call_result == TEST_RESULT_SUCCESS))) {
+	if ((exit_reason == RMI_EXIT_HOST_CALL) && (host_call_result == TEST_RESULT_SUCCESS)) {
 		return true;
+	}
+
+	if (test_exit_reason == exit_reason) {
+		 return true;
 	}
 
 	if (exit_reason <= RMI_EXIT_SERROR) {

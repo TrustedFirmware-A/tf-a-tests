@@ -19,7 +19,7 @@ bool host_create_shared_mem(
 		u_register_t ns_shared_mem_adr,
 		u_register_t ns_shared_mem_size);
 bool host_destroy_realm(void);
-bool host_enter_realm_execute(uint8_t cmd, struct realm **realm_ptr);
+bool host_enter_realm_execute(uint8_t cmd, struct realm **realm_ptr, int test_exit_reason);
 test_result_t host_cmp_result(void);
 
 #endif /* HOST_REALM_HELPER_H */

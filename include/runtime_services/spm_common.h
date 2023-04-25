@@ -154,5 +154,7 @@ bool ffa_partition_info_helper(struct mailbox_buffers *mb,
 			const struct ffa_uuid uuid,
 			const struct ffa_partition_info *expected,
 			const uint16_t expected_size);
+bool enable_trusted_wdog_interrupt(ffa_id_t source, ffa_id_t dest);
+bool disable_trusted_wdog_interrupt(ffa_id_t source, ffa_id_t dest);
 
 #endif /* SPM_COMMON_H */

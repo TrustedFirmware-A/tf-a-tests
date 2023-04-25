@@ -197,11 +197,17 @@ u_register_t host_rmi_features(u_register_t index, u_register_t *features)
 }
 
 static inline u_register_t host_rmi_rtt_init_ripas(u_register_t rd,
-						   u_register_t map_addr,
-						   u_register_t level)
+						   u_register_t start,
+						   u_register_t end,
+						   u_register_t *top)
+
 {
-	return host_rmi_handler(&(smc_args) {RMI_RTT_INIT_RIPAS,
-					rd, map_addr, level}, 4U).ret0;
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {RMI_RTT_INIT_RIPAS,
+				rd, start, end}, 4U);
+	*top = rets.ret1;
+	return rets.ret0;
 }
 
 static inline u_register_t host_rmi_rtt_fold(u_register_t rd,
@@ -229,12 +235,16 @@ static inline u_register_t host_rmi_rec_aux_count(u_register_t rd,
 
 static inline u_register_t host_rmi_rtt_set_ripas(u_register_t rd,
 						  u_register_t rec,
-						  u_register_t map_addr,
-						  u_register_t level,
-						  u_register_t ripas)
+						  u_register_t start,
+						  u_register_t end,
+						  u_register_t *top)
 {
-	return host_rmi_handler(&(smc_args) {RMI_RTT_SET_RIPAS,
-				rd, rec, map_addr, level, ripas}, 6U).ret0;
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {RMI_RTT_SET_RIPAS,
+				rd, rec, start, end}, 5U);
+	*top = rets.ret1;
+	return rets.ret0;
 }
 
 static inline u_register_t host_rmi_rtt_mapunprotected(u_register_t rd,
@@ -371,6 +381,8 @@ static u_register_t host_realm_map_protected_data(bool unknown,
 	u_register_t size;
 	u_register_t phys = target_pa;
 	u_register_t map_addr = target_pa;
+	u_register_t end_addr = map_addr + map_size;
+	u_register_t top;
 
 	if (!IS_ALIGNED(map_addr, map_size)) {
 		return REALM_ERROR;
@@ -388,7 +400,7 @@ static u_register_t host_realm_map_protected_data(bool unknown,
 		return REALM_ERROR;
 	}
 
-	ret = host_rmi_rtt_init_ripas(rd, map_addr, map_level);
+	ret = host_rmi_rtt_init_ripas(rd, map_addr, end_addr, &top);
 	if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
 		ret = host_rmi_create_rtt_levels(realm, map_addr,
 						 RMI_RETURN_INDEX(ret),
@@ -398,7 +410,7 @@ static u_register_t host_realm_map_protected_data(bool unknown,
 				"host_rmi_create_rtt_levels", ret, __LINE__);
 			goto err;
 		}
-		ret = host_rmi_rtt_init_ripas(rd, map_addr, map_level);
+		ret = host_rmi_rtt_init_ripas(rd, map_addr, end_addr, &top);
 		if (ret != RMI_SUCCESS) {
 			ERROR("%s() failed, ret=0x%lx line=%u\n",
 				"host_rmi_rtt_init_ripas", ret, __LINE__);
@@ -855,10 +867,10 @@ u_register_t host_realm_init_ipa_state(struct realm *realm, u_register_t level,
 {
 	u_register_t rd = realm->rd, ret;
 	u_register_t map_size = host_rtt_level_mapsize(level);
+	u_register_t top;
 
 	while (start < end) {
-		ret = host_rmi_rtt_init_ripas(rd, start, level);
-
+		ret = host_rmi_rtt_init_ripas(rd, start, end, &top);
 		if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
 			int cur_level = RMI_RETURN_INDEX(ret);
 

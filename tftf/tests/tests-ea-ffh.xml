@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2023, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+  <testsuite name="Inject External aborts" description="Injected EA's gets handled in EL3">
+     <testcase name="Inject syncEA which gets handled in EL3" function="test_inject_syncEA" />
+     <testcase name="Inject Serror which gets handled in EL3" function="test_inject_serror" />
+  </testsuite>
+
+</testsuites>

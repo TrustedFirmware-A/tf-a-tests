@@ -4,4 +4,4 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-TESTS_SOURCES	+=	tftf/tests/misc_tests/test_inject_syncEA.c
+TESTS_SOURCES	+=	tftf/tests/misc_tests/test_ea_ffh.c

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,6 +13,7 @@
 #include <events.h>
 #include <plat_topology.h>
 #include <psci.h>
+#include <sme.h>
 #include <spm_common.h>
 #include <tftf_lib.h>
 #include <trusted_os.h>
@@ -337,6 +338,22 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 	do {									\
 		if (!get_feat_pmuv3_supported()) {				\
 			tftf_testcase_printf("FEAT_PMUv3 not supported\n");	\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)
+
+#define SKIP_TEST_IF_SME_NOT_SUPPORTED()					\
+	do {									\
+		if(!is_feat_sme_supported()) {					\
+			tftf_testcase_printf("FEAT_SME not supported\n");	\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)
+
+#define SKIP_TEST_IF_SME2_NOT_SUPPORTED()					\
+	do {									\
+		if(!is_feat_sme2_supported()) {					\
+			tftf_testcase_printf("FEAT_SME2 not supported\n");	\
 			return TEST_RESULT_SKIPPED;				\
 		}								\
 	} while (false)

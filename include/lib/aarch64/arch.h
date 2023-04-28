@@ -328,8 +328,11 @@
 #define MTE_IMPLEMENTED_EL0	ULL(1)	/* MTE is only implemented at EL0 */
 #define MTE_IMPLEMENTED_ELX	ULL(2)	/* MTE is implemented at all ELs */
 
-#define ID_AA64PFR1_EL1_SME_SHIFT	U(24)
-#define ID_AA64PFR1_EL1_SME_MASK	ULL(0xf)
+#define ID_AA64PFR1_EL1_SME_SHIFT		U(24)
+#define ID_AA64PFR1_EL1_SME_MASK		ULL(0xf)
+#define ID_AA64PFR1_EL1_SME_NOT_SUPPORTED	ULL(0x0)
+#define ID_AA64PFR1_EL1_SME_SUPPORTED		ULL(0x1)
+#define ID_AA64PFR1_EL1_SME2_SUPPORTED		ULL(0x2)
 
 /* ID_PFR1_EL1 definitions */
 #define ID_PFR1_VIRTEXT_SHIFT	U(12)
@@ -885,6 +888,7 @@
 /* SMCR_ELx definitions */
 #define SMCR_ELX_LEN_SHIFT		U(0)
 #define SMCR_ELX_LEN_MASK		U(0x1ff)
+#define SMCR_ELX_EZT0_BIT		(U(1) << 30)
 #define SMCR_ELX_FA64_BIT		(U(1) << 31)
 
 /*******************************************************************************

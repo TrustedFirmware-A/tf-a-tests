@@ -358,6 +358,33 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}								\
 	} while (false)
 
+#define SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP()				\
+	do {									\
+		u_register_t retrmm;						\
+										\
+		if (!get_armv9_2_feat_rme_support()) {				\
+			tftf_testcase_printf("FEAT_RME not supported\n");	\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+										\
+		host_rmi_init_cmp_result();					\
+		retrmm = host_rmi_version();					\
+										\
+		VERBOSE("RMM version is: %lu.%lu\n",				\
+			RMI_ABI_VERSION_GET_MAJOR(retrmm),			\
+			RMI_ABI_VERSION_GET_MINOR(retrmm));			\
+										\
+		/*								\
+		 * TODO: Remove this once SMC_RMM_REALM_CREATE is implemented	\
+		 * in TRP. For the moment skip the test if RMM is TRP, TRP	\
+		 * version is always 0.						\
+		 */								\
+		if (retrmm == 0U) {						\
+			tftf_testcase_printf("RMM is TRP\n");			\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)
+
 /* Helper macro to verify if system suspend API is supported */
 #define is_psci_sys_susp_supported()	\
 		(tftf_get_psci_feature_info(SMC_PSCI_SYSTEM_SUSPEND)		\

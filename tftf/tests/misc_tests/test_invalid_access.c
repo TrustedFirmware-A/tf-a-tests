@@ -230,25 +230,7 @@ static test_result_t memory_cannot_be_accessed_in_rl(u_register_t params)
 	test_result_t result = TEST_RESULT_FAIL;
 	static char rd[GRANULE_SIZE] __aligned(GRANULE_SIZE);
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
-
-	host_rmi_init_cmp_result();
-
-	retrmm = host_rmi_version();
-
-	VERBOSE("RMM version is: %lu.%lu\n",
-			RMI_ABI_VERSION_GET_MAJOR(retrmm),
-			RMI_ABI_VERSION_GET_MINOR(retrmm));
-
-	/*
-	 * TODO: Remove this once SMC_RMM_REALM_CREATE is implemented in TRP
-	 * For the moment skip the test if RMM is TRP, TRP version is always null.
-	 */
-	if (retrmm == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	retrmm = host_rmi_granule_delegate((u_register_t)&rd[0]);
 	if (retrmm != 0UL) {

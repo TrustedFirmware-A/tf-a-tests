@@ -7,6 +7,7 @@
 #include <drivers/arm/pl011.h>
 #include <drivers/console.h>
 #include <ffa_helpers.h>
+#include <ffa_svc.h>
 #include <sp_debug.h>
 #include <spm_helpers.h>
 
@@ -14,18 +15,24 @@ static int (*putc_impl)(int);
 
 static int putc_hypcall(int c)
 {
-	spm_debug_log((char)c);
+	hvc_args args = {
+		.fid = FFA_CONSOLE_LOG_SMC32,
+		.arg1 = 1,
+		.arg2 = c
+	};
 
+	(void)tftf_hvc(&args);
 	return c;
 }
-
-static int putc_svccall(int c)
+static int putc_ffacall(int c)
 {
 	struct ffa_value args = {
-		.fid = SPM_DEBUG_LOG,
-		.arg1 = c
+		.fid = FFA_CONSOLE_LOG_SMC32,
+		.arg1 = 1,
+		.arg2 = c
 	};
-	ffa_svc(&args);
+
+	ffa_service_call(&args);
 
 	return c;
 }
@@ -41,14 +48,12 @@ void set_putc_impl(enum stdout_route route)
 {
 	switch (route) {
 
-	case HVC_CALL_AS_STDOUT:
+	case FFA_HVC_CALL_AS_STDOUT:
 		putc_impl = putc_hypcall;
 		return;
-
-	case SVC_CALL_AS_STDOUT:
-		putc_impl = putc_svccall;
+	case FFA_SVC_SMC_CALL_AS_STDOUT:
+		putc_impl = putc_ffacall;
 		return;
-
 	case PL011_AS_STDOUT:
 	default:
 		break;

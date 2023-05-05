@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2022, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2023, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -228,6 +228,10 @@ COMMON_CFLAGS		+=	-ffunction-sections -fdata-sections
 COMMON_CFLAGS 		+=	${CFLAGS} ${INCLUDES}
 
 COMMON_LDFLAGS		+=	--fatal-warnings -O1 --gc-sections --build-id=none
+
+# With ld.bfd version 2.39 and newer new warnings are added. Skip those since we
+# are not loaded by a elf loader.
+COMMON_LDFLAGS		+=	--no-warn-rwx-segments
 
 CC			:=	${CROSS_COMPILE}gcc
 CPP			:=	${CROSS_COMPILE}cpp

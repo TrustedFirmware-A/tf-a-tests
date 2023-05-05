@@ -25,7 +25,7 @@ typedef struct fpu_reg_state {
 	uint8_t q[FPU_Q_COUNT][FPU_Q_SIZE];
 	unsigned long fpsr;
 	unsigned long fpcr;
-} fpu_reg_state_t;
+} fpu_reg_state_t __aligned(16);
 
 /*
  * Read and compare FPU state registers with provided template values in parameters.

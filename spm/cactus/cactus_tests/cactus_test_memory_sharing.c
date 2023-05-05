@@ -80,7 +80,6 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 	ffa_memory_region_flags_t retrv_flags =
 					 cactus_mem_send_get_retrv_flags(*args);
 	uint32_t words_to_write = cactus_mem_send_words_to_write(*args);
-	bool non_secure = cactus_mem_send_get_non_secure(*args);
 
 	expect(memory_retrieve(mb, &m, handle, source, vm_id,
 			       retrv_flags, mem_func), true);
@@ -101,7 +100,8 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 
 	mem_attrs = MT_RW_DATA | MT_EXECUTE_NEVER;
 
-	if (non_secure) {
+	if (ffa_get_memory_security_attr(m->attributes) ==
+	    FFA_MEMORY_SECURITY_NON_SECURE) {
 		mem_attrs |= MT_NS;
 	}
 
@@ -237,7 +237,7 @@ CACTUS_CMD_HANDLER(req_mem_send_cmd, CACTUS_REQ_MEM_SEND_CMD)
 	}
 
 	ffa_ret = cactus_mem_send_cmd(vm_id, receiver, mem_func, handle,
-				      0, non_secure, 10);
+				      0, 10);
 
 	if (!is_ffa_direct_response(ffa_ret)) {
 		return cactus_error_resp(vm_id, source, CACTUS_ERROR_FFA_CALL);

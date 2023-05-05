@@ -229,10 +229,6 @@ COMMON_CFLAGS 		+=	${CFLAGS} ${INCLUDES}
 
 COMMON_LDFLAGS		+=	--fatal-warnings -O1 --gc-sections --build-id=none
 
-# With ld.bfd version 2.39 and newer new warnings are added. Skip those since we
-# are not loaded by a elf loader.
-COMMON_LDFLAGS		+=	--no-warn-rwx-segments
-
 CC			:=	${CROSS_COMPILE}gcc
 CPP			:=	${CROSS_COMPILE}cpp
 AS			:=	${CROSS_COMPILE}gcc
@@ -242,6 +238,10 @@ OC			:=	${CROSS_COMPILE}objcopy
 OD			:=	${CROSS_COMPILE}objdump
 NM			:=	${CROSS_COMPILE}nm
 PP			:=	${CROSS_COMPILE}gcc
+
+# With ld.bfd version 2.39 and newer new warnings are added. Skip those since we
+# are not loaded by a elf loader.
+COMMON_LDFLAGS		+=	$(call ld_option, --no-warn-rwx-segments)
 
 ################################################################################
 

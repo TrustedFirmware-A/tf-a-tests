@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
+#include "ffa_helpers.h"
 #include <assert.h>
 #include <debug.h>
 #include <errno.h>
@@ -72,7 +73,6 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
  */
 static void ffa_features_test(void)
 {
-	const char *test_features = "FFA Features interface";
 	struct ffa_value ffa_ret;
 	unsigned int expected_ret;
 	const struct ffa_features_test *ffa_feature_test_target;
@@ -80,49 +80,50 @@ static void ffa_features_test(void)
 		get_ffa_feature_test_target(&ffa_feature_test_target);
 	struct ffa_features_test test_target;
 
-
-	announce_test_section_start(test_features);
+	INFO("Test FFA_FEATURES.\n");
 
 	for (i = 0U; i < test_target_size; i++) {
 		test_target = ffa_feature_test_target[i];
 
-		announce_test_start(test_target.test_name);
-
-		ffa_ret = ffa_features_with_input_property(test_target.feature, test_target.param);
+		ffa_ret = ffa_features_with_input_property(test_target.feature,
+							   test_target.param);
 		expected_ret = FFA_VERSION_COMPILED
 				>= test_target.version_added ?
 				test_target.expected_ret : FFA_ERROR;
 
-		expect(ffa_func_id(ffa_ret), expected_ret);
-		if (expected_ret == FFA_ERROR) {
-			expect(ffa_error_code(ffa_ret), FFA_ERROR_NOT_SUPPORTED);
+		if (ffa_func_id(ffa_ret) != expected_ret) {
+			ERROR("Unexpected return: %x (expected %x)."
+			      " FFA_FEATURES test: %s.\n",
+			      ffa_func_id(ffa_ret), expected_ret,
+			      test_target.test_name);
 		}
 
-		announce_test_end(test_target.test_name);
+		if (expected_ret == FFA_ERROR) {
+			if (ffa_error_code(ffa_ret) !=
+			    FFA_ERROR_NOT_SUPPORTED) {
+				ERROR("Unexpected error code: %x (expected %x)."
+				      " FFA_FEATURES test: %s.\n",
+				      ffa_error_code(ffa_ret), expected_ret,
+				      test_target.test_name);
+			}
+		}
 	}
-
-	announce_test_section_end(test_features);
 }
 
 static void ffa_partition_info_wrong_test(void)
 {
-	const char *test_wrong_uuid = "Request wrong UUID";
 	const struct ffa_uuid uuid = { .uuid = {1} };
-
-	announce_test_start(test_wrong_uuid);
-
 	struct ffa_value ret = ffa_partition_info_get(uuid);
+
+	VERBOSE("%s: test request wrong UUID.\n", __func__);
+
 	expect(ffa_func_id(ret), FFA_ERROR);
 	expect(ffa_error_code(ret), FFA_ERROR_INVALID_PARAMETER);
-
-	announce_test_end(test_wrong_uuid);
 }
 
 static void ffa_partition_info_get_test(struct mailbox_buffers *mb)
 {
-	const char *test_partition_info = "FFA Partition info interface";
-
-	announce_test_section_start(test_partition_info);
+	INFO("Test FFA_PARTITION_INFO_GET.\n");
 
 	expect(ffa_partition_info_helper(mb, sp_uuids[2],
 		&ffa_expected_partition_info[2], 1), true);
@@ -138,16 +139,10 @@ static void ffa_partition_info_get_test(struct mailbox_buffers *mb)
 		ARRAY_SIZE(ffa_expected_partition_info)), true);
 
 	ffa_partition_info_wrong_test();
-
-	announce_test_section_end(test_partition_info);
 }
 
 void ffa_version_test(void)
 {
-	const char *test_ffa_version = "FFA Version interface";
-
-	announce_test_start(test_ffa_version);
-
 	struct ffa_value ret = ffa_version(MAKE_FFA_VERSION(FFA_MAJOR,
 							    FFA_MINOR));
 
@@ -157,22 +152,16 @@ void ffa_version_test(void)
 		((spm_version >> FFA_VERSION_MAJOR_SHIFT) == FFA_MAJOR &&
 		 (spm_version & FFA_VERSION_MINOR_MASK) >= FFA_MINOR);
 
-	VERBOSE("FFA_VERSION returned %u.%u; Compatible: %i\n",
+	INFO("Test FFA_VERSION. Return %u.%u; Compatible: %i\n",
 		spm_version >> FFA_VERSION_MAJOR_SHIFT,
 		spm_version & FFA_VERSION_MINOR_MASK,
 		(int)ffa_version_compatible);
 
 	expect((int)ffa_version_compatible, (int)true);
-
-	announce_test_end(test_ffa_version);
 }
 
 void ffa_spm_id_get_test(void)
 {
-	const char *test_spm_id_get = "FFA_SPM_ID_GET SMC Function";
-
-	announce_test_start(test_spm_id_get);
-
 	if (spm_version >= MAKE_FFA_VERSION(1, 1)) {
 		struct ffa_value ret = ffa_spm_id_get();
 
@@ -180,22 +169,22 @@ void ffa_spm_id_get_test(void)
 
 		ffa_id_t spm_id = ffa_endpoint_id(ret);
 
-		VERBOSE("SPM ID = 0x%x\n", spm_id);
+		INFO("Test FFA_SPM_ID_GET. Return: 0x%x\n", spm_id);
+
 		/*
 		 * Check the SPMC value given in the fvp_spmc_manifest
 		 * is returned.
 		 */
 		expect(spm_id, SPMC_ID);
 	} else {
-		NOTICE("FFA_SPM_ID_GET not supported in this version of FF-A."
+		INFO("FFA_SPM_ID_GET not supported in this version of FF-A."
 			" Test skipped.\n");
 	}
-	announce_test_end(test_spm_id_get);
 }
 
 void ffa_tests(struct mailbox_buffers *mb)
 {
-	const char *test_ffa = "FFA Interfaces";
+	const char *test_ffa = "FF-A setup and discovery";
 
 	announce_test_section_start(test_ffa);
 

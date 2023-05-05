@@ -172,16 +172,22 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 		return TEST_RESULT_FAIL;
 	}
 
-	/* Check that borrower used the memory as expected for this test. */
-	if (!check_written_words(ptr, mem_func, nr_words_to_write)) {
-		ERROR("Words written to shared memory, not as expected.\n");
-		return TEST_RESULT_FAIL;
-	}
+	if (mem_func != FFA_MEM_DONATE_SMC32) {
 
-	if (mem_func != FFA_MEM_DONATE_SMC32 &&
-	    is_ffa_call_error(ffa_mem_reclaim(handle, 0))) {
+		/* Reclaim memory entirely before checking its state. */
+		if (is_ffa_call_error(ffa_mem_reclaim(handle, 0))) {
 			tftf_testcase_printf("Couldn't reclaim memory\n");
 			return TEST_RESULT_FAIL;
+		}
+
+		/*
+		 * Check that borrower used the memory as expected for this
+		 * test.
+		 */
+		if (!check_written_words(ptr, mem_func, nr_words_to_write)) {
+			ERROR("Fail because of state of memory.\n");
+			return TEST_RESULT_FAIL;
+		}
 	}
 
 	return TEST_RESULT_SUCCESS;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -279,6 +279,20 @@ static inline struct ffa_value cactus_req_simd_fill_send_cmd(
 	ffa_id_t source, ffa_id_t dest)
 {
 	return cactus_send_cmd(source, dest, CACTUS_REQ_SIMD_FILL_CMD, 0, 0, 0,
+			       0);
+}
+
+/**
+ * Request to compare FPU state(SIMD vectors, FPCR, FPSR) content
+ * with previous template values to check a save/restore routine during the
+ * context switches between secure world and normal world.
+ */
+#define CACTUS_CMP_SIMD_VALUE_CMD (CACTUS_REQ_SIMD_FILL_CMD + 1)
+
+static inline struct ffa_value cactus_req_simd_compare_send_cmd(
+	ffa_id_t source, ffa_id_t dest)
+{
+	return cactus_send_cmd(source, dest, CACTUS_CMP_SIMD_VALUE_CMD, 0, 0, 0,
 			       0);
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,14 +11,6 @@
 #include <lib/extensions/sve.h>
 #include <spm_common.h>
 #include <xlat_tables_v2.h>
-
-#define __STR(x) #x
-#define STR(x) __STR(x)
-
-#define fill_simd_helper(num1, num2) "ldp q"#num1", q"#num2",\
-	[%0], #"STR(2 * SIMD_VECTOR_LEN_BYTES)";"
-#define read_simd_helper(num1, num2) "stp q"#num1", q"#num2",\
-	[%0], #"STR(2 * SIMD_VECTOR_LEN_BYTES)";"
 
 /**
  * Helper to log errors after FF-A calls.
@@ -109,57 +101,6 @@ void dump_ffa_value(struct ffa_value ret)
 		ret.arg5,
 		ret.arg6,
 		ret.arg7);
-}
-
-void fill_simd_vector_regs(const simd_vector_t v[SIMD_NUM_VECTORS])
-{
-#ifdef __aarch64__
-	__asm__ volatile(
-		fill_simd_helper(0, 1)
-		fill_simd_helper(2, 3)
-		fill_simd_helper(4, 5)
-		fill_simd_helper(6, 7)
-		fill_simd_helper(8, 9)
-		fill_simd_helper(10, 11)
-		fill_simd_helper(12, 13)
-		fill_simd_helper(14, 15)
-		fill_simd_helper(16, 17)
-		fill_simd_helper(18, 19)
-		fill_simd_helper(20, 21)
-		fill_simd_helper(22, 23)
-		fill_simd_helper(24, 25)
-		fill_simd_helper(26, 27)
-		fill_simd_helper(28, 29)
-		fill_simd_helper(30, 31)
-		"sub %0, %0, #" STR(SIMD_NUM_VECTORS * SIMD_VECTOR_LEN_BYTES) ";"
-		: : "r" (v));
-#endif
-}
-
-void read_simd_vector_regs(simd_vector_t v[SIMD_NUM_VECTORS])
-{
-#ifdef __aarch64__
-	memset(v, 0, sizeof(simd_vector_t) * SIMD_NUM_VECTORS);
-	__asm__ volatile(
-		read_simd_helper(0, 1)
-		read_simd_helper(2, 3)
-		read_simd_helper(4, 5)
-		read_simd_helper(6, 7)
-		read_simd_helper(8, 9)
-		read_simd_helper(10, 11)
-		read_simd_helper(12, 13)
-		read_simd_helper(14, 15)
-		read_simd_helper(16, 17)
-		read_simd_helper(18, 19)
-		read_simd_helper(20, 21)
-		read_simd_helper(22, 23)
-		read_simd_helper(24, 25)
-		read_simd_helper(26, 27)
-		read_simd_helper(28, 29)
-		read_simd_helper(30, 31)
-		"sub %0, %0, #" STR(SIMD_NUM_VECTORS * SIMD_VECTOR_LEN_BYTES) ";"
-		: : "r" (v));
-#endif
 }
 
 void fill_sve_vector_regs(const sve_vector_t v[SVE_NUM_VECTORS])

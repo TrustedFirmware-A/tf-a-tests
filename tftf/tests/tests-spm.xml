@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2018-2022, Arm Limited. All rights reserved.
+  Copyright (c) 2018-2023, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -62,6 +62,14 @@
      <testcase name="FF-A Request SP-to-SP direct messaging deadlock"
            function="test_ffa_sp_to_sp_deadlock" />
 
+  </testsuite>
+
+  <testsuite name="FF-A Group0 interrupts"
+             description="Test FF-A Group0 secure interrupt delegation to EL3" >
+     <testcase name="FF-A Group0 secure world"
+               function="test_ffa_group0_interrupt_sp_running" />
+     <testcase name="FF-A Group0 normal world"
+               function="test_ffa_group0_interrupt_in_nwd" />
   </testsuite>
 
  <testsuite name="FF-A Power management"

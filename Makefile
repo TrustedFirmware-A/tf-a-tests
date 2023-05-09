@@ -243,6 +243,9 @@ PP			:=	${CROSS_COMPILE}gcc
 # are not loaded by a elf loader.
 COMMON_LDFLAGS		+=	$(call ld_option, --no-warn-rwx-segments)
 
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
+COMMON_CFLAGS		+=	$(call cc_option, --param=min-pagesize=0)
+
 ################################################################################
 
 TFTF_SOURCES		:= ${FRAMEWORK_SOURCES}	${TESTS_SOURCES} ${PLAT_SOURCES} ${LIBC_SRCS} ${LIBFDT_SRCS}

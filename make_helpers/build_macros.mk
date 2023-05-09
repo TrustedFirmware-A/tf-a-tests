@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015-2020, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2023, ARM Limited and Contributors. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -34,3 +34,10 @@ endef
 define ld_option
 	$(shell if $(LD) $(1) -v >/dev/null 2>&1; then echo $(1); fi )
 endef
+
+# Convenience function to check for a given compiler option. An call to
+# $(call cc_option, --no-XYZ) will return --no-XYZ if supported by the compiler
+define cc_option
+	$(shell if $(CC) $(1) -c -x c /dev/null -o /dev/null >/dev/null 2>&1; then echo $(1); fi )
+endef
+

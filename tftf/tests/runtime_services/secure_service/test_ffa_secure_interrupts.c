@@ -21,13 +21,9 @@ static const struct ffa_uuid expected_sp_uuids[] = {
 		{PRIMARY_UUID}, {SECONDARY_UUID}
 	};
 
-static event_t cpu_reached_end_of_test[PLATFORM_CORE_COUNT];
-
 /*
  * @Test_Aim@ Test secure interrupt handling while first Secure Partition is
- * in RUNNING state. The interrupt is routed to the core defined by
- * PLAT_INTERRUPT_MPIDR and runs only on that core. If PLAT_INTERRUPT_MPIDR is
- * not defined, it defaults to current core.
+ * in RUNNING state.
  *
  * 1. Send a direct message request command to first Cactus SP to start the
  *    trusted watchdog timer.
@@ -66,28 +62,23 @@ static event_t cpu_reached_end_of_test[PLATFORM_CORE_COUNT];
  *     interrupt through a direct message request command.
  *
  */
-static test_result_t test_ffa_sec_interrupt_sp_running_handler(void)
+
+test_result_t test_ffa_sec_interrupt_sp_running(void)
 {
 	struct ffa_value ret_values;
-	test_result_t test_ret = TEST_RESULT_FAIL;
 
-#ifdef PLAT_INTERRUPT_MPIDR
-	if (read_mpidr_el1() != PLAT_INTERRUPT_MPIDR) {
-		test_ret = TEST_RESULT_SUCCESS;
-		goto exit;
-	}
-#endif
+	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
 
 	/* Enable trusted watchdog interrupt as IRQ in the secure side. */
 	if (!enable_trusted_wdog_interrupt(SENDER, RECEIVER)) {
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	ret_values = cactus_send_twdog_cmd(SENDER, RECEIVER, 50);
 
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for starting TWDOG timer\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Send request to first Cactus SP to sleep */
@@ -99,7 +90,7 @@ static test_result_t test_ffa_sec_interrupt_sp_running_handler(void)
 	 */
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for sleep command\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	VERBOSE("Secure interrupt has preempted execution: %u\n",
@@ -108,7 +99,7 @@ static test_result_t test_ffa_sec_interrupt_sp_running_handler(void)
 	/* Make sure elapsed time not less than sleep time */
 	if (cactus_get_response(ret_values) < SP_SLEEP_TIME) {
 		ERROR("Lapsed time less than requested sleep time\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Check for the last serviced secure virtual interrupt. */
@@ -117,49 +108,26 @@ static test_result_t test_ffa_sec_interrupt_sp_running_handler(void)
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for last serviced interrupt"
 			" command\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Make sure Trusted Watchdog timer interrupt was serviced*/
 	if (cactus_get_response(ret_values) != IRQ_TWDOG_INTID) {
 		ERROR("Trusted watchdog timer interrupt not serviced by SP\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Disable Trusted Watchdog interrupt. */
 	if (!disable_trusted_wdog_interrupt(SENDER, RECEIVER)) {
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
-	test_ret = TEST_RESULT_SUCCESS;
-exit:
-	if (test_ret != TEST_RESULT_SUCCESS) {
-		ERROR("%s - Test Failed - core - %d\n", __func__,
-			get_current_core_id());
-	}
-	tftf_send_event(&cpu_reached_end_of_test[get_current_core_id()]);
-	return test_ret;
-}
-
-test_result_t test_ffa_sec_interrupt_sp_running(void)
-{
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
-	memset(cpu_reached_end_of_test, 0, sizeof(cpu_reached_end_of_test));
-
-#ifdef PLAT_INTERRUPT_MPIDR
-	return spm_run_multi_core_test(
-			(uintptr_t)test_ffa_sec_interrupt_sp_running_handler,
-			cpu_reached_end_of_test);
-#else
-	return test_ffa_sec_interrupt_sp_running_handler();
-#endif
+	return TEST_RESULT_SUCCESS;
 }
 
 /*
  * @Test_Aim@ Test secure interrupt handling while Secure Partition is waiting
- * for a message. The interrupt is routed to the core defined by
- * PLAT_INTERRUPT_MPIDR and runs only on that core. If PLAT_INTERRUPT_MPIDR is
- * not defined, it defaults to current core.
+ * for a message.
  *
  * 1. Send a direct message request command to first Cactus SP to start the
  *    trusted watchdog timer.
@@ -196,24 +164,18 @@ test_result_t test_ffa_sec_interrupt_sp_running(void)
  *     interrupt through a direct message request command.
  *
  */
-static test_result_t test_ffa_sec_interrupt_sp_waiting_handler(void)
+test_result_t test_ffa_sec_interrupt_sp_waiting(void)
 {
 	uint64_t time1;
 	volatile uint64_t time2, time_lapsed;
 	uint64_t timer_freq = read_cntfrq_el0();
 	struct ffa_value ret_values;
-	test_result_t test_ret = TEST_RESULT_FAIL;
 
-#ifdef PLAT_INTERRUPT_MPIDR
-	if (read_mpidr_el1() != PLAT_INTERRUPT_MPIDR) {
-		test_ret = TEST_RESULT_SUCCESS;
-		goto exit;
-	}
-#endif
+	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
 
 	/* Enable trusted watchdog interrupt as IRQ in the secure side. */
 	if (!enable_trusted_wdog_interrupt(SENDER, RECEIVER)) {
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/*
@@ -223,7 +185,7 @@ static test_result_t test_ffa_sec_interrupt_sp_waiting_handler(void)
 
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for starting TWDOG timer\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	time1 = syscounter_read();
@@ -241,7 +203,7 @@ static test_result_t test_ffa_sec_interrupt_sp_waiting_handler(void)
 	if (time_lapsed < NS_TIME_SLEEP) {
 		ERROR("Time elapsed less than expected value: %llu vs %u\n",
 				time_lapsed, NS_TIME_SLEEP);
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Check for the last serviced secure virtual interrupt. */
@@ -250,49 +212,26 @@ static test_result_t test_ffa_sec_interrupt_sp_waiting_handler(void)
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for last serviced interrupt"
 			" command\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Make sure Trusted Watchdog timer interrupt was serviced*/
 	if (cactus_get_response(ret_values) != IRQ_TWDOG_INTID) {
 		ERROR("Trusted watchdog timer interrupt not serviced by SP\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Disable Trusted Watchdog interrupt. */
 	if (!disable_trusted_wdog_interrupt(SENDER, RECEIVER)) {
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
-	test_ret = TEST_RESULT_SUCCESS;
-exit:
-	if (test_ret != TEST_RESULT_SUCCESS) {
-		ERROR("%s - Test Failed - core - %d\n", __func__,
-			get_current_core_id());
-	}
-	tftf_send_event(&cpu_reached_end_of_test[get_current_core_id()]);
-	return test_ret;
-}
-
-test_result_t test_ffa_sec_interrupt_sp_waiting(void)
-{
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
-	memset(cpu_reached_end_of_test, 0, sizeof(cpu_reached_end_of_test));
-
-#ifdef PLAT_INTERRUPT_MPIDR
-	return spm_run_multi_core_test(
-			(uintptr_t)test_ffa_sec_interrupt_sp_waiting_handler,
-			cpu_reached_end_of_test);
-#else
-	return test_ffa_sec_interrupt_sp_waiting_handler();
-#endif
+	return TEST_RESULT_SUCCESS;
 }
 
 /*
  * @Test_Aim@ Test secure interrupt handling while first Secure Partition is
- * in BLOCKED state. The interrupt is routed to the core defined by
- * PLAT_INTERRUPT_MPIDR and runs only on that core. If PLAT_INTERRUPT_MPIDR is
- * not defined, it defaults to current core.
+ * in BLOCKED state.
  *
  * 1. Send a direct message request command to first Cactus SP to start the
  *    trusted watchdog timer.
@@ -327,41 +266,22 @@ test_result_t test_ffa_sec_interrupt_sp_waiting(void)
  * 11. Test finishes successfully once the TFTF disables the trusted watchdog
  *     interrupt through a direct message request command.
  */
-static test_result_t test_ffa_sec_interrupt_sp_blocked_handler(void)
+test_result_t test_ffa_sec_interrupt_sp_blocked(void)
 {
 	struct ffa_value ret_values;
-	test_result_t test_ret = TEST_RESULT_FAIL;
 
-#ifdef PLAT_INTERRUPT_MPIDR
-	if (read_mpidr_el1() != PLAT_INTERRUPT_MPIDR) {
-		test_ret = TEST_RESULT_SUCCESS;
-		goto exit;
-	}
-#endif
+	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
 
 	/* Enable trusted watchdog interrupt as IRQ in the secure side. */
 	if (!enable_trusted_wdog_interrupt(SENDER, RECEIVER)) {
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	ret_values = cactus_send_twdog_cmd(SENDER, RECEIVER, 100);
 
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for starting TWDOG timer\n");
-		goto exit;
-	}
-
-	/*
-	 * Call FFA_RUN on the secondary vcpus to start it up. it is possible
-	 * that another test has already started in, in which case we may get
-	 * an error. We ignore the error and proceed, if the vcpu is not started
-	 * the following direct requests would fail.
-	 */
-	ret_values = ffa_run(RECEIVER_2, get_current_core_id());
-	if (ffa_func_id(ret_values) == FFA_ERROR) {
-		WARN("Failed to start secondary vcpu of RECEIVER_2, "
-			"may already be started by other tests. Ignoring"
-			" error\n");
+		return TEST_RESULT_FAIL;
 	}
 
 	/*
@@ -377,12 +297,11 @@ static test_result_t test_ffa_sec_interrupt_sp_blocked_handler(void)
 	 */
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	if (cactus_get_response(ret_values) != CACTUS_SUCCESS) {
-		ERROR("Expected CACTUS_SUCCESS %x\n", cactus_get_response(ret_values));
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Check for the last serviced secure virtual interrupt. */
@@ -391,50 +310,26 @@ static test_result_t test_ffa_sec_interrupt_sp_blocked_handler(void)
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for last serviced interrupt"
 			" command\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Make sure Trusted Watchdog timer interrupt was serviced*/
 	if (cactus_get_response(ret_values) != IRQ_TWDOG_INTID) {
 		ERROR("Trusted watchdog timer interrupt not serviced by SP\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Disable Trusted Watchdog interrupt. */
 	if (!disable_trusted_wdog_interrupt(SENDER, RECEIVER)) {
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
-	test_ret = TEST_RESULT_SUCCESS;
-exit:
-	if (test_ret != TEST_RESULT_SUCCESS) {
-		ERROR("%s - Test Failed - core - %d\n", __func__,
-			get_current_core_id());
-	}
-	tftf_send_event(&cpu_reached_end_of_test[get_current_core_id()]);
-	return test_ret;
-}
-
-test_result_t test_ffa_sec_interrupt_sp_blocked(void)
-{
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
-	memset(cpu_reached_end_of_test, 0, sizeof(cpu_reached_end_of_test));
-
-#ifdef PLAT_INTERRUPT_MPIDR
-	return spm_run_multi_core_test(
-			(uintptr_t)test_ffa_sec_interrupt_sp_blocked_handler,
-			cpu_reached_end_of_test);
-#else
-	return test_ffa_sec_interrupt_sp_blocked_handler();
-#endif
+	return TEST_RESULT_SUCCESS;
 }
 
 /*
  * @Test_Aim@ Test secure interrupt handling while first Secure Partition is
  * in WAITING state while the second Secure Partition is running.
- * The interrupt is routed to the core defined by PLAT_INTERRUPT_MPIDR and
- * runs only on that core. If PLAT_INTERRUPT_MPIDR is not defined, it defaults
- * to current core.
  *
  * 1. Send a direct message request command to first Cactus SP to start the
  *    trusted watchdog timer.
@@ -471,41 +366,22 @@ test_result_t test_ffa_sec_interrupt_sp_blocked(void)
  * 12. Test finishes successfully once the TFTF disables the trusted watchdog
  *     interrupt through a direct message request command.
  */
-static test_result_t test_ffa_sec_interrupt_sp1_waiting_sp2_running_handler(void)
+test_result_t test_ffa_sec_interrupt_sp1_waiting_sp2_running(void)
 {
 	struct ffa_value ret_values;
-	test_result_t test_ret = TEST_RESULT_FAIL;
 
-#ifdef PLAT_INTERRUPT_MPIDR
-	if (read_mpidr_el1() != PLAT_INTERRUPT_MPIDR) {
-		test_ret = TEST_RESULT_SUCCESS;
-		goto exit;
-	}
-#endif
+	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
 
 	/* Enable trusted watchdog interrupt as IRQ in the secure side. */
 	if (!enable_trusted_wdog_interrupt(SENDER, RECEIVER)) {
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	ret_values = cactus_send_twdog_cmd(SENDER, RECEIVER, 100);
 
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for starting TWDOG timer\n");
-		goto exit;
-	}
-
-	/*
-	 * Call FFA_RUN on the secondary vcpus to start it up. It is possible
-	 * that another test has already started in, in which case we may get
-	 * an error. We ignore the error and proceed, if the vcpu is not started
-	 * the following direct requests would fail.
-	 */
-	ret_values = ffa_run(RECEIVER_2, get_current_core_id());
-	if (ffa_func_id(ret_values) == FFA_ERROR) {
-		WARN("Failed to start secondary vcpu of RECEIVER_2, "
-			"may already be started by other tests. Ignoring"
-			" error\n");
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Send request to Second Cactus SP to sleep. */
@@ -517,7 +393,7 @@ static test_result_t test_ffa_sec_interrupt_sp1_waiting_sp2_running_handler(void
 	 */
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for sleep command\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Make sure elapsed time not less than sleep time. */
@@ -531,40 +407,19 @@ static test_result_t test_ffa_sec_interrupt_sp1_waiting_sp2_running_handler(void
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for last serviced interrupt"
 			" command\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Make sure Trusted Watchdog timer interrupt was serviced*/
 	if (cactus_get_response(ret_values) != IRQ_TWDOG_INTID) {
 		ERROR("Trusted watchdog timer interrupt not serviced by SP\n");
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
 	/* Disable Trusted Watchdog interrupt. */
 	if (!disable_trusted_wdog_interrupt(SENDER, RECEIVER)) {
-		goto exit;
+		return TEST_RESULT_FAIL;
 	}
 
-	test_ret = TEST_RESULT_SUCCESS;
-exit:
-	if (test_ret != TEST_RESULT_SUCCESS) {
-		ERROR("%s - Test Failed - core - %d\n", __func__,
-			get_current_core_id());
-	}
-	tftf_send_event(&cpu_reached_end_of_test[get_current_core_id()]);
-	return test_ret;
-}
-
-test_result_t test_ffa_sec_interrupt_sp1_waiting_sp2_running(void)
-{
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
-	memset(cpu_reached_end_of_test, 0, sizeof(cpu_reached_end_of_test));
-
-#ifdef PLAT_INTERRUPT_MPIDR
-	return spm_run_multi_core_test(
-			(uintptr_t)test_ffa_sec_interrupt_sp1_waiting_sp2_running_handler,
-			cpu_reached_end_of_test);
-#else
-	return test_ffa_sec_interrupt_sp1_waiting_sp2_running_handler();
-#endif
+	return TEST_RESULT_SUCCESS;
 }

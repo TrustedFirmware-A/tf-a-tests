@@ -119,7 +119,6 @@
 			pages-count = <32>; /* Two 64KB pages */
 			attributes = <0x3>; /* read-write */
 			interrupts = <56 0x900>;
-			interrupts-target = <56 0x00 0x81010300>;
 		};
 	};
 };

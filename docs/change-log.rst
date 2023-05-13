@@ -7,6 +7,104 @@ Firmware-A version for simplicity. At any point in time, TF-A Tests version
 Tests are not guaranteed to be compatible. This also means that a version
 upgrade on the TF-A-Tests side might not necessarily introduce any new feature.
 
+Version 2.9
+-----------
+
+New features
+^^^^^^^^^^^^
+
+-  More tests are made available in this release to help validate the
+   functionalities in the following areas:
+
+   - FF-A Features
+   - Realm Management Extension
+   - New Architecture Specific features related to v8.8
+   - New platform ports
+
+TFTF
+~~~~
+
+-  FF-A testing:
+
+   - Reordered logs in the memory sharing tests.
+   - Memory share bumped to v1.1 EAC0.
+   - Updated tests for FFA_FEATURES(FFA_MEM_RETRIEVE_REQ).
+   - Fixed issues with RXTX buffer unmapping and dependencies on tests.
+   - Added check for execution state property of partitions.
+
+-  New tests:
+
+   - Tests for Errata management firmware interface.
+   - Ensure FPU state registers context is preserved in RL/SE/NS.
+   - Modified FEAT_HCX test to also check for HCRX_EL2 init value.
+   - Added basic SME2 tests.
+   - PSCI tests for OS-initiated mode.
+   - Added "nop" test to be used in conjunction with TFX.
+   - Introduced capability to generate Sync External Aborts (EA) in TFTF.
+   - New test to generate an SError.
+   - Tests to check whether the PMU is functional and if the state is
+     preserved when switching worlds. PMEVTYPER.evtCount width extended.
+   - Added support for more SPE versions.
+
+-  Platforms:
+
+   - RD-N2-Cfg3:
+
+      - Added TFTF support.
+
+-  Miscellaneous:
+
+   - SIMD/FPU save/restore routine moved to common lib.
+   - Updated toolchain requirements documentation.
+   - Update SME/Mortlach tests.
+   - Unified Firmware First handling of lower EL EA.
+   - Moved trusted wdog API to spm_common.
+   - Added the ability to skip tests for AArch32.
+   - Added config file to allow doc defaults be changed.
+   - Modified tests for FEAT_RNG_TRAP.
+   - Moved 'Stress test timer framework' to a new test suite
+     'tests-timer-stress'.
+   - Support for new binutils versions.
+   - Removed deprecated SPM libs and test code.
+
+
+Realm Management Extension (RME)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   - Added helper macro for RME tests.
+   - Test Secure interrupt can preempt Realm EL1.
+   - Added PMU Realm tests.
+   - Added BP_OPTION to REALM_CFLAGS to allow build realm payload with
+     BTI/Pauth support.
+   - Fixed build issues introduced by the TFTF Realm extension
+     enhancement tests.
+   - Test case return codes updated according to RMM Bet0 specification.
+   - Fixed build problem related to rmi_rec_enter verbose log.
+   - Added randomization of SMC RMI commands parameters and checking of
+     X4-X7 return values as per SMCCC v1.2.
+
+Cactus (Secure-EL1 test partition)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   - Use of FFA_CONSOLE_LOG for debug logs.
+   - Test for consecutive same memory donation to other partitions.
+   - Now validating NWd can't share forbidden addresses.
+   - Support for registering irq handlers.
+   - Fixed attributes for NS memory region.
+   - Removal of memory regions not page-aligned.
+   - Added check for core linear id matching id passed by SPMC.
+
+Issues resolved since last release
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   - Build issue for older toolchains and other failures resolved.
+   - Dropped invalid access test from CI.
+   - Now checking that the PMU is supported before using any of it.
+   - Use of write instead of read to generate an SError to avoid sync
+     exceptions instead.
+   - Fixed broken link to TRNG_FW documentation.
+   - INIT_TFTF_MAILBOX() is called first for the invalid access test.
+
 Version 2.8
 -----------
 

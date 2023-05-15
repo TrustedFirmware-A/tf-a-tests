@@ -23,7 +23,7 @@
 	execution-state = <0>; /* AARCH64 */
 	load-address = <0x7600000>;
 	entrypoint-offset = <0x00004000>;
-	boot-order = <0>;
+	boot-order = <3>;
 	messaging-method = <3>; /* Direct messaging only */
 	/* Non-secure interrupts are signaled by default. */
 

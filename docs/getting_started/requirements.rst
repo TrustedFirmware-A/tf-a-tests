@@ -12,7 +12,7 @@ Build Host
 ----------
 
 TF-A Tests may be built using a Linux build host machine with a recent Linux
-distribution. We have performed tests using Ubuntu 20.04 LTS (64-bit), but other
+distribution. We have performed tests using Ubuntu 22.04 LTS (64-bit), but other
 distributions should also work fine, provided that the tools and libraries
 can be installed.
 

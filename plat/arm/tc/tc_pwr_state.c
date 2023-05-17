@@ -8,26 +8,26 @@
 #include <psci.h>
 
 /* State IDs for local power states on SGI platforms. */
-#define TC0_PS_RUN_STATE_ID		0 /* Valid for CPUs and Clusters */
-#define TC0_PS_RETENTION_STATE_ID	1 /* Valid for only CPUs */
-#define TC0_PS_OFF_STATE_ID		2 /* Valid for CPUs and Clusters */
+#define TC_PS_RUN_STATE_ID		0 /* Valid for CPUs and Clusters */
+#define TC_PS_RETENTION_STATE_ID	1 /* Valid for only CPUs */
+#define TC_PS_OFF_STATE_ID		2 /* Valid for CPUs and Clusters */
 
 /* Suspend depth definitions for each power state */
-#define TC0_PS_RUN_DEPTH		0
-#define TC0_PS_RETENTION_DEPTH		1
-#define TC0_PS_OFF_DEPTH		2
+#define TC_PS_RUN_DEPTH		0
+#define TC_PS_RETENTION_DEPTH		1
+#define TC_PS_OFF_DEPTH		2
 
 /* The state property array with details of idle state possible for the core */
 static const plat_state_prop_t core_state_prop[] = {
-	{TC0_PS_RETENTION_DEPTH, TC0_PS_RETENTION_STATE_ID,
+	{TC_PS_RETENTION_DEPTH, TC_PS_RETENTION_STATE_ID,
 		PSTATE_TYPE_STANDBY},
-	{TC0_PS_OFF_DEPTH, TC0_PS_OFF_STATE_ID, PSTATE_TYPE_POWERDOWN},
+	{TC_PS_OFF_DEPTH, TC_PS_OFF_STATE_ID, PSTATE_TYPE_POWERDOWN},
 	{0}
 };
 
 /* The state property array with details of idle state possible for the cluster */
 static const plat_state_prop_t cluster_state_prop[] = {
-	{TC0_PS_OFF_DEPTH, TC0_PS_OFF_STATE_ID, PSTATE_TYPE_POWERDOWN},
+	{TC_PS_OFF_DEPTH, TC_PS_OFF_STATE_ID, PSTATE_TYPE_POWERDOWN},
 	{0}
 };
 

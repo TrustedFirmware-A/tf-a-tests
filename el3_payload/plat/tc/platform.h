@@ -13,7 +13,7 @@
 
 #define UART_BASE			0x7ff80000
 
-#define TC0_MAX_CPUS_PER_CLUSTER	8
-#define TC0_MAX_PE_PER_CPU		1
+#define TC_MAX_CPUS_PER_CLUSTER	8
+#define TC_MAX_PE_PER_CPU		1
 
 #endif /* PLATFORM_H */

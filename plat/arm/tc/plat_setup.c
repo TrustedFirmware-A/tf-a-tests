@@ -8,9 +8,9 @@
 #include <xlat_tables_v2.h>
 
 static const mmap_region_t mmap[] = {
-	MAP_REGION_FLAT(TC0_DEVICE0_BASE, TC0_DEVICE0_SIZE,
+	MAP_REGION_FLAT(TC_DEVICE0_BASE, TC_DEVICE0_SIZE,
 			MT_DEVICE | MT_RW | MT_NS),
-	MAP_REGION_FLAT(TC0_DEVICE1_BASE, TC0_DEVICE1_SIZE,
+	MAP_REGION_FLAT(TC_DEVICE1_BASE, TC_DEVICE1_SIZE,
 			MT_DEVICE | MT_RW | MT_NS),
 	MAP_REGION_FLAT(DRAM_BASE, TFTF_BASE - DRAM_BASE,
 			MT_MEMORY | MT_RW | MT_NS),
@@ -24,5 +24,5 @@ const mmap_region_t *tftf_platform_get_mmap(void)
 
 void plat_arm_gic_init(void)
 {
-	arm_gic_init(TC0_GICC_BASE, TC0_GICD_BASE, TC0_GICR_BASE);
+	arm_gic_init(TC_GICC_BASE, TC_GICD_BASE, TC_GICR_BASE);
 }

@@ -121,8 +121,8 @@ include spm/cactus_mm/cactus_mm.mk
 include realm/realm.mk
 endif
 
-# cactus and ivy are supported on platforms: fvp, tc0
-ifeq (${ARCH}-${PLAT},$(filter ${ARCH}-${PLAT},aarch64-fvp aarch64-tc0))
+# cactus and ivy are supported on platforms: fvp, tc
+ifeq (${ARCH}-${PLAT},$(filter ${ARCH}-${PLAT},aarch64-fvp aarch64-tc))
 include spm/cactus/cactus.mk
 include spm/ivy/ivy.mk
 endif
@@ -395,15 +395,15 @@ pack_realm:
 	@exit 1
 endif
 
-ifneq (${ARCH}-${PLAT},$(filter ${ARCH}-${PLAT},aarch64-fvp aarch64-tc0))
+ifneq (${ARCH}-${PLAT},$(filter ${ARCH}-${PLAT},aarch64-fvp aarch64-tc))
 .PHONY: cactus
 cactus:
-	@echo "ERROR: $@ is supported only on AArch64 FVP or TC0."
+	@echo "ERROR: $@ is supported only on AArch64 FVP or TC."
 	@exit 1
 
 .PHONY: ivy
 ivy:
-	@echo "ERROR: $@ is supported only on AArch64 FVP or TC0."
+	@echo "ERROR: $@ is supported only on AArch64 FVP or TC."
 	@exit 1
 endif
 
@@ -557,7 +557,7 @@ pack_realm: realm tftf
 	seek=$(TFTF_MAX_IMAGE_SIZE))
 endif
 
-ifeq (${ARCH}-${PLAT},aarch64-tc0)
+ifeq (${ARCH}-${PLAT},aarch64-tc)
   $(eval $(call MAKE_IMG,cactus))
   $(eval $(call MAKE_IMG,ivy))
 endif

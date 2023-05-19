@@ -348,6 +348,7 @@ New features
 ^^^^^^^^^^^^
 -  More tests are made available in this release to help validate the
    functionalities in the following areas:
+
     -  True Random Number Generator (TRNG) test scenarios.
     -  Multicore / Power State Controller Interface (PSCI) tests.
     -  v8.6 Activity Monitors Unit (AMU) enhancements test scenarios.

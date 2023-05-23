@@ -10,11 +10,12 @@
 #include <debug.h>
 #include <test_helpers.h>
 #include <lib/extensions/fpu.h>
+#include <lib/extensions/sme.h>
 #include <lib/extensions/sve.h>
 
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
-#include <host_realm_sve.h>
+#include <host_realm_simd.h>
 #include <host_shared_data.h>
 
 #define NS_SVE_OP_ARRAYSIZE		1024U
@@ -929,6 +930,192 @@ test_result_t host_and_realm_check_simd(void)
 
 	rc = TEST_RESULT_SUCCESS;
 rm_realm:
+	if (!host_destroy_realm()) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return rc;
+}
+
+/*
+ * Create a Realm and check SME specific ID registers. Realm must report SME
+ * not present in ID_AA64PFR1_EL1 and no SME features present in
+ * ID_AA64SMFR0_EL1
+ */
+test_result_t host_realm_check_sme_id_registers(void)
+{
+	host_shared_data_t *sd;
+	struct sme_cmd_id_regs *r_regs;
+	test_result_t rc;
+	bool realm_rc;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	rc = host_create_sve_realm_payload(false, 0);
+	if (rc != TEST_RESULT_SUCCESS) {
+		return rc;
+	}
+
+	realm_rc = host_enter_realm_execute(REALM_SME_ID_REGISTERS, NULL,
+					    RMI_EXIT_HOST_CALL, 0U);
+	if (!realm_rc) {
+		rc = TEST_RESULT_FAIL;
+		goto rm_realm;
+	}
+
+	sd = host_get_shared_structure(0U);
+	r_regs = (struct sme_cmd_id_regs *)sd->realm_cmd_output_buffer;
+
+	/* Check ID register SME flags */
+	rc = TEST_RESULT_SUCCESS;
+	if (EXTRACT(ID_AA64PFR1_EL1_SME, r_regs->id_aa64pfr1_el1) >=
+	    ID_AA64PFR1_EL1_SME_SUPPORTED) {
+		ERROR("ID_AA64PFR1_EL1: SME enabled\n");
+		rc = TEST_RESULT_FAIL;
+	}
+	if (r_regs->id_aa64smfr0_el1 != 0UL) {
+		ERROR("ID_AA64SMFR0_EL1: Realm reported non-zero value\n");
+		rc = TEST_RESULT_FAIL;
+	}
+
+rm_realm:
+	host_destroy_realm();
+	return rc;
+}
+
+/*
+ * Create a Realm and try to access SME, the Realm must receive undefined abort.
+ */
+test_result_t host_realm_check_sme_undef_abort(void)
+{
+	test_result_t rc;
+	bool realm_rc;
+
+	SKIP_TEST_IF_SME_NOT_SUPPORTED();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	rc = host_create_sve_realm_payload(false, 0);
+	if (rc != TEST_RESULT_SUCCESS) {
+		return rc;
+	}
+
+	realm_rc = host_enter_realm_execute(REALM_SME_UNDEF_ABORT, NULL,
+					    RMI_EXIT_HOST_CALL, 0U);
+	if (!realm_rc) {
+		ERROR("Realm didn't receive undefined abort\n");
+		rc = TEST_RESULT_FAIL;
+	} else {
+		rc = TEST_RESULT_SUCCESS;
+	}
+
+	host_destroy_realm();
+	return rc;
+}
+
+/*
+ * Check whether RMM preserves NS SME config values and flags
+ * 1. SMCR_EL2.LEN field
+ * 2. SMCR_EL2.FA64 flag
+ * 3. Streaming SVE mode status
+ *
+ * This test case runs for SVE + SME config and SME only config and skipped for
+ * non SME config.
+ */
+test_result_t host_realm_check_sme_configs(void)
+{
+	u_register_t ns_smcr_el2, ns_smcr_el2_cur;
+	u_register_t rmi_feat_reg0;
+	bool ssve_mode;
+	test_result_t rc;
+	uint8_t sve_vq;
+	uint8_t sme_svq;
+	bool sve_en;
+
+	SKIP_TEST_IF_SME_NOT_SUPPORTED();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (is_armv8_2_sve_present()) {
+		CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(rmi_feat_reg0);
+		sve_en = true;
+		sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
+	} else {
+		sve_en = false;
+		sve_vq = 0;
+	}
+
+	rc = host_create_sve_realm_payload(sve_en, sve_vq);
+	if (rc != TEST_RESULT_SUCCESS) {
+		return rc;
+	}
+
+	/*
+	 * Configure TFTF from 0 to SME_SVQ_ARCH_MAX, and in each iteration
+	 * randomly enable or disable FA64 and Streaming SVE mode. Ater calling
+	 * Realm, check the NS SME configuration status.
+	 */
+	rc = TEST_RESULT_SUCCESS;
+	for (sme_svq = 0U; sme_svq <= SME_SVQ_ARCH_MAX; sme_svq++) {
+		bool realm_rc;
+
+		sme_config_svq(sme_svq);
+
+		/* randomly enable or disable FEAT_SME_FA64 */
+		if (sme_svq % 2) {
+			sme_enable_fa64();
+			sme_smstart(SMSTART_SM);
+			ssve_mode = true;
+		} else {
+			sme_disable_fa64();
+			sme_smstop(SMSTOP_SM);
+			ssve_mode = false;
+		}
+
+		ns_smcr_el2 = read_smcr_el2();
+
+		/*
+		 * If SVE is supported then we would have created a Realm with
+		 * SVE support, so run SVE command else run FPU command
+		 */
+		if (sve_en) {
+			realm_rc = host_enter_realm_execute(REALM_SVE_RDVL, NULL,
+							    RMI_EXIT_HOST_CALL,
+							    0U);
+		} else {
+			realm_rc = host_enter_realm_execute(
+							REALM_REQ_FPU_FILL_CMD,
+							NULL,
+							RMI_EXIT_HOST_CALL, 0U);
+		}
+
+		if (!realm_rc) {
+			ERROR("Realm command REALM_SVE_RDVL failed\n");
+			rc = TEST_RESULT_FAIL;
+			break;
+		}
+		ns_smcr_el2_cur = read_smcr_el2();
+
+		if (ns_smcr_el2 != ns_smcr_el2_cur) {
+			ERROR("NS SMCR_EL2 expected: 0x%lx, got: 0x%lx\n",
+			      ns_smcr_el2, ns_smcr_el2_cur);
+			rc = TEST_RESULT_FAIL;
+		}
+
+		if (sme_smstat_sm() != ssve_mode) {
+			if (ssve_mode) {
+				ERROR("NS Streaming SVE mode is disabled\n");
+			} else {
+				ERROR("NS Streaming SVE mode is enabled\n");
+			}
+
+			rc = TEST_RESULT_FAIL;
+		}
+	}
+
+	/* Exit Streaming SVE mode if test case enabled it */
+	if (ssve_mode) {
+		sme_smstop(SMSTOP_SM);
+	}
+
 	if (!host_destroy_realm()) {
 		return TEST_RESULT_FAIL;
 	}

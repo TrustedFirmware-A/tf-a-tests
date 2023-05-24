@@ -215,7 +215,7 @@ bool host_create_realm_payload(u_register_t realm_payload_adr,
 	/* Read Realm Feature Reg 0 */
 	if (host_rmi_features(0UL, &realm.rmm_feat_reg0) != REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_rmi_features");
-		goto destroy_realm;
+		return false;
 	}
 
 	/* Disable PMU if not required */
@@ -224,6 +224,16 @@ bool host_create_realm_payload(u_register_t realm_payload_adr,
 			~(RMI_FEATURE_REGISTER_0_PMU_EN |
 			  RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS);
 	}
+
+	/* Set SVE bits from feature_flag */
+	realm.rmm_feat_reg0 &= ~(MASK(RMI_FEATURE_REGISTER_0_SVE_EN) |
+				 MASK(RMI_FEATURE_REGISTER_0_SVE_VL));
+	realm.rmm_feat_reg0 |= INPLACE(RMI_FEATURE_REGISTER_0_SVE_EN,
+				       EXTRACT(RMI_FEATURE_REGISTER_0_SVE_EN,
+					       feature_flag));
+	realm.rmm_feat_reg0 |= INPLACE(RMI_FEATURE_REGISTER_0_SVE_VL,
+				       EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL,
+					       feature_flag));
 
 	/* Create Realm */
 	if (host_realm_create(&realm) != REALM_SUCCESS) {

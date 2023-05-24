@@ -93,6 +93,20 @@ void realm_payload_main(void)
 			break;
 		case REALM_REQ_FPU_CMP_CMD:
 			test_succeed = fpu_state_compare_template(&fpu_temp_rl);
+		case REALM_SVE_RDVL:
+			test_succeed = test_realm_sve_rdvl();
+			break;
+		case REALM_SVE_ID_REGISTERS:
+			test_succeed = test_realm_sve_read_id_registers();
+			break;
+		case REALM_SVE_PROBE_VL:
+			test_succeed = test_realm_sve_probe_vl();
+			break;
+		case REALM_SVE_OPS:
+			test_succeed = test_realm_sve_ops();
+			break;
+		case REALM_SVE_FILL_REGS:
+			test_succeed = test_realm_sve_fill_regs();
 			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);

@@ -13,6 +13,8 @@
 #define MAX_BUF_SIZE		10240U
 #define MAX_DATA_SIZE		5U
 
+#define REALM_CMD_BUFFER_SIZE	1024U
+
 /*
  * This structure maps the shared memory to be used between the Host and Realm
  * payload
@@ -30,6 +32,9 @@ typedef struct host_shared_data {
 	/* array of output results passed from Realm to Host */
 	u_register_t realm_out_val[MAX_DATA_SIZE];
 
+	/* Buffer to save Realm command results */
+	uint8_t realm_cmd_output_buffer[REALM_CMD_BUFFER_SIZE];
+
 	/* Lock to avoid concurrent accesses to log_buffer */
 	spinlock_t printf_lock;
 } host_shared_data_t;
@@ -45,7 +50,12 @@ enum realm_cmd {
 	REALM_PMU_PRESERVE,
 	REALM_PMU_INTERRUPT,
 	REALM_REQ_FPU_FILL_CMD,
-	REALM_REQ_FPU_CMP_CMD
+	REALM_REQ_FPU_CMP_CMD,
+	REALM_SVE_RDVL,
+	REALM_SVE_ID_REGISTERS,
+	REALM_SVE_PROBE_VL,
+	REALM_SVE_OPS,
+	REALM_SVE_FILL_REGS
 };
 
 /*

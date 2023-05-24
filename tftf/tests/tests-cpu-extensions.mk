@@ -13,7 +13,6 @@ TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	extensions/pmuv3/test_pmuv3.c					\
 	extensions/mte/test_mte.c					\
 	extensions/pauth/test_pauth.c					\
-	extensions/sve/sve_operations.S					\
 	extensions/sme/test_sme.c					\
 	extensions/sme/test_sme2.c					\
 	extensions/spe/test_spe.c					\

@@ -140,6 +140,7 @@
 #define ID_AA64PFR0_AMU_V1P1	U(0x2)
 #define ID_AA64PFR0_ELX_MASK	ULL(0xf)
 #define ID_AA64PFR0_SVE_SHIFT	U(32)
+#define ID_AA64PFR0_SVE_WIDTH	U(4)
 #define ID_AA64PFR0_SVE_MASK	ULL(0xf)
 #define ID_AA64PFR0_SVE_LENGTH	U(4)
 #define ID_AA64PFR0_MPAM_SHIFT	U(40)
@@ -388,6 +389,11 @@
 #define CPACR_EL1_FP_TRAP_EL0	U(0x1)
 #define CPACR_EL1_FP_TRAP_ALL	U(0x2)
 #define CPACR_EL1_FP_TRAP_NONE	U(0x3)
+
+#define CPACR_EL1_ZEN(x)	((x) << 16)
+#define CPACR_EL1_ZEN_TRAP_EL0	U(0x1)
+#define CPACR_EL1_ZEN_TRAP_ALL	U(0x2)
+#define CPACR_EL1_ZEN_TRAP_NONE	U(0x3)
 
 /* SCR definitions */
 #define SCR_RES1_BITS		((U(1) << 4) | (U(1) << 5))
@@ -852,14 +858,17 @@
 /*******************************************************************************
  * Definitions for system register interface to SVE
  ******************************************************************************/
-#define ZCR_EL3			S3_6_C1_C2_0
-#define ZCR_EL2			S3_4_C1_C2_0
-
-/* ZCR_EL3 definitions */
-#define ZCR_EL3_LEN_MASK	U(0xf)
+#define ID_AA64ZFR0_EL1		S3_0_C0_C4_4
 
 /* ZCR_EL2 definitions */
-#define ZCR_EL2_LEN_MASK	U(0xf)
+#define ZCR_EL2			S3_4_C1_C2_0
+#define ZCR_EL2_SVE_VL_SHIFT	UL(0)
+#define ZCR_EL2_SVE_VL_WIDTH	UL(4)
+
+/* ZCR_EL1 definitions */
+#define ZCR_EL1			S3_0_C1_C2_0
+#define ZCR_EL1_SVE_VL_SHIFT	UL(0)
+#define ZCR_EL1_SVE_VL_WIDTH	UL(4)
 
 /*******************************************************************************
  * Definitions for system register interface to SME

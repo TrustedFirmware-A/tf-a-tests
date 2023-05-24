@@ -15,9 +15,6 @@
 
 #if __GNUC__ > 8 || (__GNUC__ == 8 && __GNUC_MINOR__ > 0)
 
-extern void sve_subtract_arrays(int *difference, const int *sve_op_1,
-				const int *sve_op_2);
-
 static int sve_difference[SVE_ARRAYSIZE];
 static int sve_op_1[SVE_ARRAYSIZE];
 static int sve_op_2[SVE_ARRAYSIZE];
@@ -43,7 +40,7 @@ test_result_t test_sve_support(void)
 	}
 
 	/* Perform SVE operations */
-	sve_subtract_arrays(sve_difference, sve_op_1, sve_op_2);
+	sve_subtract_arrays(sve_difference, sve_op_1, sve_op_2, SVE_ARRAYSIZE);
 
 	return TEST_RESULT_SUCCESS;
 }

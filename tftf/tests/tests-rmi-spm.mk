@@ -21,6 +21,7 @@ TESTS_SOURCES	+=							\
 		${ARCH}/ffa_arch_helpers.S				\
 		ffa_helpers.c						\
 		spm_common.c						\
+		spm_test_helpers.c					\
 	)
 
 TESTS_SOURCES	+=							\

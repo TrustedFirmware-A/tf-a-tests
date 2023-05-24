@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2024, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+
+  <testsuite name="FF-A Memory Sharing (RME)"
+             description="Test FF-A Memory Sharing ABIs" >
+     <testcase name="Lend Memory to Secure World"
+               function="test_mem_lend_sp" />
+     <testcase name="Lend memory, clear flag set"
+               function="test_mem_share_to_sp_clear_memory"/>
+     <testcase name="Share Memory with Secure World"
+               function="test_mem_share_sp" />
+     <testcase name="Donate Memory to Secure World"
+               function="test_mem_donate_sp"/>
+     <testcase name="Request Share Memory SP-to-SP"
+               function="test_req_mem_share_sp_to_sp" />
+     <testcase name="Request Lend Memory SP-to-SP"
+               function="test_req_mem_lend_sp_to_sp" />
+     <testcase name="Request Donate Memory SP-to-SP"
+               function="test_req_mem_donate_sp_to_sp" />
+     <testcase name="Request Share NS Memory (large PA) SP-to-SP"
+               function="test_req_ns_mem_share_sp_to_sp" />
+     <testcase name="Request Share Memory SP-to-VM"
+               function="test_req_mem_share_sp_to_vm" />
+     <testcase name="Request Lend Memory SP-to-VM"
+               function="test_req_mem_lend_sp_to_vm" />
+     <testcase name="Share forbidden memory with SP"
+               function="test_share_forbidden_ranges" />
+     <testcase name="Donate consecutively"
+               function="test_consecutive_donate" />
+  </testsuite>
+
+  <testsuite name="Invalid memory access" description="Invalid memory access">
+      <testcase name="Access EL3 memory from NS world"
+                function="el3_memory_cannot_be_accessed_in_ns" />
+      <testcase name="Access Secure memory from NS world"
+                function="s_memory_cannot_be_accessed_in_ns" />
+  </testsuite>
+
+  <testsuite name="Invalid memory access with RME extension"
+    description="Invalid memory access with RME extension">
+      <testcase name="Access Realm memory from NS world"
+                function="rl_memory_cannot_be_accessed_in_ns" />
+      <testcase name="Access Secure memory from Realm world"
+                function="s_memory_cannot_be_accessed_in_rl" />
+      <testcase name="Access Root memory from Realm world"
+                function="rt_memory_cannot_be_accessed_in_rl" />
+      <testcase name="Share memory to an SP from a Root region"
+                function="rt_memory_cannot_be_accessed_in_s" />
+  </testsuite>
+
+</testsuites>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,7 +8,11 @@
 #define ARCH_FEATURES_H
 
 #include <stdbool.h>
+#include <stdint.h>
+
+#include <arch_features.h>
 #include <arch_helpers.h>
+#include <utils_def.h>
 
 static inline bool is_armv7_gentimer_present(void)
 {
@@ -238,6 +242,51 @@ static inline bool is_feat_sme2_supported(void)
 
 	features = read_id_aa64pfr1_el1() >> ID_AA64PFR1_EL1_SME_SHIFT;
 	return (features & ID_AA64PFR1_EL1_SME_MASK) >= ID_AA64PFR1_EL1_SME2_SUPPORTED;
+}
+
+static inline u_register_t get_id_aa64mmfr0_el0_tgran4(void)
+{
+	return EXTRACT(ID_AA64MMFR0_EL1_TGRAN4, read_id_aa64mmfr0_el1());
+}
+
+static inline u_register_t get_id_aa64mmfr0_el0_tgran4_2(void)
+{
+	return EXTRACT(ID_AA64MMFR0_EL1_TGRAN4_2, read_id_aa64mmfr0_el1());
+}
+
+static inline u_register_t get_id_aa64mmfr0_el0_tgran16(void)
+{
+	return EXTRACT(ID_AA64MMFR0_EL1_TGRAN16, read_id_aa64mmfr0_el1());
+}
+
+static inline u_register_t get_id_aa64mmfr0_el0_tgran16_2(void)
+{
+	return EXTRACT(ID_AA64MMFR0_EL1_TGRAN16_2, read_id_aa64mmfr0_el1());
+}
+
+static inline u_register_t get_id_aa64mmfr0_el0_tgran64(void)
+{
+	return EXTRACT(ID_AA64MMFR0_EL1_TGRAN64, read_id_aa64mmfr0_el1());
+}
+
+static inline u_register_t get_id_aa64mmfr0_el0_tgran64_2(void)
+{
+	return EXTRACT(ID_AA64MMFR0_EL1_TGRAN64_2, read_id_aa64mmfr0_el1());
+}
+
+static inline bool is_feat_52b_on_4k_supported(void)
+{
+	return (get_id_aa64mmfr0_el0_tgran4() ==
+				ID_AA64MMFR0_EL1_TGRAN4_52B_SUPPORTED);
+}
+
+static inline bool is_feat_52b_on_4k_2_supported(void)
+{
+	u_register_t tgran4_2 = get_id_aa64mmfr0_el0_tgran4_2();
+
+	return ((tgran4_2 == ID_AA64MMFR0_EL1_TGRAN4_2_52B_SUPPORTED) ||
+		((tgran4_2 == ID_AA64MMFR0_EL1_TGRAN4_2_AS_1)
+			&& (is_feat_52b_on_4k_supported() == true)));
 }
 
 #endif /* ARCH_FEATURES_H */

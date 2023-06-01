@@ -19,8 +19,8 @@
 #define SME2_INPUT_DATA		(0x1fffffffffffffff)
 
 /* Global buffers */
-static uint64_t sme2_input_buffer[SME2_ARRAYSIZE] = {0};
-static uint64_t sme2_output_buffer[SME2_ARRAYSIZE] = {0};
+static __aligned(16) uint64_t sme2_input_buffer[SME2_ARRAYSIZE] = {0};
+static __aligned(16) uint64_t sme2_output_buffer[SME2_ARRAYSIZE] = {0};
 
 /*
  * clear_ZT0: ZERO all bytes of the ZT0 register.

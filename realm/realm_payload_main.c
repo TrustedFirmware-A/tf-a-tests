@@ -93,6 +93,7 @@ void realm_payload_main(void)
 			break;
 		case REALM_REQ_FPU_CMP_CMD:
 			test_succeed = fpu_state_compare_template(&fpu_temp_rl);
+			break;
 		case REALM_SVE_RDVL:
 			test_succeed = test_realm_sve_rdvl();
 			break;

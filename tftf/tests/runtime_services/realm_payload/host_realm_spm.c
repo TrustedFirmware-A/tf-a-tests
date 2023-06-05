@@ -146,7 +146,7 @@ static bool fpu_fill_rl(void)
 /* Send request to Realm to compare FPU/SIMD regs with previous realm template values */
 static bool fpu_cmp_rl(void)
 {
-	if (!host_enter_realm_execute(REALM_REQ_FPU_FILL_CMD, NULL, RMI_EXIT_HOST_CALL)) {
+	if (!host_enter_realm_execute(REALM_REQ_FPU_CMP_CMD, NULL, RMI_EXIT_HOST_CALL)) {
 		ERROR("%s failed %d\n", __func__, __LINE__);
 		return false;
 	}

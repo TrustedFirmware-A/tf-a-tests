@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <debug.h>
 #include <stdlib.h>
+#include <sync.h>
 #include <lib/extensions/sve.h>
 
 #include <host_realm_sve.h>
@@ -21,6 +22,8 @@ static int rl_sve_op_1[RL_SVE_OP_ARRAYSIZE];
 static int rl_sve_op_2[RL_SVE_OP_ARRAYSIZE];
 
 static sve_vector_t rl_sve_vectors_write[SVE_NUM_VECTORS] __aligned(16);
+
+static int volatile realm_got_undef_abort;
 
 /* Returns the maximum supported VL. This test is called only by sve Realm */
 bool test_realm_sve_rdvl(void)
@@ -125,6 +128,37 @@ bool test_realm_sve_fill_regs(void)
 
 	memset((void *)&rl_sve_vectors_write, 0xcd, vl * SVE_NUM_VECTORS);
 	sve_fill_vector_regs(rl_sve_vectors_write);
+
+	return true;
+}
+
+static bool realm_sync_exception_handler(void)
+{
+	uint64_t esr_el1 = read_esr_el1();
+
+	if (EC_BITS(esr_el1) == EC_UNKNOWN) {
+		realm_printf("Realm: received undefined abort. "
+			     "esr_el1: 0x%llx elr_el1: 0x%llx\n",
+			     esr_el1, read_elr_el1());
+		realm_got_undef_abort++;
+	}
+
+	return true;
+}
+
+/* Check if Realm gets undefined abort when it accesses SVE functionality */
+bool test_realm_sve_undef_abort(void)
+{
+	realm_got_undef_abort = 0UL;
+
+	/* install exception handler to catch undef abort */
+	register_custom_sync_exception_handler(&realm_sync_exception_handler);
+	(void)sve_rdvl_1();
+	unregister_custom_sync_exception_handler();
+
+	if (realm_got_undef_abort == 0UL) {
+		return false;
+	}
 
 	return true;
 }

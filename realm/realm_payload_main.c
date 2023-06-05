@@ -119,6 +119,9 @@ void realm_payload_main(void)
 		case REALM_SVE_FILL_REGS:
 			test_succeed = test_realm_sve_fill_regs();
 			break;
+		case REALM_SVE_UNDEF_ABORT:
+			test_succeed = test_realm_sve_undef_abort();
+			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);
 			break;

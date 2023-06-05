@@ -540,3 +540,36 @@ rm_realm:
 
 	return rc;
 }
+
+/*
+ * Create a non SVE Realm and try to access SVE, the Realm must receive
+ * undefined abort.
+ */
+test_result_t host_non_sve_realm_check_undef_abort(void)
+{
+	test_result_t rc;
+	bool realm_rc;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+	SKIP_TEST_IF_SVE_NOT_SUPPORTED();
+
+	rc = host_create_sve_realm_payload(false, 0);
+	if (rc != TEST_RESULT_SUCCESS) {
+		return rc;
+	}
+
+	realm_rc = host_enter_realm_execute(REALM_SVE_UNDEF_ABORT, NULL,
+					    RMI_EXIT_HOST_CALL, 0U);
+	if (!realm_rc) {
+		ERROR("Realm didn't receive undefined abort\n");
+		rc = TEST_RESULT_FAIL;
+	} else {
+		rc = TEST_RESULT_SUCCESS;
+	}
+
+	if (!host_destroy_realm()) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return rc;
+}

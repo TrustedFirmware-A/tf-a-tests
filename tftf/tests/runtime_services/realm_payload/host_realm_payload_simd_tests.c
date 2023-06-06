@@ -30,6 +30,9 @@
 /* Number of SVE configs: SVE_VL */
 #define NUM_SVE_CONFIGS		(1U)
 
+#define NS_NORMAL_SVE			0x1U
+#define NS_STREAMING_SVE		0x2U
+
 typedef enum security_state {
 	NONSECURE_WORLD = 0U,
 	REALM_WORLD,
@@ -417,30 +420,37 @@ test_result_t host_sve_realm_check_config_register(void)
  *	false - On success
  *	true  - On failure
  */
-static bool callback_enter_realm(void)
+static bool callback_realm_do_sve(void)
 {
 
 	return !host_enter_realm_execute(REALM_SVE_OPS, NULL,
 					 RMI_EXIT_HOST_CALL, 0U);
 }
 
-/* Intermittently switch to Realm while doing NS SVE ops */
-test_result_t host_sve_realm_check_vectors_operations(void)
+/*
+ * Sends command to Realm to do SVE operations, while NS is also doing SVE
+ * operations.
+ * Returns:
+ *	false - On success
+ *	true  - On failure
+ */
+static bool callback_realm_do_fpu(void)
 {
-	u_register_t rmi_feat_reg0;
+	return !host_enter_realm_execute(REALM_REQ_FPU_FILL_CMD, NULL,
+					 RMI_EXIT_HOST_CALL, 0U);
+}
+
+static test_result_t run_sve_vectors_operations(bool realm_sve_en,
+						uint8_t realm_sve_vq,
+						int ns_sve_mode)
+{
+	bool (*realm_callback)(void);
 	test_result_t rc;
-	uint8_t sve_vq;
 	bool cb_err;
 	unsigned int i;
 	int val;
 
-	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
-
-	CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(rmi_feat_reg0);
-
-	sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
-
-	rc = host_create_sve_realm_payload(true, sve_vq);
+	rc = host_create_sve_realm_payload(realm_sve_en, realm_sve_vq);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}
@@ -452,16 +462,26 @@ test_result_t host_sve_realm_check_vectors_operations(void)
 		ns_sve_op_2[i] = 1;
 	}
 
+	if (realm_sve_en) {
+		realm_callback = callback_realm_do_sve;
+	} else {
+		realm_callback = callback_realm_do_fpu;
+	}
+
 	for (i = 0U; i < SVE_TEST_ITERATIONS; i++) {
-		/* Config NS world with random SVE length */
-		sve_config_vq(SVE_GET_RANDOM_VQ);
+		/* Config NS world with random SVE VL or SVE SVL */
+		if (ns_sve_mode == NS_NORMAL_SVE) {
+			sve_config_vq(SVE_GET_RANDOM_VQ);
+		} else {
+			sme_config_svq(SME_GET_RANDOM_SVQ);
+		}
 
 		/* Perform SVE operations with intermittent calls to Realm */
 		cb_err = sve_subtract_arrays_interleaved(ns_sve_op_1,
 							 ns_sve_op_1,
 							 ns_sve_op_2,
 							 NS_SVE_OP_ARRAYSIZE,
-							 &callback_enter_realm);
+							 realm_callback);
 		if (cb_err) {
 			ERROR("Callback to realm failed\n");
 			rc = TEST_RESULT_FAIL;
@@ -474,8 +494,9 @@ test_result_t host_sve_realm_check_vectors_operations(void)
 
 	for (i = 0U; i < NS_SVE_OP_ARRAYSIZE; i++) {
 		if (ns_sve_op_1[i] != (val - i - SVE_TEST_ITERATIONS)) {
-			ERROR("SVE op failed at idx: %u, expected: 0x%x "
-			      "received: 0x%x\n", i,
+			ERROR("%s op failed at idx: %u, expected: 0x%x received:"
+			      " 0x%x\n", (ns_sve_mode == NS_NORMAL_SVE) ?
+			      "SVE" : "SVE", i,
 			      (val - i - SVE_TEST_ITERATIONS), ns_sve_op_1[i]);
 			rc = TEST_RESULT_FAIL;
 		}
@@ -485,6 +506,65 @@ rm_realm:
 	if (!host_destroy_realm()) {
 		return TEST_RESULT_FAIL;
 	}
+
+	return rc;
+}
+
+/*
+ * Intermittently switch to Realm while doing NS is doing SVE ops in Normal
+ * SVE mode.
+ *
+ * This testcase runs for SVE only config or SVE + SME config
+ */
+test_result_t host_sve_realm_check_vectors_operations(void)
+{
+	u_register_t rmi_feat_reg0;
+	uint8_t realm_sve_vq;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+	CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(rmi_feat_reg0);
+
+	realm_sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
+
+	/* Run SVE operations in Normal SVE mode */
+	return run_sve_vectors_operations(true, realm_sve_vq, NS_NORMAL_SVE);
+}
+
+/*
+ * Intermittently switch to Realm while doing NS is doing SVE ops in Streaming
+ * SVE mode
+ *
+ * This testcase runs for SME only config or SVE + SME config
+ */
+test_result_t host_sve_realm_check_streaming_vectors_operations(void)
+{
+	u_register_t rmi_feat_reg0;
+	test_result_t rc;
+	uint8_t realm_sve_vq;
+	bool realm_sve_en;
+
+	SKIP_TEST_IF_SME_NOT_SUPPORTED();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (is_armv8_2_sve_present()) {
+		CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(rmi_feat_reg0);
+		realm_sve_en = true;
+		realm_sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL,
+				       rmi_feat_reg0);
+	} else {
+		realm_sve_en = 0;
+		realm_sve_vq = 0;
+	}
+
+	/* Enter Streaming SVE mode */
+	sme_smstart(SMSTART_SM);
+
+	/* Run SVE operations in Streaming SVE mode */
+	rc = run_sve_vectors_operations(realm_sve_en, realm_sve_vq,
+					NS_STREAMING_SVE);
+
+	/* Exit Streaming SVE mode */
+	sme_smstop(SMSTOP_SM);
 
 	return rc;
 }

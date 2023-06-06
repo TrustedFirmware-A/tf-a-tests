@@ -5,3 +5,6 @@
 #
 Realm payload at EL1
 SIMD,SVE Registers context
+Invalid memory access with RME extension
+RMI and SPM tests
+SP exceptions

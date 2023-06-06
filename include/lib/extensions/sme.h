@@ -28,7 +28,7 @@ void sme_smstart(smestart_instruction_type_t smstart_type);
 void sme_smstop(smestop_instruction_type_t smstop_type);
 
 /* Assembly function prototypes. */
-uint64_t sme_rdvl_1(void);
+uint64_t sme_rdsvl_1(void);
 void sme_try_illegal_instruction(void);
 void sme_vector_to_ZA(const uint64_t *input_vector);
 void sme_ZA_to_vector(const uint64_t *output_vector);

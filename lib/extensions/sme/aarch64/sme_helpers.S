@@ -9,7 +9,7 @@
 #include <assert_macros.S>
 
 	.arch	armv8-a+sve
-	.globl	sme_rdvl_1
+	.globl	sme_rdsvl_1
 	.globl	sme_try_illegal_instruction
 	.globl  sme_vector_to_ZA
 	.globl  sme_ZA_to_vector
@@ -56,14 +56,28 @@
 .endm
 
 /*
- * uint64_t sme_rdvl_1(void);
+ * RDSVL - Read multiple of Streaming SVE vector register size to scalar register
+ * RDSVL <Xd>, #<imm>
  *
- * Run rdvl instruction with imm #1.
+ * Arguments/Opcode bit field:
+ * Xd	: 64-bit name of the general-purpose base register.
+ * imm	: signed immediate operand (imm6)
  */
-func sme_rdvl_1
-	rdvl	x0, #1
+.macro _sme_rdsvl xd, imm
+	.inst	0x04bf5800			\
+		| (((\imm) & 0x3f) << 5)	\
+		| (\xd)
+.endm
+
+/*
+ * uint64_t sme_rdsvl_1(void);
+ *
+ * Run rdsvl instruction with imm #1.
+ */
+func sme_rdsvl_1
+	_sme_rdsvl	0, 1
 	ret
-endfunc sme_rdvl_1
+endfunc sme_rdsvl_1
 
 /*
  * void sme_try_illegal_instruction(void);

@@ -55,6 +55,19 @@ else
 endif
 export Q
 
+################################################################################
+# Toolchain configs
+################################################################################
+CC			:=	${CROSS_COMPILE}gcc
+CPP			:=	${CROSS_COMPILE}cpp
+AS			:=	${CROSS_COMPILE}gcc
+AR			:=	${CROSS_COMPILE}ar
+LD			:=	${CROSS_COMPILE}ld
+OC			:=	${CROSS_COMPILE}objcopy
+OD			:=	${CROSS_COMPILE}objdump
+NM			:=	${CROSS_COMPILE}nm
+PP			:=	${CROSS_COMPILE}gcc
+
 ifneq (${DEBUG}, 0)
 	BUILD_TYPE	:=	debug
 	# Use LOG_LEVEL_INFO by default for debug builds
@@ -182,7 +195,9 @@ $(eval $(call add_define,TFTF_DEFINES,USE_NVM))
 
 ################################################################################
 
+################################################################################
 # Assembler, compiler and linker flags shared across all test images.
+################################################################################
 COMMON_ASFLAGS		:=
 COMMON_CFLAGS		:=
 COMMON_LDFLAGS		:=
@@ -215,43 +230,68 @@ endif
 $(info Arm Architecture Features specified: $(subst +, ,$(arch-features)))
 endif	# arch-features
 
-COMMON_ASFLAGS_aarch64	:=	-mgeneral-regs-only ${march64-directive}
-COMMON_CFLAGS_aarch64	:=	-mgeneral-regs-only -mstrict-align ${march64-directive}
+################################################################################
+# Compiler settings
+################################################################################
+ifneq ($(findstring clang,$(notdir $(CC))),)
+CLANG_CFLAGS_aarch64	:=	-target aarch64-elf
 
-COMMON_ASFLAGS_aarch32	:=	${march32-directive}
-COMMON_CFLAGS_aarch32	:=	${march32-directive} -mno-unaligned-access
+CPP			:=	$(CC) -E $(COMMON_CFLAGS_$(ARCH))
+PP			:=	$(CC) -E $(COMMON_CFLAGS_$(ARCH))
 
-COMMON_ASFLAGS		+=	-nostdinc -ffreestanding -Wa,--fatal-warnings	\
-				-Werror -Wmissing-include-dirs			\
-				-D__ASSEMBLY__ $(COMMON_ASFLAGS_$(ARCH))	\
-				${INCLUDES}
-COMMON_CFLAGS		+=	-nostdinc -ffreestanding -Wall	-Werror 	\
-				-Wmissing-include-dirs $(COMMON_CFLAGS_$(ARCH))	\
+CLANG_WARNINGS		+=	-nostdinc -ffreestanding -Wall	\
+				-Wmissing-include-dirs $(CLANG_CFLAGS_$(ARCH))	\
+				-Wlogical-op-parentheses \
+				-Wno-initializer-overrides \
+				-Wno-sometimes-uninitialized \
+				-Wno-unused-function \
+				-Wno-unused-variable \
+				-Wno-unused-parameter \
+				-Wno-tautological-compare \
+				-Wno-memset-transposed-args \
+				-Wno-parentheses
+
+CLANG_CFLAGS		+= 	-Wno-error=deprecated-declarations \
+				-Wno-error=cpp \
+				$(CLANG_WARNINGS)
+endif #(clang)
+
+ifneq ($(findstring gcc,$(notdir $(CC))),)
+GCC_CFLAGS_aarch32	:=	${march32-directive} -mno-unaligned-access
+GCC_CFLAGS_aarch64	:=	-mgeneral-regs-only
+
+GCC_ASFLAGS_aarch32	:=	${march32-directive}
+GCC_ASFLAGS_aarch64	:=	-mgeneral-regs-only ${march64-directive}
+
+GCC_WARNINGS		+=	-nostdinc -ffreestanding -Wall -Werror 	\
+				-Wmissing-include-dirs  $(GCC_CFLAGS_$(ARCH)) \
 				-std=gnu99 -Os
+
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
+GCC_CFLAGS		+=	$(call cc_option, --param=min-pagesize=0)
+GCC_CFLAGS		+= 	$(GCC_WARNINGS)
+endif #(gcc)
+
+COMMON_CFLAGS_aarch64	+=	${march64-directive} -mstrict-align \
+				$(CLANG_CFLAGS_$(ARCH)) $(GCC_CFLAGS_$(ARCH))
+
+COMMON_CFLAGS		+=	$(COMMON_CFLAGS_$(ARCH))
 COMMON_CFLAGS		+=	-ffunction-sections -fdata-sections
 
 # Get the content of CFLAGS user defined value last so they are appended after
 # the options defined in the Makefile
-COMMON_CFLAGS 		+=	${CFLAGS} ${INCLUDES}
+COMMON_CFLAGS 		+=	${CLANG_CFLAGS} ${GCC_CFLAGS} ${INCLUDES}
+
+COMMON_ASFLAGS		+=	-nostdinc -ffreestanding -Wa,--fatal-warnings	\
+				-Werror -Wmissing-include-dirs			\
+				-D__ASSEMBLY__ $(GCC_ASFLAGS_$(ARCH))	\
+				${INCLUDES}
 
 COMMON_LDFLAGS		+=	${LDFLAGS} --fatal-warnings -O1 --gc-sections --build-id=none
-
-CC			:=	${CROSS_COMPILE}gcc
-CPP			:=	${CROSS_COMPILE}cpp
-AS			:=	${CROSS_COMPILE}gcc
-AR			:=	${CROSS_COMPILE}ar
-LD			:=	${CROSS_COMPILE}ld
-OC			:=	${CROSS_COMPILE}objcopy
-OD			:=	${CROSS_COMPILE}objdump
-NM			:=	${CROSS_COMPILE}nm
-PP			:=	${CROSS_COMPILE}gcc
 
 # With ld.bfd version 2.39 and newer new warnings are added. Skip those since we
 # are not loaded by a elf loader.
 COMMON_LDFLAGS		+=	$(call ld_option, --no-warn-rwx-segments)
-
-# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
-COMMON_CFLAGS		+=	$(call cc_option, --param=min-pagesize=0)
 
 ################################################################################
 
@@ -590,6 +630,9 @@ SP_LAYOUT:
 # The EL3 test payload is only supported in AArch64. It has an independent build
 # system.
 .PHONY: el3_payload
+# TODO: EL3 test payload currently is supported for GCC only. It has an independent
+# build system and support for Clang to be added.
+ifneq ($(findstring gcc,$(notdir $(CC))),)
 ifneq (${ARCH},aarch32)
 ifneq ($(wildcard ${EL3_PAYLOAD_PLAT_MAKEFILE_FULL}),)
 el3_payload: $(BUILD_DIR)
@@ -597,6 +640,7 @@ el3_payload: $(BUILD_DIR)
 	${Q}find "el3_payload/build/${PLAT}" -name '*.bin' -exec cp {} "${BUILD_PLAT}" \;
 
 all: el3_payload
+endif
 endif
 endif
 

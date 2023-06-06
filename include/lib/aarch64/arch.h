@@ -967,7 +967,13 @@
 
 /* SMCR_ELx definitions */
 #define SMCR_ELX_LEN_SHIFT		U(0)
-#define SMCR_ELX_LEN_MASK		U(0x1ff)
+#define SMCR_ELX_LEN_WIDTH		U(4)
+/*
+ * SMCR_ELX_RAZ_LEN is defined to find the architecturally permitted SVL. This
+ * is a combination of RAZ and LEN bit fields.
+ */
+#define SMCR_ELX_RAZ_LEN_SHIFT		UL(0)
+#define SMCR_ELX_RAZ_LEN_WIDTH		UL(9)
 #define SMCR_ELX_EZT0_BIT		(U(1) << 30)
 #define SMCR_ELX_FA64_BIT		(U(1) << 31)
 #define SMCR_EL2_RESET_VAL		(SMCR_ELX_EZT0_BIT | SMCR_ELX_FA64_BIT)

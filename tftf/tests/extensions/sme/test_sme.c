@@ -98,23 +98,23 @@ test_result_t test_sme_support(void)
 	saved_smcr = read_smcr_el2();
 
 	/* Write SMCR_EL2 with the LEN max to find implemented width. */
-	write_smcr_el2(SME_SMCR_LEN_MAX);
+	write_smcr_el2(MASK(SMCR_ELX_RAZ_LEN));
 	isb();
 
 	len_max = (unsigned int)read_smcr_el2();
 	VERBOSE("Maximum SMCR_EL2.LEN value: 0x%x\n", len_max);
 	VERBOSE("Enumerating supported vector lengths...\n");
 	for (unsigned int i = 0; i <= len_max; i++) {
-		/* Load new value into SMCR_EL2.LEN */
+		/* Load new value into SMCR_EL2.RAZ_LEN */
 		reg = read_smcr_el2();
-		reg &= ~(SMCR_ELX_LEN_MASK << SMCR_ELX_LEN_SHIFT);
-		reg |= (i << SMCR_ELX_LEN_SHIFT);
+		reg &= ~(MASK(SMCR_ELX_RAZ_LEN));
+		reg |= INPLACE(SMCR_ELX_RAZ_LEN, i);
 		write_smcr_el2(reg);
 		isb();
 
 		/* Compute current and requested vector lengths in bits. */
 		current_vector_len = ((unsigned int)sme_rdsvl_1() * 8U);
-		requested_vector_len = (i+1U)*128U;
+		requested_vector_len = (i + 1U) * 128U;
 
 		/*
 		 * We count down from the maximum SMLEN value, so if the values
@@ -122,13 +122,16 @@ test_result_t test_sme_support(void)
 		 */
 		if (current_vector_len == requested_vector_len) {
 			svl_max = current_vector_len;
-			VERBOSE("SUPPORTED:     %u bits (LEN=%u)\n", requested_vector_len, i);
+			VERBOSE("SUPPORTED:     %u bits (LEN=%u)\n",
+				requested_vector_len, i);
 		} else {
-			VERBOSE("NOT SUPPORTED:     %u bits (LEN=%u)\n", requested_vector_len, i);
+			VERBOSE("NOT SUPPORTED:     %u bits (LEN=%u)\n",
+				requested_vector_len, i);
 		}
 	}
 
-	INFO("Largest Supported Streaming Vector Length(SVL): %u bits \n", svl_max);
+	INFO("Largest Supported Streaming Vector Length(SVL): %u bits\n",
+	     svl_max);
 
 	/* Exiting Streaming SVE mode */
 	sme_smstop(SMSTOP_SM);

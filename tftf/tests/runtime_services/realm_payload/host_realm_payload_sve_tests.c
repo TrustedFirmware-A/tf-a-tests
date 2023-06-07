@@ -45,13 +45,13 @@ static sve_vector_t ns_sve_vectors_read[SVE_NUM_VECTORS] __aligned(16);
 
 static test_result_t host_create_sve_realm_payload(bool sve_en, uint8_t sve_vq)
 {
-	u_register_t rmi_feat_reg0;
+	u_register_t feature_flag;
 
 	if (sve_en) {
-		rmi_feat_reg0 = RMI_FEATURE_REGISTER_0_SVE_EN |
-				INPLACE(RMI_FEATURE_REGISTER_0_SVE_VL, sve_vq);
+		feature_flag = RMI_FEATURE_REGISTER_0_SVE_EN |
+				INPLACE(FEATURE_SVE_VL, sve_vq);
 	} else {
-		rmi_feat_reg0 = 0UL;
+		feature_flag = 0UL;
 	}
 
 	/* Initialise Realm payload */
@@ -60,7 +60,7 @@ static test_result_t host_create_sve_realm_payload(bool sve_en, uint8_t sve_vq)
 				       (u_register_t)(PAGE_POOL_MAX_SIZE +
 						      NS_REALM_SHARED_MEM_SIZE),
 				       (u_register_t)PAGE_POOL_MAX_SIZE,
-				       rmi_feat_reg0)) {
+				       feature_flag)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -90,14 +90,14 @@ test_result_t host_check_rmi_reports_proper_sve_vl(void)
 	rmi_sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
 
 	/*
-	 * configure NS to arch supported max VL and get the value reported
+	 * Configure NS to arch supported max VL and get the value reported
 	 * by rdvl
 	 */
 	sve_config_vq(SVE_VQ_ARCH_MAX);
 	ns_sve_vq = SVE_VL_TO_VQ(sve_vector_length_get());
 
 	if (rmi_sve_vq != ns_sve_vq) {
-		ERROR("RMI max SVE VL %u bits doesn't matches NS max "
+		ERROR("RMI max SVE VL %u bits don't match NS max "
 		      "SVE VL %u bits\n", SVE_VQ_TO_BITS(rmi_sve_vq),
 		      SVE_VQ_TO_BITS(ns_sve_vq));
 		return TEST_RESULT_FAIL;
@@ -135,7 +135,7 @@ test_result_t host_sve_realm_cmd_rdvl(void)
 		goto rm_realm;
 	}
 
-	/* check if rdvl matches the SVE VL created */
+	/* Check if rdvl matches the SVE VL created */
 	sd = host_get_shared_structure();
 	rl_output = (struct sve_cmd_rdvl *)sd->realm_cmd_output_buffer;
 	rl_max_sve_vq = SVE_VL_TO_VQ(rl_output->rdvl);
@@ -170,19 +170,12 @@ test_result_t host_sve_realm_test_invalid_vl(void)
 	sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
 
 	/*
-	 * If RMM supports MAX SVE VQ, we can't pass in an invalid sve_vq to
-	 * create a realm, so skip the test. Else pass a sve_vq that is greater
-	 * than the value supported by RMM and check whether creating Realm fails
+	 * Pass a sve_vq that is greater than the value supported by RMM
+	 * and check whether creating Realm fails
 	 */
-	if (sve_vq == SVE_VQ_ARCH_MAX) {
-		INFO("RMI supports arch max SVE VL, skipping\n");
-		return TEST_RESULT_SKIPPED;
-	}
-
 	rc = host_create_sve_realm_payload(true, (sve_vq + 1));
-
 	if (rc == TEST_RESULT_SUCCESS) {
-		ERROR("Error: Realm created with invalid SVE VL\n");
+		ERROR("Error: Realm created with invalid SVE VL %u\n", (sve_vq + 1));
 		host_destroy_realm();
 		return TEST_RESULT_FAIL;
 	}
@@ -263,9 +256,7 @@ test_result_t host_non_sve_realm_cmd_id_registers(void)
 
 static void print_sve_vl_bitmap(uint32_t vl_bitmap)
 {
-	uint8_t vq;
-
-	for (vq = 0U; vq <= SVE_VQ_ARCH_MAX; vq++) {
+	for (uint8_t vq = 0U; vq <= SVE_VQ_ARCH_MAX; vq++) {
 		if ((vl_bitmap & BIT_32(vq)) != 0U) {
 			INFO("\t%u\n", SVE_VQ_TO_BITS(vq));
 		}
@@ -393,16 +384,9 @@ test_result_t host_sve_realm_check_config_register(void)
  */
 static bool callback_enter_realm(void)
 {
-	bool realm_rc;
-
-	realm_rc = host_enter_realm_execute(REALM_SVE_OPS, NULL,
+	return !host_enter_realm_execute(REALM_SVE_OPS, NULL,
 					    RMI_EXIT_HOST_CALL);
-	if (realm_rc != true) {
-		return true;
 	}
-
-	return false;
-}
 
 /* Intermittently switch to Realm while doing NS SVE ops */
 test_result_t host_sve_realm_check_vectors_operations(void)
@@ -425,7 +409,7 @@ test_result_t host_sve_realm_check_vectors_operations(void)
 		return rc;
 	}
 
-	/* get at random value to do sve_subtract */
+	/* Get at random value to do sve_subtract */
 	val = rand();
 	for (i = 0U; i < NS_SVE_OP_ARRAYSIZE; i++) {
 		ns_sve_op_1[i] = val - i;
@@ -451,6 +435,7 @@ test_result_t host_sve_realm_check_vectors_operations(void)
 
 	/* Check result of SVE operations. */
 	rc = TEST_RESULT_SUCCESS;
+
 	for (i = 0U; i < NS_SVE_OP_ARRAYSIZE; i++) {
 		if (ns_sve_op_1[i] != (val - i - SVE_TEST_ITERATIONS)) {
 			ERROR("SVE op failed at idx: %u, expected: 0x%x "
@@ -503,14 +488,14 @@ test_result_t host_sve_realm_check_vectors_leaked(void)
 
 	/* 1. Set NS SVE VQ to max and write known pattern */
 	sve_config_vq(sve_vq);
-	(void)memset((void *)&ns_sve_vectors_write, 0xaa,
+	(void)memset((void *)&ns_sve_vectors_write, 0xAA,
 		     SVE_VQ_TO_BYTES(sve_vq) * SVE_NUM_VECTORS);
 	sve_fill_vector_regs(ns_sve_vectors_write);
 
-	/* 2. NS programs ZCR_EL2 with VQ as 0  */
+	/* 2. NS programs ZCR_EL2 with VQ as 0 */
 	sve_config_vq(SVE_VQ_ARCH_MIN);
 
-	/* 3. Create Realm with max VQ (higher than NS SVE VQ). */
+	/* 3. Create Realm with max VQ (higher than NS SVE VQ) */
 	rc = host_create_sve_realm_payload(true, sve_vq);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;

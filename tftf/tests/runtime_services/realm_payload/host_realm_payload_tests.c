@@ -37,8 +37,7 @@ test_result_t host_test_realm_create_enter(void)
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),
-			(u_register_t)PAGE_POOL_MAX_SIZE,
-			0UL)) {
+			(u_register_t)PAGE_POOL_MAX_SIZE, 0UL)) {
 		return TEST_RESULT_FAIL;
 	}
 	if (!host_create_shared_mem(NS_REALM_SHARED_MEM_BASE,
@@ -210,18 +209,22 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr)
 static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 {
 	struct realm *realm_ptr;
+	u_register_t feature_flag;
 	bool ret1, ret2;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	host_set_pmu_state();
 
+	feature_flag = RMI_FEATURE_REGISTER_0_PMU_EN |
+			INPLACE(FEATURE_PMU_NUM_CTRS, (unsigned long long)(-1));
+
 	if (!host_create_realm_payload((u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			RMI_FEATURE_REGISTER_0_PMU_EN)) {
+			feature_flag)) {
 		return TEST_RESULT_FAIL;
 	}
 	if (!host_create_shared_mem(NS_REALM_SHARED_MEM_BASE,

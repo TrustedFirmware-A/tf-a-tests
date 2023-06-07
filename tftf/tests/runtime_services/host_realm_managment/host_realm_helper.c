@@ -185,6 +185,8 @@ bool host_create_realm_payload(u_register_t realm_payload_adr,
 				u_register_t realm_pages_size,
 				u_register_t feature_flag)
 {
+	int8_t value;
+
 	if (realm_payload_adr == TFTF_BASE) {
 		ERROR("realm_payload_adr should be grater then TFTF_BASE\n");
 		return false;
@@ -220,9 +222,43 @@ bool host_create_realm_payload(u_register_t realm_payload_adr,
 
 	/* Disable PMU if not required */
 	if ((feature_flag & RMI_FEATURE_REGISTER_0_PMU_EN) == 0UL) {
-		realm.rmm_feat_reg0 &=
-			~(RMI_FEATURE_REGISTER_0_PMU_EN |
-			  MASK(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS));
+		realm.rmm_feat_reg0 &= ~RMI_FEATURE_REGISTER_0_PMU_EN;
+		realm.pmu_num_ctrs = 0U;
+	} else {
+		value = EXTRACT(FEATURE_PMU_NUM_CTRS, feature_flag);
+		if (value != -1) {
+			realm.pmu_num_ctrs = (unsigned int)value;
+		} else {
+			realm.pmu_num_ctrs =
+				EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS,
+					realm.rmm_feat_reg0);
+		}
+	}
+
+	/* Disable SVE if not required */
+	if ((feature_flag & RMI_FEATURE_REGISTER_0_SVE_EN) == 0UL) {
+		realm.rmm_feat_reg0 &= ~RMI_FEATURE_REGISTER_0_SVE_EN;
+		realm.sve_vl = 0U;
+	} else {
+		realm.sve_vl = EXTRACT(FEATURE_SVE_VL, feature_flag);
+	}
+
+	/* Requested number of breakpoints */
+	value = EXTRACT(FEATURE_NUM_BPS, feature_flag);
+	if (value != -1) {
+		realm.num_bps = (unsigned int)value;
+	} else {
+		realm.num_bps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_BPS,
+					realm.rmm_feat_reg0);
+	}
+
+	/* Requested number of watchpoints */
+	value = EXTRACT(FEATURE_NUM_WPS, feature_flag);
+	if (value != -1) {
+		realm.num_wps = (unsigned int)value;
+	} else {
+		realm.num_wps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_WPS,
+					realm.rmm_feat_reg0);
 	}
 
 	/* Set SVE bits from feature_flag */
@@ -238,7 +274,7 @@ bool host_create_realm_payload(u_register_t realm_payload_adr,
 	/* Create Realm */
 	if (host_realm_create(&realm) != REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_realm_create");
-		goto destroy_realm;
+		return false;
 	}
 
 	if (host_realm_init_ipa_state(&realm, 0U, 0U, 1ULL << 32)

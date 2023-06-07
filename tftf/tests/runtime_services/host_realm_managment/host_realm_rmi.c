@@ -126,8 +126,8 @@ static inline u_register_t host_rmi_realm_activate(u_register_t rd)
 
 u_register_t host_rmi_realm_create(u_register_t rd, u_register_t params_ptr)
 {
-	return host_rmi_handler(&(smc_args) {RMI_REALM_CREATE,
-				rd, params_ptr}, 3U).ret0;
+	return host_rmi_handler(&(smc_args) {RMI_REALM_CREATE, rd, params_ptr},
+						3U).ret0;
 }
 
 u_register_t host_rmi_realm_destroy(u_register_t rd)
@@ -142,8 +142,9 @@ static inline u_register_t host_rmi_data_destroy(u_register_t rd,
 {
 	smc_ret_values rets;
 
-	rets = host_rmi_handler(&(smc_args) {RMI_DATA_DESTROY,
-				rd, map_addr, (u_register_t)&rets}, 4U);
+	rets = host_rmi_handler(&(smc_args) {RMI_DATA_DESTROY, rd, map_addr,
+						(u_register_t)&rets}, 4U);
+
 	*data = rets.ret1;
 	*top = rets.ret2;
 	return rets.ret0;
@@ -153,9 +154,8 @@ static inline u_register_t host_rmi_rec_create(u_register_t rd,
 						u_register_t rec,
 						u_register_t params_ptr)
 {
-
-	return host_rmi_handler(&(smc_args) {RMI_REC_CREATE, rd, rec, params_ptr},
-				4U).ret0;
+	return host_rmi_handler(&(smc_args) {RMI_REC_CREATE,
+				rd, rec, params_ptr}, 4U).ret0;
 }
 
 static inline u_register_t host_rmi_rec_destroy(u_register_t rec)
@@ -693,17 +693,17 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 
 u_register_t host_rmi_granule_delegate(u_register_t addr)
 {
-	return host_rmi_handler(&(smc_args){RMI_GRANULE_DELEGATE, addr}, 2U).ret0;
+	return host_rmi_handler(&(smc_args) {RMI_GRANULE_DELEGATE, addr}, 2U).ret0;
 }
 
 u_register_t host_rmi_granule_undelegate(u_register_t addr)
 {
-	return host_rmi_handler(&(smc_args){RMI_GRANULE_UNDELEGATE, addr}, 2U).ret0;
+	return host_rmi_handler(&(smc_args) {RMI_GRANULE_UNDELEGATE, addr}, 2U).ret0;
 }
 
 u_register_t host_rmi_version(void)
 {
-	return host_rmi_handler(&(smc_args){RMI_VERSION}, 1U).ret0;
+	return host_rmi_handler(&(smc_args) {RMI_VERSION}, 1U).ret0;
 }
 
 u_register_t host_realm_create(struct realm *realm)
@@ -763,21 +763,23 @@ u_register_t host_realm_create(struct realm *realm)
 	/* Populate params */
 	params->s2sz = EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
 				realm->rmm_feat_reg0);
-	params->sve_vl = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL,
-				realm->rmm_feat_reg0);
-	params->num_bps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_BPS,
-				realm->rmm_feat_reg0);
-	params->num_wps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_WPS,
-				realm->rmm_feat_reg0);
+	params->num_bps = realm->num_bps;
+	params->num_wps = realm->num_wps;
+
+	/* SVE enable and vector length */
+	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_SVE_EN) != 0UL) {
+		params->flags = RMI_REALM_FLAGS_SVE;
+		params->sve_vl = realm->sve_vl;
+	} else {
+		params->flags = 0UL;
+		params->sve_vl = 0U;
+	}
 
 	/* PMU enable and number of event counters */
 	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_PMU_EN) != 0UL) {
-		params->flags = INPLACE(RMI_REALM_FLAGS_PMU, RMI_FEATURE_TRUE);
-		params->pmu_num_ctrs = EXTRACT(
-					RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS,
-					realm->rmm_feat_reg0);
+		params->flags |= RMI_REALM_FLAGS_PMU;
+		params->pmu_num_ctrs = realm->pmu_num_ctrs;
 	} else {
-		params->flags = INPLACE(RMI_REALM_FLAGS_PMU, RMI_FEATURE_FALSE);
 		params->pmu_num_ctrs = 0U;
 	}
 
@@ -1177,7 +1179,7 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 
 	do {
 		re_enter_rec = false;
-		ret = host_rmi_handler(&(smc_args){RMI_REC_ENTER,
+		ret = host_rmi_handler(&(smc_args) {RMI_REC_ENTER,
 					realm->rec, realm->run}, 3U).ret0;
 		VERBOSE("%s() run->exit.exit_reason=%lu "
 			"run->exit.esr=0x%lx EC_BITS=%u ISS_DFSC_MASK=0x%lx\n",

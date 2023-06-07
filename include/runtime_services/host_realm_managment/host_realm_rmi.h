@@ -218,14 +218,9 @@
 #define RMI_FEATURE_TRUE		1U
 
 /* RmiRealmFlags format */
-#define RMI_REALM_FLAGS_LPA2_SHIFT	0UL
-#define RMI_REALM_FLAGS_LPA2_WIDTH	1UL
-	
-#define RMI_REALM_FLAGS_SVE_SHIFT	1UL
-#define RMI_REALM_FLAGS_SVE_WIDTH	1UL
-	
-#define RMI_REALM_FLAGS_PMU_SHIFT	2UL
-#define RMI_REALM_FLAGS_PMU_WIDTH	1UL
+#define RMI_REALM_FLAGS_LPA2		BIT(0)
+#define RMI_REALM_FLAGS_SVE		BIT(1)
+#define RMI_REALM_FLAGS_PMU		BIT(2)
 
 /* RmiInterfaceVersion type */
 #define RMI_MAJOR_VERSION		0U
@@ -282,6 +277,20 @@
 #define RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS_WIDTH	5UL
 #define RMI_FEATURE_REGISTER_0_HASH_SHA_256		BIT(28)
 #define RMI_FEATURE_REGISTER_0_HASH_SHA_512		BIT(29)
+
+/*
+ * Format of feature_flag[63:32].
+ * Value -1 indicates not set field, and parameter will be set
+ * from the corresponding field of feature register 0.
+ */
+#define FEATURE_SVE_VL_SHIFT				32UL
+#define FEATURE_SVE_VL_WIDTH				8UL
+#define FEATURE_NUM_BPS_SHIFT				40UL
+#define FEATURE_NUM_BPS_WIDTH				8UL
+#define FEATURE_NUM_WPS_SHIFT				48UL
+#define FEATURE_NUM_WPS_WIDTH				8UL
+#define FEATURE_PMU_NUM_CTRS_SHIFT			56UL
+#define FEATURE_PMU_NUM_CTRS_WIDTH			8UL
 
 /* RmiStatusCode types */
 /*
@@ -500,6 +509,10 @@ struct realm {
 	u_register_t ipa_ns_buffer;
 	u_register_t ns_buffer_size;
 	u_register_t aux_pages[REC_PARAMS_AUX_GRANULES];
+	uint8_t      sve_vl;
+	uint8_t      num_bps;
+	uint8_t      num_wps;
+	uint8_t      pmu_num_ctrs;
 	enum realm_state state;
 };
 

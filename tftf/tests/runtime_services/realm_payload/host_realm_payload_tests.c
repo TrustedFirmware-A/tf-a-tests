@@ -162,9 +162,8 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr)
 {
 	struct rmi_rec_run *run = (struct rmi_rec_run *)realm_ptr->run;
 
-	/* Check PMU state */
-	if ((run->exit.pmu_ovf & run->exit.pmu_intr_en &
-	     run->exit.pmu_cntr_en) != 0UL) {
+	/* Check PMU overflow status */
+	if (run->exit.pmu_ovf_status == RMI_PMU_OVERFLOW_ACTIVE) {
 		unsigned int host_call_result;
 		u_register_t exit_reason, retrmm;
 		int ret;

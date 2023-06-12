@@ -257,11 +257,16 @@
 #define RMI_ASSIGNED			2U
 #define RMI_TABLE			3U
 
-/* The RmmRipas enumeration representing realm IPA state */
+/* RmmRipas enumeration representing realm IPA state */
 #define RMI_EMPTY			0U
 #define RMI_RAM				1U
 #define RMI_UNDEFINED			2U
 
+/* RmiPmuOverflowStatus enumeration representing PMU overflow status */
+#define RMI_PMU_OVERFLOW_NOT_ACTIVE	0U
+#define RMI_PMU_OVERFLOW_ACTIVE		1U
+
+/* RmiFeatureRegister0 format */
 #define RMI_FEATURE_REGISTER_0_S2SZ_SHIFT		0UL
 #define RMI_FEATURE_REGISTER_0_S2SZ_WIDTH		8UL
 #define RMI_FEATURE_REGISTER_0_LPA2			BIT(8)
@@ -464,12 +469,8 @@ struct rmi_rec_exit {
 	}, 0x500, 0x600);
 	/* Host call immediate value */
 	SET_MEMBER(unsigned int imm, 0x600, 0x700);		/* 0x600 */
-	/* PMU overflow */
-	SET_MEMBER(unsigned long pmu_ovf, 0x700, 0x708);	/* 0x700 */
-	/* PMU interrupt enable */
-	SET_MEMBER(unsigned long pmu_intr_en, 0x708, 0x710);	/* 0x708 */
-	/* PMU counter enable */
-	SET_MEMBER(unsigned long pmu_cntr_en, 0x710, 0x800);	/* 0x710 */
+	/* PMU overflow status */
+	SET_MEMBER(unsigned long pmu_ovf_status, 0x700, 0x800);	/* 0x700 */
 };
 
 /*

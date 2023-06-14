@@ -40,7 +40,9 @@ vector_entry irq_sp_elx
 end_vector_entry irq_sp_elx
 
 unhandled_exception fiq_sp_elx
-unhandled_exception serror_sp_elx
+vector_entry serror_sp_elx
+	b	serror_vector_entry
+end_vector_entry serror_sp_elx
 
 	/*
 	 * Lower EL using AArch64 : 0x400 - 0x600.
@@ -121,6 +123,21 @@ func irq_vector_entry
 	add	sp, sp, #0x100
 	eret
 endfunc irq_vector_entry
+
+func serror_vector_entry
+	sub	sp, sp, #0x100
+	save_gp_regs
+	bl	tftf_serror_handler
+	cbnz	x0, 1f
+	mov	x0, x19
+	/* Save original stack pointer value on the stack */
+	add	x1, x0, #0x100
+	str	x1, [x0, #0xf8]
+	b	print_exception
+1:	restore_gp_regs
+	add	sp, sp, #0x100
+	eret
+endfunc serror_vector_entry
 
 func crash_dump
 	/* Save general-purpose registers on the stack. */

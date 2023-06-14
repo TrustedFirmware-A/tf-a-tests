@@ -82,6 +82,7 @@ ifeq (${ARCH},aarch64)
 # ARMv8.3 Pointer Authentication support files
 FRAMEWORK_SOURCES	+=						\
 	lib/exceptions/aarch64/sync.c					\
+	lib/exceptions/aarch64/serror.c					\
 	lib/extensions/pauth/aarch64/pauth.c				\
 	lib/extensions/pauth/aarch64/pauth_helpers.S			\
 	lib/extensions/sme/aarch64/sme.c				\

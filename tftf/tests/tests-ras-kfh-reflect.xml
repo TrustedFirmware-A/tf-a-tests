@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2023, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+  <testsuite name="RAS KFH Reflection" description="RAS errors reflected back from EL3">
+     <testcase name="Inject RAS error which gets reflected back during IRQ handling" function="test_ras_kfh_reflect_irq" />
+     <testcase name="Inject RAS error which gets reflected back during SMC call" function="test_ras_kfh_reflect_sync" />
+  </testsuite>
+</testsuites>

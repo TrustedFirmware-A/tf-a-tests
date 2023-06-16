@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2023, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+  <testsuite name="RAS KFH" description="RAS errors handled through Kernel First handling">
+     <testcase name="Inject RAS error and wait for it being handled" function="test_ras_kfh" />
+  </testsuite>
+</testsuites>

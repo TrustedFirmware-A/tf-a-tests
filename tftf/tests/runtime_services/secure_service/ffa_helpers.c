@@ -303,6 +303,17 @@ uint32_t ffa_memory_retrieve_request_init(
 	       memory_region->receiver_count * sizeof(struct ffa_memory_access);
 }
 
+/**
+ * Configure `region` for a hypervisor retrieve request - i.e. all fields except
+ * `handle` are initialized to 0.
+ */
+void ffa_hypervisor_retrieve_request_init(struct ffa_memory_region *region,
+					  ffa_memory_handle_t handle)
+{
+	memset(region, 0, sizeof(struct ffa_memory_region));
+	region->handle = handle;
+}
+
 /*
  * FFA Version ABI helper.
  * Version fields:

@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include "assert.h"
+#include "stdint.h"
+
 #include "ffa_helpers.h"
 #include <cactus_test_cmds.h>
 #include <debug.h>
@@ -273,6 +276,79 @@ bool memory_retrieve(struct mailbox_buffers *mb,
 	}
 
 	VERBOSE("Memory Retrieved!\n");
+
+	return true;
+}
+
+bool hypervisor_retrieve_request(struct mailbox_buffers *mb, uint64_t handle,
+				 void *out, uint32_t out_size)
+{
+	struct ffa_value ret;
+	uint32_t fragment_size;
+	uint32_t total_size;
+	struct ffa_memory_region *region_out = out;
+
+	if (out == NULL || mb == NULL) {
+		ERROR("Invalid parameters!\n");
+		return false;
+	}
+
+	ffa_hypervisor_retrieve_request_init(mb->send, handle);
+	ret = ffa_mem_retrieve_req(sizeof(struct ffa_memory_region),
+				   sizeof(struct ffa_memory_region));
+
+	if (ffa_func_id(ret) != FFA_MEM_RETRIEVE_RESP) {
+		ERROR("Couldn't retrieve the memory page. Error: %x\n",
+		      ffa_error_code(ret));
+		return false;
+	}
+
+	/*
+	 * Following total_size and fragment_size are useful to keep track
+	 * of the state of transaction. When the sum of all fragment_size of all
+	 * fragments is equal to total_size, the memory transaction has been
+	 * completed.
+	 * This is a simple test with only one segment. As such, upon
+	 * successful ffa_mem_retrieve_req, total_size must be equal to
+	 * fragment_size.
+	 */
+	total_size = ret.arg1;
+	fragment_size = ret.arg2;
+
+	if (total_size != fragment_size) {
+		ERROR("Only expect one memory segment to be sent!\n");
+		return false;
+	}
+
+	if (fragment_size > PAGE_SIZE) {
+		ERROR("Fragment should be smaller than RX buffer!\n");
+		return false;
+	}
+	if (total_size > out_size) {
+		ERROR("output buffer is not large enough to store all "
+		      "fragments (total_size=%d, max_size=%d)\n",
+		      total_size, out_size);
+		return false;
+	}
+
+	/*
+	 * Copy the received message to the out buffer. This is necessary
+	 * because `mb->recv` will be overwritten if sending a fragmented
+	 * message.
+	 */
+	memcpy(out, mb->recv, total_size);
+
+	if (region_out->receiver_count == 0) {
+		VERBOSE("copied region has no recivers\n");
+		return false;
+	}
+
+	if (region_out->receiver_count > MAX_MEM_SHARE_RECIPIENTS) {
+		VERBOSE("SPMC memory sharing operations support max of %u "
+			"receivers!\n",
+			MAX_MEM_SHARE_RECIPIENTS);
+		return false;
+	}
 
 	return true;
 }

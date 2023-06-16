@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2020-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <debug.h>
+#include "ffa_helpers.h"
 
 #include <cactus_test_cmds.h>
 #include <ffa_endpoints.h>
@@ -458,4 +459,291 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 	}
 
 	return TEST_RESULT_SUCCESS;
+}
+
+/**
+ * Print `region` if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+ */
+static void print_memory_region(struct ffa_memory_region *region)
+{
+	VERBOSE("region.sender = %d\n", region->sender);
+	VERBOSE("region.attributes.shareability = %d\n",
+		region->attributes.shareability);
+	VERBOSE("region.attributes.cacheability = %d\n",
+		region->attributes.cacheability);
+	VERBOSE("region.attributes.type = %d\n", region->attributes.type);
+	VERBOSE("region.attributes.security = %d\n",
+		region->attributes.security);
+	VERBOSE("region.flags = %d\n", region->flags);
+	VERBOSE("region.handle = %lld\n", region->handle);
+	VERBOSE("region.tag = %lld\n", region->tag);
+	VERBOSE("region.memory_access_desc_size = %d\n",
+		region->memory_access_desc_size);
+	VERBOSE("region.receiver_count = %d\n", region->receiver_count);
+	VERBOSE("region.receivers_offset = %d\n", region->receivers_offset);
+}
+
+/**
+ * Used by hypervisor retrieve request test: validate descriptors provided by
+ * SPMC.
+ */
+static bool verify_retrieve_response(const struct ffa_memory_region *region1,
+				     const struct ffa_memory_region *region2)
+{
+	if (region1->sender != region2->sender) {
+		ERROR("region1.sender=%d, expected %d\n", region1->sender,
+		      region2->sender);
+		return false;
+	}
+	if (region1->attributes.shareability != region2->attributes.shareability) {
+		ERROR("region1.attributes.shareability=%d, expected %d\n",
+		      region1->attributes.shareability,
+		      region2->attributes.shareability);
+		return false;
+	}
+	if (region1->attributes.cacheability != region2->attributes.cacheability) {
+		ERROR("region1.attributes.cacheability=%d, expected %d\n",
+		      region1->attributes.cacheability,
+		      region2->attributes.cacheability);
+		return false;
+	}
+	if (region1->attributes.type != region2->attributes.type) {
+		ERROR("region1.attributes.type=%d, expected %d\n",
+		      region1->attributes.type, region2->attributes.type);
+		return false;
+	}
+	if (region1->attributes.security != region2->attributes.security) {
+		ERROR("region1.attributes.security=%d, expected %d\n",
+		      region1->attributes.security, region2->attributes.security);
+		return false;
+	}
+	if (region1->flags != region2->flags) {
+		ERROR("region1->flags=%d, expected %d\n", region1->flags,
+		      region2->flags);
+		return false;
+	}
+	if (region1->handle != region2->handle) {
+		ERROR("region1.handle=%lld, expected %lld\n", region1->handle,
+		      region2->handle);
+		return false;
+	}
+	if (region1->tag != region2->tag) {
+		ERROR("region1.tag=%lld, expected %lld\n", region1->tag, region2->tag);
+		return false;
+	}
+	if (region1->memory_access_desc_size != region2->memory_access_desc_size) {
+		ERROR("region1.memory_access_desc_size=%d, expected %d\n",
+		      region1->memory_access_desc_size,
+		      region2->memory_access_desc_size);
+		return false;
+	}
+	if (region1->receiver_count != region2->receiver_count) {
+		ERROR("region1.receiver_count=%d, expected %d\n",
+		      region1->receiver_count, region2->receiver_count);
+		return false;
+	}
+	if (region1->receivers_offset != region2->receivers_offset) {
+		ERROR("region1.receivers_offset=%d, expected %d\n",
+		      region1->receivers_offset, region2->receivers_offset);
+		return false;
+	}
+	for (uint32_t i = 0; i < 3; i++) {
+		if (region1->reserved[i] != 0) {
+			ERROR("region.reserved[%d]=%d, expected 0\n", i,
+			      region1->reserved[i]);
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Used by hypervisor retrieve request test: validate descriptors provided by
+ * SPMC.
+ */
+static bool
+verify_constituent(struct ffa_memory_region_constituent *constituent,
+		   void *address, uint32_t page_count)
+{
+	if (constituent->address != address) {
+		ERROR("constituent.address=%p, expected %p\n",
+		      constituent->address, address);
+		return false;
+	}
+	if (constituent->page_count != page_count) {
+		ERROR("constituent.page_count=%d, expected %d\n",
+		      constituent->page_count, page_count);
+		return false;
+	}
+	if (constituent->reserved != 0) {
+		ERROR("constituent.reserved=%d, expected 0\n",
+		      constituent->reserved);
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Used by hypervisor retrieve request test: validate descriptors provided by
+ * SPMC.
+ */
+static bool verify_composite(struct ffa_composite_memory_region *composite,
+			     struct ffa_memory_region_constituent *constituent,
+			     uint32_t page_count, uint32_t constituent_count)
+{
+	if (composite->page_count != page_count) {
+		ERROR("composite.page_count=%d, expected %d\n",
+		      composite->page_count, page_count);
+		return false;
+	}
+	if (composite->constituent_count != constituent_count) {
+		ERROR("composite.constituent_count=%d, expected %d\n",
+		      composite->constituent_count, constituent_count);
+		return false;
+	}
+	if (composite->reserved_0 != 0) {
+		ERROR("composite.reserved_0=%llu, expected 0\n",
+		      composite->reserved_0);
+		return false;
+	}
+	for (uint32_t j = 0; j < composite->constituent_count; j++) {
+		if (!verify_constituent(constituent, share_page, 1)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Helper for performing a hypervisor retrieve request test.
+ */
+static test_result_t hypervisor_retrieve_request_test_helper(uint32_t mem_func)
+{
+	struct ffa_memory_region_constituent sent_constituents[] = {{
+		.address = (void *)share_page,
+		.page_count = 1,
+		.reserved = 0,
+	}};
+	uint32_t sent_constituents_count = ARRAY_SIZE(sent_constituents);
+	__aligned(PAGE_SIZE) static uint8_t page[PAGE_SIZE * 2] = {0};
+	struct ffa_memory_region *hypervisor_retrieve_response =
+		(struct ffa_memory_region *)page;
+	struct ffa_memory_region expected_response;
+	struct mailbox_buffers mb;
+	ffa_memory_handle_t handle;
+	struct ffa_value ret;
+
+	uint32_t expected_flags = 0;
+
+	ffa_memory_attributes_t expected_attrs = {
+		.cacheability = FFA_MEMORY_CACHE_WRITE_BACK,
+		.shareability = FFA_MEMORY_INNER_SHAREABLE,
+		.security = FFA_MEMORY_SECURITY_NON_SECURE,
+		.type = (mem_func != FFA_MEM_SHARE_SMC32)
+				? FFA_MEMORY_NOT_SPECIFIED_MEM
+				: FFA_MEMORY_NORMAL_MEM,
+	};
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+	GET_TFTF_MAILBOX(mb);
+
+	switch (mem_func) {
+	case FFA_MEM_SHARE_SMC32:
+		expected_flags = FFA_MEMORY_REGION_TRANSACTION_TYPE_SHARE;
+		break;
+	case FFA_MEM_LEND_SMC32:
+		expected_flags = FFA_MEMORY_REGION_TRANSACTION_TYPE_LEND;
+		break;
+	case FFA_MEM_DONATE_SMC32:
+		expected_flags = FFA_MEMORY_REGION_TRANSACTION_TYPE_DONATE;
+		break;
+	default:
+		ERROR("Invalid mem_func: %d\n", mem_func);
+		panic();
+	}
+
+	handle = memory_init_and_send(mb.send, MAILBOX_SIZE, SENDER, RECEIVER,
+				      sent_constituents,
+				      sent_constituents_count, mem_func, &ret);
+	if (handle == FFA_MEMORY_HANDLE_INVALID) {
+		ERROR("Memory share failed: %d\n", ffa_error_code(ret));
+		return TEST_RESULT_FAIL;
+	}
+
+	/*
+	 * Send Hypervisor Retrieve request according to section 17.4.3 of FFA
+	 * v1.2-REL0 specification.
+	 */
+	if (!hypervisor_retrieve_request(&mb, handle, page, sizeof(page))) {
+		return TEST_RESULT_FAIL;
+	}
+
+	print_memory_region(hypervisor_retrieve_response);
+
+	/*
+	 * Verify the received `FFA_MEM_RETRIEVE_RESP` aligns with
+	 * transaction description sent above.
+	 */
+	expected_response = (struct ffa_memory_region){
+		.sender = SENDER,
+		.attributes = expected_attrs,
+		.flags = expected_flags,
+		.handle = handle,
+		.tag = 0,
+		.memory_access_desc_size = sizeof(struct ffa_memory_access),
+		.receiver_count = 1,
+		.receivers_offset =
+			offsetof(struct ffa_memory_region, receivers),
+	};
+	if (!verify_retrieve_response(hypervisor_retrieve_response, &expected_response)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	{
+		uint32_t i = 0;
+		struct ffa_composite_memory_region *composite =
+			ffa_memory_region_get_composite(
+				hypervisor_retrieve_response, i);
+		if (composite == NULL) {
+			ERROR("composite %d is null\n", i);
+			return TEST_RESULT_FAIL;
+		}
+
+		if (!verify_composite(composite, &composite->constituents[i],
+				      sent_constituents_count, sent_constituents_count)) {
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	/*
+	 * Reclaim for the SPMC to deallocate any data related to the handle.
+	 */
+	ret = ffa_mem_reclaim(handle, 0);
+	if (is_ffa_call_error(ret)) {
+		ERROR("Memory reclaim failed: %d\n", ffa_error_code(ret));
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = ffa_rx_release();
+	if (is_ffa_call_error(ret)) {
+		ERROR("rx release failed: %d\n", ffa_error_code(ret));
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+test_result_t test_hypervisor_share_retrieve(void)
+{
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC32);
+}
+
+test_result_t test_hypervisor_lend_retrieve(void)
+{
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC32);
+}
+
+test_result_t test_hypervisor_donate_retrieve(void)
+{
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_DONATE_SMC32);
 }

@@ -112,6 +112,9 @@ bool memory_retrieve(struct mailbox_buffers *mb,
 		     ffa_id_t sender, ffa_id_t receiver,
 		     ffa_memory_region_flags_t flags, uint32_t mem_func);
 
+bool hypervisor_retrieve_request(struct mailbox_buffers *mb, uint64_t handle,
+				 void *out, uint32_t out_size);
+
 /**
  * Helper to conduct a memory relinquish. The caller is usually the receiver,
  * after it being done with the memory shared, identified by the 'handle'.

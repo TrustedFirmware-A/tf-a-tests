@@ -17,10 +17,9 @@
 #ifdef __aarch64__
 
 /* Global buffers*/
-static uint64_t ZA_In_vector[8] = {0xaaff, 0xbbff, 0xccff, 0xddff, 0xeeff,
+static __aligned(16) uint64_t ZA_In_vector[8] = {0xaaff, 0xbbff, 0xccff, 0xddff, 0xeeff,
 					0xffff, 0xff00, 0xff00};
-static uint64_t ZA_Out_vector[8] = {0};
-
+static __aligned(16) uint64_t ZA_Out_vector[8] = {0};
 
 /**
  * sme_zero_ZA

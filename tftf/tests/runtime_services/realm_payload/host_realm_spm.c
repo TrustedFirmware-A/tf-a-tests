@@ -26,16 +26,12 @@ static bool secure_mailbox_initialised;
 static fpu_state_t ns_fpu_state_write;
 static fpu_state_t ns_fpu_state_read;
 
-typedef enum test_rl_sec_fp_cmd {
-	CMD_SIMD_NS_FILL = 0U,
-	CMD_SIMD_NS_CMP,
-	CMD_SIMD_RL_FILL,
-	CMD_SIMD_RL_CMP,
-	CMD_MAX_THREE_WORLD,
-	CMD_SIMD_SEC_FILL,
-	CMD_SIMD_SEC_CMP,
-	CMD_MAX_COUNT
-} realm_test_cmd_t;
+typedef enum security_state {
+	NONSECURE_WORLD = 0U,
+	REALM_WORLD,
+	SECURE_WORLD,
+	SECURITY_STATE_MAX
+} security_state_t;
 
 /*
  * This function helps to Initialise secure_mailbox, creates realm payload and
@@ -44,9 +40,6 @@ typedef enum test_rl_sec_fp_cmd {
  */
 static test_result_t init_sp(void)
 {
-	/* Verify that FFA is there and that it has the correct version. */
-	SKIP_TEST_IF_FFA_VERSION_LESS_THAN(1, 1);
-
 	if (!secure_mailbox_initialised) {
 		GET_TFTF_MAILBOX(mb);
 		CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
@@ -57,21 +50,7 @@ static test_result_t init_sp(void)
 
 static test_result_t init_realm(void)
 {
-	u_register_t retrmm;
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
-
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
-
-	retrmm = host_rmi_version();
-
-	/*
-	 * Skip test if RMM is TRP, TRP version is always null.
-	 */
-	if (retrmm == 0UL) {
-		return TEST_RESULT_SKIPPED;
-	}
 
 	/*
 	 * Initialise Realm payload
@@ -205,6 +184,12 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 	struct ffa_value ret_values;
 	test_result_t res;
 
+	/* Verify RME is present and RMM is not TRP */
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	/* Verify that FFA is there and that it has the correct version. */
+	SKIP_TEST_IF_FFA_VERSION_LESS_THAN(1, 1);
+
 	res = init_sp();
 	if (res != TEST_RESULT_SUCCESS) {
 		return res;
@@ -217,17 +202,17 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 
 	/* Enable trusted watchdog interrupt as IRQ in the secure side. */
 	if (!enable_trusted_wdog_interrupt(SENDER, RECEIVER)) {
-		return TEST_RESULT_FAIL;
+		goto destroy_realm;
 	}
 
 	/*
 	 * Send a message to SP1 through direct messaging.
 	 */
-	ret_values = cactus_send_twdog_cmd(SENDER, RECEIVER, (REALM_TIME_SLEEP/2));
-
+	ret_values = cactus_send_twdog_cmd(SENDER, RECEIVER,
+					   (REALM_TIME_SLEEP/2));
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for starting TWDOG timer\n");
-		return TEST_RESULT_FAIL;
+		goto destroy_realm;
 	}
 
 	/*
@@ -242,8 +227,7 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 	 */
 	if (!host_realm_handle_fiq_exit(realm_ptr, 0U)) {
 		ERROR("Trusted watchdog timer interrupt not fired\n");
-		host_destroy_realm();
-		return TEST_RESULT_FAIL;
+		goto destroy_realm;
 	}
 
 	/* Check for the last serviced secure virtual interrupt. */
@@ -252,18 +236,18 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for last serviced interrupt"
 			" command\n");
-		return TEST_RESULT_FAIL;
+		goto destroy_realm;
 	}
 
 	/* Make sure Trusted Watchdog timer interrupt was serviced*/
 	if (cactus_get_response(ret_values) != IRQ_TWDOG_INTID) {
 		ERROR("Trusted watchdog timer interrupt not serviced by SP\n");
-		return TEST_RESULT_FAIL;
+		goto destroy_realm;
 	}
 
 	/* Disable Trusted Watchdog interrupt. */
 	if (!disable_trusted_wdog_interrupt(SENDER, RECEIVER)) {
-		return TEST_RESULT_FAIL;
+		goto destroy_realm;
 	}
 
 	if (!host_destroy_realm()) {
@@ -272,93 +256,148 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 	}
 
 	return TEST_RESULT_SUCCESS;
+
+destroy_realm:
+	host_destroy_realm();
+	return TEST_RESULT_FAIL;
+}
+
+/* Choose a random security state that is different from the 'current' state */
+static security_state_t get_random_security_state(security_state_t current,
+						  bool is_sp_present)
+{
+	security_state_t next;
+
+	/*
+	 * 3 world config: Switch between NS world and Realm world as Secure
+	 * world is not enabled or SP is not loaded.
+	 */
+	if (!is_sp_present) {
+		if (current == NONSECURE_WORLD) {
+			return REALM_WORLD;
+		} else {
+			return NONSECURE_WORLD;
+		}
+	}
+
+	/*
+	 * 4 world config: Randomly select a security_state between Realm, NS
+	 * and Secure until the new state is not equal to the current state.
+	 */
+	while (true) {
+		next = rand() % SECURITY_STATE_MAX;
+		if (next == current) {
+			continue;
+		}
+
+		break;
+	}
+
+	return next;
 }
 
 /*
- * Test that FPU/SIMD state are preserved during a randomly context switch
- * between secure/non-secure/realm(R-EL1)worlds.
- * FPU/SIMD state consist of the 32 SIMD vectors, FPCR and FPSR registers,
- * the test runs for 1000 iterations with random combination of:
- * SECURE_FILL_FPU, SECURE_READ_FPU, REALM_FILL_FPU, REALM_READ_FPU,
- * NONSECURE_FILL_FPU, NONSECURE_READ_FPU commands,to test all possible situations
- * of synchronous context switch between worlds, while the content of those registers
- * is being used.
+ * Test whether FPU/SIMD state (32 SIMD vectors, FPCR and FPSR registers) are
+ * preserved during a random context switch between Secure/Non-Secure/Realm world
+ *
+ * Below steps are performed by this test:
+ *
+ * Init:
+ * Fill FPU registers with random values in
+ * 1. NS World (NS-EL2)
+ * 2. Realm world (R-EL1)
+ * 3. Secure world (S-EL1) (if SP loaded)
+ *
+ * Test loop:
+ *  security_state_next = get_random_security_state(current, is_sp_present)
+ *
+ *  switch to security_state_next
+ *    if (FPU registers read != last filled values)
+ *       break loop; return TC_FAIL
+ *
+ *    Fill FPU registers with new random values for the next comparison.
  */
 test_result_t host_realm_fpu_access_in_rl_ns_se(void)
 {
-	int cmd = -1, old_cmd  = -1, cmd_max;
+	security_state_t sec_state;
+	bool is_sp_present;
 	test_result_t res;
 
-	res = init_sp();
-	if (res != TEST_RESULT_SUCCESS) {
-		cmd_max = CMD_MAX_THREE_WORLD;
-	} else {
-		cmd_max = CMD_MAX_COUNT;
-		if (!fpu_fill_sec()) {
-			ERROR("fpu_fill_sec error\n");
-			return TEST_RESULT_FAIL;
-		}
-	}
+	/* Verify RME is present and RMM is not TRP */
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	/* Verify that FFA is there and that it has the correct version. */
+	SKIP_TEST_IF_FFA_VERSION_LESS_THAN(1, 1);
 
 	res = init_realm();
 	if (res != TEST_RESULT_SUCCESS) {
 		return res;
 	}
 
-	/*
-	 * Fill all 3 world's FPU/SIMD state regs with some known values in the
-	 * beginning to have something later to compare to.
-	 */
+	/* Fill FPU registers in Non-secure world */
 	fpu_state_write_rand(&ns_fpu_state_write);
+
+	/* Fill FPU registers in Realm world */
 	if (!fpu_fill_rl()) {
 		ERROR("fpu_fill_rl error\n");
 		goto destroy_realm;
 	}
+	sec_state = REALM_WORLD;
 
-	for (uint32_t i = 0; i < 1000; i++) {
-		cmd = rand() % cmd_max;
-		if ((cmd == old_cmd) || cmd == CMD_MAX_THREE_WORLD) {
-			continue;
+	/* Fill FPU registers in Secure world if present */
+	res = init_sp();
+	if (res == TEST_RESULT_SUCCESS) {
+		if (!fpu_fill_sec()) {
+			ERROR("fpu_fill_sec error\n");
+			goto destroy_realm;
 		}
-		old_cmd = cmd;
 
-		switch (cmd) {
-		case CMD_SIMD_NS_FILL:
-			/* Non secure world fill FPU state registers */
-			fpu_state_write_rand(&ns_fpu_state_write);
-			break;
-		case CMD_SIMD_NS_CMP:
-			/* Normal world verify its FPU state registers data */
+		sec_state = SECURE_WORLD;
+		is_sp_present = true;
+	} else {
+		is_sp_present = false;
+	}
+
+	for (uint32_t i = 0; i < 128; i++) {
+		sec_state = get_random_security_state(sec_state, is_sp_present);
+
+		switch (sec_state) {
+		case NONSECURE_WORLD:
+			/* NS world verify its FPU/SIMD state registers */
 			fpu_state_read(&ns_fpu_state_read);
 			if (fpu_state_compare(&ns_fpu_state_write,
 					      &ns_fpu_state_read)) {
 				ERROR("%s failed %d\n", __func__, __LINE__);
 				goto destroy_realm;
 			}
+
+			/* Fill FPU state with new random values in NS world */
+			fpu_state_write_rand(&ns_fpu_state_write);
 			break;
-		case CMD_SIMD_SEC_FILL:
-			/* secure world fill FPU/SIMD state registers */
-			if (!fpu_fill_sec()) {
-				goto destroy_realm;
-			}
-			break;
-		case CMD_SIMD_SEC_CMP:
-			/* Secure world verify its FPU/SIMD state registers data */
-			if (!fpu_cmp_sec()) {
-				goto destroy_realm;
-			}
-			break;
-		case CMD_SIMD_RL_FILL:
-			/* Realm R-EL1 world fill FPU/SIMD state registers */
-			if (!fpu_fill_rl()) {
-				goto destroy_realm;
-			}
-			break;
-		case CMD_SIMD_RL_CMP:
-			/* Realm R-EL1 world verify its FPU/SIMD state registers data */
+		case REALM_WORLD:
+			/* Realm world verify its FPU/SIMD state registers */
 			if (!fpu_cmp_rl()) {
 				goto destroy_realm;
 			}
+
+			/* Fill FPU state with new random values in Realm */
+			if (!fpu_fill_rl()) {
+				goto destroy_realm;
+			}
+
+			break;
+		case SECURE_WORLD:
+			/* Secure world verify its FPU/SIMD state registers */
+			if (!fpu_cmp_sec()) {
+				goto destroy_realm;
+			}
+
+			/* Fill FPU state with new random values in SP */
+			if (!fpu_fill_sec()) {
+				goto destroy_realm;
+
+			}
+
 			break;
 		default:
 			break;

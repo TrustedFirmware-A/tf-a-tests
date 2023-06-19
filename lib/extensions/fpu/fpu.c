@@ -68,8 +68,8 @@ void fpu_state_fill_regs_and_template(fpu_reg_state_t *fpu_template_in)
 	 * Write random value to FPCR FPSR.
 	 * Note write will be ignored for reserved bits.
 	 */
-	__asm__ volatile ("mrs %0, fpsr\n" : "=r" (temp));
-	__asm__ volatile ("mrs %0, fpcr\n" : "=r" (temp));
+	__asm__ volatile ("msr fpsr, %0\n" : : "r" (temp));
+	__asm__ volatile ("msr fpcr, %0\n" : : "r" (temp));
 
 	/*
 	 * Read back current FPCR FPSR and write to template,
@@ -80,9 +80,10 @@ void fpu_state_fill_regs_and_template(fpu_reg_state_t *fpu_template_in)
 	fpu_template_in->fpcr = fpcr;
 
 	for (unsigned int num = 0U; num < FPU_Q_COUNT; num++) {
-		memset((uint8_t *)fpu_template_in->q[num], temp * num,
+		memset((uint8_t *)fpu_template_in->q[num], temp * (num + 1),
 				sizeof(fpu_template_in->q[0]));
 	}
+
 	__asm__ volatile(
 			fill_simd_helper(0, 1)
 			fill_simd_helper(2, 3)
@@ -108,8 +109,9 @@ void fpu_state_print(fpu_reg_state_t *vec)
 {
 	INFO("dumping FPU registers :\n");
 	for (unsigned int num = 0U; num < FPU_Q_COUNT; num++) {
-		INFO("Q[%u]=0x%llx%llx\n", num, (uint64_t)vec->q[num * FPU_Q_SIZE],
-				(uint64_t)(vec->q[num * FPU_Q_SIZE + 1]));
+		uint64_t __unused *qreg = (uint64_t *)&vec->q[num];
+
+		INFO("Q[%02u]=0x%016llx_%016llx\n", num, *qreg, *(qreg + 1));
 	}
 	INFO("FPCR=0x%lx FPSR=0x%lx\n", vec->fpcr, vec->fpsr);
 }

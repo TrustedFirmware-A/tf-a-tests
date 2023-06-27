@@ -16,6 +16,25 @@ Building TF-A Tests
 
        export CROSS_COMPILE=<path-to-aarch32-gcc>/bin/arm-eabi-
 
+-  It is possible to build TF-A Tests using clang (currently AArch64 only). To
+   do so ``CC`` needs to point to the clang binary. Only the compiler is switched;
+   the assembler and linker need to be provided by the GNU toolchain, thus
+   ``CROSS_COMPILE`` should be set as described above.
+
+   clang will be selected when the base name of the path assigned to ``CC``
+   contains the string 'clang'.
+
+-  For AArch64 using clang:
+
+   .. code:: shell
+
+       export CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-none-elf-
+       make CC=<path-to-clang>/bin/clang PLAT=<platform> tftf
+
+-  Currently, the following TF-A Tests targets are supported for clang build:
+
+   ``tftf, ivy, realm, cactus, cactus_mm, ns_bl1u``
+
 -  Change to the root directory of the TF-A Tests source tree and build.
 
    For AArch64:

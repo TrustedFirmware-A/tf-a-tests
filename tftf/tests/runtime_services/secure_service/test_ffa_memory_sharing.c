@@ -4,8 +4,11 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include "arch_features.h"
+#include "ffa_svc.h"
 #include <debug.h>
 #include "ffa_helpers.h"
+#include <sync.h>
 
 #include <cactus_test_cmds.h>
 #include <ffa_endpoints.h>
@@ -37,6 +40,7 @@ static __aligned(PAGE_SIZE) uint8_t
 	share_page[PAGE_SIZE * FRAGMENTED_SHARE_PAGE_COUNT];
 static __aligned(PAGE_SIZE) uint8_t consecutive_donate_page[PAGE_SIZE];
 static __aligned(PAGE_SIZE) uint8_t four_share_pages[PAGE_SIZE * 4];
+static bool gpc_abort_triggered;
 
 static bool check_written_words(uint32_t *ptr, uint32_t word, uint32_t wcount)
 {
@@ -88,6 +92,24 @@ static bool test_memory_send_expect_denied(uint32_t mem_func,
 	}
 
 	return true;
+}
+
+static bool data_abort_handler(void)
+{
+	uint64_t esr_elx = IS_IN_EL2() ? read_esr_el2() : read_esr_el1();
+
+	VERBOSE("%s esr_elx %llx\n", __func__, esr_elx);
+
+	if (EC_BITS(esr_elx) == EC_DABORT_CUR_EL) {
+		/* Synchronous data abort triggered by Granule protection */
+		if ((ISS_BITS(esr_elx) & ISS_DFSC_MASK) == DFSC_GPF_DABORT) {
+			VERBOSE("%s GPF Data Abort caught\n", __func__);
+			gpc_abort_triggered = true;
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -144,6 +166,10 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	ffa_memory_handle_t handle;
 	uint32_t *ptr;
 	struct mailbox_buffers mb;
+	unsigned int rme_supported = get_armv9_2_feat_rme_support();
+	const bool check_gpc_fault =
+		mem_func != FFA_MEM_SHARE_SMC32 &&
+		rme_supported != 0U;
 
 	/* Arbitrarily write 5 words after using memory. */
 	const uint32_t nr_words_to_write = 5;
@@ -158,6 +184,14 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
 	GET_TFTF_MAILBOX(mb);
+
+	/*
+	 * If the RME is enabled in the platform of test, check that the GPCs
+	 * are working as expected, as such setup the exception handler.
+	 */
+	if (check_gpc_fault) {
+		register_custom_sync_exception_handler(data_abort_handler);
+	}
 
 	if (constituents_count != 1) {
 		WARN("Test expects constituents_count to be 1\n");
@@ -192,6 +226,14 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 		return TEST_RESULT_FAIL;
 	}
 
+	/*
+	 * If there is rme support, look to trigger an exception as soon as the
+	 * security state is update, due to GPC fault.
+	 */
+	if (check_gpc_fault) {
+		*ptr = 0xBEEF;
+	}
+
 	if (mem_func != FFA_MEM_DONATE_SMC32) {
 
 		/* Reclaim memory entirely before checking its state. */
@@ -202,10 +244,19 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 
 		/*
 		 * Check that borrower used the memory as expected for this
-		 * test.
+		 * test, after it has relinquished, and reclaiming memory
+		 * to the NWd.
 		 */
 		if (!check_written_words(ptr, mem_func, nr_words_to_write)) {
 			ERROR("Fail because of state of memory.\n");
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	if (check_gpc_fault) {
+		unregister_custom_sync_exception_handler();
+		if (!gpc_abort_triggered) {
+			ERROR("No exception due to GPC for lend/donate with RME.\n");
 			return TEST_RESULT_FAIL;
 		}
 	}

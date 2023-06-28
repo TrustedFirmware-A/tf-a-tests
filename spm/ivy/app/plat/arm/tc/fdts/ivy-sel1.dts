@@ -14,7 +14,7 @@
 	compatible = "arm,ffa-manifest-1.0";
 
 	/* Properties */
-	description = "ivy-sel1-tc0";
+	description = "ivy-sel1-tc";
 	ffa-version = <0x00010001>; /* 31:16 - Major, 15:0 - Minor */
 	uuid = <0xd883baea 0xaf4eafba 0xfdf74481 0xa744e5cb>;
 	execution-ctx-count = <1>;

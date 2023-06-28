@@ -12,9 +12,9 @@
 #define PLATFORM_LINKER_FORMAT		"elf64-littleaarch64"
 #define PLATFORM_LINKER_ARCH		aarch64
 
-#define TC0_CLUSTER_COUNT		1
-#define TC0_MAX_CPUS_PER_CLUSTER	8
-#define TC0_MAX_PE_PER_CPU		1
+#define TC_CLUSTER_COUNT		1
+#define TC_MAX_CPUS_PER_CLUSTER	8
+#define TC_MAX_PE_PER_CPU		1
 
 /*******************************************************************************
  * Run-time address of the TFTF image.
@@ -23,9 +23,9 @@
  ******************************************************************************/
 #define TFTF_BASE			0xE0000000
 
-#define TC0_DRAM1_BASE			0x80000000
-#define TC0_DRAM1_SIZE			0x80000000
-#define DRAM_BASE			TC0_DRAM1_BASE
+#define TC_DRAM1_BASE			0x80000000
+#define TC_DRAM1_SIZE			0x80000000
+#define DRAM_BASE			TC_DRAM1_BASE
 
 /*
  * TF-A reserves DRAM space 0xFD000000 - 0xFEFFFFFF for Trusted DRAM
@@ -34,7 +34,7 @@
 #define ARM_TZC_DRAM1_SIZE		0x01000000
 #define ARM_TRUSTED_DRAM1_SIZE		0x02000000
 
-#define DRAM_SIZE			(TC0_DRAM1_SIZE	-	\
+#define DRAM_SIZE			(TC_DRAM1_SIZE	-	\
 					 ARM_TRUSTED_DRAM1_SIZE -	\
 					 ARM_TZC_DRAM1_SIZE)
 
@@ -67,17 +67,17 @@
 #define TFTF_NVM_SIZE			0x8000000	/* 128 MB */
 
 /* Sub-system Peripherals */
-#define TC0_DEVICE0_BASE		0x21000000
-#define TC0_DEVICE0_SIZE		0x5f000000
+#define TC_DEVICE0_BASE		0x21000000
+#define TC_DEVICE0_SIZE		0x5f000000
 
 /* Following covers Peripherals and PCIe expansion area */
-#define TC0_DEVICE1_BASE		0x60000000
-#define TC0_DEVICE1_SIZE		0x20000000
+#define TC_DEVICE1_BASE		0x60000000
+#define TC_DEVICE1_SIZE		0x20000000
 
 /* GIC-600 & interrupt handling related constants */
-#define TC0_GICD_BASE			0x30000000
-#define TC0_GICR_BASE			0x30080000
-#define TC0_GICC_BASE			0x2C000000
+#define TC_GICD_BASE			0x30000000
+#define TC_GICR_BASE			0x30080000
+#define TC_GICC_BASE			0x2C000000
 
 /* SoC's PL011 UART0 related constants */
 #define PL011_UART0_BASE		0x7FF70000
@@ -96,8 +96,8 @@
 /* Size of coherent stacks */
 #define PCPU_DV_MEM_STACK_SIZE		0x600
 
-#define PLATFORM_CORE_COUNT		(TC0_CLUSTER_COUNT * TC0_MAX_CPUS_PER_CLUSTER)
-#define PLATFORM_NUM_AFFS		(TC0_CLUSTER_COUNT + PLATFORM_CORE_COUNT)
+#define PLATFORM_CORE_COUNT		(TC_CLUSTER_COUNT * TC_MAX_CPUS_PER_CLUSTER)
+#define PLATFORM_NUM_AFFS		(TC_CLUSTER_COUNT + PLATFORM_CORE_COUNT)
 #define PLATFORM_MAX_AFFLVL		MPIDR_AFFLVL1
 
 #define PLAT_MAX_PWR_LEVEL		PLATFORM_MAX_AFFLVL

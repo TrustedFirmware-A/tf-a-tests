@@ -25,7 +25,7 @@ Install the required packages to build TF-A Tests with the following command:
 
     sudo apt-get install device-tree-compiler build-essential git python3
 
-Note that at least Python 3.7 is required.
+Note that at least Python 3.8 is required.
 
 Download and install the GNU cross-toolchain from Arm. The TF-A Tests have
 been tested with version 12.2.Rel1 (gcc 12.2):

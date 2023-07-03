@@ -19,14 +19,13 @@ and outputs a src and header file that refers to those tests.
 # flake8 tools/generate_test_list/ --max-line-length 100
 
 import argparse
-from dataclasses import dataclass
 import os.path
 import urllib.parse
 import xml.etree.ElementInclude
-from xml.etree.ElementTree import Element
-from xml.etree.ElementTree import TreeBuilder
 import xml.parsers.expat
-
+from dataclasses import dataclass
+from typing import Dict, List
+from xml.etree.ElementTree import Element, TreeBuilder
 
 TESTS_LIST_H_TPL_FILENAME = "tests_list.h.tpl"
 TESTCASE_COUNT_TEMPLATE = "{{testcase_count}}"
@@ -58,7 +57,7 @@ class TestSuite:
 
     name: str
     description: str
-    testcases: list[TestCase]
+    testcases: List[TestCase]
 
 
 def find_element_with_name_or_return_none(iterable, name: str):
@@ -66,7 +65,7 @@ def find_element_with_name_or_return_none(iterable, name: str):
     return next(filter(lambda x: x.name == name, iterable), None)
 
 
-def parse_testsuites_element_into_ir(root: Element) -> list[TestSuite]:
+def parse_testsuites_element_into_ir(root: Element) -> List[TestSuite]:
     """Given the root of a parsed XML file, construct TestSuite objects."""
     testsuite_xml_elements = root.findall(".//testsuite")
 
@@ -159,7 +158,7 @@ class ElementIncludeLoaderAdapter:
         return parse_xml_no_xinclude_expansion(urllib.parse.urljoin(self.base_url, href))
 
 
-def parse_testsuites_from_file(filename: str) -> list[TestSuite]:
+def parse_testsuites_from_file(filename: str) -> List[TestSuite]:
     """Given an XML file, parse the contents into a List[TestSuite]."""
     root = parse_xml_no_xinclude_expansion(filename)
 
@@ -182,7 +181,7 @@ def parse_testsuites_from_file(filename: str) -> list[TestSuite]:
     return testsuites
 
 
-def check_validity_of_names(testsuites: list[TestSuite]):
+def check_validity_of_names(testsuites: List[TestSuite]):
     """Checks that all testsuite and testcase names are valid."""
     testsuite_name_set = set()
     for ts in testsuites:
@@ -206,7 +205,7 @@ def check_validity_of_names(testsuites: list[TestSuite]):
             testcase_name_set.add(tc.name)
 
 
-def remove_skipped_tests(testsuites: list[TestSuite], skip_tests_filename: str):
+def remove_skipped_tests(testsuites: List[TestSuite], skip_tests_filename: str):
     """Remove skipped tests from testsuites based on skip_tests_filename."""
     with open(skip_tests_filename) as skipped_file:
         skipped_file_lines = skipped_file.readlines()
@@ -248,12 +247,12 @@ def remove_skipped_tests(testsuites: list[TestSuite], skip_tests_filename: str):
         return testsuites
 
 
-def generate_function_prototypes(testcases: list[TestCase]):
+def generate_function_prototypes(testcases: List[TestCase]):
     """Generates function prototypes for the provided list of testcases."""
     return [f"test_result_t {t.function}(void);" for t in testcases]
 
 
-def generate_testcase_lists(testsuites: list[TestSuite]):
+def generate_testcase_lists(testsuites: List[TestSuite]):
     """Generates the lists that enumerate the individual testcases in each testsuite."""
     testcase_lists_contents = []
     testcase_index = 0
@@ -271,7 +270,7 @@ def generate_testcase_lists(testsuites: list[TestSuite]):
     return testcase_lists_contents
 
 
-def generate_testsuite_lists(testsuites: list[TestSuite]):
+def generate_testsuite_lists(testsuites: List[TestSuite]):
     """Generates the list of testsuites."""
     testsuites_list_contents = []
     testsuites_list_contents += ["const test_suite_t testsuites[] = {"]
@@ -285,7 +284,7 @@ def generate_testsuite_lists(testsuites: list[TestSuite]):
 
 
 def generate_file_from_template(
-    template_filename: str, output_filename: str, template: dict[str, str]
+    template_filename: str, output_filename: str, template: Dict[str, str]
 ):
     """Given a template file, generate an output file based on template dictionary."""
     with open(template_filename) as template_fobj:

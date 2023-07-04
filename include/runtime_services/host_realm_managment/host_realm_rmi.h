@@ -251,16 +251,16 @@
 #define RMI_NOT_RUNNABLE		0U
 #define RMI_RUNNABLE			1U
 
-/* RttEntryState: represents the state of an RTTE */
-#define RMI_UNASSIGNED			0U
-#define RMI_DESTROYED			1U
-#define RMI_ASSIGNED			2U
-#define RMI_TABLE			3U
+/* RmiRttEntryState: represents the state of an RTTE */
+#define RMI_UNASSIGNED			UL(0)
+#define RMI_ASSIGNED			UL(1)
+#define RMI_TABLE			UL(2)
 
 /* RmmRipas enumeration representing realm IPA state */
-#define RMI_EMPTY			0U
-#define RMI_RAM				1U
-#define RMI_UNDEFINED			2U
+#define RMI_EMPTY			UL(0)
+#define RMI_RAM				UL(1)
+#define RMI_DESTROYED			UL(2)
+#define RMI_UNDEFINED			UL(-1)
 
 /* RmiPmuOverflowStatus enumeration representing PMU overflow status */
 #define RMI_PMU_OVERFLOW_NOT_ACTIVE	0U
@@ -487,8 +487,8 @@ struct rmi_rec_run {
 struct rtt_entry {
 	uint64_t walk_level;
 	uint64_t out_addr;
-	unsigned int state;
-	unsigned int ripas;
+	u_register_t state;
+	u_register_t ripas;
 };
 
 enum realm_state {

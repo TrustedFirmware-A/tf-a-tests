@@ -266,9 +266,9 @@ static u_register_t host_rmi_rtt_readentry(u_register_t rd,
 	rets = host_rmi_handler(&(smc_args) {RMI_RTT_READ_ENTRY,
 					rd, map_addr, level}, 4U);
 	rtt->walk_level = rets.ret1;
-	rtt->state = rets.ret2 & 0xFF;
+	rtt->state = rets.ret2;
 	rtt->out_addr = rets.ret3;
-	rtt->ripas = rets.ret4 & 0xFF;
+	rtt->ripas = rets.ret4;
 	return rets.ret0;
 }
 
@@ -351,7 +351,7 @@ static u_register_t host_realm_fold_rtt(u_register_t rd, u_register_t addr,
 	}
 
 	if (rtt.state != RMI_TABLE) {
-		ERROR("%s() failed, rtt.state=0x%x\n", "rmi_rtt_readentry",
+		ERROR("%s() failed, rtt.state=%lu\n", "rmi_rtt_readentry",
 			rtt.state);
 		return REALM_ERROR;
 	}
@@ -476,8 +476,8 @@ err:
 
 		ret = host_rmi_data_destroy(rd, map_addr, &data, &top);
 		if (ret != RMI_SUCCESS) {
-			ERROR("%s() failed, ret=0x%lx\n",
-				"host_rmi_data_destroy", ret);
+			ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
+				"host_rmi_data_destroy", map_addr, ret);
 		}
 
 		ret = host_rmi_granule_undelegate(phys);
@@ -584,10 +584,10 @@ static u_register_t host_realm_destroy_free_rtt(struct realm *realm,
 	return REALM_SUCCESS;
 }
 
-static void host_realm_destroy_undelegate_range(struct realm *realm,
-						u_register_t ipa,
-						u_register_t addr,
-						u_register_t size)
+static u_register_t host_realm_destroy_undelegate_range(struct realm *realm,
+							u_register_t ipa,
+							u_register_t addr,
+							u_register_t size)
 {
 	u_register_t rd = realm->rd;
 	u_register_t ret;
@@ -598,12 +598,14 @@ static void host_realm_destroy_undelegate_range(struct realm *realm,
 		if (ret != RMI_SUCCESS) {
 			ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
 				"host_rmi_data_destroy", ipa, ret);
+			return REALM_ERROR;
 		}
 
 		ret = host_rmi_granule_undelegate(addr);
 		if (ret != RMI_SUCCESS) {
 			ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
 				"host_rmi_granule_undelegate", ipa, ret);
+			return REALM_ERROR;
 		}
 
 		page_free(addr);
@@ -612,6 +614,7 @@ static void host_realm_destroy_undelegate_range(struct realm *realm,
 		ipa += PAGE_SIZE;
 		size -= PAGE_SIZE;
 	}
+	return REALM_SUCCESS;
 }
 
 static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
@@ -652,15 +655,20 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 					return REALM_ERROR;
 				}
 			} else {
-				host_realm_destroy_undelegate_range(
-								realm,
-								map_addr,
-								rtt_out_addr,
-								map_size);
+				ret = host_realm_destroy_undelegate_range(
+									realm,
+									map_addr,
+									rtt_out_addr,
+									map_size);
+				if (ret != RMI_SUCCESS) {
+					ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
+						"host_realm_destroy_undelegate_range",
+						map_addr, ret);
+					return REALM_ERROR;
+				}
 			}
 			break;
 		case RMI_UNASSIGNED:
-		case RMI_DESTROYED:
 			break;
 		case RMI_TABLE:
 			ret = host_realm_tear_down_rtt_range(realm, level + 1U,

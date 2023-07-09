@@ -21,6 +21,11 @@
 	 */
 	mov	x19, x0
 	/* Load the argument values into the appropriate registers. */
+	ldp	x16, x17, [x0, #128]
+	ldp	x14, x15, [x0, #112]
+	ldp	x12, x13, [x0, #96]
+	ldp	x10, x11, [x0, #80]
+	ldp	x8, x9, [x0, #64]
 	ldp	x6, x7, [x0, #48]
 	ldp	x4, x5, [x0, #32]
 	ldp	x2, x3, [x0, #16]

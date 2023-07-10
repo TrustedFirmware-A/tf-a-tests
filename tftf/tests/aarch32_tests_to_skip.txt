@@ -17,3 +17,4 @@ FF-A Interrupt
 SMMUv3 tests
 FF-A Notifications
 RMI and SPM tests
+FF-A SMCCC compliance

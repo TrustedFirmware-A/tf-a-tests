@@ -36,5 +36,11 @@ TESTS_SOURCES	+=							\
 		host_realm_helper.c					\
 	)
 
+TESTS_SOURCES	+=							\
+	$(addprefix tftf/tests/runtime_services/secure_service/,	\
+		test_ffa_smccc.c					\
+		test_ffa_smccc_asm.S					\
+	)
+
 TESTS_SOURCES   += lib/extensions/fpu/fpu.c
 endif

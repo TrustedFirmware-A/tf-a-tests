@@ -111,14 +111,10 @@ the following command:
 
 ::
 
-    make PLAT=<platform> realm
+    make PLAT=<platform> ENABLE_REALM_PAYLOAD_TESTS=1 tftf
 
-The generated ``realm.bin`` needs to be packaged as part of ``tftf.bin`` to
-be used as a single BL33 image and can be done using the following command:
-
-::
-
-    make PLAT=<platform> pack_realm
+The generated ``realm.bin`` is packaged as part of ``tftf.bin``
+to be used as a single BL33 image.
 
 Please refer to the `TF-A RME documentation`_ for build and run instructions.
 

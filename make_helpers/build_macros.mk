@@ -18,6 +18,22 @@ define assert_boolean
 $(and $(patsubst 0,,$(value $(1))),$(patsubst 1,,$(value $(1))),$(error $(1) must be boolean))
 endef
 
+0-9 := 0 1 2 3 4 5 6 7 8 9
+
+# Function to verify that a given option $(1) contains a numeric value
+define assert_numeric
+$(if $($(1)),,$(error $(1) must not be empty))
+$(eval __numeric := $($(1)))
+$(foreach d,$(0-9),$(eval __numeric := $(subst $(d),,$(__numeric))))
+$(if $(__numeric),$(error $(1) must be numeric))
+endef
+
+# Convenience function for verifying options have numeric values
+# $(eval $(call assert_numerics,FOO BOO)) will assert FOO and BOO contain numeric values
+define assert_numerics
+    $(foreach num,$1,$(eval $(call assert_numeric,$(num))))
+endef
+
 # CREATE_SEQ is a recursive function to create sequence of numbers from 1 to
 # $(2) and assign the sequence to $(1)
 define CREATE_SEQ

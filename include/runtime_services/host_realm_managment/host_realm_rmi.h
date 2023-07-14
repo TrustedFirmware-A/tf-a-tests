@@ -260,7 +260,6 @@
 #define RMI_EMPTY			UL(0)
 #define RMI_RAM				UL(1)
 #define RMI_DESTROYED			UL(2)
-#define RMI_UNDEFINED			UL(-1)
 
 /* RmiPmuOverflowStatus enumeration representing PMU overflow status */
 #define RMI_PMU_OVERFLOW_NOT_ACTIVE	0U

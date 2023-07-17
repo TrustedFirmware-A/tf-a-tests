@@ -22,4 +22,26 @@ Maintainers List
 
 --------------
 
+Code owners
+-----------
+
+Platform Ports
+~~~~~~~~~~~~~~
+
+Xilinx platform port
+^^^^^^^^^^^^^^^^^^^^
+:|M|: Michal Simek <michal.simek@amd.com>
+:|G|: `michalsimek`_
+:|M|: Amit Nagal <amit.nagal@amd.com>
+:|G|: `amit-nagal`_
+:|M|: Akshay Belsare <akshay.belsare@amd.com>
+:|G|: `Akshay-Belsare`_
+:|F|: plat/xilinx\*
+:|F|: tftf/tests/plat/xilinx\*
+:|F|: docs/plat/xilinx-\*
+:|F|: tftf/tests/tests-versal.mk
+:|F|: tftf/tests/tests-versal.xml
+
+--------------
+
 *Copyright (c) 2018-2020, Arm Limited. All rights reserved.*

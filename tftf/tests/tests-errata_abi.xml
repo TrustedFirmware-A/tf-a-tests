@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2023, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+  <testsuite name="EM-ABI" description="Errata ABI Feature Implementation">
+     <testcase name="Version" function="test_em_version" />
+     <testcase name="Features" function="test_em_features" />
+     <testcase name="EM_cpu_features" function="test_em_cpu_features" />
+  </testsuite>
+
+</testsuites>

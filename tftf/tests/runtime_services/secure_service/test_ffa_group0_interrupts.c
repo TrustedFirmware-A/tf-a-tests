@@ -7,6 +7,7 @@
 #include <cactus_test_cmds.h>
 #include <ffa_endpoints.h>
 #include <platform.h>
+#include <spm_test_helpers.h>
 #include <test_helpers.h>
 
 #define SP_SLEEP_TIME	200U

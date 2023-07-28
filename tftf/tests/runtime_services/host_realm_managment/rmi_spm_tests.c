@@ -17,6 +17,7 @@
 #include <plat_topology.h>
 #include <platform.h>
 #include "rmi_spm_tests.h"
+#include <spm_test_helpers.h>
 #include <smccc.h>
 #include <test_helpers.h>
 

@@ -16,7 +16,6 @@ TESTS_MAKEFILE := $(addprefix tftf/tests/,	\
 	tests-sdei.mk				\
 	tests-single-fault.mk			\
 	tests-smc.mk 				\
-	tests-spm.mk				\
 	tests-template.mk			\
 	tests-tftf-validation.mk		\
 	tests-trng.mk				\
@@ -24,12 +23,13 @@ TESTS_MAKEFILE := $(addprefix tftf/tests/,	\
 	tests-tsp.mk				\
 	tests-uncontainable.mk			\
 	tests-debugfs.mk			\
-	tests-rmi-spm.mk			\
 )
 
 ifeq (${ARCH},aarch64)
 TESTS_MAKEFILE += $(addprefix tftf/tests/,	\
+	tests-spm.mk				\
 	tests-realm-payload.mk			\
+	tests-rmi-spm.mk			\
 )
 endif
 

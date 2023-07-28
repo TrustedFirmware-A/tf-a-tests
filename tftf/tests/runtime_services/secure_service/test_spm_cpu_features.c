@@ -8,6 +8,7 @@
 #include <ffa_endpoints.h>
 #include <ffa_helpers.h>
 #include <fpu.h>
+#include <spm_test_helpers.h>
 #include <test_helpers.h>
 #include <lib/extensions/sve.h>
 

@@ -13,6 +13,7 @@
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
 #include <host_shared_data.h>
+#include <spm_test_helpers.h>
 #include <test_helpers.h>
 
 #define REALM_TIME_SLEEP	300U

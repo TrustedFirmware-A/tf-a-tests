@@ -7,10 +7,12 @@
 
 #include <stdio.h>
 
+#include <arch_features.h>
 #include <debug.h>
 #include <fpu.h>
 #include <host_realm_helper.h>
 #include <host_shared_data.h>
+#include <pauth.h>
 #include "realm_def.h"
 #include <realm_rsi.h>
 #include <realm_tests.h>
@@ -62,7 +64,6 @@ void realm_payload_main(void)
 	bool test_succeed = false;
 
 	realm_set_shared_structure((host_shared_data_t *)rsi_get_ns_buffer());
-
 	if (realm_get_shared_structure() != NULL) {
 		uint8_t cmd = realm_shared_data_get_realm_cmd();
 
@@ -70,6 +71,15 @@ void realm_payload_main(void)
 		case REALM_SLEEP_CMD:
 			realm_sleep_cmd();
 			test_succeed = true;
+			break;
+		case REALM_PAUTH_SET_CMD:
+			test_succeed = test_realm_pauth_set_cmd();
+			break;
+		case REALM_PAUTH_CHECK_CMD:
+			test_succeed = test_realm_pauth_check_cmd();
+			break;
+		case REALM_PAUTH_FAULT:
+			test_succeed = test_realm_pauth_fault();
 			break;
 		case REALM_GET_RSI_VERSION:
 			realm_get_rsi_version();

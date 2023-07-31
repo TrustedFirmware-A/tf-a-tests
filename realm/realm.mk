@@ -28,6 +28,7 @@ REALM_SOURCES:=								\
 	aarch64/realm_exceptions.S					\
 	realm_debug.c							\
 	realm_interrupt.c						\
+	realm_pauth.c							\
 	realm_payload_main.c						\
 	realm_pmuv3.c							\
 	realm_rsi.c							\
@@ -51,6 +52,12 @@ REALM_SOURCES	+=							\
 	tftf/framework/${ARCH}/exception_report.c
 
 REALM_LINKERFILE:=	realm/realm.ld.S
+
+# ARMv8.3 Pointer Authentication support files
+REALM_SOURCES +=	lib/extensions/pauth/aarch64/pauth.c            \
+			lib/extensions/pauth/aarch64/pauth_helpers.S
+
+REALM_INCLUDES +=	-Iinclude/lib/extensions
 
 REALM_DEFINES:=
 $(eval $(call add_define,REALM_DEFINES,ARM_ARCH_MAJOR))

@@ -51,5 +51,9 @@
 	  function="host_sve_realm_check_vectors_operations" />
 	  <testcase name="Check if RMM does not leak Realm SVE vector registers"
 	  function="host_sve_realm_check_vectors_leaked" />
+	  <testcase name="Check if PAuth keys are preserved in RL/SE/NS"
+	  function="host_realm_enable_pauth" />
+	  <testcase name="Generate PAuth Fault by overwriting LR"
+	  function="host_realm_pauth_fault" />
   </testsuite>
 </testsuites>

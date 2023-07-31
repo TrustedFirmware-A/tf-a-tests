@@ -16,6 +16,7 @@ NS_BL2U_INCLUDES :=					\
 	-Iinclude/common/${ARCH}			\
 	-Iinclude/lib					\
 	-Iinclude/lib/${ARCH}				\
+	-Iinclude/lib/extensions			\
 	-Iinclude/lib/utils				\
 	-Iinclude/lib/xlat_tables			\
 	-Iinclude/plat/common				\

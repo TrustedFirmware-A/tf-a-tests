@@ -8,6 +8,7 @@
 #include <debug.h>
 #include <ffa_endpoints.h>
 #include <smccc.h>
+#include <spm_test_helpers.h>
 #include <test_helpers.h>
 
 static const struct ffa_uuid expected_sp_uuids[] = { {PRIMARY_UUID} };

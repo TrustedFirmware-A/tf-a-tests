@@ -14,6 +14,7 @@
 #include <ffa_svc.h>
 #include <platform.h>
 #include <spm_common.h>
+#include <spm_test_helpers.h>
 #include <test_helpers.h>
 
 /**

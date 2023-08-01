@@ -14,6 +14,7 @@
 #include <lib/events.h>
 #include <lib/power_management.h>
 #include <platform.h>
+#include <spm_test_helpers.h>
 #include <test_helpers.h>
 
 #define ECHO_VAL1 U(0xa0a0a0a0)

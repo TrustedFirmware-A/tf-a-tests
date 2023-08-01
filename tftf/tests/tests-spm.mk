@@ -12,6 +12,7 @@ TESTS_SOURCES	+=							\
 		${ARCH}/ffa_arch_helpers.S				\
 		ffa_helpers.c						\
 		spm_common.c						\
+		spm_test_helpers.c					\
 		test_ffa_direct_messaging.c				\
 		test_ffa_interrupts.c					\
 		test_ffa_secure_interrupts.c				\

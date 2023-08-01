@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <test_helpers.h>
 #include <tftf_lib.h>
+#include <lib/extensions/sve.h>
 
 #include "./test_sve.h"
 

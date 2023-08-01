@@ -10,6 +10,7 @@
 #include <ffa_helpers.h>
 #include <ffa_svc.h>
 #include <spm_common.h>
+#include <spm_test_helpers.h>
 #include <test_helpers.h>
 #include <tftf_lib.h>
 #include <xlat_tables_defs.h>

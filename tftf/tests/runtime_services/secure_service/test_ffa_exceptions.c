@@ -14,6 +14,7 @@
 #include <platform.h>
 #include <smccc.h>
 #include <spm_common.h>
+#include <spm_test_helpers.h>
 #include <test_helpers.h>
 
 #define SENDER HYP_ID

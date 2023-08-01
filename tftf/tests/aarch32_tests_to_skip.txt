@@ -6,5 +6,14 @@
 Realm payload at EL1
 SIMD,SVE Registers context
 Invalid memory access with RME extension
-RMI and SPM tests
+FF-A Setup and Discovery
 SP exceptions
+FF-A Direct messaging
+FF-A Group0 interrupts
+FF-A Power management
+FF-A Memory Sharing
+SIMD,SVE Registers context
+FF-A Interrupt
+SMMUv3 tests
+FF-A Notifications
+RMI and SPM tests

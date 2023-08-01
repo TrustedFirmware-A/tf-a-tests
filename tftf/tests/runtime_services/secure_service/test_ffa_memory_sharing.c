@@ -8,9 +8,10 @@
 
 #include <cactus_test_cmds.h>
 #include <ffa_endpoints.h>
+#include <spm_common.h>
+#include <spm_test_helpers.h>
 #include <test_helpers.h>
 #include <tftf_lib.h>
-#include <spm_common.h>
 #include <xlat_tables_defs.h>
 
 #define MAILBOX_SIZE PAGE_SIZE

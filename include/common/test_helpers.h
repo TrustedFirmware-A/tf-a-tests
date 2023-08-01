@@ -8,13 +8,9 @@
 #define TEST_HELPERS_H__
 
 #include <arch_features.h>
-#include <ffa_helpers.h>
-#include <ffa_svc.h>
-#include <events.h>
 #include <plat_topology.h>
 #include <psci.h>
 #include <sme.h>
-#include <spm_common.h>
 #include <tftf_lib.h>
 #include <trusted_os.h>
 #include <tsp.h>
@@ -182,33 +178,6 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 			version & MM_VERSION_MINOR_MASK);			\
 	} while (0)
 
-#define SKIP_TEST_IF_FFA_VERSION_LESS_THAN(major, minor)			\
-	do {									\
-		struct ffa_value ret = ffa_version(				\
-					MAKE_FFA_VERSION(major, minor));	\
-		uint32_t version = ret.fid;					\
-										\
-		if (version == FFA_ERROR_NOT_SUPPORTED) {			\
-			tftf_testcase_printf("FFA_VERSION not supported.\n");	\
-			return TEST_RESULT_SKIPPED;				\
-		}								\
-										\
-		if ((version & FFA_VERSION_BIT31_MASK) != 0U) {			\
-			tftf_testcase_printf("FFA_VERSION bad response: %x\n",	\
-					version);				\
-			return TEST_RESULT_FAIL;				\
-		}								\
-										\
-		if (version < MAKE_FFA_VERSION(major, minor)) {			\
-			tftf_testcase_printf("FFA_VERSION returned %u.%u\n"	\
-					"The required version is %u.%u\n",	\
-					version >> FFA_VERSION_MAJOR_SHIFT,	\
-					version & FFA_VERSION_MINOR_MASK,	\
-					major, minor);				\
-			return TEST_RESULT_SKIPPED;				\
-		}								\
-	} while (0)
-
 #define SKIP_TEST_IF_ARCH_DEBUG_VERSION_LESS_THAN(version)			\
 	do {									\
 		uint32_t debug_ver = arch_get_debug_version();			\
@@ -221,41 +190,6 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 			return TEST_RESULT_SKIPPED;				\
 		}								\
 	} while (0)
-
-#define SKIP_TEST_IF_FFA_ENDPOINT_NOT_DEPLOYED(mb, ffa_uuid)			\
-	do {									\
-		struct ffa_value sc_ret = ffa_partition_info_get(ffa_uuid);	\
-		ffa_rx_release();						\
-		if (ffa_func_id(sc_ret) == FFA_ERROR && 			\
-		    ffa_error_code(sc_ret) == FFA_ERROR_INVALID_PARAMETER) {	\
-			tftf_testcase_printf("FFA endpoint not deployed!\n");	\
-			return TEST_RESULT_SKIPPED;				\
-		} else if (ffa_func_id(sc_ret) != FFA_SUCCESS_SMC32) {		\
-			ERROR("ffa_partition_info_get failed!\n");		\
-			return TEST_RESULT_FAIL;				\
-		}								\
-	} while (0)
-
-#define GET_TFTF_MAILBOX(mb)							\
-	do {									\
-		if (!get_tftf_mailbox(&mb)) {					\
-			ERROR("Mailbox RXTX buffers not configured!\n");	\
-			return TEST_RESULT_FAIL;				\
-		}								\
-	} while (false);
-
-#define CHECK_SPMC_TESTING_SETUP(ffa_major, ffa_minor, expected_uuids)		\
-	do {									\
-		SKIP_TEST_IF_AARCH32();						\
-		const size_t expected_uuids_size =				\
-			 sizeof(expected_uuids) / sizeof(struct ffa_uuid);	\
-		test_result_t ret = check_spmc_testing_set_up(			\
-			ffa_major, ffa_minor, expected_uuids, 			\
-			expected_uuids_size);					\
-		if (ret != TEST_RESULT_SUCCESS) {				\
-			return ret;						\
-		}								\
-	} while (false);
 
 #define SKIP_TEST_IF_TRBE_NOT_SUPPORTED()					\
 	do {									\
@@ -435,47 +369,6 @@ unsigned char *psci_mem_prot_get_sentinel(void);
 test_result_t map_test_unmap(const map_args_unmap_t *args,
 			     test_function_arg_t test);
 
-/*
- * Helper function to reset TFTF global mailbox for SPM related tests.
- * It calls the FFA_RXTX_UNMAP interface, for the SPMC to drop the current
- * address.
- */
-bool reset_tftf_mailbox(void);
-
-/*
- * Helper function to get TFTF global mailbox for SPM related tests.
- * Allocates RX/TX buffer pair and calls FFA_RXTX_MAP interface, for the SPMC
- * to map them into its own S1 translation.
- * If this function is called, and the buffers had been priorly mapped, it
- * sets 'mb' with the respective addresses.
- */
-bool get_tftf_mailbox(struct mailbox_buffers *mb);
-
-test_result_t check_spmc_testing_set_up(uint32_t ffa_version_major,
-	uint32_t ffa_version_minor, const struct ffa_uuid *ffa_uuids,
-	size_t ffa_uuids_size);
-
-/**
- * Turn on all cpus to execute a test in all.
- * - 'cpu_on_handler' should have the code containing the test.
- * - 'cpu_booted' is used for notifying which cores the test has been executed.
- * This should be used in the test executed by cpu_on_handler at the end of
- * processing to make sure it complies with this function's implementation.
- */
-test_result_t spm_run_multi_core_test(uintptr_t cpu_on_handler,
-				      event_t *cpu_booted);
-
-/**
- * Call FFA_RUN in the designated SP to make it reach the message loop.
- * Used within CPU_ON handlers, to bring up the SP in the current core.
- */
-bool spm_core_sp_init(ffa_id_t sp_id);
-
-/**
- * Initializes the Mailbox for other SPM related tests that need to use
- * RXTX buffers.
- */
-bool mailbox_init(struct mailbox_buffers mb);
 /*
  * Utility function to wait for all CPUs other than the caller to be
  * OFF.

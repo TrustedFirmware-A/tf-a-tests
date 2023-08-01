@@ -11,6 +11,7 @@
 #include <arch_features.h>
 #include <debug.h>
 #ifdef __aarch64__
+#include <spm_test_helpers.h>
 #include <sync.h>
 #endif
 #include <host_realm_helper.h>

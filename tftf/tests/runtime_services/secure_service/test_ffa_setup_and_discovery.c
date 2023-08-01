@@ -186,7 +186,7 @@ test_result_t test_ffa_version_bit31(void)
 test_result_t test_ffa_version_bigger(void)
 {
 	return test_ffa_version(MAKE_FFA_VERSION(FFA_VERSION_MAJOR + 1, 0),
-				SPM_VERSION);
+				FFA_ERROR_NOT_SUPPORTED);
 }
 
 /*
@@ -194,7 +194,8 @@ test_result_t test_ffa_version_bigger(void)
  */
 test_result_t test_ffa_version_smaller(void)
 {
-	return test_ffa_version(MAKE_FFA_VERSION(0, 9), SPM_VERSION);
+	return test_ffa_version(MAKE_FFA_VERSION(0, 9),
+				FFA_ERROR_NOT_SUPPORTED);
 }
 
 /******************************************************************************

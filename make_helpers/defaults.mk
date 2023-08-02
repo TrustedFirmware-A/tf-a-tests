@@ -45,3 +45,9 @@ USE_NVM			:= 0
 
 # Build verbosity
 V			:= 0
+
+# Select the branch protection features to use
+BRANCH_PROTECTION	:= 0
+
+# Build RME stack
+ENABLE_REALM_PAYLOAD_TESTS	:= 0

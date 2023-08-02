@@ -107,6 +107,9 @@ payload, whose simplistic build system is mostly independent.
 -  ``V``: Verbose build. If assigned anything other than 0, the build commands
    are printed. Default is 0.
 
+-  ``ENABLE_REALM_PAYLOAD_TESTS``: This option builds and packs Realm payload tests for
+   RME enabled stack. Default is 0.
+
 Arm FVP Platform Specific Build Options
 ---------------------------------------
 
@@ -152,7 +155,7 @@ Realm payload specific Build Options
 -  ``TFTF_MAX_IMAGE_SIZE``: The option needs to be either set by the user or
    by the platform makefile to specify the maximum size of TFTF binary. This
    is needed so that the Realm payload binary can be appended to TFTF binary
-   via ``make pack_realm`` build command.
+   via ``make ENABLE_REALM_PAYLOAD_TESTS=1 tftf`` build command.
 
 FWU-specific Build Options
 --------------------------

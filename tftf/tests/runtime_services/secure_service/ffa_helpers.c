@@ -382,6 +382,25 @@ struct ffa_value ffa_features_with_input_property(uint32_t feature, uint32_t par
 	return ffa_service_call(&args);
 }
 
+/* Get information about VMs or SPs based on UUID, using registers. */
+struct ffa_value ffa_partition_info_get_regs(const struct ffa_uuid uuid,
+					     const uint16_t start_index,
+					     const uint16_t tag)
+{
+	uint64_t arg1 = (uint64_t)uuid.uuid[1] << 32 | uuid.uuid[0];
+	uint64_t arg2 = (uint64_t)uuid.uuid[3] << 32 | uuid.uuid[2];
+	uint64_t arg3 = start_index | (uint64_t)tag << 16;
+
+	struct ffa_value args = {
+		.fid = FFA_PARTITION_INFO_GET_REGS_SMC64,
+		.arg1 = arg1,
+		.arg2 = arg2,
+		.arg3 = arg3,
+	};
+
+	return ffa_service_call(&args);
+}
+
 /* Get information about VMs or SPs based on UUID */
 struct ffa_value ffa_partition_info_get(const struct ffa_uuid uuid)
 {

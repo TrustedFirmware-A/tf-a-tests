@@ -14,12 +14,14 @@
 #define SECONDARY_UUID {0x092358d1, 0xb94723f0, 0x64447c82, 0xc88f57f5}
 #define TERTIARY_UUID {0x735cb579, 0xb9448c1d, 0xe1619385, 0xd2d80a77}
 #define IVY_UUID {0xd883baea, 0xaf4eafba, 0xfdf74481, 0xa744e5cb}
+#define EL3_SPMD_LP_UUID {0xe98e43ad, 0xb7db524f, 0x47a3bf57, 0x1588f4e3}
 
 /* vcpu_count of cactus SPs. */
 #define PRIMARY_EXEC_CTX_COUNT		PLATFORM_CORE_COUNT
 #define SECONDARY_EXEC_CTX_COUNT	PLATFORM_CORE_COUNT
 #define TERTIARY_EXEC_CTX_COUNT		(1)
 #define IVY_EXEC_CTX_COUNT		(1)
+#define EL3_SPMD_LP_EXEC_CTX_COUNT	(1)
 
 /* UUID of OPTEE SP as defined in the respective manifest. */
 #define OPTEE_UUID {0x486178e0, 0xe7f811e3, 0xbc5e0002, 0xa5d5c51b}

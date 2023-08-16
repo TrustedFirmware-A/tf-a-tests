@@ -25,7 +25,7 @@ static sve_vector_t rl_sve_vectors_write[SVE_NUM_VECTORS] __aligned(16);
 /* Returns the maximum supported VL. This test is called only by sve Realm */
 bool test_realm_sve_rdvl(void)
 {
-	host_shared_data_t *sd = realm_get_shared_structure();
+	host_shared_data_t *sd = realm_get_my_shared_structure();
 	struct sve_cmd_rdvl *output;
 
 	assert(is_armv8_2_sve_present());
@@ -45,7 +45,7 @@ bool test_realm_sve_rdvl(void)
  */
 bool test_realm_sve_read_id_registers(void)
 {
-	host_shared_data_t *sd = realm_get_shared_structure();
+	host_shared_data_t *sd = realm_get_my_shared_structure();
 	struct sve_cmd_id_regs *output;
 
 	output = (struct sve_cmd_id_regs *)sd->realm_cmd_output_buffer;
@@ -65,7 +65,7 @@ bool test_realm_sve_read_id_registers(void)
  */
 bool test_realm_sve_probe_vl(void)
 {
-	host_shared_data_t *sd = realm_get_shared_structure();
+	host_shared_data_t *sd = realm_get_my_shared_structure();
 	struct sve_cmd_probe_vl *output;
 
 	assert(is_armv8_2_sve_present());

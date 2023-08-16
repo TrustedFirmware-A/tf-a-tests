@@ -103,6 +103,13 @@ bool host_rmi_get_cmp_result(void)
 	return rmi_cmp_result;
 }
 
+u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t target_rec,
+		unsigned long status)
+{
+	return (host_rmi_handler(&(smc_args) {RMI_PSCI_COMPLETE, calling_rec,
+				target_rec, status}, 4U)).ret0;
+}
+
 static inline u_register_t host_rmi_data_create(bool unknown,
 						u_register_t rd,
 						u_register_t data,
@@ -504,7 +511,7 @@ u_register_t host_realm_map_unprotected(struct realm *realm,
 	u_register_t phys = ns_pa;
 	u_register_t map_addr = ns_pa |
 			(1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
-			realm->rmm_feat_reg0) - 1UL)) ;
+			realm->rmm_feat_reg0) - 1UL));
 
 	if (!IS_ALIGNED(map_addr, map_size)) {
 		return REALM_ERROR;
@@ -942,130 +949,149 @@ u_register_t host_realm_map_ns_shared(struct realm *realm,
 	return REALM_SUCCESS;
 }
 
-static void host_realm_free_rec_aux(u_register_t *aux_pages,
-					unsigned int num_aux)
+/* Free AUX pages for rec0 to rec_num */
+static void host_realm_free_rec_aux(u_register_t
+		(*aux_pages)[REC_PARAMS_AUX_GRANULES],
+		unsigned int num_aux, unsigned int rec_num)
 {
 	u_register_t ret;
 
-	for (unsigned int i = 0U; i < num_aux; i++) {
-		ret = host_rmi_granule_undelegate(aux_pages[i]);
-		if (ret != RMI_SUCCESS) {
-			WARN("%s() failed, index=%u ret=0x%lx\n",
-				"host_rmi_granule_undelegate", i, ret);
+	assert(rec_num < MAX_REC_COUNT);
+	assert(num_aux <= REC_PARAMS_AUX_GRANULES);
+	for (unsigned int i = 0U; i <= rec_num; i++) {
+		for (unsigned int j = 0U; j < num_aux &&
+					aux_pages[i][j] != 0U; j++) {
+			ret = host_rmi_granule_undelegate(aux_pages[i][j]);
+			if (ret != RMI_SUCCESS) {
+				WARN("%s() failed, index=%u,%u ret=0x%lx\n",
+				"host_rmi_granule_undelegate", i, j, ret);
+			}
+			page_free(aux_pages[i][j]);
 		}
-		page_free(aux_pages[i]);
 	}
 }
 
 static u_register_t host_realm_alloc_rec_aux(struct realm *realm,
-						struct rmi_rec_params *params)
+		struct rmi_rec_params *params, u_register_t rec_num)
 {
 	u_register_t ret;
-	unsigned int i;
+	unsigned int j;
 
-	for (i = 0U; i < realm->num_aux; i++) {
-		params->aux[i] = (u_register_t)page_alloc(PAGE_SIZE);
-		if (params->aux[i] == HEAP_NULL_PTR) {
+	assert(rec_num < MAX_REC_COUNT);
+	for (j = 0U; j < realm->num_aux; j++) {
+		params->aux[j] = (u_register_t)page_alloc(PAGE_SIZE);
+		if (params->aux[j] == HEAP_NULL_PTR) {
 			ERROR("Failed to allocate memory for aux rec\n");
-			goto err_free_mem;
+			return RMI_ERROR_REALM;
 		}
-		ret = host_rmi_granule_delegate(params->aux[i]);
+		ret = host_rmi_granule_delegate(params->aux[j]);
 		if (ret != RMI_SUCCESS) {
 			ERROR("%s() failed, index=%u ret=0x%lx\n",
-				"host_rmi_granule_delegate", i, ret);
-			goto err_free_mem;
+				"host_rmi_granule_delegate", j, ret);
+			/*
+			 * Free current page,
+			 * prev pages freed at host_realm_free_rec_aux
+			 */
+			page_free(params->aux[j]);
+			params->aux[j] = 0UL;
+			return RMI_ERROR_REALM;
 		}
 
 		/* We need a copy in Realm object for final destruction */
-		realm->aux_pages[i] = params->aux[i];
+		realm->aux_pages_all_rec[rec_num][j] = params->aux[j];
 	}
 	return RMI_SUCCESS;
-err_free_mem:
-	host_realm_free_rec_aux(params->aux, i);
-	return ret;
 }
 
 u_register_t host_realm_rec_create(struct realm *realm)
 {
-	struct rmi_rec_params *rec_params = HEAP_NULL_PTR;
+	struct rmi_rec_params *rec_params;
 	u_register_t ret;
+	unsigned int i;
 
-	/* Allocate memory for run object */
-	realm->run = (u_register_t)page_alloc(PAGE_SIZE);
-	if (realm->run == HEAP_NULL_PTR) {
-		ERROR("Failed to allocate memory for run\n");
-		return REALM_ERROR;
+	for (i = 0U; i < realm->rec_count; i++) {
+		realm->run[i] = 0U;
+		realm->rec[i] = 0U;
+		realm->mpidr[i] = 0U;
 	}
-	(void)memset((void *)realm->run, 0x0, PAGE_SIZE);
-
-	/* Allocate and delegate REC */
-	realm->rec = (u_register_t)page_alloc(PAGE_SIZE);
-	if (realm->rec == HEAP_NULL_PTR) {
-		ERROR("Failed to allocate memory for REC\n");
-		goto err_free_mem;
-	} else {
-		ret = host_rmi_granule_delegate(realm->rec);
-		if (ret != RMI_SUCCESS) {
-			ERROR("%s() failed, rec=0x%lx ret=0x%lx\n",
-				"host_rmi_granule_delegate", realm->rd, ret);
-			goto err_free_mem;
-		}
-	}
+	(void)memset(realm->aux_pages_all_rec, 0x0, sizeof(u_register_t) *
+			realm->num_aux*realm->rec_count);
 
 	/* Allocate memory for rec_params */
 	rec_params = (struct rmi_rec_params *)page_alloc(PAGE_SIZE);
 	if (rec_params == NULL) {
 		ERROR("Failed to allocate memory for rec_params\n");
-		goto err_undelegate_rec;
-	}
-	(void)memset(rec_params, 0x0, PAGE_SIZE);
-
-	/* Populate rec_params */
-	for (unsigned int i = 0U; i < (sizeof(rec_params->gprs) /
-			sizeof(rec_params->gprs[0]));
-			i++) {
-		rec_params->gprs[i] = 0x0UL;
+		return REALM_ERROR;
 	}
 
-	/* Delegate the required number of auxiliary Granules  */
-	ret = host_realm_alloc_rec_aux(realm, rec_params);
-	if (ret != RMI_SUCCESS) {
-		ERROR("%s() failed, ret=0x%lx\n", "host_realm_alloc_rec_aux",
+	for (i = 0U; i < realm->rec_count; i++) {
+		(void)memset(rec_params, 0x0, PAGE_SIZE);
+
+		/* Allocate memory for run object */
+		realm->run[i] = (u_register_t)page_alloc(PAGE_SIZE);
+		if (realm->run[i] == HEAP_NULL_PTR) {
+			ERROR("Failed to allocate memory for run\n");
+			goto err_free_mem;
+		}
+		(void)memset((void *)realm->run[i], 0x0, PAGE_SIZE);
+
+		/* Allocate and delegate REC */
+		realm->rec[i] = (u_register_t)page_alloc(PAGE_SIZE);
+		if (realm->rec[i] == HEAP_NULL_PTR) {
+			ERROR("Failed to allocate memory for REC\n");
+			goto err_free_mem;
+		} else {
+			ret = host_rmi_granule_delegate(realm->rec[i]);
+			if (ret != RMI_SUCCESS) {
+				ERROR("%s() failed, rec=0x%lx ret=0x%lx\n",
+				"host_rmi_granule_delegate", realm->rd, ret);
+				goto err_free_mem;
+			}
+		}
+
+		/* Delegate the required number of auxiliary Granules  */
+		ret = host_realm_alloc_rec_aux(realm, rec_params, i);
+		if (ret != RMI_SUCCESS) {
+			ERROR("%s() failed, ret=0x%lx\n", "host_realm_alloc_rec_aux",
 			ret);
-		goto err_free_mem;
+			goto err_free_aux;
+		}
+
+		/* Populate rec_params */
+		rec_params->pc = realm->par_base;
+		rec_params->flags = realm->rec_flag[i];
+
+		rec_params->mpidr = (u_register_t)i;
+		rec_params->num_aux = realm->num_aux;
+		realm->mpidr[i] = (u_register_t)i;
+
+		/* Create REC  */
+		ret = host_rmi_rec_create(realm->rd, realm->rec[i],
+				(u_register_t)rec_params);
+		if (ret != RMI_SUCCESS) {
+			ERROR("%s() failed,index=%u, ret=0x%lx\n",
+					"host_rmi_rec_create", i, ret);
+			goto err_free_aux;
+		}
 	}
-
-	rec_params->pc = realm->par_base;
-	rec_params->flags = RMI_RUNNABLE;
-	rec_params->mpidr = 0x0UL;
-	rec_params->num_aux = realm->num_aux;
-
-	/* Create REC  */
-	ret = host_rmi_rec_create(realm->rd, realm->rec, (u_register_t)rec_params);
-	if (ret != RMI_SUCCESS) {
-		ERROR("%s() failed, ret=0x%lx\n", "host_rmi_rec_create", ret);
-		goto err_free_rec_aux;
-	}
-
 	/* Free rec_params */
 	page_free((u_register_t)rec_params);
 	return REALM_SUCCESS;
 
-err_free_rec_aux:
-	host_realm_free_rec_aux(rec_params->aux, realm->num_aux);
-
-err_undelegate_rec:
-	ret = host_rmi_granule_undelegate(realm->rec);
-	if (ret != RMI_SUCCESS) {
-		WARN("%s() failed, rec=0x%lx ret=0x%lx\n",
-			"host_rmi_granule_undelegate", realm->rec, ret);
-	}
+err_free_aux:
+	host_realm_free_rec_aux(realm->aux_pages_all_rec, realm->num_aux, i);
 
 err_free_mem:
-	page_free(realm->run);
-	page_free(realm->rec);
+	for (unsigned int j = 0U; j <= i ; j++) {
+		ret = host_rmi_granule_undelegate(realm->rec[j]);
+		if (ret != RMI_SUCCESS) {
+			WARN("%s() failed, rec=0x%lx ret=0x%lx\n",
+			"host_rmi_granule_undelegate", realm->rec[j], ret);
+		}
+		page_free(realm->run[j]);
+		page_free(realm->rec[j]);
+	}
 	page_free((u_register_t)rec_params);
-
 	return REALM_ERROR;
 }
 
@@ -1103,26 +1129,30 @@ u_register_t host_realm_destroy(struct realm *realm)
 		return REALM_ERROR;
 	}
 
-	/* For each REC - Destroy, undelegate and free */
-	ret = host_rmi_rec_destroy(realm->rec);
-	if (ret != RMI_SUCCESS) {
-		ERROR("%s() failed, rec=0x%lx ret=0x%lx\n",
-			"host_rmi_rec_destroy", realm->rec, ret);
-		return REALM_ERROR;
+	for (unsigned int i = 0U; i < realm->rec_count; i++) {
+		/* For each REC - Destroy, undelegate and free */
+		ret = host_rmi_rec_destroy(realm->rec[i]);
+		if (ret != RMI_SUCCESS) {
+			ERROR("%s() failed, rec=0x%lx ret=0x%lx\n",
+				"host_rmi_rec_destroy", realm->rec[i], ret);
+			return REALM_ERROR;
+		}
+
+		ret = host_rmi_granule_undelegate(realm->rec[i]);
+		if (ret != RMI_SUCCESS) {
+			ERROR("%s() failed, rec=0x%lx ret=0x%lx\n",
+				"host_rmi_granule_undelegate", realm->rec[i], ret);
+			return REALM_ERROR;
+		}
+
+		page_free(realm->rec[i]);
+
+		/* Free run object */
+		page_free(realm->run[i]);
 	}
 
-	ret = host_rmi_granule_undelegate(realm->rec);
-	if (ret != RMI_SUCCESS) {
-		ERROR("%s() failed, rec=0x%lx ret=0x%lx\n",
-			"host_rmi_granule_undelegate", realm->rec, ret);
-		return REALM_ERROR;
-	}
-
-	host_realm_free_rec_aux(realm->aux_pages, realm->num_aux);
-	page_free(realm->rec);
-
-	/* Free run object */
-	page_free(realm->run);
+	host_realm_free_rec_aux(realm->aux_pages_all_rec,
+			realm->num_aux, realm->rec_count - 1U);
 
 	/*
 	 * For each data granule - Destroy, undelegate and free
@@ -1177,21 +1207,37 @@ undo_from_new_state:
 	return REALM_SUCCESS;
 }
 
+unsigned int host_realm_find_rec_by_mpidr(unsigned int mpidr, struct realm *realm)
+{
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		if (realm->run[i] != 0U && realm->mpidr[i] == mpidr) {
+			return i;
+		}
+	}
+	return MAX_REC_COUNT;
+}
+
 u_register_t host_realm_rec_enter(struct realm *realm,
 				  u_register_t *exit_reason,
-				  unsigned int *host_call_result)
+				  unsigned int *host_call_result,
+				  unsigned int rec_num)
 {
-	struct rmi_rec_run *run = (struct rmi_rec_run *)realm->run;
+	struct rmi_rec_run *run;
 	u_register_t ret;
 	bool re_enter_rec;
 
+	if (rec_num >= realm->rec_count) {
+		return RMI_ERROR_INPUT;
+	}
+
+	run = (struct rmi_rec_run *)realm->run[rec_num];
 	do {
 		re_enter_rec = false;
 		ret = host_rmi_handler(&(smc_args) {RMI_REC_ENTER,
-					realm->rec, realm->run}, 3U).ret0;
-		VERBOSE("%s() run->exit.exit_reason=%lu "
+					realm->rec[rec_num], realm->run[rec_num]}, 3U).ret0;
+		VERBOSE("%s() ret=%lu run->exit.exit_reason=%lu "
 			"run->exit.esr=0x%lx EC_BITS=%u ISS_DFSC_MASK=0x%lx\n",
-			__func__, run->exit.exit_reason, run->exit.esr,
+			__func__, ret, run->exit.exit_reason, run->exit.esr,
 			((EC_BITS(run->exit.esr) == EC_DABORT_CUR_EL)),
 			(ISS_BITS(run->exit.esr) & ISS_DFSC_MASK));
 

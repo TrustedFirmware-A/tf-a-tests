@@ -46,6 +46,7 @@ static sve_vector_t ns_sve_vectors_read[SVE_NUM_VECTORS] __aligned(16);
 static test_result_t host_create_sve_realm_payload(bool sve_en, uint8_t sve_vq)
 {
 	u_register_t feature_flag;
+	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 
 	if (sve_en) {
 		feature_flag = RMI_FEATURE_REGISTER_0_SVE_EN |
@@ -60,7 +61,7 @@ static test_result_t host_create_sve_realm_payload(bool sve_en, uint8_t sve_vq)
 				       (u_register_t)(PAGE_POOL_MAX_SIZE +
 						      NS_REALM_SHARED_MEM_SIZE),
 				       (u_register_t)PAGE_POOL_MAX_SIZE,
-				       feature_flag)) {
+				       feature_flag, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -129,14 +130,14 @@ test_result_t host_sve_realm_cmd_rdvl(void)
 	}
 
 	realm_rc = host_enter_realm_execute(REALM_SVE_RDVL, NULL,
-					    RMI_EXIT_HOST_CALL);
+					    RMI_EXIT_HOST_CALL, 0U);
 	if (realm_rc != true) {
 		rc = TEST_RESULT_FAIL;
 		goto rm_realm;
 	}
 
 	/* Check if rdvl matches the SVE VL created */
-	sd = host_get_shared_structure();
+	sd = host_get_shared_structure(0U);
 	rl_output = (struct sve_cmd_rdvl *)sd->realm_cmd_output_buffer;
 	rl_max_sve_vq = SVE_VL_TO_VQ(rl_output->rdvl);
 	if (sve_vq == rl_max_sve_vq) {
@@ -205,13 +206,13 @@ static test_result_t _host_sve_realm_check_id_registers(bool sve_en)
 	}
 
 	realm_rc = host_enter_realm_execute(REALM_SVE_ID_REGISTERS, NULL,
-					    RMI_EXIT_HOST_CALL);
+					    RMI_EXIT_HOST_CALL, 0U);
 	if (!realm_rc) {
 		rc = TEST_RESULT_FAIL;
 		goto rm_realm;
 	}
 
-	sd = host_get_shared_structure();
+	sd = host_get_shared_structure(0U);
 	r_regs = (struct sve_cmd_id_regs *)sd->realm_cmd_output_buffer;
 
 	/* Check ID register SVE flags */
@@ -292,13 +293,13 @@ test_result_t host_sve_realm_cmd_probe_vl(void)
 	vl_bitmap_expected = sve_probe_vl(sve_vq);
 
 	realm_rc = host_enter_realm_execute(REALM_SVE_PROBE_VL, NULL,
-					    RMI_EXIT_HOST_CALL);
+					    RMI_EXIT_HOST_CALL, 0U);
 	if (!realm_rc) {
 		rc = TEST_RESULT_FAIL;
 		goto rm_realm;
 	}
 
-	sd = host_get_shared_structure();
+	sd = host_get_shared_structure(0U);
 	rl_output = (struct sve_cmd_probe_vl *)sd->realm_cmd_output_buffer;
 
 	INFO("Supported SVE vector length in bits (expected):\n");
@@ -353,7 +354,7 @@ test_result_t host_sve_realm_check_config_register(void)
 
 		/* Call Realm to run SVE command */
 		realm_rc = host_enter_realm_execute(REALM_SVE_RDVL, NULL,
-						    RMI_EXIT_HOST_CALL);
+						    RMI_EXIT_HOST_CALL, 0U);
 		if (!realm_rc) {
 			ERROR("Realm command REALM_SVE_RDVL failed\n");
 			rc = TEST_RESULT_FAIL;
@@ -384,9 +385,10 @@ test_result_t host_sve_realm_check_config_register(void)
  */
 static bool callback_enter_realm(void)
 {
+
 	return !host_enter_realm_execute(REALM_SVE_OPS, NULL,
-					    RMI_EXIT_HOST_CALL);
-	}
+					 RMI_EXIT_HOST_CALL, 0U);
+}
 
 /* Intermittently switch to Realm while doing NS SVE ops */
 test_result_t host_sve_realm_check_vectors_operations(void)
@@ -503,7 +505,7 @@ test_result_t host_sve_realm_check_vectors_leaked(void)
 
 	/* 4. Call Realm to fill in Z registers */
 	realm_rc = host_enter_realm_execute(REALM_SVE_FILL_REGS, NULL,
-					    RMI_EXIT_HOST_CALL);
+					    RMI_EXIT_HOST_CALL, 0U);
 	if (!realm_rc) {
 		rc = TEST_RESULT_FAIL;
 		goto rm_realm;

@@ -44,32 +44,24 @@ const char *rmi_exit[] = {
  * The function handler to print the Realm logged buffer,
  * executed by the secondary core
  */
-static inline test_result_t timer_handler(void)
+void realm_print_handler(unsigned int rec_num)
 {
 	size_t str_len = 0UL;
-	host_shared_data_t *host_shared_data = host_get_shared_structure();
+	host_shared_data_t *host_shared_data = host_get_shared_structure(rec_num);
 	char *log_buffer = (char *)host_shared_data->log_buffer;
 
-	do {
-		spin_lock((spinlock_t *)&host_shared_data->printf_lock);
-		str_len = strlen((const char *)log_buffer);
+	str_len = strlen((const char *)log_buffer);
 
-		/*
-		 * Read Realm message from shared printf location and print
-		 * them using UART
-		 */
-		if (str_len != 0UL) {
-			/* Avoid memory overflow */
-			log_buffer[MAX_BUF_SIZE - 1] = 0U;
-
-			mp_printf("%s", log_buffer);
-			(void)memset((char *)log_buffer, 0, MAX_BUF_SIZE);
-		}
-		spin_unlock((spinlock_t *)&host_shared_data->printf_lock);
-
-	} while ((timer_enabled || (str_len != 0UL)));
-
-	return TEST_RESULT_SUCCESS;
+	/*
+	 * Read Realm message from shared printf location and print
+	 * them using UART
+	 */
+	if (str_len != 0UL) {
+		/* Avoid memory overflow */
+		log_buffer[MAX_BUF_SIZE - 1] = 0U;
+		mp_printf("%s", log_buffer);
+		(void)memset((char *)log_buffer, 0, MAX_BUF_SIZE);
+	}
 }
 
 /*
@@ -77,36 +69,18 @@ static inline test_result_t timer_handler(void)
  * and try to find another CPU other than the lead one to
  * handle the Realm message logging.
  */
-void host_init_realm_print_buffer(void)
+static void host_init_realm_print_buffer(void)
 {
-	u_register_t other_mpidr, my_mpidr;
-	host_shared_data_t *host_shared_data = host_get_shared_structure();
-	int ret;
+	host_shared_data_t *host_shared_data;
 
-	(void)memset((char *)host_shared_data, 0, sizeof(host_shared_data_t));
-
-	/* Program timer */
-	timer_enabled = false;
-
-	/* Find a valid CPU to power on */
-	my_mpidr = read_mpidr_el1() & MPID_MASK;
-	other_mpidr = tftf_find_any_cpu_other_than(my_mpidr);
-	if (other_mpidr == INVALID_MPID) {
-		ERROR("Couldn't find a valid other CPU\n");
-		return;
+	for (unsigned int i = 0U; i < realm.rec_count; i++) {
+		host_shared_data = host_get_shared_structure(i);
+		(void)memset((char *)host_shared_data, 0, sizeof(host_shared_data_t));
 	}
-
-	/* Power on the other CPU */
-	ret = tftf_cpu_on(other_mpidr, (uintptr_t)timer_handler, 0);
-	if (ret != PSCI_E_SUCCESS) {
-		ERROR("Powering on %lx failed\n", other_mpidr);
-		return;
-	}
-	timer_enabled = true;
 }
 
 static bool host_enter_realm(u_register_t *exit_reason,
-				unsigned int *host_call_result)
+		unsigned int *host_call_result, unsigned int rec_num)
 {
 	u_register_t ret;
 
@@ -120,15 +94,9 @@ static bool host_enter_realm(u_register_t *exit_reason,
 	}
 
 	/* Enter Realm */
-	ret = host_realm_rec_enter(&realm, exit_reason, host_call_result);
+	ret = host_realm_rec_enter(&realm, exit_reason, host_call_result, rec_num);
 	if (ret != REALM_SUCCESS) {
 		ERROR("%s() failed, ret=%lx\n", "host_realm_rec_enter", ret);
-
-		/* Free test resources */
-		if (host_realm_destroy(&realm) != REALM_SUCCESS) {
-			ERROR("%s() failed\n", "host_realm_destroy");
-		}
-		realm_payload_created = false;
 		return false;
 	}
 
@@ -139,7 +107,9 @@ bool host_create_realm_payload(u_register_t realm_payload_adr,
 				u_register_t plat_mem_pool_adr,
 				u_register_t plat_mem_pool_size,
 				u_register_t realm_pages_size,
-				u_register_t feature_flag)
+				u_register_t feature_flag,
+				const u_register_t *rec_flag,
+				unsigned int rec_count)
 {
 	int8_t value;
 
@@ -221,6 +191,21 @@ bool host_create_realm_payload(u_register_t realm_payload_adr,
 						feature_flag));
 	}
 
+	if (realm.rec_count > MAX_REC_COUNT) {
+		ERROR("Invalid Rec Count\n");
+		return false;
+	}
+	realm.rec_count = rec_count;
+	for (unsigned int i = 0U; i < rec_count; i++) {
+		if (rec_flag[i] == RMI_RUNNABLE ||
+				rec_flag[i] == RMI_NOT_RUNNABLE) {
+			realm.rec_flag[i] = rec_flag[i];
+		} else {
+			ERROR("Invalid Rec Flag\n");
+			return false;
+		}
+	}
+
 	/* Create Realm */
 	if (host_realm_create(&realm) != REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_realm_create");
@@ -277,8 +262,8 @@ bool host_create_shared_mem(u_register_t ns_shared_mem_adr,
 		return false;
 	}
 
+	memset((void *)ns_shared_mem_adr, 0, (size_t)ns_shared_mem_size);
 	host_init_realm_print_buffer();
-	realm_shared_data_clear_realm_val();
 	shared_mem_created = true;
 
 	return shared_mem_created;
@@ -304,13 +289,18 @@ bool host_destroy_realm(void)
 	return true;
 }
 
-bool host_enter_realm_execute(uint8_t cmd, struct realm **realm_ptr, int test_exit_reason)
+bool host_enter_realm_execute(uint8_t cmd, struct realm **realm_ptr,
+		int test_exit_reason, unsigned int rec_num)
 {
 	u_register_t exit_reason = RMI_EXIT_INVALID;
 	unsigned int host_call_result = TEST_RESULT_FAIL;
 
-	realm_shared_data_set_realm_cmd(cmd);
-	if (!host_enter_realm(&exit_reason, &host_call_result)) {
+	if (rec_num >= realm.rec_count) {
+		ERROR("Invalid Rec Count\n");
+		return false;
+	}
+	host_shared_data_set_realm_cmd(cmd, rec_num);
+	if (!host_enter_realm(&exit_reason, &host_call_result, rec_num)) {
 		return false;
 	}
 

@@ -89,6 +89,12 @@
 #define SECURE_MEMORY_ACCESS_ADDR		U(0xFD000000)
 
 /*******************************************************************************
+ * Base address and size for the FIP.
+ ******************************************************************************/
+#define PLAT_ARM_FIP_BASE		(FLASH_BASE)
+#define PLAT_ARM_FIP_SIZE		(0x100000)
+
+/*******************************************************************************
  * Base address and size for the FIP that contains FWU images.
  ******************************************************************************/
 #define PLAT_ARM_FWU_FIP_BASE		(FLASH_BASE + 0x400000)

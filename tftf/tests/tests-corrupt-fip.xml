@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2023, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+
+  <testsuite name="tbb corrupt trusted key header" description="The FIP is corrupted before update">
+     <testcase name="tbb bad tkey cert header" function="test_tbb_tkey_cert_header" />
+  </testsuite>
+
+</testsuites>

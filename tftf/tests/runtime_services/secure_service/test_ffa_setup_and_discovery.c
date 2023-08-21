@@ -31,7 +31,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.properties = FFA_PARTITION_AARCH64_EXEC |
 			      FFA_PARTITION_DIRECT_REQ_RECV |
 			      FFA_PARTITION_NOTIFICATION,
-		.uuid = sp_uuids[0]
+		.uuid = {PRIMARY_UUID}
 	},
 	/* Secondary partition info */
 	{
@@ -40,7 +40,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.properties = FFA_PARTITION_AARCH64_EXEC |
 			      FFA_PARTITION_DIRECT_REQ_RECV |
 			      FFA_PARTITION_NOTIFICATION,
-		.uuid = sp_uuids[1]
+		.uuid = {SECONDARY_UUID}
 	},
 	/* Tertiary partition info */
 	{
@@ -49,7 +49,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.properties = FFA_PARTITION_AARCH64_EXEC |
 			      FFA_PARTITION_DIRECT_REQ_RECV |
 			      FFA_PARTITION_NOTIFICATION,
-		.uuid = sp_uuids[2]
+		.uuid = {TERTIARY_UUID}
 	},
 	/* Ivy partition info */
 	{
@@ -57,7 +57,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.exec_context = IVY_EXEC_CTX_COUNT,
 		.properties = FFA_PARTITION_AARCH64_EXEC |
 			      FFA_PARTITION_DIRECT_REQ_RECV,
-		.uuid = sp_uuids[3]
+		.uuid = {IVY_UUID}
 	}
 };
 

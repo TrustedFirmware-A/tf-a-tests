@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+XLNX_COMMON_PATH :=	plat/xilinx/common
 VERSAL_PATH	:=	plat/xilinx/versal
 
 PLAT_INCLUDES	:=	-I${VERSAL_PATH}/include/
@@ -18,7 +19,7 @@ PLAT_SOURCES	:=	drivers/arm/gic/arm_gic_v2v3.c                  \
 			${VERSAL_PATH}/versal_setup.c			\
 			${VERSAL_PATH}/versal_pwr_state.c		\
 			${VERSAL_PATH}/aarch64/plat_helpers.S		\
-			${VERSAL_PATH}/timers.c
+			${XLNX_COMMON_PATH}/timer/timers.c
 
 PLAT_TESTS_SKIP_LIST    := ${VERSAL_PATH}/tests_to_skip.txt
 

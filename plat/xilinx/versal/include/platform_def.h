@@ -115,4 +115,6 @@
 /* LPD_SWDT_INT, AM011(v1.5), Chapter 50, Page 428 */
 #define IRQ_TWDOG_INTID				U(0x51)
 
+#define TTC_TIMER_IRQ				U(69)
+
 #endif /* PLATFORM_DEF_H */

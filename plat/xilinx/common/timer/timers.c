@@ -33,8 +33,6 @@
 #define TTC_CLK_SEL_PS_REF		BIT(0)
 #define TTC_CLK_SEL_RPU_REF		BIT(4)
 
-#define TIMER_IRQ			U(69)
-
 #define RET_SUCCESS			U(0)
 
 /*
@@ -136,12 +134,12 @@ static int handler_timer(void)
 	return RET_SUCCESS;
 }
 
-static const plat_timer_t versal_timers = {
+static const plat_timer_t timers = {
 	.program = program_timer,
 	.cancel = cancel_timer,
 	.handler = handler_timer,
 	.timer_step_value = INTERVAL,
-	.timer_irq = TIMER_IRQ
+	.timer_irq = TTC_TIMER_IRQ
 };
 
 int plat_initialise_timer_ops(const plat_timer_t **timer_ops)
@@ -162,10 +160,10 @@ int plat_initialise_timer_ops(const plat_timer_t **timer_ops)
 	 */
 	timer_write_32(TTC_OFFSET_TMR_0 + TTC_CNT_CNTRL_OFFSET, 0x23);
 	timer_write_32(TTC_OFFSET_TMR_0 + TTC_CLK_CNTRL_OFFSET,
-				CLK_CNTRL_PRESCALE | CLK_CNTRL_PRESCALE_EN);
+		       CLK_CNTRL_PRESCALE | CLK_CNTRL_PRESCALE_EN);
 	timer_write_32(TTC_OFFSET_TMR_0 + TTC_IER_OFFSET, 0x01);
 
-	*timer_ops = &versal_timers;
+	*timer_ops = &timers;
 
 	return RET_SUCCESS;
 }

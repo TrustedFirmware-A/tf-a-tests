@@ -11,44 +11,35 @@
 #define FPU_Q_SIZE		16U
 #define FPU_Q_COUNT		32U
 
-/* These defines are needed by assembly code to access FPU registers. */
-#define FPU_OFFSET_Q		0U
-#define FPU_OFFSET_FPSR		(FPU_Q_SIZE * FPU_Q_COUNT)
-#define FPU_OFFSET_FPCR		(FPU_OFFSET_FPSR + 8)
-
 #ifndef __ASSEMBLER__
 
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct fpu_reg_state {
-	uint8_t q[FPU_Q_COUNT][FPU_Q_SIZE];
-	unsigned long fpsr;
+typedef uint8_t fpu_q_reg_t[FPU_Q_SIZE] __aligned(16);
+typedef struct fpu_cs_regs {
 	unsigned long fpcr;
-} fpu_reg_state_t __aligned(16);
+	unsigned long fpsr;
+} fpu_cs_regs_t __aligned(16);
 
-/*
- * Read and compare FPU state registers with provided template values in parameters.
- */
-bool fpu_state_compare_template(fpu_reg_state_t *fpu);
+typedef struct fpu_state {
+	fpu_q_reg_t q_regs[FPU_Q_COUNT];
+	fpu_cs_regs_t cs_regs;
+} fpu_state_t __aligned(16);
 
-/*
- * Fill the template with random values and copy it to
- * FPU state registers(SIMD vectors, FPCR, FPSR).
- */
-void fpu_state_fill_regs_and_template(fpu_reg_state_t *fpu);
+void fpu_cs_regs_write(const fpu_cs_regs_t *cs_regs);
+void fpu_cs_regs_write_rand(fpu_cs_regs_t *cs_regs);
+void fpu_cs_regs_read(fpu_cs_regs_t *cs_regs);
+int fpu_cs_regs_compare(const fpu_cs_regs_t *s1, const fpu_cs_regs_t *s2);
 
-/*
- * This function populates the provided FPU structure with the provided template
- * regs_val for all the 32 FPU/SMID registers, and the status registers FPCR/FPSR
- */
-void fpu_state_set(fpu_reg_state_t *vec,
-		uint8_t regs_val);
+void fpu_q_regs_write_rand(fpu_q_reg_t q_regs[FPU_Q_COUNT]);
+void fpu_q_regs_read(fpu_q_reg_t q_regs[FPU_Q_COUNT]);
+int fpu_q_regs_compare(const fpu_q_reg_t s1[FPU_Q_COUNT],
+		       const fpu_q_reg_t s2[FPU_Q_COUNT]);
 
-/*
- * This function prints the content of the provided FPU structure
- */
-void fpu_state_print(fpu_reg_state_t *vec);
+void fpu_state_write_rand(fpu_state_t *fpu_state);
+void fpu_state_read(fpu_state_t *fpu_state);
+int fpu_state_compare(const fpu_state_t *s1, const fpu_state_t *s2);
 
 #endif /* __ASSEMBLER__ */
 #endif /* FPU_H */

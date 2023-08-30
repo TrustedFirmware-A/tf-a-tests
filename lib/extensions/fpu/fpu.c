@@ -3,6 +3,8 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
+
+#include <arch_helpers.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,21 +20,9 @@
 #define read_simd_helper(num1, num2) "stp q"#num1", q"#num2",\
 	[%0], #"STR(2 * FPU_Q_SIZE)";"
 
-static fpu_reg_state_t g_fpu_read;
-
-static void read_fpu_state_registers(fpu_reg_state_t *fpu_template_in)
+/* Read FPU Q[0-31] and strore it in 'q_regs' */
+void fpu_q_regs_read(fpu_q_reg_t q_regs[FPU_Q_COUNT])
 {
-#ifdef __aarch64__
-
-	u_register_t fpsr;
-	u_register_t fpcr;
-
-	/* Read current FPCR FPSR and write to template. */
-	__asm__ volatile ("mrs %0, fpsr\n" : "=r" (fpsr));
-	__asm__ volatile ("mrs %0, fpcr\n" : "=r" (fpcr));
-	fpu_template_in->fpsr = fpsr;
-	fpu_template_in->fpcr = fpcr;
-
 	__asm__ volatile(
 			read_simd_helper(0, 1)
 			read_simd_helper(2, 3)
@@ -51,39 +41,12 @@ static void read_fpu_state_registers(fpu_reg_state_t *fpu_template_in)
 			read_simd_helper(28, 29)
 			read_simd_helper(30, 31)
 			"sub %0, %0, #" STR(FPU_Q_COUNT * FPU_Q_SIZE) ";"
-			: : "r" (fpu_template_in->q));
-#endif
+			: : "r" (q_regs));
 }
 
-void fpu_state_fill_regs_and_template(fpu_reg_state_t *fpu_template_in)
+/* Write FPU Q[0-31] registers passed in 'q_regs' */
+static void fpu_q_regs_write(const fpu_q_reg_t q_regs[FPU_Q_COUNT])
 {
-	u_register_t fpsr;
-	u_register_t fpcr;
-	u_register_t temp;
-
-	temp = rand();
-	(void)memset((void *)fpu_template_in, 0, sizeof(fpu_reg_state_t));
-
-	/*
-	 * Write random value to FPCR FPSR.
-	 * Note write will be ignored for reserved bits.
-	 */
-	__asm__ volatile ("msr fpsr, %0\n" : : "r" (temp));
-	__asm__ volatile ("msr fpcr, %0\n" : : "r" (temp));
-
-	/*
-	 * Read back current FPCR FPSR and write to template,
-	 */
-	__asm__ volatile ("mrs %0, fpsr\n" : "=r" (fpsr));
-	__asm__ volatile ("mrs %0, fpcr\n" : "=r" (fpcr));
-	fpu_template_in->fpsr = fpsr;
-	fpu_template_in->fpcr = fpcr;
-
-	for (unsigned int num = 0U; num < FPU_Q_COUNT; num++) {
-		memset((uint8_t *)fpu_template_in->q[num], temp * (num + 1),
-				sizeof(fpu_template_in->q[0]));
-	}
-
 	__asm__ volatile(
 			fill_simd_helper(0, 1)
 			fill_simd_helper(2, 3)
@@ -102,35 +65,105 @@ void fpu_state_fill_regs_and_template(fpu_reg_state_t *fpu_template_in)
 			fill_simd_helper(28, 29)
 			fill_simd_helper(30, 31)
 			"sub %0, %0, #" STR(FPU_Q_COUNT * FPU_Q_SIZE) ";"
-			: : "r" (fpu_template_in->q));
+			: : "r" (q_regs));
 }
 
-void fpu_state_print(fpu_reg_state_t *vec)
+/* Read FPCR and FPSR and store it in 'cs_regs' */
+void fpu_cs_regs_read(fpu_cs_regs_t *cs_regs)
 {
-	INFO("dumping FPU registers :\n");
+	cs_regs->fpcr = read_fpcr();
+	cs_regs->fpsr = read_fpsr();
+}
+
+/* Write FPCR and FPSR passed in 'cs_regs' */
+void fpu_cs_regs_write(const fpu_cs_regs_t *cs_regs)
+{
+	write_fpcr(cs_regs->fpcr);
+	write_fpsr(cs_regs->fpsr);
+}
+
+/*
+ * Generate random values and write it to 'q_regs', then write it to FPU Q
+ * registers.
+ */
+void fpu_q_regs_write_rand(fpu_q_reg_t q_regs[FPU_Q_COUNT])
+{
+	uint32_t rval;
+
+	rval = rand();
+
+	memset((void *)q_regs, 0, sizeof(fpu_q_reg_t) * FPU_Q_COUNT);
 	for (unsigned int num = 0U; num < FPU_Q_COUNT; num++) {
-		uint64_t __unused *qreg = (uint64_t *)&vec->q[num];
-
-		INFO("Q[%02u]=0x%016llx_%016llx\n", num, *qreg, *(qreg + 1));
+		memset((uint8_t *)q_regs[num], rval * (num + 1),
+		       sizeof(fpu_q_reg_t));
 	}
-	INFO("FPCR=0x%lx FPSR=0x%lx\n", vec->fpcr, vec->fpsr);
+	fpu_q_regs_write(q_regs);
 }
 
-bool fpu_state_compare_template(fpu_reg_state_t *fpu_template_in)
+/*
+ * Generate random values and write it to 'cs_regs', then write it to FPU FPCR
+ * and FPSR.
+ */
+void fpu_cs_regs_write_rand(fpu_cs_regs_t *cs_regs)
 {
-	(void)memset((void *)&g_fpu_read, 0, sizeof(fpu_reg_state_t));
-	read_fpu_state_registers(&g_fpu_read);
+	memset((void *)cs_regs, 0, sizeof(fpu_cs_regs_t));
 
-	if (memcmp((uint8_t *)fpu_template_in,
-			(uint8_t *)&g_fpu_read,
-			sizeof(fpu_reg_state_t)) != 0U) {
-		ERROR("%s failed\n", __func__);
-		ERROR("Read values\n");
-		fpu_state_print(&g_fpu_read);
-		ERROR("Template values\n");
-		fpu_state_print(fpu_template_in);
-		return false;
-	} else {
-		return true;
+	cs_regs->fpcr = rand();
+	cs_regs->fpsr = rand();
+
+	/*
+	 * Write random value to FPCR FPSR.
+	 * Note write will be ignored for reserved bits.
+	 */
+	fpu_cs_regs_write(cs_regs);
+
+	/* Read back current FPCR and FPSR */
+	fpu_cs_regs_read(cs_regs);
+}
+
+/*
+ * Generate random values and write it to 'fpu_state', then write it to FPU Q
+ * registers, FPCR and FPSR.
+ */
+void fpu_state_write_rand(fpu_state_t *fpu_state)
+{
+	fpu_q_regs_write_rand(fpu_state->q_regs);
+	fpu_cs_regs_write_rand(&fpu_state->cs_regs);
+}
+
+/* Read FPU Q registers, FPCR and FPSR write it to 'fpu_state' */
+void fpu_state_read(fpu_state_t *fpu_state)
+{
+	fpu_q_regs_read(fpu_state->q_regs);
+	fpu_cs_regs_read(&fpu_state->cs_regs);
+}
+
+/* Return zero if FPU Q registers 's1', 's2' matches else nonzero */
+int fpu_q_regs_compare(const fpu_q_reg_t s1[FPU_Q_COUNT],
+		       const fpu_q_reg_t s2[FPU_Q_COUNT])
+{
+	return memcmp(s1, s2, sizeof(fpu_q_reg_t) * FPU_Q_COUNT);
+}
+
+/*
+ * Return zero if FPU control and status registers 's1', 's2' matches else
+ * nonzero
+ */
+int fpu_cs_regs_compare(const fpu_cs_regs_t *s1, const fpu_cs_regs_t *s2)
+{
+	return memcmp(s1, s2, sizeof(fpu_cs_regs_t));
+}
+
+/* Returns 0, if FPU state 's1', 's2' matches else non-zero */
+int fpu_state_compare(const fpu_state_t *s1, const fpu_state_t *s2)
+{
+	if (fpu_q_regs_compare(s1->q_regs, s2->q_regs) != 0) {
+		return 1;
 	}
+
+	if (fpu_cs_regs_compare(&s1->cs_regs, &s2->cs_regs) != 0) {
+		return 1;
+	}
+
+	return 0;
 }

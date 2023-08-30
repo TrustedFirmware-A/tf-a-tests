@@ -32,7 +32,8 @@ static sve_z_regs_t sve_vectors_input;
 static sve_z_regs_t sve_vectors_output;
 static int sve_op_1[NS_SVE_OP_ARRAYSIZE];
 static int sve_op_2[NS_SVE_OP_ARRAYSIZE];
-static fpu_reg_state_t g_fpu_template;
+static fpu_state_t g_fpu_state_write;
+static fpu_state_t g_fpu_state_read;
 
 /*
  * Tests that SIMD vectors and FPU state are preserved during the context switches between
@@ -48,7 +49,7 @@ test_result_t test_simd_vectors_preserved(void)
 	 **********************************************************************/
 	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
 
-	fpu_state_fill_regs_and_template(&g_fpu_template);
+	fpu_state_write_rand(&g_fpu_state_write);
 	struct ffa_value ret = cactus_req_simd_fill_send_cmd(SENDER, RECEIVER);
 
 	if (!is_ffa_direct_response(ret)) {
@@ -68,9 +69,14 @@ test_result_t test_simd_vectors_preserved(void)
 	if (cactus_get_response(ret) == CACTUS_ERROR) {
 		return TEST_RESULT_FAIL;
 	}
+
 	/* Normal world verify its FPU/SIMD state registers data */
-	return fpu_state_compare_template(&g_fpu_template) ? TEST_RESULT_SUCCESS :
-		TEST_RESULT_FAIL;
+	fpu_state_read(&g_fpu_state_read);
+	if (fpu_state_compare(&g_fpu_state_write, &g_fpu_state_read) != 0) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }
 
 /*

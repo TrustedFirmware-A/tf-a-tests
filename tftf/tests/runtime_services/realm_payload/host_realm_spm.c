@@ -22,7 +22,9 @@
 static const struct ffa_uuid expected_sp_uuids[] = { {PRIMARY_UUID} };
 static struct mailbox_buffers mb;
 static bool secure_mailbox_initialised;
-static fpu_reg_state_t fpu_temp_ns;
+
+static fpu_state_t ns_fpu_state_write;
+static fpu_state_t ns_fpu_state_read;
 
 typedef enum test_rl_sec_fp_cmd {
 	CMD_SIMD_NS_FILL = 0U,
@@ -307,7 +309,7 @@ test_result_t host_realm_fpu_access_in_rl_ns_se(void)
 	 * Fill all 3 world's FPU/SIMD state regs with some known values in the
 	 * beginning to have something later to compare to.
 	 */
-	fpu_state_fill_regs_and_template(&fpu_temp_ns);
+	fpu_state_write_rand(&ns_fpu_state_write);
 	if (!fpu_fill_rl()) {
 		ERROR("fpu_fill_rl error\n");
 		goto destroy_realm;
@@ -322,12 +324,14 @@ test_result_t host_realm_fpu_access_in_rl_ns_se(void)
 
 		switch (cmd) {
 		case CMD_SIMD_NS_FILL:
-			/* Non secure world fill FPU/SIMD state registers */
-			fpu_state_fill_regs_and_template(&fpu_temp_ns);
+			/* Non secure world fill FPU state registers */
+			fpu_state_write_rand(&ns_fpu_state_write);
 			break;
 		case CMD_SIMD_NS_CMP:
-			/* Normal world verify its FPU/SIMD state registers data */
-			if (!fpu_state_compare_template(&fpu_temp_ns)) {
+			/* Normal world verify its FPU state registers data */
+			fpu_state_read(&ns_fpu_state_read);
+			if (fpu_state_compare(&ns_fpu_state_write,
+					      &ns_fpu_state_read)) {
 				ERROR("%s failed %d\n", __func__, __LINE__);
 				goto destroy_realm;
 			}

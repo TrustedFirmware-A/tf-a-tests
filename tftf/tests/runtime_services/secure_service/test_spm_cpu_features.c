@@ -19,15 +19,6 @@
 
 static const struct ffa_uuid expected_sp_uuids[] = { {PRIMARY_UUID} };
 
-static test_result_t fp_vector_compare(uint8_t *a, uint8_t *b,
-	size_t vector_size, uint8_t vectors_num)
-{
-	if (memcmp(a, b, vector_size * vectors_num) != 0) {
-		return TEST_RESULT_FAIL;
-	}
-	return TEST_RESULT_SUCCESS;
-}
-
 static sve_z_regs_t sve_vectors_input;
 static sve_z_regs_t sve_vectors_output;
 static int sve_op_1[NS_SVE_OP_ARRAYSIZE];
@@ -139,9 +130,11 @@ test_result_t test_sve_vectors_preserved(void)
 	sve_z_regs_read(&sve_vectors_output);
 
 	/* Compare to state before calling into secure world. */
-	return fp_vector_compare((uint8_t *)sve_vectors_input,
-				 (uint8_t *)sve_vectors_output,
-				 vl, SVE_NUM_VECTORS);
+	if (sve_z_regs_compare(&sve_vectors_input, &sve_vectors_output) != 0UL) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }
 
 /*

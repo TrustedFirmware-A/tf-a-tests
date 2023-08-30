@@ -472,8 +472,8 @@ rm_realm:
 test_result_t host_sve_realm_check_vectors_leaked(void)
 {
 	u_register_t rmi_feat_reg0;
-	uint8_t *regs_base_wr, *regs_base_rd;
 	test_result_t rc;
+	uint64_t bitmap;
 	bool realm_rc;
 	uint8_t sve_vq;
 
@@ -520,17 +520,13 @@ test_result_t host_sve_realm_check_vectors_leaked(void)
 	 *    be either 0 or the old values filled by NS world.
 	 *    TODO: check if upper bits are zero
 	 */
-	regs_base_wr = (uint8_t *)&ns_sve_z_regs_write;
-	regs_base_rd = (uint8_t *)&ns_sve_z_regs_read;
-
-	rc = TEST_RESULT_SUCCESS;
-	for (int i = 0U; i < SVE_NUM_VECTORS; i++) {
-		if (memcmp(regs_base_wr + (i * SVE_VQ_TO_BYTES(sve_vq)),
-			   regs_base_rd + (i * SVE_VQ_TO_BYTES(sve_vq)),
-			   SVE_VQ_TO_BYTES(sve_vq)) != 0) {
-			ERROR("SVE Z%d mismatch\n", i);
-			rc = TEST_RESULT_FAIL;
-		}
+	bitmap = sve_z_regs_compare(&ns_sve_z_regs_write, &ns_sve_z_regs_read);
+	if (bitmap != 0UL) {
+		ERROR("SVE Z regs compare failed (bitmap: 0x%016llx)\n",
+		      bitmap);
+		rc = TEST_RESULT_FAIL;
+	} else {
+		rc = TEST_RESULT_SUCCESS;
 	}
 
 rm_realm:

@@ -74,7 +74,7 @@ uint32_t sve_probe_vl(uint8_t sve_max_vq)
 
 	for (vq = 0; vq <= sve_max_vq; vq++) {
 		_sve_config_vq(vq);
-		rdvl_vq = SVE_VL_TO_VQ(sve_vector_length_get());
+		rdvl_vq = SVE_VL_TO_VQ(sve_rdvl_1());
 		if (vl_bitmap & BIT_32(rdvl_vq)) {
 			continue;
 		}
@@ -84,7 +84,7 @@ uint32_t sve_probe_vl(uint8_t sve_max_vq)
 	return vl_bitmap;
 }
 
-void sve_fill_vector_regs(const sve_vector_t v[SVE_NUM_VECTORS])
+void sve_z_regs_write(const sve_z_regs_t *z_regs)
 {
 	assert(is_armv8_2_sve_present());
 
@@ -123,10 +123,10 @@ void sve_fill_vector_regs(const sve_vector_t v[SVE_NUM_VECTORS])
 		fill_sve_helper(30)
 		fill_sve_helper(31)
 		".arch_extension nosve\n"
-		: : "r" (v));
+		: : "r" (z_regs));
 }
 
-void sve_read_vector_regs(sve_vector_t v[SVE_NUM_VECTORS])
+void sve_z_regs_read(sve_z_regs_t *z_regs)
 {
 	assert(is_armv8_2_sve_present());
 
@@ -165,5 +165,5 @@ void sve_read_vector_regs(sve_vector_t v[SVE_NUM_VECTORS])
 		read_sve_helper(30)
 		read_sve_helper(31)
 		".arch_extension nosve\n"
-		: : "r" (v));
+		: : "r" (z_regs));
 }

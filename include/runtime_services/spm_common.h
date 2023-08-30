@@ -99,18 +99,6 @@ bool is_expected_cactus_response(struct ffa_value ret, uint32_t expected_resp,
 				 uint32_t arg);
 void dump_ffa_value(struct ffa_value ret);
 
-/*
- * Fills SIMD/SVE registers with the content of the container v.
- * Number of vectors is assumed to be SIMD/SVE_NUM_VECTORS.
- */
-void fill_sve_vector_regs(const sve_vector_t v[SVE_NUM_VECTORS]);
-
-/*
- * Reads contents of SIMD/SVE registers into the provided container v.
- * Number of vectors is assumed to be SIMD/SVE_NUM_VECTORS.
- */
-void read_sve_vector_regs(sve_vector_t v[SVE_NUM_VECTORS]);
-
 bool check_spmc_execution_level(void);
 
 unsigned int get_ffa_feature_test_target(const struct ffa_features_test **test_target);

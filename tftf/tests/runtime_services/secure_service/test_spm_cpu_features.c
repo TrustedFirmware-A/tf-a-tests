@@ -28,8 +28,8 @@ static test_result_t fp_vector_compare(uint8_t *a, uint8_t *b,
 	return TEST_RESULT_SUCCESS;
 }
 
-static sve_vector_t sve_vectors_input[SVE_NUM_VECTORS] __aligned(16);
-static sve_vector_t sve_vectors_output[SVE_NUM_VECTORS] __aligned(16);
+static sve_z_regs_t sve_vectors_input;
+static sve_z_regs_t sve_vectors_output;
 static int sve_op_1[NS_SVE_OP_ARRAYSIZE];
 static int sve_op_2[NS_SVE_OP_ARRAYSIZE];
 static fpu_reg_state_t g_fpu_template;
@@ -95,15 +95,15 @@ test_result_t test_sve_vectors_preserved(void)
 	 * Clear SVE vectors buffers used to compare the SVE state before calling
 	 * into the Swd compared to SVE state restored after returning to NWd.
 	 */
-	memset(sve_vectors_input, sizeof(sve_vector_t) * SVE_NUM_VECTORS, 0);
-	memset(sve_vectors_output, sizeof(sve_vector_t) * SVE_NUM_VECTORS, 0);
+	memset(sve_vectors_input, 0, sizeof(sve_vectors_input));
+	memset(sve_vectors_output, 0, sizeof(sve_vectors_output));
 
 	/* Set ZCR_EL2.LEN to implemented VL (constrained by EL3). */
 	write_zcr_el2(0xf);
 	isb();
 
 	/* Get the implemented VL. */
-	vl = sve_vector_length_get();
+	vl = sve_rdvl_1();
 
 	/* Fill each vector for the VL size with a fixed pattern. */
 	sve_vector = (uint8_t *) sve_vectors_input;
@@ -113,7 +113,7 @@ test_result_t test_sve_vectors_preserved(void)
 	}
 
 	/* Fill SVE vector registers with the buffer contents prepared above. */
-	sve_fill_vector_regs(sve_vectors_input);
+	sve_z_regs_write(&sve_vectors_input);
 
 	/*
 	 * Call cactus secure partition which uses SIMD (and expect it doesn't
@@ -130,7 +130,7 @@ test_result_t test_sve_vectors_preserved(void)
 	}
 
 	/* Get the SVE vectors state after returning to normal world. */
-	sve_read_vector_regs(sve_vectors_output);
+	sve_z_regs_read(&sve_vectors_output);
 
 	/* Compare to state before calling into secure world. */
 	return fp_vector_compare((uint8_t *)sve_vectors_input,

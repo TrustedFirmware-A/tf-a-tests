@@ -37,12 +37,14 @@
 
 #ifndef __ASSEMBLY__
 
-typedef uint8_t sve_vector_t[SVE_VECTOR_LEN_BYTES];
+typedef uint8_t sve_z_regs_t[SVE_NUM_VECTORS * SVE_VECTOR_LEN_BYTES]
+		__aligned(16);
 
 void sve_config_vq(uint8_t sve_vq);
 uint32_t sve_probe_vl(uint8_t sve_max_vq);
-void sve_fill_vector_regs(const sve_vector_t v[SVE_NUM_VECTORS]);
-void sve_read_vector_regs(sve_vector_t v[SVE_NUM_VECTORS]);
+
+void sve_z_regs_write(const sve_z_regs_t *z_regs);
+void sve_z_regs_read(sve_z_regs_t *z_regs);
 
 /* Assembly routines */
 bool sve_subtract_arrays_interleaved(int *dst_array, int *src_array1,
@@ -55,7 +57,7 @@ void sve_subtract_arrays(int *dst_array, int *src_array1, int *src_array2,
 #ifdef __aarch64__
 
 /* Returns the SVE implemented VL in bytes (constrained by ZCR_EL3.LEN) */
-static inline uint64_t sve_vector_length_get(void)
+static inline uint64_t sve_rdvl_1(void)
 {
 	uint64_t vl;
 

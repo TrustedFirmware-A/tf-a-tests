@@ -22,8 +22,8 @@
 static int ns_sve_op_1[NS_SVE_OP_ARRAYSIZE];
 static int ns_sve_op_2[NS_SVE_OP_ARRAYSIZE];
 
-static sve_vector_t ns_sve_vectors_write[SVE_NUM_VECTORS] __aligned(16);
-static sve_vector_t ns_sve_vectors_read[SVE_NUM_VECTORS] __aligned(16);
+static sve_z_regs_t ns_sve_z_regs_write;
+static sve_z_regs_t ns_sve_z_regs_read;
 
 /* Skip test if SVE is not supported in H/W or in RMI features */
 #define CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(_reg0)				\
@@ -95,7 +95,7 @@ test_result_t host_check_rmi_reports_proper_sve_vl(void)
 	 * by rdvl
 	 */
 	sve_config_vq(SVE_VQ_ARCH_MAX);
-	ns_sve_vq = SVE_VL_TO_VQ(sve_vector_length_get());
+	ns_sve_vq = SVE_VL_TO_VQ(sve_rdvl_1());
 
 	if (rmi_sve_vq != ns_sve_vq) {
 		ERROR("RMI max SVE VL %u bits don't match NS max "
@@ -490,9 +490,9 @@ test_result_t host_sve_realm_check_vectors_leaked(void)
 
 	/* 1. Set NS SVE VQ to max and write known pattern */
 	sve_config_vq(sve_vq);
-	(void)memset((void *)&ns_sve_vectors_write, 0xAA,
+	(void)memset((void *)&ns_sve_z_regs_write, 0xAA,
 		     SVE_VQ_TO_BYTES(sve_vq) * SVE_NUM_VECTORS);
-	sve_fill_vector_regs(ns_sve_vectors_write);
+	sve_z_regs_write(&ns_sve_z_regs_write);
 
 	/* 2. NS programs ZCR_EL2 with VQ as 0 */
 	sve_config_vq(SVE_VQ_ARCH_MIN);
@@ -513,15 +513,15 @@ test_result_t host_sve_realm_check_vectors_leaked(void)
 
 	/* 5. NS sets ZCR_EL2 with max VQ and reads the Z registers */
 	sve_config_vq(sve_vq);
-	sve_read_vector_regs(ns_sve_vectors_read);
+	sve_z_regs_read(&ns_sve_z_regs_read);
 
 	/*
 	 * 6. The upper bits in Z vectors (sve_vq - SVE_VQ_ARCH_MIN) must
 	 *    be either 0 or the old values filled by NS world.
 	 *    TODO: check if upper bits are zero
 	 */
-	regs_base_wr = (uint8_t *)&ns_sve_vectors_write;
-	regs_base_rd = (uint8_t *)&ns_sve_vectors_read;
+	regs_base_wr = (uint8_t *)&ns_sve_z_regs_write;
+	regs_base_rd = (uint8_t *)&ns_sve_z_regs_read;
 
 	rc = TEST_RESULT_SUCCESS;
 	for (int i = 0U; i < SVE_NUM_VECTORS; i++) {

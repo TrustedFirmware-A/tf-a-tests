@@ -21,7 +21,7 @@
 static int rl_sve_op_1[RL_SVE_OP_ARRAYSIZE];
 static int rl_sve_op_2[RL_SVE_OP_ARRAYSIZE];
 
-static sve_vector_t rl_sve_vectors_write[SVE_NUM_VECTORS] __aligned(16);
+static sve_z_regs_t rl_sve_z_regs_write;
 
 static int volatile realm_got_undef_abort;
 
@@ -37,7 +37,7 @@ bool test_realm_sve_rdvl(void)
 	memset((void *)output, 0, sizeof(struct sve_cmd_rdvl));
 
 	sve_config_vq(SVE_VQ_ARCH_MAX);
-	output->rdvl = sve_vector_length_get();
+	output->rdvl = sve_rdvl_1();
 
 	return true;
 }
@@ -124,10 +124,10 @@ bool test_realm_sve_fill_regs(void)
 
 	/* Config Realm with max SVE length */
 	sve_config_vq(SVE_VQ_ARCH_MAX);
-	vl = sve_vector_length_get();
+	vl = sve_rdvl_1();
 
-	memset((void *)&rl_sve_vectors_write, 0xcd, vl * SVE_NUM_VECTORS);
-	sve_fill_vector_regs(rl_sve_vectors_write);
+	memset((void *)&rl_sve_z_regs_write, 0xcd, vl * SVE_NUM_VECTORS);
+	sve_z_regs_write(&rl_sve_z_regs_write);
 
 	return true;
 }

@@ -24,12 +24,8 @@ typedef enum {
 } smestop_instruction_type_t;
 
 /* SME feature related prototypes. */
-void sme_enable(void);
 void sme_smstart(smestart_instruction_type_t smstart_type);
 void sme_smstop(smestop_instruction_type_t smstop_type);
-
-/* SME2 feature related prototypes. */
-void sme2_enable(void);
 
 /* Assembly function prototypes. */
 uint64_t sme_rdvl_1(void);

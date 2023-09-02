@@ -55,18 +55,16 @@ test_result_t test_sme2_support(void)
 	/* Skip the test if SME2 is not supported. */
 	SKIP_TEST_IF_SME2_NOT_SUPPORTED();
 
-	/* Enable SME2 for use at NS EL2. */
-	sme2_enable();
-
 	/*
 	 * FEAT_SME2 adds a 512 BIT architectural register ZT0 to support
 	 * the lookup-table feature.
 	 * System register SMCR_ELx defines a bit SMCR_ELx.EZT0 bit [30] to
-	 * enable/disable access to this register.
+	 * enable/disable access to this register. SMCR_EL2_RESET_VAL enables
+	 * this bit by default.
 	 *
 	 * Instructions to access ZT0 register are being tested to ensure
-	 * SMCR_ELx.EZT0 bit is set at( EL-3 as well as EL-2), so that
-	 * they are not trapped.
+	 * SMCR_EL3.EZT0 bit is set by EL3 firmware so that EL2 access are not
+	 * trapped.
 	 */
 
 	/* Make sure we can acesss SME2 ZT0 storage, PSTATE.ZA = 1*/

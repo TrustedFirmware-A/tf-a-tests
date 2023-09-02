@@ -575,21 +575,10 @@
 #define EVNTI_SHIFT		U(4)
 #define EVNTI_MASK		U(0xf)
 
-/* CPTR_EL3 definitions */
-#define TCPAC_BIT		(U(1) << 31)
-#define TAM_BIT			(U(1) << 30)
-#define TTA_BIT			(U(1) << 20)
-#define ESM_BIT			(U(1) << 12)
-#define TFP_BIT			(U(1) << 10)
-#define CPTR_EZ_BIT		(U(1) << 8)
-#define CPTR_EL3_RESET_VAL	U(0x0)
-
 /* CPTR_EL2 definitions */
-#define CPTR_EL2_RES1		((ULL(3) << 12) | (ULL(1) << 9) | (ULL(0xff)))
+#define CPTR_EL2_RES1		((ULL(1) << 13) | (ULL(1) << 9) | (ULL(0xff)))
 #define CPTR_EL2_TCPAC_BIT	(ULL(1) << 31)
 #define CPTR_EL2_TAM_BIT	(ULL(1) << 30)
-#define CPTR_EL2_SMEN_MASK	ULL(0x3)
-#define CPTR_EL2_SMEN_SHIFT	U(24)
 #define CPTR_EL2_TTA_BIT	(ULL(1) << 20)
 #define CPTR_EL2_TSM_BIT	(ULL(1) << 12)
 #define CPTR_EL2_TFP_BIT	(ULL(1) << 10)
@@ -981,6 +970,7 @@
 #define SMCR_ELX_LEN_MASK		U(0x1ff)
 #define SMCR_ELX_EZT0_BIT		(U(1) << 30)
 #define SMCR_ELX_FA64_BIT		(U(1) << 31)
+#define SMCR_EL2_RESET_VAL		(SMCR_ELX_EZT0_BIT | SMCR_ELX_FA64_BIT)
 
 /*******************************************************************************
  * Definitions of MAIR encodings for device and normal memory

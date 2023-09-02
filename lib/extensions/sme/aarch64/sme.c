@@ -14,32 +14,6 @@
 #include <lib/extensions/sme.h>
 
 /*
- * Function : sme_enable
- * Enable SME for nonsecure use at EL2 for TFTF cases.
- */
-void sme_enable(void)
-{
-	u_register_t reg;
-
-	/*
-	 * Make sure SME accesses don't cause traps by setting appropriate
-	 * fields in CPTR_EL2.
-	 */
-	reg = read_cptr_el2();
-	if ((read_hcr_el2() & HCR_E2H_BIT) == 0U) {
-		/* When HCR_EL2.E2H == 0, clear TSM bit in CPTR_EL2. */
-		reg = reg & ~CPTR_EL2_TSM_BIT;
-	} else {
-		/* When HCR_EL2.E2H == 1, set SMEN bits in CPTR_EL2. */
-		reg = reg | (CPTR_EL2_SMEN_MASK << CPTR_EL2_SMEN_SHIFT);
-	}
-	write_cptr_el2(reg);
-
-	isb();
-
-}
-
-/*
  * Function: sme_smstart
  * This function enables streaming mode and ZA array storage access
  * independently or together based on the type of instruction variant.

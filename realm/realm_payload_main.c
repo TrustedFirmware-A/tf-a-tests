@@ -123,6 +123,9 @@ void realm_payload_main(void)
 		case REALM_SVE_FILL_REGS:
 			test_succeed = test_realm_sve_fill_regs();
 			break;
+		case REALM_SVE_CMP_REGS:
+			test_succeed = test_realm_sve_cmp_regs();
+			break;
 		case REALM_SVE_UNDEF_ABORT:
 			test_succeed = test_realm_sve_undef_abort();
 			break;

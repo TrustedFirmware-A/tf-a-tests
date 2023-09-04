@@ -10,6 +10,7 @@
 #include <debug.h>
 #include <stdlib.h>
 #include <sync.h>
+#include <lib/extensions/fpu.h>
 #include <lib/extensions/sve.h>
 
 #include <host_realm_sve.h>
@@ -22,6 +23,16 @@ static int rl_sve_op_1[RL_SVE_OP_ARRAYSIZE];
 static int rl_sve_op_2[RL_SVE_OP_ARRAYSIZE];
 
 static sve_z_regs_t rl_sve_z_regs_write;
+static sve_z_regs_t rl_sve_z_regs_read;
+
+static sve_p_regs_t rl_sve_p_regs_write;
+static sve_p_regs_t rl_sve_p_regs_read;
+
+static sve_ffr_regs_t rl_sve_ffr_regs_write;
+static sve_ffr_regs_t rl_sve_ffr_regs_read;
+
+static fpu_cs_regs_t rl_fpu_cs_regs_write;
+static fpu_cs_regs_t rl_fpu_cs_regs_read;
 
 static int volatile realm_got_undef_abort;
 
@@ -118,18 +129,63 @@ bool test_realm_sve_ops(void)
 /* Fill SVE Z registers with known pattern */
 bool test_realm_sve_fill_regs(void)
 {
-	uint32_t vl;
-
 	assert(is_armv8_2_sve_present());
 
 	/* Config Realm with max SVE length */
 	sve_config_vq(SVE_VQ_ARCH_MAX);
-	vl = sve_rdvl_1();
 
-	memset((void *)&rl_sve_z_regs_write, 0xcd, vl * SVE_NUM_VECTORS);
-	sve_z_regs_write(&rl_sve_z_regs_write);
+	sve_z_regs_write_rand(&rl_sve_z_regs_write);
+	sve_p_regs_write_rand(&rl_sve_p_regs_write);
+	sve_ffr_regs_write_rand(&rl_sve_ffr_regs_write);
+
+	/* fpcr, fpsr common registers */
+	fpu_cs_regs_write_rand(&rl_fpu_cs_regs_write);
 
 	return true;
+}
+
+/* Compare SVE Z registers with last filled in values */
+bool test_realm_sve_cmp_regs(void)
+{
+	bool rc = true;
+	uint64_t bit_map;
+
+	assert(is_armv8_2_sve_present());
+
+	memset(&rl_sve_z_regs_read, 0, sizeof(rl_sve_z_regs_read));
+	memset(&rl_sve_p_regs_read, 0, sizeof(rl_sve_p_regs_read));
+	memset(&rl_sve_ffr_regs_read, 0, sizeof(rl_sve_ffr_regs_read));
+
+	/* Read all SVE registers */
+	sve_z_regs_read(&rl_sve_z_regs_read);
+	sve_p_regs_read(&rl_sve_p_regs_read);
+	sve_ffr_regs_read(&rl_sve_ffr_regs_read);
+
+	/* Compare the read values with last written values */
+	bit_map = sve_z_regs_compare(&rl_sve_z_regs_write, &rl_sve_z_regs_read);
+	if (bit_map) {
+		rc = false;
+	}
+
+	bit_map = sve_p_regs_compare(&rl_sve_p_regs_write, &rl_sve_p_regs_read);
+	if (bit_map) {
+		rc = false;
+	}
+
+	bit_map = sve_ffr_regs_compare(&rl_sve_ffr_regs_write,
+				       &rl_sve_ffr_regs_read);
+	if (bit_map) {
+		rc = false;
+	}
+
+	/* fpcr, fpsr common registers */
+	fpu_cs_regs_read(&rl_fpu_cs_regs_read);
+	if (fpu_cs_regs_compare(&rl_fpu_cs_regs_write, &rl_fpu_cs_regs_read)) {
+		ERROR("Realm: FPCR/FPSR mismatch\n");
+		rc = false;
+	}
+
+	return rc;
 }
 
 static bool realm_sync_exception_handler(void)

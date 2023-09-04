@@ -9,6 +9,7 @@
 #include <arch_features.h>
 #include <debug.h>
 #include <test_helpers.h>
+#include <lib/extensions/fpu.h>
 #include <lib/extensions/sve.h>
 
 #include <host_realm_helper.h>
@@ -19,11 +20,43 @@
 #define NS_SVE_OP_ARRAYSIZE		1024U
 #define SVE_TEST_ITERATIONS		50U
 
+/* Min test iteration count for 'host_and_realm_check_simd' test */
+#define TEST_ITERATIONS_MIN	(16U)
+
+/* Number of FPU configs: none */
+#define NUM_FPU_CONFIGS		(0U)
+
+/* Number of SVE configs: SVE_VL */
+#define NUM_SVE_CONFIGS		(1U)
+
+typedef enum security_state {
+	NONSECURE_WORLD = 0U,
+	REALM_WORLD,
+	SECURITY_STATE_MAX
+} security_state_t;
+
+typedef enum {
+	TEST_FPU = 0U,
+	TEST_SVE,
+} simd_test_t;
+
 static int ns_sve_op_1[NS_SVE_OP_ARRAYSIZE];
 static int ns_sve_op_2[NS_SVE_OP_ARRAYSIZE];
 
 static sve_z_regs_t ns_sve_z_regs_write;
 static sve_z_regs_t ns_sve_z_regs_read;
+
+static sve_p_regs_t ns_sve_p_regs_write;
+static sve_p_regs_t ns_sve_p_regs_read;
+
+static sve_ffr_regs_t ns_sve_ffr_regs_write;
+static sve_ffr_regs_t ns_sve_ffr_regs_read;
+
+static fpu_q_reg_t ns_fpu_q_regs_write[FPU_Q_COUNT];
+static fpu_q_reg_t ns_fpu_q_regs_read[FPU_Q_COUNT];
+
+static fpu_cs_regs_t ns_fpu_cs_regs_write;
+static fpu_cs_regs_t ns_fpu_cs_regs_read;
 
 /* Skip test if SVE is not supported in H/W or in RMI features */
 #define CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(_reg0)				\
@@ -563,6 +596,339 @@ test_result_t host_non_sve_realm_check_undef_abort(void)
 		rc = TEST_RESULT_SUCCESS;
 	}
 
+	if (!host_destroy_realm()) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return rc;
+}
+
+/* Generate random values and write it to SVE Z, P and FFR registers */
+static void ns_sve_write_rand(void)
+{
+	sve_z_regs_write_rand(&ns_sve_z_regs_write);
+	sve_p_regs_write_rand(&ns_sve_p_regs_write);
+	sve_ffr_regs_write_rand(&ns_sve_ffr_regs_write);
+}
+
+/* Read SVE Z, P and FFR registers and compare it with the last written values */
+static test_result_t ns_sve_read_and_compare(void)
+{
+	test_result_t rc = TEST_RESULT_SUCCESS;
+	uint64_t bitmap;
+
+	/* Clear old state */
+	memset((void *)&ns_sve_z_regs_read, 0, sizeof(ns_sve_z_regs_read));
+	memset((void *)&ns_sve_p_regs_read, 0, sizeof(ns_sve_p_regs_read));
+	memset((void *)&ns_sve_ffr_regs_read, 0, sizeof(ns_sve_ffr_regs_read));
+
+	/* Read Z, P, FFR registers to compare it with the last written values */
+	sve_z_regs_read(&ns_sve_z_regs_read);
+	sve_p_regs_read(&ns_sve_p_regs_read);
+	sve_ffr_regs_read(&ns_sve_ffr_regs_read);
+
+	bitmap = sve_z_regs_compare(&ns_sve_z_regs_write, &ns_sve_z_regs_read);
+	if (bitmap != 0UL) {
+		ERROR("SVE Z regs compare failed (bitmap: 0x%016llx)\n",
+		      bitmap);
+		rc = TEST_RESULT_FAIL;
+	}
+
+	bitmap = sve_p_regs_compare(&ns_sve_p_regs_write, &ns_sve_p_regs_read);
+	if (bitmap != 0UL) {
+		ERROR("SVE P regs compare failed (bitmap: 0x%016llx)\n",
+		      bitmap);
+		rc = TEST_RESULT_FAIL;
+	}
+
+	bitmap = sve_ffr_regs_compare(&ns_sve_ffr_regs_write,
+				      &ns_sve_ffr_regs_read);
+	if (bitmap != 0) {
+		ERROR("SVE FFR regs compare failed (bitmap: 0x%016llx)\n",
+		      bitmap);
+		rc = TEST_RESULT_FAIL;
+	}
+
+	return rc;
+}
+
+static char *simd_type_to_str(simd_test_t type)
+{
+	if (type == TEST_FPU) {
+		return "FPU";
+	} else if (type == TEST_SVE) {
+		return "SVE";
+	} else {
+		return "UNKNOWN";
+	}
+}
+
+static void ns_simd_print_cmd_config(bool cmd, simd_test_t type)
+{
+	char __unused *tstr = simd_type_to_str(type);
+	char __unused *cstr = cmd ? "write rand" : "read and compare";
+
+	if (type == TEST_SVE) {
+		INFO("TFTF: NS [%s] %s. Config: zcr: 0x%llx\n", tstr, cstr,
+		     (uint64_t)read_zcr_el2());
+	} else {
+		INFO("TFTF: NS [%s] %s\n", tstr, cstr);
+	}
+}
+
+/*
+ * Randomly select TEST_SVE or TEST_FPU. For TEST_SVE, configure zcr_el2 with
+ * random vector length
+ */
+static simd_test_t ns_sve_select_random_config(void)
+{
+	simd_test_t type;
+
+	if (rand() % 2) {
+		sve_config_vq(SVE_GET_RANDOM_VQ);
+		type = TEST_SVE;
+	} else {
+		type = TEST_FPU;
+	}
+
+	return type;
+}
+
+/*
+ * Configure NS world SIMD. Randomly choose to test SVE or FPU registers if
+ * system supports SVE.
+ *
+ * Returns either TEST_FPU or TEST_SVE
+ */
+static simd_test_t ns_simd_select_random_config(void)
+{
+	simd_test_t type;
+
+	if (is_armv8_2_sve_present()) {
+		type = ns_sve_select_random_config();
+	} else {
+		type = TEST_FPU;
+	}
+
+	return type;
+}
+
+/* Select random NS SIMD config and write random values to its registers */
+static simd_test_t ns_simd_write_rand(void)
+{
+	simd_test_t type;
+
+	type = ns_simd_select_random_config();
+
+	ns_simd_print_cmd_config(true, type);
+
+	if (type == TEST_SVE) {
+		ns_sve_write_rand();
+	} else {
+		fpu_q_regs_write_rand(ns_fpu_q_regs_write);
+	}
+
+	/* fpcr, fpsr common to all configs */
+	fpu_cs_regs_write_rand(&ns_fpu_cs_regs_write);
+
+	return type;
+}
+
+/* Read and compare the NS SIMD registers with the last written values */
+static test_result_t ns_simd_read_and_compare(simd_test_t type)
+{
+	test_result_t rc = TEST_RESULT_SUCCESS;
+
+	ns_simd_print_cmd_config(false, type);
+
+	if (type == TEST_SVE) {
+		rc = ns_sve_read_and_compare();
+	} else {
+		fpu_q_regs_read(ns_fpu_q_regs_read);
+		if (fpu_q_regs_compare(ns_fpu_q_regs_write,
+				       ns_fpu_q_regs_read)) {
+			ERROR("FPU Q registers compare failed\n");
+			rc = TEST_RESULT_FAIL;
+		}
+	}
+
+	/* fpcr, fpsr common to all configs */
+	fpu_cs_regs_read(&ns_fpu_cs_regs_read);
+	if (fpu_cs_regs_compare(&ns_fpu_cs_regs_write, &ns_fpu_cs_regs_read)) {
+		ERROR("FPCR/FPSR registers compare failed\n");
+		rc = TEST_RESULT_FAIL;
+	}
+
+	return rc;
+}
+
+/* Select random Realm SIMD config and write random values to its registers */
+static simd_test_t rl_simd_write_rand(bool rl_sve_en)
+{
+	enum realm_cmd rl_fill_cmd;
+	simd_test_t type;
+	bool __unused rc;
+
+	/* Select random commands to test. SVE or FPU registers in Realm */
+	if (rl_sve_en && (rand() % 2)) {
+		type = TEST_SVE;
+	} else {
+		type = TEST_FPU;
+	}
+
+	INFO("TFTF: RL [%s] write random\n", simd_type_to_str(type));
+	if (type == TEST_SVE) {
+		rl_fill_cmd = REALM_SVE_FILL_REGS;
+	} else {
+		rl_fill_cmd = REALM_REQ_FPU_FILL_CMD;
+	}
+
+	rc = host_enter_realm_execute(rl_fill_cmd, NULL, RMI_EXIT_HOST_CALL, 0U);
+	assert(rc);
+
+	return type;
+}
+
+/* Read and compare the Realm SIMD registers with the last written values */
+static bool rl_simd_read_and_compare(simd_test_t type)
+{
+	enum realm_cmd rl_cmp_cmd;
+
+	INFO("TFTF: RL [%s] read and compare\n", simd_type_to_str(type));
+	if (type == TEST_SVE) {
+		rl_cmp_cmd = REALM_SVE_CMP_REGS;
+	} else {
+		rl_cmp_cmd = REALM_REQ_FPU_CMP_CMD;
+	}
+
+	return host_enter_realm_execute(rl_cmp_cmd, NULL, RMI_EXIT_HOST_CALL,
+					0U);
+}
+
+/*
+ * This test case verifies whether various SIMD related registers like Q[0-31],
+ * FPCR, FPSR, Z[0-31], P[0-15], FFR are preserved by RMM during world switch
+ * between NS world and Realm world.
+ *
+ * Randomly verify FPU registers or SVE registers if the system supports SVE.
+ * Within SVE, randomly configure SVE vector length.
+ *
+ * This testcase runs on below configs:
+ * - with SVE
+ * - without SVE
+ */
+test_result_t host_and_realm_check_simd(void)
+{
+	u_register_t rmi_feat_reg0;
+	test_result_t rc;
+	uint8_t sve_vq;
+	bool sve_en;
+	security_state_t sec_state;
+	simd_test_t ns_simd_type, rl_simd_type;
+	unsigned int test_iterations;
+	unsigned int num_simd_types;
+	unsigned int num_simd_configs;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (host_rmi_features(0UL, &rmi_feat_reg0) != REALM_SUCCESS) {
+		ERROR("Failed to get RMI feat_reg0\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	sve_en = rmi_feat_reg0 & RMI_FEATURE_REGISTER_0_SVE_EN;
+	sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
+
+	/* Create Realm with SVE enabled if RMI features supports it */
+	INFO("TFTF: create realm sve_en/sve_vq: %d/%d\n", sve_en, sve_vq);
+	rc = host_create_sve_realm_payload(sve_en, sve_vq);
+	if (rc != TEST_RESULT_SUCCESS) {
+		return rc;
+	}
+
+	/*
+	 * Randomly select and configure NS simd context to test. And fill it
+	 * with random values.
+	 */
+	ns_simd_type = ns_simd_write_rand();
+
+	/*
+	 * Randomly select and configure Realm simd context to test. Enter realm
+	 * and fill simd context with random values.
+	 */
+	rl_simd_type = rl_simd_write_rand(sve_en);
+	sec_state = REALM_WORLD;
+
+	/*
+	 * Find out test iterations based on if SVE is enabled and the number of
+	 * configurations available in the SVE.
+	 */
+
+	/* FPU is always available */
+	num_simd_types = 1U;
+	num_simd_configs = NUM_FPU_CONFIGS;
+
+	if (is_armv8_2_sve_present()) {
+		num_simd_types += 1;
+		num_simd_configs += NUM_SVE_CONFIGS;
+	}
+
+	if (num_simd_configs) {
+		test_iterations = TEST_ITERATIONS_MIN * num_simd_types *
+			num_simd_configs;
+	} else {
+		test_iterations = TEST_ITERATIONS_MIN * num_simd_types;
+	}
+
+	for (uint32_t i = 0U; i < test_iterations; i++) {
+		if (sec_state == NONSECURE_WORLD) {
+			sec_state = REALM_WORLD;
+		} else {
+			sec_state = NONSECURE_WORLD;
+		}
+
+		switch (sec_state) {
+		case NONSECURE_WORLD:
+			/*
+			 * Read NS simd context and compare it with last written
+			 * context.
+			 */
+			rc = ns_simd_read_and_compare(ns_simd_type);
+			if (rc != TEST_RESULT_SUCCESS) {
+				goto rm_realm;
+			}
+
+			/*
+			 * Randomly select and configure NS simd context. And
+			 * fill it with random values for the next compare.
+			 */
+			ns_simd_type = ns_simd_write_rand();
+			break;
+		case REALM_WORLD:
+			/*
+			 * Enter Realm and read the simd context and compare it
+			 * with last written context.
+			 */
+			if (!rl_simd_read_and_compare(rl_simd_type)) {
+				ERROR("%s failed %d\n", __func__, __LINE__);
+				rc = TEST_RESULT_FAIL;
+				goto rm_realm;
+			}
+
+			/*
+			 * Randomly select and configure Realm simd context to
+			 * test. Enter realm and fill simd context with random
+			 * values for the next compare.
+			 */
+			rl_simd_type = rl_simd_write_rand(sve_en);
+			break;
+		default:
+			break;
+		}
+	}
+
+	rc = TEST_RESULT_SUCCESS;
+rm_realm:
 	if (!host_destroy_realm()) {
 		return TEST_RESULT_FAIL;
 	}

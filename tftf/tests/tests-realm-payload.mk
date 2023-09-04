@@ -13,7 +13,7 @@ TESTS_SOURCES	+=							\
 		host_realm_payload_multiple_rec_tests.c			\
 		host_realm_payload_tests.c				\
 		host_realm_spm.c					\
-		host_realm_payload_sve_tests.c				\
+		host_realm_payload_simd_tests.c				\
 	)
 
 TESTS_SOURCES	+=							\

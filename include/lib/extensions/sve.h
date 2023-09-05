@@ -56,8 +56,11 @@ typedef uint8_t sve_p_regs_t[SVE_NUM_P_REGS * SVE_P_REG_LEN_BYTES]
 typedef uint8_t sve_ffr_regs_t[SVE_NUM_FFR_REGS * SVE_FFR_REG_LEN_BYTES]
 		__aligned(16);
 
+uint64_t sve_rdvl_1(void);
 void sve_config_vq(uint8_t sve_vq);
 uint32_t sve_probe_vl(uint8_t sve_max_vq);
+uint64_t sve_read_zcr_elx(void);
+void sve_write_zcr_elx(uint64_t rval);
 
 void sve_z_regs_write(const sve_z_regs_t *z_regs);
 void sve_z_regs_write_rand(sve_z_regs_t *z_regs);
@@ -83,23 +86,5 @@ bool sve_subtract_arrays_interleaved(int *dst_array, int *src_array1,
 void sve_subtract_arrays(int *dst_array, int *src_array1, int *src_array2,
 			 int array_size);
 
-#ifdef __aarch64__
-
-/* Returns the SVE implemented VL in bytes (constrained by ZCR_EL3.LEN) */
-static inline uint64_t sve_rdvl_1(void)
-{
-	uint64_t vl;
-
-	__asm__ volatile(
-		".arch_extension sve\n"
-		"rdvl %0, #1;"
-		".arch_extension nosve\n"
-		: "=r" (vl)
-	);
-
-	return vl;
-}
-
-#endif /* __aarch64__ */
 #endif /* __ASSEMBLY__ */
 #endif /* SVE_H */

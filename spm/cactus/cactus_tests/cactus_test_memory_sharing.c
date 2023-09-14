@@ -81,8 +81,16 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 					 cactus_mem_send_get_retrv_flags(*args);
 	uint32_t words_to_write = cactus_mem_send_words_to_write(*args);
 
-	expect(memory_retrieve(mb, &m, handle, source, vm_id,
-			       retrv_flags, mem_func), true);
+	struct ffa_memory_access receiver = ffa_memory_access_init_permissions(
+		vm_id, FFA_DATA_ACCESS_RW,
+		(mem_func == FFA_MEM_SHARE_SMC32)
+			? FFA_INSTRUCTION_ACCESS_NOT_SPECIFIED
+			: FFA_INSTRUCTION_ACCESS_NX,
+		0);
+
+	expect(memory_retrieve(mb, &m, handle, source, &receiver, 1,
+			       retrv_flags, mem_func),
+	       true);
 
 	composite = ffa_memory_region_get_composite(m, 0);
 
@@ -180,7 +188,7 @@ CACTUS_CMD_HANDLER(req_mem_send_cmd, CACTUS_REQ_MEM_SEND_CMD)
 {
 	struct ffa_value ffa_ret;
 	uint32_t mem_func = cactus_req_mem_send_get_mem_func(*args);
-	ffa_id_t receiver = cactus_req_mem_send_get_receiver(*args);
+	ffa_id_t receiver_id = cactus_req_mem_send_get_receiver(*args);
 	ffa_memory_handle_t handle;
 	ffa_id_t vm_id = ffa_dir_msg_dest(*args);
 	ffa_id_t source = ffa_dir_msg_source(*args);
@@ -189,6 +197,10 @@ CACTUS_CMD_HANDLER(req_mem_send_cmd, CACTUS_REQ_MEM_SEND_CMD)
 		non_secure ? share_page_non_secure(vm_id) : share_page(vm_id);
 	unsigned int mem_attrs;
 	int ret;
+
+	struct ffa_memory_access receiver =
+		ffa_memory_access_init_permissions_from_mem_func(receiver_id,
+								 mem_func);
 
 	VERBOSE("%x requested to send memory to %x (func: %x), page: %llx\n",
 		source, receiver, mem_func, (uint64_t)share_page_addr);
@@ -220,10 +232,10 @@ CACTUS_CMD_HANDLER(req_mem_send_cmd, CACTUS_REQ_MEM_SEND_CMD)
 					 CACTUS_ERROR_TEST);
 	}
 
-	handle = memory_init_and_send(
-		(struct ffa_memory_region *)mb->send, PAGE_SIZE,
-		vm_id, receiver, constituents,
-		constituents_count, mem_func, &ffa_ret);
+	handle = memory_init_and_send((struct ffa_memory_region *)mb->send,
+				      PAGE_SIZE, vm_id, &receiver, 1,
+				      constituents, constituents_count,
+				      mem_func, &ffa_ret);
 
 	/*
 	 * If returned an invalid handle, we should break the test.
@@ -234,8 +246,8 @@ CACTUS_CMD_HANDLER(req_mem_send_cmd, CACTUS_REQ_MEM_SEND_CMD)
 					 ffa_error_code(ffa_ret));
 	}
 
-	ffa_ret = cactus_mem_send_cmd(vm_id, receiver, mem_func, handle,
-				      0, 10);
+	ffa_ret = cactus_mem_send_cmd(vm_id, receiver_id, mem_func, handle, 0,
+				      10);
 
 	if (!is_ffa_direct_response(ffa_ret)) {
 		return cactus_error_resp(vm_id, source, CACTUS_ERROR_FFA_CALL);

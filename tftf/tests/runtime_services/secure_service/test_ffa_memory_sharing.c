@@ -56,10 +56,15 @@ static bool test_memory_send_expect_denied(uint32_t mem_func,
 
 	const uint32_t constituents_count = sizeof(constituents) /
 			sizeof(struct ffa_memory_region_constituent);
+
+	struct ffa_memory_access receiver =
+		ffa_memory_access_init_permissions_from_mem_func(borrower,
+								 mem_func);
+
 	GET_TFTF_MAILBOX(mb);
 
 	handle = memory_init_and_send((struct ffa_memory_region *)mb.send,
-					MAILBOX_SIZE, SENDER, borrower,
+					MAILBOX_SIZE, SENDER, &receiver, 1,
 					constituents, constituents_count,
 					mem_func, &ret);
 
@@ -134,6 +139,10 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	/* Arbitrarily write 5 words after using memory. */
 	const uint32_t nr_words_to_write = 5;
 
+	struct ffa_memory_access receiver =
+		ffa_memory_access_init_permissions_from_mem_func(borrower,
+								 mem_func);
+
 	/***********************************************************************
 	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
 	 **********************************************************************/
@@ -150,7 +159,7 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	}
 
 	handle = memory_init_and_send((struct ffa_memory_region *)mb.send,
-					MAILBOX_SIZE, SENDER, borrower,
+					MAILBOX_SIZE, SENDER, &receiver, 1,
 					constituents, constituents_count,
 					mem_func, &ret);
 
@@ -404,15 +413,18 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 	/* Arbitrarily write 10 words after using shared memory. */
 	const uint32_t nr_words_to_write = 10U;
 
+	struct ffa_memory_access receiver =
+		ffa_memory_access_init_permissions_from_mem_func(
+			RECEIVER, FFA_MEM_LEND_SMC32);
+
 	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
 
 	GET_TFTF_MAILBOX(mb);
 
 	remaining_constituent_count = ffa_memory_region_init(
 		(struct ffa_memory_region *)mb.send, MAILBOX_SIZE, SENDER,
-		RECEIVER, constituents, constituents_count, 0,
-		FFA_MEMORY_REGION_FLAG_CLEAR, FFA_DATA_ACCESS_RW,
-		FFA_INSTRUCTION_ACCESS_NOT_SPECIFIED,
+		&receiver, 1, constituents, constituents_count, 0,
+		FFA_MEMORY_REGION_FLAG_CLEAR,
 		FFA_MEMORY_NOT_SPECIFIED_MEM, 0, 0,
 		&total_length, &fragment_length);
 
@@ -644,6 +656,9 @@ static test_result_t hypervisor_retrieve_request_test_helper(uint32_t mem_func)
 				: FFA_MEMORY_NORMAL_MEM,
 	};
 
+	struct ffa_memory_access receiver =
+		ffa_memory_access_init_permissions_from_mem_func(SP_ID(1), mem_func);
+
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 	GET_TFTF_MAILBOX(mb);
 
@@ -662,7 +677,7 @@ static test_result_t hypervisor_retrieve_request_test_helper(uint32_t mem_func)
 		panic();
 	}
 
-	handle = memory_init_and_send(mb.send, MAILBOX_SIZE, SENDER, RECEIVER,
+	handle = memory_init_and_send(mb.send, MAILBOX_SIZE, SENDER, &receiver, 1,
 				      sent_constituents,
 				      sent_constituents_count, mem_func, &ret);
 	if (handle == FFA_MEMORY_HANDLE_INVALID) {

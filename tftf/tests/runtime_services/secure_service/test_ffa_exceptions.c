@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch_helpers.h>
+#include "ffa_helpers.h"
 #include <cactus_test_cmds.h>
 #include <debug.h>
 #include <ffa_endpoints.h>
@@ -51,6 +52,10 @@ test_result_t rl_memory_cannot_be_accessed_in_s(void)
 	struct ffa_value ret;
 	u_register_t retmm;
 
+	struct ffa_memory_access receiver =
+		ffa_memory_access_init_permissions_from_mem_func(
+			RECEIVER, FFA_MEM_SHARE_SMC32);
+
 	if (get_armv9_2_feat_rme_support() == 0U) {
 		return TEST_RESULT_SKIPPED;
 	}
@@ -60,9 +65,9 @@ test_result_t rl_memory_cannot_be_accessed_in_s(void)
 	GET_TFTF_MAILBOX(mb);
 
 	handle = memory_init_and_send((struct ffa_memory_region *)mb.send,
-					PAGE_SIZE, SENDER, RECEIVER,
-					constituents, constituents_count,
-					FFA_MEM_SHARE_SMC32, &ret);
+				      PAGE_SIZE, SENDER, &receiver, 1,
+				      constituents, constituents_count,
+				      FFA_MEM_SHARE_SMC32, &ret);
 
 	if (handle == FFA_MEMORY_HANDLE_INVALID) {
 		return TEST_RESULT_FAIL;

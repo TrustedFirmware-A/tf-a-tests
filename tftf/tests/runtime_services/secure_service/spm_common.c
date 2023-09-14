@@ -211,18 +211,14 @@ unsigned int get_ffa_feature_test_target(
 
 bool memory_retrieve(struct mailbox_buffers *mb,
 		     struct ffa_memory_region **retrieved, uint64_t handle,
-		     ffa_id_t sender, ffa_id_t receiver,
-		     ffa_memory_region_flags_t flags,
+		     ffa_id_t sender, struct ffa_memory_access receivers[],
+		     uint32_t receiver_count, ffa_memory_region_flags_t flags,
 		     uint32_t mem_func)
 {
 	struct ffa_value ret;
 	uint32_t fragment_size;
 	uint32_t total_size;
 	uint32_t descriptor_size;
-	const enum ffa_instruction_access inst_access =
-				(mem_func == FFA_MEM_SHARE_SMC32)
-					? FFA_INSTRUCTION_ACCESS_NOT_SPECIFIED
-					: FFA_INSTRUCTION_ACCESS_NX;
 
 	if (retrieved == NULL || mb == NULL) {
 		ERROR("Invalid parameters!\n");
@@ -230,12 +226,9 @@ bool memory_retrieve(struct mailbox_buffers *mb,
 	}
 
 	descriptor_size = ffa_memory_retrieve_request_init(
-	    mb->send, handle, sender, receiver, 0, flags,
-	    FFA_DATA_ACCESS_RW,
-	    inst_access,
-	    FFA_MEMORY_NORMAL_MEM,
-	    FFA_MEMORY_CACHE_WRITE_BACK,
-	    FFA_MEMORY_INNER_SHAREABLE);
+		mb->send, handle, sender, receivers, receiver_count, 0, flags,
+		FFA_MEMORY_NORMAL_MEM, FFA_MEMORY_CACHE_WRITE_BACK,
+		FFA_MEMORY_INNER_SHAREABLE);
 
 	ret = ffa_mem_retrieve_req(descriptor_size, descriptor_size);
 
@@ -422,7 +415,8 @@ ffa_memory_handle_t memory_send(
  */
 ffa_memory_handle_t memory_init_and_send(
 	struct ffa_memory_region *memory_region, size_t memory_region_max_size,
-	ffa_id_t sender, ffa_id_t receiver,
+	ffa_id_t sender, struct ffa_memory_access receivers[],
+	uint32_t receiver_count,
 	const struct ffa_memory_region_constituent *constituents,
 	uint32_t constituents_count, uint32_t mem_func, struct ffa_value *ret)
 {
@@ -430,23 +424,14 @@ ffa_memory_handle_t memory_init_and_send(
 	uint32_t total_length;
 	uint32_t fragment_length;
 
-	enum ffa_data_access data_access = (mem_func == FFA_MEM_DONATE_SMC32) ?
-						FFA_DATA_ACCESS_NOT_SPECIFIED :
-						FFA_DATA_ACCESS_RW;
+	enum ffa_memory_type type =
+		(receiver_count == 1 && mem_func != FFA_MEM_SHARE_SMC32)
+			? FFA_MEMORY_NOT_SPECIFIED_MEM
+			: FFA_MEMORY_NORMAL_MEM;
 
-	/*
-	 * Initialize memory region structure for the respective memory send
-	 * operation. Note that memory type shall only be specified for memory
-	 * share, for memory lend and memory donate these shall remain
-	 * unspecified.
-	 */
 	remaining_constituent_count = ffa_memory_region_init(
-		memory_region, memory_region_max_size, sender, receiver, constituents,
-		constituents_count, 0, 0, data_access,
-		FFA_INSTRUCTION_ACCESS_NOT_SPECIFIED,
-		mem_func == FFA_MEM_SHARE_SMC32
-			? FFA_MEMORY_NORMAL_MEM
-			: FFA_MEMORY_NOT_SPECIFIED_MEM,
+		memory_region, memory_region_max_size, sender, receivers,
+		receiver_count, constituents, constituents_count, 0, 0, type,
 		FFA_MEMORY_CACHE_WRITE_BACK, FFA_MEMORY_INNER_SHAREABLE,
 		&total_length, &fragment_length);
 
@@ -460,7 +445,7 @@ ffa_memory_handle_t memory_init_and_send(
 	}
 
 	return memory_send(memory_region, mem_func, fragment_length,
-			       total_length, ret);
+			   total_length, ret);
 }
 
 static bool ffa_uuid_equal(const struct ffa_uuid uuid1,

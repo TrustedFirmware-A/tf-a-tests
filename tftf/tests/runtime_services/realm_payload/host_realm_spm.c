@@ -52,13 +52,21 @@ static test_result_t init_sp(void)
 static test_result_t init_realm(void)
 {
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
+	u_register_t feature_flag = 0U;
+	long sl = RTT_MIN_LEVEL;
+
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
 
 	/*
 	 * Initialise Realm payload
 	 */
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE, 0UL, rec_flag, 1U)) {
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			feature_flag, sl, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2024, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -196,7 +196,7 @@
  * For Normal WB cacheability attribute, set bit[4] to 1 and bits[3:2] to 0b10.
  */
 #define S2TTE_MEMATTR_FWB_NORMAL_WB	((1UL << 4) | (2UL << 2))
-#define S2TTE_ATTR_FWB_WB_RW	(S2TTE_MEMATTR_FWB_NORMAL_WB | S2TTE_AP_RW | \
-			S2TTE_SH_IS)
+#define S2TTE_ATTR_FWB_WB_RW_LPA2	(S2TTE_MEMATTR_FWB_NORMAL_WB | S2TTE_AP_RW)
+#define S2TTE_ATTR_FWB_WB_RW		(S2TTE_ATTR_FWB_WB_RW_LPA2 | S2TTE_SH_IS)
 
 #endif /* XLAT_TABLES_DEFS_H */

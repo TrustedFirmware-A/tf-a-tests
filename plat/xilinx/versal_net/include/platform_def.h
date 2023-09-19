@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2023, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,18 +16,18 @@
 
 #define CACHE_WRITEBACK_GRANULE			U(0x40)
 
-#define PLATFORM_CLUSTER_COUNT			1
-#define PLATFORM_CORE_COUNT_PER_CLUSTER		2
+#define PLATFORM_CLUSTER_COUNT			U(4)
+#define PLATFORM_CORE_COUNT_PER_CLUSTER		U(4)
 #define PLATFORM_CORE_COUNT			(PLATFORM_CLUSTER_COUNT * \
 						PLATFORM_CORE_COUNT_PER_CLUSTER)
 #define PLATFORM_NUM_AFFS			(PLATFORM_CORE_COUNT + \
 						PLATFORM_CLUSTER_COUNT + 1)
 #define PLATFORM_MAX_AFFLVL			MPIDR_AFFLVL2
 #define PLAT_MAX_PWR_LEVEL			MPIDR_AFFLVL2
-#define PLAT_MAX_PWR_STATES_PER_LVL		2
+#define PLAT_MAX_PWR_STATES_PER_LVL		U(2)
 
 
-#define PLATFORM_STACK_SIZE			U(0x880)
+#define PLATFORM_STACK_SIZE			U(0x440)
 #define PCPU_DV_MEM_STACK_SIZE			U(0x440)
 
 
@@ -49,10 +49,12 @@
 /* Local state bit width for each level in the state-ID field of power state */
 #define PLAT_LOCAL_PSTATE_WIDTH			U(4)
 
-/* GIC-400 related addresses from datasheet */
-#define GICD_REG_BASE				U(0xf9000000)
-#define GICC_REG_BASE				U(0xf9040000)
-#define GICR_REG_BASE				U(0xf9080000)
+/* GIC related addresses from datasheet */
+#define GICD_REG_BASE				U(0xe2000000)
+#define GICR_REG_BASE				U(0xe2060000)
+
+/* GICv3 is used, dummy definition to resolve build failure */
+#define GICC_REG_BASE				U(0xe2000000)
 
 /*
  * Memory mapped devices that we must create MMU mappings for them
@@ -60,17 +62,17 @@
 #define GIC_BASE				GICD_REG_BASE
 #define GIC_SIZE				U(0x01000000)
 
-#define TTC_BASE				U(0xff0e0000)
+#define TTC_BASE				U(0xF1DC0000)
 #define TTC_SIZE				U(0x00010000)
 
 #define SYS_CNT_BASE1				TTC_BASE
 #define SYS_CNT_SIZE				TTC_SIZE
 
-#define LPD_IOU_SLCR				U(0xff080000)
+#define LPD_IOU_SLCR				U(0xF19A0000)
 #define LPD_IOU_SLCR_SIZE			U(0x00010000)
 
 /* ARM PL011 UART */
-#define PL011_UART0_BASE			U(0xff000000)
+#define PL011_UART0_BASE			U(0xf1920000)
 #define PL011_BAUDRATE				U(115200)
 #define PL011_UART_CLK_IN_HZ			U(100000000)
 
@@ -115,6 +117,6 @@
 /* LPD_SWDT_INT, AM011(v1.5), Chapter 50, Page 428 */
 #define IRQ_TWDOG_INTID				U(0x51)
 
-#define TTC_TIMER_IRQ				U(69)
+#define TTC_TIMER_IRQ				U(75)
 
 #endif /* PLATFORM_DEF_H */

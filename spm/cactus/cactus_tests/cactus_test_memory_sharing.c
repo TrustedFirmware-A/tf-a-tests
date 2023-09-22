@@ -83,7 +83,7 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 	bool non_secure = cactus_mem_send_get_non_secure(*args);
 
 	expect(memory_retrieve(mb, &m, handle, source, vm_id,
-			       retrv_flags), true);
+			       retrv_flags, mem_func), true);
 
 	composite = ffa_memory_region_get_composite(m, 0);
 

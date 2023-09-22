@@ -24,6 +24,9 @@
 #include <tftf.h>
 #include <tftf_lib.h>
 #include <timer.h>
+#if TRANSFER_LIST
+#include <transfer_list.h>
+#endif
 
 #define MIN_RETRY_TO_POWER_ON_LEAD_CPU       10
 
@@ -44,7 +47,12 @@ static u_register_t cpu_on_ctx_id_arr[PLATFORM_CORE_COUNT];
 static unsigned int test_is_rebooting;
 
 /* Parameters arg0 and arg1 passed from BL31 */
+#if TRANSFER_LIST
+u_register_t ns_tl;
+u_register_t tl_signature;
+#else
 u_register_t fw_config_base;
+#endif
 u_register_t hw_config_base;
 
 static inline const test_suite_t *current_testsuite(void)

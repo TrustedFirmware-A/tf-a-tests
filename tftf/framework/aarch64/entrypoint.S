@@ -18,11 +18,13 @@
  */
 func tftf_entrypoint
 	/* --------------------------------------------------------------------
-	 * Save arguments x0, x1 from the previous Boot loader
+	 * Save arguments x0-x3 from the previous bootloader.
 	 * --------------------------------------------------------------------
 	 */
 	mov	x20, x0
 	mov	x21, x1
+	mov	x22, x2
+	mov	x23, x3
 
 	bl	arch_init
 
@@ -79,13 +81,15 @@ func tftf_entrypoint
 	bl	platform_set_stack
 
 	/* --------------------------------------------------------------------
-	 * Save fw_config and hw_config addresses passed in x0, x1 from the
-	 * previous boot loader
+	 * Save the fw_config or transfer list and hw_config addresses passed
+	 * in registers x0 to x3 from the previous bootloader.
 	 * --------------------------------------------------------------------
 	 */
 	mov	x0, x20
 	mov	x1, x21
-	bl	save_fw_hw_configs
+	mov	x2, x22
+	mov	x3, x23
+	bl	save_handoff_params
 
 	/* --------------------------------------------------------------------
 	 * tftf_cold_boot_main() will perform the remaining architectural and
@@ -204,10 +208,22 @@ el1_setup:
 	ret
 endfunc arch_init
 
-/* Set fw_config and hw_config addresses passed in x0, x1 */
-func save_fw_hw_configs
+
+/* ----------------------------------------------------------------------------
+ * Save fw_config or transfer list and hw_config addresses passed in registers
+ * x0 to x3 from the previous bootloader.
+ * ----------------------------------------------------------------------------
+ */
+func save_handoff_params
+#if TRANSFER_LIST
+	adrp	x4, ns_tl
+	str	x3, [x4, :lo12:ns_tl]
+	str	x1, [x4, :lo12:tl_signature]
+	str	x0, [x4, :lo12:hw_config_base]
+#else
 	adrp	x2, fw_config_base
 	str	x0, [x2, :lo12:fw_config_base]
 	str	x1, [x2, :lo12:hw_config_base]
+#endif
 	ret
-endfunc save_fw_hw_configs
+endfunc save_handoff_params

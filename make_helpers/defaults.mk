@@ -51,3 +51,7 @@ BRANCH_PROTECTION	:= 0
 
 # Build RME stack
 ENABLE_REALM_PAYLOAD_TESTS	:= 0
+
+# Use the Firmware Handoff framework to receive configurations from preceding
+# bootloader.
+TRANSFER_LIST		:= 0

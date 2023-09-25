@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,15 +11,10 @@
 #include "fifo3d.h"
 #include <libfdt.h>
 
-#include <power_management.h>
-#include <sdei.h>
 #include <tftf_lib.h>
-#include <timer.h>
-
-#include <plat_topology.h>
-#include <platform.h>
 
 extern char _binary___dtb_start[];
+extern void runtestfunction(char *funcstr);
 
 struct memmod tmod __aligned(65536) __section("smcfuzz");
 
@@ -405,68 +400,6 @@ struct rand_smc_node *createsmctree(int *casz,
 
 	*casz = cntndarray;
 	return ndarray;
-}
-
-/*
- * Running SMC call from what function name is selected
- */
-void runtestfunction(char *funcstr)
-{
-	if (strcmp(funcstr, "sdei_version") == 0) {
-		long long ret = sdei_version();
-		if (ret != MAKE_SDEI_VERSION(1, 0, 0)) {
-			tftf_testcase_printf("Unexpected SDEI version: 0x%llx\n",
-					     ret);
-		}
-		printf("running %s\n", funcstr);
-	}
-	if (strcmp(funcstr, "sdei_pe_unmask") == 0) {
-		long long ret = sdei_pe_unmask();
-		if (ret < 0) {
-			tftf_testcase_printf("SDEI pe unmask failed: 0x%llx\n",
-					     ret);
-		}
-		printf("running %s\n", funcstr);
-	}
-	if (strcmp(funcstr, "sdei_pe_mask") == 0) {
-		int64_t ret = sdei_pe_mask();
-		if (ret < 0) {
-			tftf_testcase_printf("SDEI pe mask failed: 0x%llx\n", ret);
-		}
-		printf("running %s\n", funcstr);
-	}
-	if (strcmp(funcstr, "sdei_event_status") == 0) {
-		int64_t ret = sdei_event_status(0);
-		if (ret < 0) {
-			tftf_testcase_printf("SDEI event status failed: 0x%llx\n",
-					     ret);
-		}
-		printf("running %s\n", funcstr);
-	}
-	if (strcmp(funcstr, "sdei_event_signal") == 0) {
-		int64_t ret = sdei_event_signal(0);
-		if (ret < 0) {
-			tftf_testcase_printf("SDEI event signal failed: 0x%llx\n",
-					     ret);
-		}
-		printf("running %s\n", funcstr);
-	}
-	if (strcmp(funcstr, "sdei_private_reset") == 0) {
-		int64_t ret = sdei_private_reset();
-		if (ret < 0) {
-			tftf_testcase_printf("SDEI private reset failed: 0x%llx\n",
-					     ret);
-		}
-		printf("running %s\n", funcstr);
-	}
-	if (strcmp(funcstr, "sdei_shared_reset") == 0) {
-		int64_t ret = sdei_shared_reset();
-		if (ret < 0) {
-			tftf_testcase_printf("SDEI shared reset failed: 0x%llx\n",
-					     ret);
-		}
-		printf("running %s\n", funcstr);
-	}
 }
 
 /*

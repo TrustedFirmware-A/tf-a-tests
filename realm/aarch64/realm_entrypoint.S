@@ -16,6 +16,8 @@
 stacks_end:
 
 func realm_entrypoint
+	/* Save x0 - context_id */
+	mov	x20, x0
 	mrs	x0, mpidr_el1
 	mov_imm	x1, MPID_MASK
 	and	x0, x0, x1
@@ -26,6 +28,7 @@ func realm_entrypoint
 	/* mpidr 0 is assumed to be primary CPU, jump to warmboot otherwise */
 	cbnz	x0, realm_warmboot_endpoint
 
+	/* Primary CPU Only */
 	/* Clear BSS */
 	ldr	x0, =__REALM_BSS_START__
 	adr	x1, realm_entrypoint
@@ -53,7 +56,6 @@ pie_fixup:
 	add	x1, x1, x0
 	bl	fixup_gdt_reloc
 
-realm_warmboot_endpoint:
 	/* Initialize architectural state. */
 	bl	arch_init
 #if ENABLE_PAUTH
@@ -64,6 +66,15 @@ loop:
 	/* And jump to the C entrypoint. */
 	bl	realm_payload_main
 	b	loop
+
+realm_warmboot_endpoint:
+	/* Initialize architectural state. */
+	bl	arch_init
+#if ENABLE_PAUTH
+	bl	pauth_init_enable
+#endif
+	mov	x0, x20
+	b	realm_secondary_entrypoint
 endfunc realm_entrypoint
 
 /*

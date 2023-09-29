@@ -24,7 +24,7 @@
 
 /* The macros below are used to identify FFA calls from the SMC function ID */
 #define FFA_FNUM_MIN_VALUE	U(0x60)
-#define FFA_FNUM_MAX_VALUE	U(0x87)
+#define FFA_FNUM_MAX_VALUE	U(0x8C)
 #define is_ffa_fid(fid) __extension__ ({		\
 	__typeof__(fid) _fid = (fid);			\
 	((GET_SMC_NUM(_fid) >= FFA_FNUM_MIN_VALUE) &&	\
@@ -34,7 +34,7 @@
 #define FFA_VERSION_MAJOR		U(1)
 #define FFA_VERSION_MAJOR_SHIFT	16
 #define FFA_VERSION_MAJOR_MASK		U(0x7FFF)
-#define FFA_VERSION_MINOR		U(1)
+#define FFA_VERSION_MINOR		U(2)
 #define FFA_VERSION_MINOR_SHIFT	0
 #define FFA_VERSION_MINOR_MASK		U(0xFFFF)
 #define FFA_VERSION_BIT31_MASK		U(1 << 31)
@@ -100,10 +100,11 @@
 #define FFA_FNUM_SPM_ID_GET			U(0x85)
 #define FFA_FNUM_MSG_SEND2			U(0x86)
 #define FFA_FNUM_SECONDARY_EP_REGISTER		U(0x87)
-#define FFA_FNUM_PARTITION_INFO_GET_REGS	U(0x8B)
 
-/* Implementation defined function numbers */
+/* FF-A v1.2 */
 #define FFA_FNUM_CONSOLE_LOG			U(0x8A)
+#define FFA_FNUM_PARTITION_INFO_GET_REGS	U(0x8B)
+#define FFA_FNUM_EL3_INTR_HANDLE                U(0x8C)
 
 /* FFA SMC32 FIDs */
 #define FFA_ERROR		FFA_FID(SMC_32, FFA_FNUM_ERROR)

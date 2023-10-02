@@ -15,9 +15,11 @@
 #include <host_realm_mem_layout.h>
 #include <host_realm_rmi.h>
 #include <host_shared_data.h>
+#include <platform.h>
 #include <plat_topology.h>
 #include <power_management.h>
 #include <realm_def.h>
+#include <sgi.h>
 #include <test_helpers.h>
 #include <xlat_tables_v2.h>
 
@@ -336,3 +338,26 @@ test_result_t host_cmp_result(void)
 	return TEST_RESULT_FAIL;
 }
 
+/*
+ * Returns Host core position for specified Rec
+ * Host mpidr is saved on every rec enter
+ */
+static unsigned int host_realm_find_core_pos_by_rec(unsigned int rec_num)
+{
+	if (rec_num < MAX_REC_COUNT && realm.run[rec_num] != 0U) {
+		return platform_get_core_pos(realm.host_mpidr[rec_num]);
+	}
+	return (unsigned int)-1;
+}
+
+/*
+ * Send SGI on core running specified Rec
+ * API can be used to forcefully exit from Realm
+ */
+void host_rec_send_sgi(unsigned int sgi, unsigned int rec_num)
+{
+	unsigned int core_pos = host_realm_find_core_pos_by_rec(rec_num);
+	if (core_pos < PLATFORM_CORE_COUNT) {
+		tftf_send_sgi(sgi, core_pos);
+	}
+}

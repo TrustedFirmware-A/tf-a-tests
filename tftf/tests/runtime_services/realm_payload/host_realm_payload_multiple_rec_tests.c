@@ -5,9 +5,13 @@
  */
 
 #include <stdlib.h>
+#include <drivers/arm/arm_gic.h>
 #include <debug.h>
+#include <platform.h>
+#include <plat_topology.h>
 #include <power_management.h>
 #include <psci.h>
+#include <sgi.h>
 #include <test_helpers.h>
 
 #include <host_realm_helper.h>
@@ -15,6 +19,7 @@
 #include <host_realm_pmu.h>
 #include <host_shared_data.h>
 
+static uint64_t is_secondary_cpu_on;
 /*
  * Test tries to create max Rec
  * Enters all Rec from single CPU
@@ -188,6 +193,87 @@ test_result_t host_realm_multi_rec_psci_denied(void)
 destroy_realm:
 	ret2 = host_destroy_realm();
 
+	if (!ret1 || !ret2) {
+		ERROR("%s(): enter=%d destroy=%d\n",
+		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return host_cmp_result();
+}
+
+/* Lock used to avoid concurrent accesses to the secondary_cpu_on counter */
+spinlock_t secondary_cpu_lock;
+
+static test_result_t cpu_on_handler2(void)
+{
+	bool ret;
+
+	spin_lock(&secondary_cpu_lock);
+	is_secondary_cpu_on++;
+	spin_unlock(&secondary_cpu_lock);
+
+	ret = host_enter_realm_execute(REALM_LOOP_CMD, NULL, RMI_EXIT_IRQ, is_secondary_cpu_on);
+	if (!ret) {
+		return TEST_RESULT_FAIL;
+	}
+	return TEST_RESULT_SUCCESS;
+}
+
+test_result_t host_realm_multi_rec_exit_irq(void)
+{
+	bool ret1, ret2;
+	unsigned int rec_count = MAX_REC_COUNT;
+	u_register_t other_mpidr, my_mpidr, ret;
+	int cpu_node;
+	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
+		RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
+		RMI_RUNNABLE};
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+	SKIP_TEST_IF_LESS_THAN_N_CPUS(rec_count);
+
+	if (!host_create_realm_payload((u_register_t)REALM_IMAGE_BASE,
+			(u_register_t)PAGE_POOL_BASE,
+			(u_register_t)(PAGE_POOL_MAX_SIZE +
+			NS_REALM_SHARED_MEM_SIZE),
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			0UL, rec_flag, rec_count)) {
+		return TEST_RESULT_FAIL;
+	}
+	if (!host_create_shared_mem(NS_REALM_SHARED_MEM_BASE,
+			NS_REALM_SHARED_MEM_SIZE)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	is_secondary_cpu_on = 0U;
+	my_mpidr = read_mpidr_el1() & MPID_MASK;
+	ret1 = host_enter_realm_execute(REALM_GET_RSI_VERSION, NULL, RMI_EXIT_HOST_CALL, 0U);
+	for_each_cpu(cpu_node) {
+		other_mpidr = tftf_get_mpidr_from_node(cpu_node);
+		if (other_mpidr == my_mpidr) {
+			continue;
+		}
+		/* Power on the other CPU */
+		ret = tftf_try_cpu_on(other_mpidr, (uintptr_t)cpu_on_handler2, 0);
+		if (ret != PSCI_E_SUCCESS) {
+			goto destroy_realm;
+		}
+	}
+
+	INFO("Wait for all CPU to come up\n");
+	while (is_secondary_cpu_on != (rec_count - 1U)) {
+		waitms(100U);
+	}
+
+destroy_realm:
+	tftf_irq_enable(IRQ_NS_SGI_7, GIC_HIGHEST_NS_PRIORITY);
+	for (unsigned int i = 1U; i < rec_count; i++) {
+		INFO("Raising NS IRQ for rec %d\n", i);
+		host_rec_send_sgi(IRQ_NS_SGI_7, i);
+	}
+	tftf_irq_disable(IRQ_NS_SGI_7);
+	ret2 = host_destroy_realm();
 	if (!ret1 || !ret2) {
 		ERROR("%s(): enter=%d destroy=%d\n",
 		__func__, ret1, ret2);

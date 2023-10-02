@@ -33,6 +33,13 @@ static void realm_sleep_cmd(void)
 	waitms(sleep);
 }
 
+static void realm_loop_cmd(void)
+{
+	while (true) {
+		waitms(500);
+	}
+}
+
 /*
  * This function requests RSI/ABI version from RMM.
  */
@@ -72,6 +79,10 @@ void realm_payload_main(void)
 		switch (cmd) {
 		case REALM_SLEEP_CMD:
 			realm_sleep_cmd();
+			test_succeed = true;
+			break;
+		case REALM_LOOP_CMD:
+			realm_loop_cmd();
 			test_succeed = true;
 			break;
 		case REALM_MULTIPLE_REC_PSCI_DENIED_CMD:

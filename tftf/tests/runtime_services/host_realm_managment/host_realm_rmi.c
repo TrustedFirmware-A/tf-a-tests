@@ -1231,6 +1231,7 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 	}
 
 	run = (struct rmi_rec_run *)realm->run[rec_num];
+	realm->host_mpidr[rec_num] = read_mpidr_el1();
 	do {
 		re_enter_rec = false;
 		ret = host_rmi_handler(&(smc_args) {RMI_REC_ENTER,

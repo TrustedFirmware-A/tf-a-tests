@@ -14,6 +14,8 @@
 	  function="host_realm_multi_rec_single_cpu" />
 	  <testcase name="Realm payload multi rec psci denied"
 	  function="host_realm_multi_rec_psci_denied" />
+	  <testcase name="Realm payload multi rec force exit on NS IRQ"
+	  function="host_realm_multi_rec_exit_irq" />
 	  <testcase name="Realm payload boot"
 	  function="host_realm_version_single_cpu" />
 	  <testcase name="Realm payload multi CPU request"

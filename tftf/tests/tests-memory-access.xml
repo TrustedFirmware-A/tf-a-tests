@@ -53,6 +53,10 @@
                 function="rt_memory_cannot_be_accessed_in_rl" />
       <testcase name="Share memory to an SP from a Root region"
                 function="rt_memory_cannot_be_accessed_in_s" />
+      <testcase name="FF-A memory share fails if using realm memory"
+                function="test_ffa_mem_send_sp_realm_memory" />
+      <testcase name="FF-A memory share fail realm memory other constituent"
+                function="test_ffa_mem_lend_sp_realm_memory_separate_constituent" />
   </testsuite>
 
 </testsuites>

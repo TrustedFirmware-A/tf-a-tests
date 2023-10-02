@@ -28,6 +28,7 @@ REALM_SOURCES:=								\
 	aarch64/realm_exceptions.S					\
 	realm_debug.c							\
 	realm_interrupt.c						\
+	realm_multiple_rec.c						\
 	realm_pauth.c							\
 	realm_payload_main.c						\
 	realm_pmuv3.c							\

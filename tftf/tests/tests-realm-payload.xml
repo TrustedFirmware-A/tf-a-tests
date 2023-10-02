@@ -12,6 +12,8 @@
 	  function="host_test_realm_create_enter" />
 	  <testcase name="Realm payload multi rec single cpu"
 	  function="host_realm_multi_rec_single_cpu" />
+	  <testcase name="Realm payload multi rec psci denied"
+	  function="host_realm_multi_rec_psci_denied" />
 	  <testcase name="Realm payload boot"
 	  function="host_realm_version_single_cpu" />
 	  <testcase name="Realm payload multi CPU request"

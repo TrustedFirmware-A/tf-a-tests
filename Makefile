@@ -121,6 +121,7 @@ msg_start:
 
 # Set flags for Realm Payload Tests
 ifeq (${ENABLE_REALM_PAYLOAD_TESTS},1)
+ARM_ARCH_MINOR := 5
 BRANCH_PROTECTION := 2
 endif
 

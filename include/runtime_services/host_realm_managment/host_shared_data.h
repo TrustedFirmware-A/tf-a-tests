@@ -41,6 +41,7 @@ typedef struct host_shared_data {
  */
 enum realm_cmd {
 	REALM_SLEEP_CMD = 1U,
+	REALM_MULTIPLE_REC_PSCI_DENIED_CMD,
 	REALM_GET_RSI_VERSION,
 	REALM_PMU_CYCLE,
 	REALM_PMU_EVENT,

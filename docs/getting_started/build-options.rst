@@ -152,10 +152,8 @@ TFTF-specific Build Options
 Realm payload specific Build Options
 ------------------------------------
 
--  ``TFTF_MAX_IMAGE_SIZE``: The option needs to be either set by the user or
-   by the platform makefile to specify the maximum size of TFTF binary. This
-   is needed so that the Realm payload binary can be appended to TFTF binary
-   via ``make ENABLE_REALM_PAYLOAD_TESTS=1 tftf`` build command.
+-  ``ENABLE_REALM_PAYLOAD_TESTS=1`` This option builds and packs Realm payload tests
+   realm.bin to tftf.bin.
 
 FWU-specific Build Options
 --------------------------

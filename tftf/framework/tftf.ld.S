@@ -6,17 +6,15 @@
 
 #include <platform_def.h>
 #include <xlat_tables_defs.h>
+#include <host_realm_mem_layout.h>
+
 
 OUTPUT_FORMAT(PLATFORM_LINKER_FORMAT)
 OUTPUT_ARCH(PLATFORM_LINKER_ARCH)
 ENTRY(tftf_entrypoint)
 
-#ifndef TFTF_MAX_IMAGE_SIZE
-#define TFTF_MAX_IMAGE_SIZE DRAM_SIZE
-#endif
-
 MEMORY {
-    RAM (rwx): ORIGIN = TFTF_BASE, LENGTH = TFTF_MAX_IMAGE_SIZE
+    RAM (rwx): ORIGIN = TFTF_BASE, LENGTH = DRAM_SIZE
 }
 
 
@@ -49,10 +47,29 @@ SECTIONS
     .data : {
         __DATA_START__ = .;
         *(.data*)
+        . = NEXT(PAGE_SIZE); /* This ensures tftf.bin is aligned to page size. */
         __DATA_END__ = .;
     } >RAM
 
-    stacks (NOLOAD) : {
+   /* End of LOAD Sections. NOLOAD sections begin here. */
+   /*
+    * Memory for Realm Image has to follow next as it will appended to end
+    * of tftf.bin.
+    */
+    realm_payload (NOLOAD) : {
+        __REALM_PAYLOAD_START__ = .;
+        . = __REALM_PAYLOAD_START__ + REALM_MAX_LOAD_IMG_SIZE;
+        __REALM_PAYLOAD_END__ = .;
+    } >RAM
+
+    /* Memory pool for Realm payload tests. */
+    realm_pool (NOLOAD)  : ALIGN(PAGE_SIZE) {
+        __REALM_POOL_START__ = .;
+        . = __REALM_POOL_START__ + NS_REALM_SHARED_MEM_SIZE + PAGE_POOL_MAX_SIZE;
+        __REALM_POOL_END__ = .;
+    } >RAM
+
+    stacks (NOLOAD) : ALIGN(16) {
         __STACKS_START__ = .;
         *(tftf_normal_stacks)
         __STACKS_END__ = .;
@@ -60,9 +77,9 @@ SECTIONS
 
     /*
      * The .bss section gets initialised to 0 at runtime.
-     * Its base address must be 16-byte aligned.
+     * Its base address is always PAGE_SIZE aligned.
      */
-    .bss : ALIGN(16) {
+    .bss : {
         __BSS_START__ = .;
         *(SORT_BY_ALIGNMENT(.bss*))
         *(COMMON)
@@ -71,10 +88,9 @@ SECTIONS
 
     /*
      * The xlat_table section is for full, aligned page tables (4K).
-     * Removing them from .bss avoids forcing 4K alignment on
-     * the .bss section and eliminates the unecessary zero init
+     * Removing them from .bss eliminates the unecessary zero init
      */
-    xlat_table (NOLOAD) : {
+    xlat_table (NOLOAD) : ALIGN(PAGE_SIZE) {
         *(xlat_table)
     } >RAM
 
@@ -108,7 +124,6 @@ SECTIONS
 
     __COHERENT_RAM_UNALIGNED_SIZE__ =
         __COHERENT_RAM_END_UNALIGNED__ - __COHERENT_RAM_START__;
-
 
     __TFTF_END__ = .;
 

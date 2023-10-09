@@ -42,6 +42,8 @@
 	  function="host_realm_sec_interrupt_can_preempt_rl" />
 	  <testcase name="Check that FPU state registers context is preserved in RL/SE/NS"
 	  function="host_realm_fpu_access_in_rl_ns_se" />
+	  <testcase name="Realm request set_ripas"
+	  function="host_realm_set_ripas" />
 	  <!-- Test case related to SVE support and SIMD state -->
 	  <testcase name="Check RMI reports proper SVE VL"
 	  function="host_check_rmi_reports_proper_sve_vl" />

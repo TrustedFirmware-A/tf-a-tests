@@ -20,7 +20,6 @@
 
 static fpu_state_t rl_fpu_state_write;
 static fpu_state_t rl_fpu_state_read;
-
 /*
  * This function reads sleep time in ms from shared buffer and spins PE
  * in a loop for that time period.
@@ -58,6 +57,47 @@ static bool realm_get_rsi_version(void)
 	RSI_ABI_VERSION_GET_MINOR(version),
 	RSI_ABI_VERSION_GET_MAJOR(RSI_ABI_VERSION_VAL),
 	RSI_ABI_VERSION_GET_MINOR(RSI_ABI_VERSION_VAL));
+	return true;
+}
+
+bool test_realm_set_ripas(void)
+{
+	u_register_t ret, base, new_base, top;
+	rsi_ripas_respose_type response;
+	rsi_ripas_type ripas;
+
+	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	top = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
+	realm_printf("base=0x%lx top =0x%lx\n", base, top);
+	ret = rsi_ipa_state_get(base, &ripas);
+	if (ripas != RSI_EMPTY) {
+		return false;
+	}
+
+	ret = rsi_ipa_state_set(base, top, RSI_RAM,
+		RSI_NO_CHANGE_DESTROYED, &new_base, &response);
+	if (ret != RSI_SUCCESS || response != RSI_ACCEPT) {
+		return false;
+	}
+	while (new_base < top) {
+		realm_printf("new_base=0x%lx top =0x%lx\n", new_base, top);
+		ret = rsi_ipa_state_set(new_base, top, RSI_RAM,
+				RSI_NO_CHANGE_DESTROYED, &new_base, &response);
+		if (ret != RSI_SUCCESS || response != RSI_ACCEPT) {
+			realm_printf("rsi_ipa_state_set failed\n");
+			return false;
+		}
+	}
+
+	/* Verify that RIAS has changed for range base-top. */
+	for (unsigned int i = 0U; (base + (PAGE_SIZE * i) < top); i++) {
+		ret = rsi_ipa_state_get(base + (PAGE_SIZE * i), &ripas);
+		if (ret != RSI_SUCCESS || ripas != RSI_RAM) {
+			realm_printf("rsi_ipa_state_get failed base=0x%lx, ripas=0x%x\n",
+					base + (PAGE_SIZE * i), ripas);
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -121,6 +161,9 @@ void realm_payload_main(void)
 			fpu_state_read(&rl_fpu_state_read);
 			test_succeed = !fpu_state_compare(&rl_fpu_state_write,
 							  &rl_fpu_state_read);
+			break;
+		case REALM_SET_RIPAS_CMD:
+			test_succeed = test_realm_set_ripas();
 			break;
 		case REALM_SVE_RDVL:
 			test_succeed = test_realm_sve_rdvl();

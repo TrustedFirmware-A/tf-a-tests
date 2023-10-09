@@ -100,6 +100,33 @@ struct rsi_host_call {
  * arg0 == struct rsi_realm_config address
  */
 #define RSI_REALM_CONFIG	SMC_RSI_FID(6U)
+#define RSI_IPA_STATE_SET	SMC_RSI_FID(7U)
+#define RSI_IPA_STATE_GET	SMC_RSI_FID(8U)
+
+typedef enum {
+	RSI_EMPTY = 0U,
+	RSI_RAM,
+	RSI_DESTROYED
+} rsi_ripas_type;
+
+typedef enum {
+	RSI_ACCEPT = 0U,
+	RSI_REJECT
+} rsi_ripas_respose_type;
+
+#define RSI_NO_CHANGE_DESTROYED	0UL
+#define RSI_CHANGE_DESTROYED	1UL
+
+/* Request RIPAS of a target IPA range to be changed to a specified value. */
+u_register_t rsi_ipa_state_set(u_register_t base,
+			   u_register_t top,
+			   rsi_ripas_type ripas,
+			   u_register_t flag,
+			   u_register_t *new_base,
+			   rsi_ripas_respose_type *response);
+
+/* Request RIPAS of a target IPA */
+u_register_t rsi_ipa_state_get(u_register_t adr, rsi_ripas_type *ripas);
 
 /* This function return RSI_ABI_VERSION */
 u_register_t rsi_get_version(u_register_t req_ver);

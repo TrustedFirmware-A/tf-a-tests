@@ -52,6 +52,7 @@ enum realm_cmd {
 	REALM_PMU_INTERRUPT,
 	REALM_REQ_FPU_FILL_CMD,
 	REALM_REQ_FPU_CMP_CMD,
+	REALM_SET_RIPAS_CMD,
 	REALM_SVE_RDVL,
 	REALM_SVE_ID_REGISTERS,
 	REALM_SVE_PROBE_VL,
@@ -71,7 +72,8 @@ enum realm_cmd {
  */
 enum host_param_index {
 	HOST_CMD_INDEX = 0U,
-	HOST_ARG1_INDEX
+	HOST_ARG1_INDEX,
+	HOST_ARG2_INDEX
 };
 
 enum host_call_cmd {

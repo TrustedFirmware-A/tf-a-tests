@@ -163,6 +163,9 @@ static int add_region(unsigned long long base_pa, uintptr_t base_va,
 {
 	int ret;
 
+	if (size == 0U) {
+		return -EPERM;
+	}
 	VERBOSE("mmap_add_dynamic_region(0x%llx, 0x%lx, 0x%zx, 0x%x)\n",
 		base_pa, base_va, size, attr);
 

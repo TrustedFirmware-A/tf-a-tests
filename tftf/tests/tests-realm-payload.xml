@@ -72,8 +72,6 @@
 	  function="host_realm_pmuv3_mul_rec" />
 	  <testcase name="Test Secure interrupt can preempt Realm EL1"
 	  function="host_realm_sec_interrupt_can_preempt_rl" />
-	  <testcase name="Check that FPU state registers context is preserved in RL/SE/NS"
-	  function="host_realm_fpu_access_in_rl_ns_se" />
 	  <testcase name="Realm request set_ripas"
 	  function="host_realm_set_ripas" />
 	  <testcase name="Realm reject set_ripas"
@@ -99,8 +97,8 @@
 	  function="host_sve_realm_check_vectors_leaked" />
 	  <testcase name="Check if Realm gets undefined abort if it access SVE"
 	  function="host_non_sve_realm_check_undef_abort" />
-	  <testcase name="Check various SIMD state preserved across NS/RL switch"
-	  function="host_and_realm_check_simd" />
+	  <testcase name="Check various SIMD state preserved across NS/RL/S switch"
+	  function="host_realm_swd_check_simd" />
 	  <!-- Test Realm for SME -->
 	  <testcase name="Create Realm and test SME ID registers"
 	  function="host_realm_check_sme_id_registers" />

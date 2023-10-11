@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -400,7 +400,13 @@ enum ffa_memory_shareability {
 	FFA_MEMORY_INNER_SHAREABLE,
 };
 
-typedef uint8_t ffa_memory_access_permissions_t;
+typedef struct {
+	uint8_t data_access : 2;
+	uint8_t instruction_access : 2;
+} ffa_memory_access_permissions_t;
+
+_Static_assert(sizeof(ffa_memory_access_permissions_t) == sizeof(uint8_t),
+	       "ffa_memory_access_permissions_t must be 1 byte wide");
 
 /**
  * FF-A v1.1 REL0 Table 10.18 memory region attributes descriptor NS Bit 6.
@@ -417,69 +423,15 @@ enum ffa_memory_security {
  * This corresponds to table 10.18 of the FF-A v1.1 EAC0 specification, "Memory
  * region attributes descriptor".
  */
-typedef uint16_t ffa_memory_attributes_t;
+typedef struct {
+	uint16_t shareability : 2;
+	uint16_t cacheability : 2;
+	uint16_t type : 2;
+	uint16_t security : 1;
+} ffa_memory_attributes_t;
 
-#define FFA_DATA_ACCESS_OFFSET (0x0U)
-#define FFA_DATA_ACCESS_MASK ((0x3U) << FFA_DATA_ACCESS_OFFSET)
-
-#define FFA_INSTRUCTION_ACCESS_OFFSET (0x2U)
-#define FFA_INSTRUCTION_ACCESS_MASK ((0x3U) << FFA_INSTRUCTION_ACCESS_OFFSET)
-
-#define FFA_MEMORY_TYPE_OFFSET (0x4U)
-#define FFA_MEMORY_TYPE_MASK ((0x3U) << FFA_MEMORY_TYPE_OFFSET)
-
-#define FFA_MEMORY_SECURITY_OFFSET (0x6U)
-#define FFA_MEMORY_SECURITY_MASK ((0x1U) << FFA_MEMORY_SECURITY_OFFSET)
-
-#define FFA_MEMORY_CACHEABILITY_OFFSET (0x2U)
-#define FFA_MEMORY_CACHEABILITY_MASK ((0x3U) << FFA_MEMORY_CACHEABILITY_OFFSET)
-
-#define FFA_MEMORY_SHAREABILITY_OFFSET (0x0U)
-#define FFA_MEMORY_SHAREABILITY_MASK ((0x3U) << FFA_MEMORY_SHAREABILITY_OFFSET)
-
-#define ATTR_FUNCTION_SET(name, container_type, offset, mask)                \
-	static inline void ffa_set_##name##_attr(container_type *attr,       \
-						 const enum ffa_##name perm) \
-	{                                                                    \
-		*attr = (*attr & ~(mask)) | ((perm << offset) & mask);       \
-	}
-
-#define ATTR_FUNCTION_GET(name, container_type, offset, mask)      \
-	static inline enum ffa_##name ffa_get_##name##_attr(       \
-		container_type attr)                               \
-	{                                                          \
-		return (enum ffa_##name)((attr & mask) >> offset); \
-	}
-
-ATTR_FUNCTION_SET(data_access, ffa_memory_access_permissions_t,
-		  FFA_DATA_ACCESS_OFFSET, FFA_DATA_ACCESS_MASK)
-ATTR_FUNCTION_GET(data_access, ffa_memory_access_permissions_t,
-		  FFA_DATA_ACCESS_OFFSET, FFA_DATA_ACCESS_MASK)
-
-ATTR_FUNCTION_SET(instruction_access, ffa_memory_access_permissions_t,
-		  FFA_INSTRUCTION_ACCESS_OFFSET, FFA_INSTRUCTION_ACCESS_MASK)
-ATTR_FUNCTION_GET(instruction_access, ffa_memory_access_permissions_t,
-		  FFA_INSTRUCTION_ACCESS_OFFSET, FFA_INSTRUCTION_ACCESS_MASK)
-
-ATTR_FUNCTION_SET(memory_type, ffa_memory_attributes_t, FFA_MEMORY_TYPE_OFFSET,
-		  FFA_MEMORY_TYPE_MASK)
-ATTR_FUNCTION_GET(memory_type, ffa_memory_attributes_t, FFA_MEMORY_TYPE_OFFSET,
-		  FFA_MEMORY_TYPE_MASK)
-
-ATTR_FUNCTION_SET(memory_security, ffa_memory_attributes_t,
-		  FFA_MEMORY_SECURITY_OFFSET, FFA_MEMORY_SECURITY_MASK)
-ATTR_FUNCTION_GET(memory_security, ffa_memory_attributes_t,
-		  FFA_MEMORY_SECURITY_OFFSET, FFA_MEMORY_SECURITY_MASK)
-
-ATTR_FUNCTION_SET(memory_cacheability, ffa_memory_attributes_t,
-		  FFA_MEMORY_CACHEABILITY_OFFSET, FFA_MEMORY_CACHEABILITY_MASK)
-ATTR_FUNCTION_GET(memory_cacheability, ffa_memory_attributes_t,
-		  FFA_MEMORY_CACHEABILITY_OFFSET, FFA_MEMORY_CACHEABILITY_MASK)
-
-ATTR_FUNCTION_SET(memory_shareability, ffa_memory_attributes_t,
-		  FFA_MEMORY_SHAREABILITY_OFFSET, FFA_MEMORY_SHAREABILITY_MASK)
-ATTR_FUNCTION_GET(memory_shareability, ffa_memory_attributes_t,
-		  FFA_MEMORY_SHAREABILITY_OFFSET, FFA_MEMORY_SHAREABILITY_MASK)
+_Static_assert(sizeof(ffa_memory_attributes_t) == sizeof(uint16_t),
+	       "ffa_memory_attributes_t must be 2 bytes wide");
 
 #define FFA_MEMORY_HANDLE_ALLOCATOR_MASK \
 	((ffa_memory_handle_t)(UINT64_C(1) << 63))

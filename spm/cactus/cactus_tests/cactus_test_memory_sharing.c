@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -91,17 +91,15 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 		composite->constituents[0].page_count, PAGE_SIZE);
 
 	/* This test is only concerned with RW permissions. */
-	if (ffa_get_data_access_attr(
-			m->receivers[0].receiver_permissions.permissions) !=
-		FFA_DATA_ACCESS_RW) {
+	if (m->receivers[0].receiver_permissions.permissions.data_access !=
+	    FFA_DATA_ACCESS_RW) {
 		ERROR("Permissions not expected!\n");
 		return cactus_error_resp(vm_id, source, CACTUS_ERROR_TEST);
 	}
 
 	mem_attrs = MT_RW_DATA | MT_EXECUTE_NEVER;
 
-	if (ffa_get_memory_security_attr(m->attributes) ==
-	    FFA_MEMORY_SECURITY_NON_SECURE) {
+	if (m->attributes.security == FFA_MEMORY_SECURITY_NON_SECURE) {
 		mem_attrs |= MT_NS;
 	}
 

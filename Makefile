@@ -192,6 +192,7 @@ $(eval $(call add_define,TFTF_DEFINES,LOG_LEVEL))
 $(eval $(call add_define,TFTF_DEFINES,NEW_TEST_SESSION))
 $(eval $(call add_define,TFTF_DEFINES,PLAT_${PLAT}))
 $(eval $(call add_define,TFTF_DEFINES,USE_NVM))
+$(eval $(call add_define,TFTF_DEFINES,ENABLE_REALM_PAYLOAD_TESTS))
 
 ################################################################################
 
@@ -606,7 +607,7 @@ ifeq (${ENABLE_REALM_PAYLOAD_TESTS},1)
 tftf: realm
 	@echo "  PACK REALM PAYLOAD"
 	$(shell dd if=$(BUILD_PLAT)/realm.bin of=$(BUILD_PLAT)/tftf.bin obs=1 \
-	seek=$(TFTF_MAX_IMAGE_SIZE))
+	oflag=append conv=notrunc)
 endif
 
 ifeq (${ARCH}-${PLAT},aarch64-fvp)
@@ -615,7 +616,7 @@ $(eval $(call MAKE_IMG,realm))
 pack_realm: realm tftf
 	@echo "  PACK REALM PAYLOAD"
 	$(shell dd if=$(BUILD_PLAT)/realm.bin of=$(BUILD_PLAT)/tftf.bin obs=1 \
-	seek=$(TFTF_MAX_IMAGE_SIZE))
+	oflag=append conv=notrunc)
 endif
 
 ifeq (${ARCH}-${PLAT},aarch64-tc)

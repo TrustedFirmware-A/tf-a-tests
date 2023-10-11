@@ -24,16 +24,7 @@
 static struct realm realm;
 static bool realm_payload_created;
 static bool shared_mem_created;
-static bool realm_payload_mmaped;
 static volatile bool timer_enabled;
-
-/* From the TFTF_BASE offset, memory used by TFTF + Shared + Realm + POOL should
- * not exceed DRAM_END offset
- * NS_REALM_SHARED_MEM_BASE + NS_REALM_SHARED_MEM_SIZE is considered last offset
- */
-CASSERT((((uint64_t)NS_REALM_SHARED_MEM_BASE + (uint64_t)NS_REALM_SHARED_MEM_SIZE)\
-	< ((uint64_t)DRAM_BASE + (uint64_t)DRAM_SIZE)),\
-	error_ns_memory_and_realm_payload_exceed_DRAM_SIZE);
 
 #define RMI_EXIT(id)	\
 	[RMI_EXIT_##id] = #id
@@ -114,41 +105,6 @@ void host_init_realm_print_buffer(void)
 	timer_enabled = true;
 }
 
-/**
- *   @brief    - Add regions assigned to Host into its translation table data
- *   structure.
- **/
-static test_result_t host_mmap_realm_payload(u_register_t realm_payload_adr,
-		u_register_t plat_mem_pool_adr,
-		u_register_t plat_mem_pool_size)
-{
-	if (realm_payload_mmaped) {
-		return REALM_SUCCESS;
-	}
-
-	/* Memory Pool region */
-	int rc = mmap_add_dynamic_region(plat_mem_pool_adr,
-					plat_mem_pool_adr,
-					plat_mem_pool_size,
-					MT_RW_DATA | MT_NS);
-	if (rc != 0) {
-		ERROR("%u: mmap_add_dynamic_region() %d\n", __LINE__, rc);
-		return TEST_RESULT_FAIL;
-	}
-
-	/* Realm Image region */
-	rc = mmap_add_dynamic_region(realm_payload_adr,
-					realm_payload_adr,
-					REALM_MAX_LOAD_IMG_SIZE,
-					MT_RW_DATA | MT_NS);
-	if (rc != 0) {
-		ERROR("%u: mmap_add_dynamic_region() %d\n", __LINE__, rc);
-		return TEST_RESULT_FAIL;
-	}
-	realm_payload_mmaped = true;
-	return REALM_SUCCESS;
-}
-
 static bool host_enter_realm(u_register_t *exit_reason,
 				unsigned int *host_call_result)
 {
@@ -199,18 +155,12 @@ bool host_create_realm_payload(u_register_t realm_payload_adr,
 			"plat_mem_pool_size or realm_pages_size is NULL\n");
 		return false;
 	}
+
+	INFO("Realm base adr=0x%lx\n", realm_payload_adr);
 	/* Initialize  Host NS heap memory to be used in Realm creation*/
 	if (page_pool_init(plat_mem_pool_adr, realm_pages_size)
 		!= HEAP_INIT_SUCCESS) {
 		ERROR("%s() failed\n", "page_pool_init");
-		return false;
-	}
-
-	/* Mmap Realm payload region */
-	if (host_mmap_realm_payload(realm_payload_adr,
-			plat_mem_pool_adr,
-			plat_mem_pool_size) != REALM_SUCCESS) {
-		ERROR("%s() failed\n", "host_mmap_realm_payload");
 		return false;
 	}
 

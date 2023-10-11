@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020, Arm Limited. All rights reserved.
+# Copyright (c) 2023, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -34,11 +34,14 @@ endif
 $(eval $(call add_define,TFTF_DEFINES,SMC_FUZZ_SEEDS))
 $(eval $(call add_define,TFTF_DEFINES,SMC_FUZZ_INSTANCE_COUNT))
 $(eval $(call add_define,TFTF_DEFINES,SMC_FUZZ_CALLS_PER_INSTANCE))
+ifeq ($(MULTI_CPU_SMC_FUZZER),1)
+$(eval $(call add_define,TFTF_DEFINES,MULTI_CPU_SMC_FUZZER))
+endif
 
 TESTS_SOURCES	+=							\
 	$(addprefix smc_fuzz/src/,					\
 		randsmcmod.c						\
 		smcmalloc.c						\
 		fifo3d.c						\
-		runtestfunction.c					\
+		runtestfunction_helpers.c				\
 	)

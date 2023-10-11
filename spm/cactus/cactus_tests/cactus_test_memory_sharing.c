@@ -67,6 +67,37 @@ static void *share_page_non_secure(ffa_id_t cactus_sp_id)
 	return (void *)CACTUS_SP3_NS_MEM_SHARE_BASE;
 }
 
+static bool cactus_mem_unmap_and_relinquish(
+		struct ffa_composite_memory_region *composite,
+		void *send, ffa_memory_handle_t handle, ffa_id_t vm_id)
+{
+	int ret;
+
+	for (uint32_t i = 0; i < composite->constituent_count; i++) {
+		uint64_t base_address = (uint64_t)composite->constituents[i]
+								.address;
+		size_t size = composite->constituents[i].page_count * PAGE_SIZE;
+
+		ret = mmap_remove_dynamic_region(
+			(uint64_t)composite->constituents[i].address,
+			composite->constituents[i].page_count * PAGE_SIZE);
+
+		if (ret != 0) {
+			ERROR("Failed to unmap received memory region %llx "
+			      "size: %lu (error:%d)\n",
+			      base_address, size, ret);
+			return false;
+		}
+	}
+
+	if (!memory_relinquish((struct ffa_mem_relinquish *)send,
+				handle, vm_id)) {
+		return false;
+	}
+
+	return true;
+}
+
 CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 {
 	struct ffa_memory_region *m;
@@ -140,6 +171,10 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 					 * be used.
 					 */
 					ERROR("Memory NOT cleared!\n");
+					cactus_mem_unmap_and_relinquish(composite,
+							      mb->send,
+							      handle, vm_id);
+					ffa_rx_release();
 					return cactus_error_resp(
 						vm_id, source,
 						CACTUS_ERROR_TEST);
@@ -165,29 +200,11 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 	 * A FFA_MEM_DONATE changes the ownership of the page, as such no
 	 * relinquish is needed.
 	 */
-	if (mem_func != FFA_MEM_DONATE_SMC32) {
-		for (uint32_t i = 0; i < composite->constituent_count; i++) {
-		uint64_t base_address = (uint64_t)composite->constituents[i]
-								.address;
-		size_t size = composite->constituents[i].page_count * PAGE_SIZE;
-
-			ret = mmap_remove_dynamic_region(
-				(uint64_t)composite->constituents[i].address,
-				composite->constituents[i].page_count * PAGE_SIZE);
-			if (ret != 0) {
-				ERROR("Failed to unmap received memory region %llx "
-				      "size: %lu (error:%d)\n",
-				      base_address, size, ret);
-				return cactus_error_resp(
-					vm_id, source, CACTUS_ERROR_TEST);
-			}
-		}
-
-		if (!memory_relinquish((struct ffa_mem_relinquish *)mb->send,
-					m->handle, vm_id)) {
-			return cactus_error_resp(vm_id, source,
-						 CACTUS_ERROR_TEST);
-		}
+	if (mem_func != FFA_MEM_DONATE_SMC32 &&
+	    !cactus_mem_unmap_and_relinquish(composite, mb->send, handle,
+					     vm_id)) {
+		return cactus_error_resp(vm_id, source,
+					 CACTUS_ERROR_TEST);
 	}
 
 	if (ffa_func_id(ffa_rx_release()) != FFA_SUCCESS_SMC32) {

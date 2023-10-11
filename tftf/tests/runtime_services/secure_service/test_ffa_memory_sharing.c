@@ -226,11 +226,9 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	ret = cactus_mem_send_cmd(SENDER, borrower, mem_func, handle, 0,
 				  nr_words_to_write);
 
-	if (!is_ffa_direct_response(ret)) {
-		return TEST_RESULT_FAIL;
-	}
-
-	if (cactus_get_response(ret) != CACTUS_SUCCESS) {
+	if (!is_ffa_direct_response(ret) ||
+	    cactus_get_response(ret) != CACTUS_SUCCESS) {
+		ffa_mem_reclaim(handle, 0);
 		ERROR("Failed memory send operation!\n");
 		return TEST_RESULT_FAIL;
 	}

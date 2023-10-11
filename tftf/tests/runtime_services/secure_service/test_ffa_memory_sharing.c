@@ -26,6 +26,7 @@ static const struct ffa_uuid expected_sp_uuids[] = {
 /* Memory section to be used for memory share operations */
 static __aligned(PAGE_SIZE) uint8_t share_page[PAGE_SIZE];
 static __aligned(PAGE_SIZE) uint8_t consecutive_donate_page[PAGE_SIZE];
+static __aligned(PAGE_SIZE) uint8_t four_share_pages[PAGE_SIZE * 4];
 
 static bool check_written_words(uint32_t *ptr, uint32_t word, uint32_t wcount)
 {
@@ -386,7 +387,10 @@ test_result_t test_req_mem_lend_sp_to_vm(void)
 test_result_t test_mem_share_to_sp_clear_memory(void)
 {
 	struct ffa_memory_region_constituent constituents[] = {
-						{(void *)share_page, 1, 1}};
+		{(void *)four_share_pages, 4, 0},
+		{(void *)share_page, 1, 0}
+	};
+
 	const uint32_t constituents_count = sizeof(constituents) /
 			sizeof(struct ffa_memory_region_constituent);
 	struct mailbox_buffers mb;

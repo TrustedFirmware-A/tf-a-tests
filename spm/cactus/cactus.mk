@@ -49,7 +49,7 @@ CACTUS_SOURCES	:=					\
 	)						\
 	$(addprefix spm/cactus/cactus_tests/,		\
 		cactus_message_loop.c			\
-		cactus_test_cpu_features.c		\
+		cactus_test_simd.c		\
 		cactus_test_direct_messaging.c		\
 		cactus_test_interrupts.c		\
 		cactus_test_memory_sharing.c		\

@@ -21,6 +21,10 @@ static const struct ffa_uuid expected_sp_uuids[] = { {PRIMARY_UUID} };
 
 static sve_z_regs_t sve_vectors_input;
 static sve_z_regs_t sve_vectors_output;
+static sve_p_regs_t sve_predicates_input;
+static sve_p_regs_t sve_predicates_output;
+static sve_ffr_regs_t sve_ffr_input;
+static sve_ffr_regs_t sve_ffr_output;
 static int sve_op_1[NS_SVE_OP_ARRAYSIZE];
 static int sve_op_2[NS_SVE_OP_ARRAYSIZE];
 static fpu_state_t g_fpu_state_write;
@@ -245,6 +249,273 @@ test_result_t test_sve_vectors_operations(void)
 			return TEST_RESULT_FAIL;
 		}
 	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/*
+ * SME enter SPMC with SSVE enabled.
+ *
+ * Check Streaming SVE is preserved on a normal/secure world switch.
+ *
+ */
+test_result_t test_sme_streaming_sve(void)
+{
+	struct ffa_value ret;
+
+	SKIP_TEST_IF_AARCH32();
+
+	/* Skip the test if SME is not supported. */
+	SKIP_TEST_IF_SME_NOT_SUPPORTED();
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+#ifdef __aarch64__
+	/* Enable SME FA64 if implemented. */
+	if (is_feat_sme_fa64_supported()) {
+		sme_enable_fa64();
+	}
+
+	/* Enter Streaming SVE mode. */
+	sme_smstart(SMSTART_SM);
+
+	/* Configure SVQ to max. implemented SVL. */
+	sme_config_svq(SME_SVQ_ARCH_MAX);
+
+	sve_z_regs_write_rand(&sve_vectors_input);
+	sve_p_regs_write_rand(&sve_predicates_input);
+	fpu_cs_regs_write_rand(&g_fpu_state_write.cs_regs);
+
+	if (is_feat_sme_fa64_supported()) {
+		sve_ffr_regs_write_rand(&sve_ffr_input);
+	}
+
+	ret = cactus_req_simd_fill_send_cmd(SENDER, RECEIVER);
+
+	if (!is_expected_cactus_response(ret, CACTUS_SUCCESS, 0)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_feat_sme_fa64_supported()) {
+		if (!sme_feat_fa64_enabled()) {
+			ERROR("FA64 trap bit disabled, expected enabled.\n");
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	/* Expect Streaming SVE to be active. */
+	if (!sme_smstat_sm()) {
+		ERROR("Streaming SVE disabled, expected enabled.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	sve_z_regs_read(&sve_vectors_output);
+	if (sve_z_regs_compare(&sve_vectors_input, &sve_vectors_output) != 0) {
+		ERROR("SME Z vectors compare failed.");
+		return TEST_RESULT_FAIL;
+	}
+
+	sve_p_regs_read(&sve_predicates_output);
+	if (sve_p_regs_compare(&sve_predicates_input, &sve_predicates_output) != 0) {
+		ERROR("SME predicates compare failed.");
+		return TEST_RESULT_FAIL;
+	}
+
+	fpu_cs_regs_read(&g_fpu_state_read.cs_regs);
+	if (fpu_cs_regs_compare(&g_fpu_state_write.cs_regs, &g_fpu_state_read.cs_regs) != 0) {
+		ERROR("FPU control/status compare failed.");
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_feat_sme_fa64_supported()) {
+		sve_ffr_regs_read(&sve_ffr_output);
+		if (sve_ffr_regs_compare(&sve_ffr_input, &sve_ffr_output) != 0) {
+			ERROR("SVE FFR register compare failed.");
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	/* Exit Streaming SVE mode. */
+	sme_smstop(SMSTOP_SM);
+#endif
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/*
+ * SME enter SPMC with ZA enabled.
+ *
+ * Check ZA array enabled is preserved on a normal/secure world switch.
+ */
+test_result_t test_sme_za(void)
+{
+	struct ffa_value ret;
+
+	SKIP_TEST_IF_AARCH32();
+
+	/* Skip the test if SME is not supported. */
+	SKIP_TEST_IF_SME_NOT_SUPPORTED();
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+#ifdef __aarch64__
+	/* Enable SME FA64 if implemented. */
+	if (is_feat_sme_fa64_supported()) {
+		sme_enable_fa64();
+	}
+
+	/* Enable SME ZA Array Storage */
+	sme_smstart(SMSTART_ZA);
+
+	/* Configure VQ. */
+	sve_config_vq(SVE_VQ_ARCH_MAX);
+
+	sve_z_regs_write_rand(&sve_vectors_input);
+	sve_p_regs_write_rand(&sve_predicates_input);
+	fpu_cs_regs_write_rand(&g_fpu_state_write.cs_regs);
+	sve_ffr_regs_write_rand(&sve_ffr_input);
+
+	ret = cactus_req_simd_fill_send_cmd(SENDER, RECEIVER);
+	if (!is_ffa_direct_response(ret)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (cactus_get_response(ret) == CACTUS_ERROR) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_feat_sme_fa64_supported()) {
+		if (!sme_feat_fa64_enabled()) {
+			ERROR("FA64 trap bit disabled, expected enabled.\n");
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	/* Expect Streaming SVE to be inactive. */
+	if (sme_smstat_sm()) {
+		ERROR("Streaming SVE enabled, expected disabled.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+
+	sve_z_regs_read(&sve_vectors_output);
+	if (sve_z_regs_compare(&sve_vectors_input, &sve_vectors_output) != 0) {
+		ERROR("SME Z vectors compare failed.");
+		return TEST_RESULT_FAIL;
+	}
+
+	sve_p_regs_read(&sve_predicates_output);
+	if (sve_p_regs_compare(&sve_predicates_input, &sve_predicates_output) != 0) {
+		ERROR("SME predicates compare failed.");
+		return TEST_RESULT_FAIL;
+	}
+
+	fpu_cs_regs_read(&g_fpu_state_read.cs_regs);
+	if (fpu_cs_regs_compare(&g_fpu_state_write.cs_regs, &g_fpu_state_read.cs_regs) != 0) {
+		ERROR("FPU control/status compare failed.");
+		return TEST_RESULT_FAIL;
+	}
+
+	sve_ffr_regs_read(&sve_ffr_output);
+	if (sve_ffr_regs_compare(&sve_ffr_input, &sve_ffr_output) != 0) {
+		ERROR("SVE FFR register compare failed.");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Disable SME ZA array storage. */
+	sme_smstop(SMSTOP_ZA);
+#endif
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/*
+ * SME enter SPMC with SSVE+ZA enabled.
+ *
+ * Check Streaming SVE and ZA array enabled are preserved on a
+ * normal/secure world switch.
+ */
+test_result_t test_sme_streaming_sve_za(void)
+{
+	struct ffa_value ret;
+
+	SKIP_TEST_IF_AARCH32();
+
+	/* Skip the test if SME is not supported. */
+	SKIP_TEST_IF_SME_NOT_SUPPORTED();
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+#ifdef __aarch64__
+	/* Enable SME FA64 if implemented. */
+	if (is_feat_sme_fa64_supported()) {
+		sme_enable_fa64();
+	}
+
+	/* Enable SME SSVE + ZA. */
+	sme_smstart(SMSTART);
+
+	/* Configure SVQ to max. implemented SVL. */
+	sme_config_svq(SME_SVQ_ARCH_MAX);
+
+	sve_z_regs_write_rand(&sve_vectors_input);
+	sve_p_regs_write_rand(&sve_predicates_input);
+	fpu_cs_regs_write_rand(&g_fpu_state_write.cs_regs);
+
+	if (is_feat_sme_fa64_supported()) {
+		sve_ffr_regs_write_rand(&sve_ffr_input);
+	}
+
+	ret = cactus_req_simd_fill_send_cmd(SENDER, RECEIVER);
+	if (!is_ffa_direct_response(ret)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (cactus_get_response(ret) == CACTUS_ERROR) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_feat_sme_fa64_supported()) {
+		if (!sme_feat_fa64_enabled()) {
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	/* Expect Streaming SVE to be active. */
+	if (!sme_smstat_sm()) {
+		ERROR("Streaming SVE disabled, expected enabled.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	sve_z_regs_read(&sve_vectors_output);
+	if (sve_z_regs_compare(&sve_vectors_input, &sve_vectors_output) != 0) {
+		ERROR("SME Z vectors compare failed.");
+		return TEST_RESULT_FAIL;
+	}
+
+	sve_p_regs_read(&sve_predicates_output);
+	if (sve_p_regs_compare(&sve_predicates_input, &sve_predicates_output) != 0) {
+		ERROR("SME predicates compare failed.");
+		return TEST_RESULT_FAIL;
+	}
+
+	fpu_cs_regs_read(&g_fpu_state_read.cs_regs);
+	if (fpu_cs_regs_compare(&g_fpu_state_write.cs_regs, &g_fpu_state_read.cs_regs) != 0) {
+		ERROR("FPU control/status compare failed.");
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_feat_sme_fa64_supported()) {
+		sve_ffr_regs_read(&sve_ffr_output);
+		if (sve_ffr_regs_compare(&sve_ffr_input, &sve_ffr_output) != 0) {
+			ERROR("SVE FFR register compare failed.");
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	/* Disable SSVE + ZA. */
+	sme_smstop(SMSTOP);
+#endif
 
 	return TEST_RESULT_SUCCESS;
 }

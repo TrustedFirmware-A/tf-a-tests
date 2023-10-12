@@ -294,7 +294,7 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 
 #define SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP()				\
 	do {									\
-		u_register_t retrmm;						\
+		u_register_t retrmm = 0U;					\
 										\
 		if (!get_armv9_2_feat_rme_support()) {				\
 			tftf_testcase_printf("FEAT_RME not supported\n");	\
@@ -302,7 +302,7 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}								\
 										\
 		host_rmi_init_cmp_result();					\
-		retrmm = host_rmi_version();					\
+		retrmm = host_rmi_version(RMI_ABI_VERSION_VAL);			\
 										\
 		VERBOSE("RMM version is: %lu.%lu\n",				\
 			RMI_ABI_VERSION_GET_MAJOR(retrmm),			\

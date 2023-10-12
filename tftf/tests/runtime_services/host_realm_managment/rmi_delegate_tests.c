@@ -70,7 +70,7 @@ test_result_t host_init_buffer_del(void)
  */
 test_result_t host_realm_version_single_cpu(void)
 {
-	u_register_t retrmm;
+	u_register_t retrmm = 0U;
 
 	if (get_armv9_2_feat_rme_support() == 0U) {
 		return TEST_RESULT_SKIPPED;
@@ -78,11 +78,13 @@ test_result_t host_realm_version_single_cpu(void)
 
 	host_rmi_init_cmp_result();
 
-	retrmm = host_rmi_version();
+	retrmm = host_rmi_version(RMI_ABI_VERSION_VAL);
 
-	tftf_testcase_printf("RMM version is: %lu.%lu\n",
+	tftf_testcase_printf("RMM version is: %lu.%lu (expected: %u.%u)\n",
 			RMI_ABI_VERSION_GET_MAJOR(retrmm),
-			RMI_ABI_VERSION_GET_MINOR(retrmm));
+			RMI_ABI_VERSION_GET_MINOR(retrmm),
+			RMI_ABI_VERSION_GET_MAJOR(RMI_ABI_VERSION_VAL),
+			RMI_ABI_VERSION_GET_MINOR(RMI_ABI_VERSION_VAL));
 
 	return host_cmp_result();
 }
@@ -173,11 +175,11 @@ test_result_t host_realm_delegate_undelegate(void)
 
 static test_result_t host_realm_multi_cpu_payload_test(void)
 {
-	u_register_t retrmm;
+	u_register_t retrmm = 0U;
 
 	host_rmi_init_cmp_result();
 
-	retrmm = host_rmi_version();
+	retrmm = host_rmi_version(RMI_ABI_VERSION_VAL);
 
 	tftf_testcase_printf("Multi CPU RMM version on CPU %llx is: %lu.%lu\n",
 			(long long)read_mpidr_el1() & MPID_MASK, RMI_ABI_VERSION_GET_MAJOR(retrmm),

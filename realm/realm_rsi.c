@@ -14,14 +14,18 @@
 static struct rsi_host_call host_cal __aligned(sizeof(struct rsi_host_call));
 
 /* This function return RSI_ABI_VERSION */
-u_register_t rsi_get_version(void)
+u_register_t rsi_get_version(u_register_t req_ver)
 {
 	smc_ret_values res = {};
 
 	res = tftf_smc(&(smc_args)
-		{RSI_ABI_VERSION, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL});
+		{RSI_VERSION, req_ver, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL});
 
-	return res.ret0;
+	if (res.ret0 == SMC_UNKNOWN) {
+		return SMC_UNKNOWN;
+	}
+	/* Return lower version. */
+	return res.ret1;
 }
 
 /* This function will call the Host to request IPA of the NS shared buffer */

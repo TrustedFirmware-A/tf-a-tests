@@ -28,6 +28,10 @@
 
 #define RMI_ABI_VERSION_GET_MAJOR(_version)	(((_version) >> 16U) & 0x8FFF)
 #define RMI_ABI_VERSION_GET_MINOR(_version)	((_version) & 0xFFFF)
+#define RMI_ABI_VERSION_MAJOR			U(1)
+#define RMI_ABI_VERSION_MINOR			U(0)
+#define RMI_ABI_VERSION_VAL			((RMI_ABI_VERSION_MAJOR << 16U) | \
+						 RMI_ABI_VERSION_MINOR)
 
 #define __ALIGN_MASK(x, mask)		(((x) + (mask)) & ~(mask))
 #define __ALIGN(x, a)			__ALIGN_MASK(x, (typeof(x))(a) - 1U)
@@ -522,7 +526,7 @@ struct realm {
 };
 
 /* RMI/SMC */
-u_register_t host_rmi_version(void);
+u_register_t host_rmi_version(u_register_t req_ver);
 u_register_t host_rmi_granule_delegate(u_register_t addr);
 u_register_t host_rmi_granule_undelegate(u_register_t addr);
 u_register_t host_rmi_realm_create(u_register_t rd, u_register_t params_ptr);

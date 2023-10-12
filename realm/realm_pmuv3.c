@@ -227,7 +227,7 @@ bool test_pmuv3_rmm_preserves(void)
 	read_all_pmu_configs(pmu_cfg_start);
 
 	/* Give RMM a chance to scramble everything */
-	(void)rsi_get_version();
+	(void)rsi_get_version(RSI_ABI_VERSION_VAL);
 
 	/* Get after reading */
 	read_all_counters(ctr_end, impl_ev_ctrs);

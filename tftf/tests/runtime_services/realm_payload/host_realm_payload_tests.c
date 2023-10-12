@@ -47,7 +47,7 @@ test_result_t host_test_realm_create_enter(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	host_shared_data_set_host_val(0U, HOST_SLEEP_INDEX, SLEEP_TIME_MS);
+	host_shared_data_set_host_val(0U, HOST_ARG1_INDEX, SLEEP_TIME_MS);
 	ret1 = host_enter_realm_execute(REALM_SLEEP_CMD, NULL, RMI_EXIT_HOST_CALL, 0U);
 	ret2 = host_destroy_realm();
 

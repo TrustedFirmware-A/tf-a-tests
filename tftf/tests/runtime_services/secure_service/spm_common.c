@@ -393,7 +393,7 @@ static bool ffa_uuid_equal(const struct ffa_uuid uuid1,
 	return (uuid1.uuid[0] == uuid2.uuid[0]) &&
 	       (uuid1.uuid[1] == uuid2.uuid[1]) &&
 	       (uuid1.uuid[2] == uuid2.uuid[2]) &&
-	       (uuid2.uuid[3] == uuid2.uuid[3]);
+	       (uuid1.uuid[3] == uuid2.uuid[3]);
 }
 
 static bool ffa_partition_info_regs_get_part_info(

@@ -110,8 +110,7 @@ unsigned int get_ffa_feature_test_target(const struct ffa_features_test **test_t
 bool memory_retrieve(struct mailbox_buffers *mb,
 		     struct ffa_memory_region **retrieved, uint64_t handle,
 		     ffa_id_t sender, struct ffa_memory_access receivers[],
-		     uint32_t receiver_count, ffa_memory_region_flags_t flags,
-		     uint32_t mem_func);
+		     uint32_t receiver_count, ffa_memory_region_flags_t flags);
 
 bool hypervisor_retrieve_request(struct mailbox_buffers *mb, uint64_t handle,
 				 void *out, uint32_t out_size);
@@ -124,20 +123,22 @@ bool memory_relinquish(struct ffa_mem_relinquish *m, uint64_t handle,
 		       ffa_id_t id);
 
 ffa_memory_handle_t memory_send(
-	struct ffa_memory_region *memory_region, uint32_t mem_func,
-	uint32_t fragment_length, uint32_t total_length, struct ffa_value *ret);
+	void *send_buffer, uint32_t mem_func,
+	const struct ffa_memory_region_constituent *constituents,
+	uint32_t constituent_count, uint32_t remaining_constituent_count,
+	uint32_t fragment_length, uint32_t total_length,
+	struct ffa_value *ret);
 
 ffa_memory_handle_t memory_init_and_send(
-	struct ffa_memory_region *memory_region, size_t memory_region_max_size,
-	ffa_id_t sender, struct ffa_memory_access receivers[],
-	uint32_t receiver_count,
+	void *send_buffer, size_t memory_region_max_size, ffa_id_t sender,
+	struct ffa_memory_access receivers[], uint32_t receiver_count,
 	const struct ffa_memory_region_constituent *constituents,
 	uint32_t constituents_count, uint32_t mem_func, struct ffa_value *ret);
 
 bool ffa_partition_info_helper(struct mailbox_buffers *mb,
-			const struct ffa_uuid uuid,
-			const struct ffa_partition_info *expected,
-			const uint16_t expected_size);
+			       const struct ffa_uuid uuid,
+			       const struct ffa_partition_info *expected,
+			       const uint16_t expected_size);
 bool enable_trusted_wdog_interrupt(ffa_id_t source, ffa_id_t dest);
 bool disable_trusted_wdog_interrupt(ffa_id_t source, ffa_id_t dest);
 

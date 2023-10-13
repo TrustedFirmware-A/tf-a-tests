@@ -433,10 +433,10 @@ typedef struct {
 _Static_assert(sizeof(ffa_memory_attributes_t) == sizeof(uint16_t),
 	       "ffa_memory_attributes_t must be 2 bytes wide");
 
-#define FFA_MEMORY_HANDLE_ALLOCATOR_MASK \
-	((ffa_memory_handle_t)(UINT64_C(1) << 63))
-#define FFA_MEMORY_HANDLE_ALLOCATOR_HYPERVISOR \
-	((ffa_memory_handle_t)(UINT64_C(1) << 63))
+#define FFA_MEMORY_HANDLE_ALLOCATOR_MASK UINT64_C(1)
+#define FFA_MEMORY_HANDLE_ALLOCATOR_SHIFT 63U
+#define FFA_MEMORY_HANDLE_ALLOCATOR_HYPERVISOR UINT64_C(1)
+#define FFA_MEMORY_HANDLE_ALLOCATOR_SPMC UINT64_C(0)
 #define FFA_MEMORY_HANDLE_INVALID (~UINT64_C(0))
 
 /**
@@ -608,6 +608,16 @@ static inline ffa_memory_handle_t ffa_mem_success_handle(struct ffa_value r)
 	return ffa_assemble_handle(r.arg2, r.arg3);
 }
 
+static inline ffa_memory_handle_t ffa_frag_handle(struct ffa_value r)
+{
+	return ffa_assemble_handle(r.arg1, r.arg2);
+}
+
+static inline ffa_id_t ffa_frag_sender(struct ffa_value args)
+{
+	return (args.arg4 >> 16) & 0xffff;
+}
+
 /**
  * Gets the `ffa_composite_memory_region` for the given receiver from an
  * `ffa_memory_region`, or NULL if it is not valid.
@@ -660,6 +670,12 @@ uint32_t ffa_memory_region_init(
 	enum ffa_memory_shareability shareability, uint32_t *total_length,
 	uint32_t *fragment_length);
 
+uint32_t ffa_memory_fragment_init(
+	struct ffa_memory_region_constituent *fragment,
+	size_t fragment_max_size,
+	const struct ffa_memory_region_constituent constituents[],
+	uint32_t constituent_count, uint32_t *fragment_length);
+
 static inline ffa_id_t ffa_dir_msg_dest(struct ffa_value val) {
 	return (ffa_id_t)val.arg1 & U(0xFFFF);
 }
@@ -711,6 +727,10 @@ struct ffa_value ffa_mem_retrieve_req(uint32_t descriptor_length,
 				      uint32_t fragment_length);
 struct ffa_value ffa_mem_relinquish(void);
 struct ffa_value ffa_mem_reclaim(uint64_t handle, uint32_t flags);
+struct ffa_value ffa_mem_frag_rx(ffa_memory_handle_t handle,
+				 uint32_t fragment_length);
+struct ffa_value ffa_mem_frag_tx(ffa_memory_handle_t handle,
+				 uint32_t fragment_length);
 struct ffa_value ffa_notification_bitmap_create(ffa_id_t vm_id,
 						ffa_vcpu_count_t vcpu_count);
 struct ffa_value ffa_notification_bitmap_destroy(ffa_id_t vm_id);

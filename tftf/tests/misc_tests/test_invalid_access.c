@@ -271,13 +271,13 @@ static test_result_t memory_cannot_be_accessed_in_rl(u_register_t params)
 /**
  * @Test_Aim@ Check a root region cannot be accessed from a secure partition.
  *
- * This change adds TFTF and cactus test to permit checking a root region
- * cannot be accessed from secure world.
  * A hardcoded address marked Root in the GPT is shared to a secure
- * partition. The SP retrieves the region from the SPM, maps it and
- * attempts a read access to the region. It is expected to trigger a GPF
- * data abort on the PE caught by a custom exception handler.
- *
+ * partition. The operation fails given the memory shared needs to be
+ * preconfigured in the memory ranges described in the SPMC manifest. The ranges
+ * related with S/NS memory that the SP can access shall never contain
+ * realm/root memory as this incurs into a configuration error.
+ * This test validates the SP can't get access to root memory via FF-A memory
+ * sharing interfaces.
  */
 test_result_t rt_memory_cannot_be_accessed_in_s(void)
 {
@@ -297,8 +297,6 @@ test_result_t rt_memory_cannot_be_accessed_in_s(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	SKIP_TEST_IF_FFA_VERSION_LESS_THAN(1,1);
-
 	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
 
 	GET_TFTF_MAILBOX(mb);
@@ -309,32 +307,10 @@ test_result_t rt_memory_cannot_be_accessed_in_s(void)
 					FFA_MEM_SHARE_SMC32, &ret);
 
 	if (handle == FFA_MEMORY_HANDLE_INVALID) {
-		return TEST_RESULT_FAIL;
+		return TEST_RESULT_SUCCESS;
 	}
 
-	VERBOSE("TFTF - Handle: %llx Address: %p\n",
-		handle, constituents[0].address);
-
-	/* Retrieve the shared page and attempt accessing it. */
-	ret = cactus_mem_send_cmd(SENDER, RECEIVER, FFA_MEM_SHARE_SMC32,
-				  handle, 0, true, 1);
-
-	if (is_ffa_call_error(ffa_mem_reclaim(handle, 0))) {
-		ERROR("Memory reclaim failed!\n");
-		return TEST_RESULT_FAIL;
-	}
-
-	/*
-	 * Expect success response with value 1 hinting an exception
-	 * triggered while the SP accessed the region.
-	 */
-	if (!(cactus_get_response(ret) == CACTUS_SUCCESS &&
-	      cactus_error_code(ret) == 1)) {
-		ERROR("Exceptions test failed!\n");
-		return TEST_RESULT_FAIL;
-	}
-
-	return TEST_RESULT_SUCCESS;
+	return TEST_RESULT_FAIL;
 }
 
 test_result_t s_memory_cannot_be_accessed_in_rl(void)

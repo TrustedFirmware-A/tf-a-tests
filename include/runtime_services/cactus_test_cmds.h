@@ -201,15 +201,10 @@ static inline ffa_id_t cactus_deadlock_get_next_dest2(struct ffa_value ret)
 static inline struct ffa_value cactus_mem_send_cmd(
 	ffa_id_t source, ffa_id_t dest, uint32_t mem_func,
 	ffa_memory_handle_t handle, ffa_memory_region_flags_t retrieve_flags,
-	bool non_secure, uint16_t word_to_write)
+	uint16_t word_to_write)
 {
-	/*
-	 * `non_secure` and `word_to_write` are packed in the same register.
-	 * Packed in a 32-bit value to support AArch32 platforms (eg Juno).
-	 */
-	uint32_t val3 = ((uint32_t)non_secure << 16) | word_to_write;
 	return cactus_send_cmd(source, dest, CACTUS_MEM_SEND_CMD, mem_func,
-			       handle, retrieve_flags, val3);
+			       handle, retrieve_flags, word_to_write);
 }
 
 static inline ffa_memory_handle_t cactus_mem_send_get_handle(
@@ -227,11 +222,6 @@ static inline ffa_memory_region_flags_t cactus_mem_send_get_retrv_flags(
 static inline uint16_t cactus_mem_send_words_to_write(struct ffa_value ret)
 {
 	return (uint16_t)ret.arg7;
-}
-
-static inline bool cactus_mem_send_get_non_secure(struct ffa_value ret)
-{
-	return (bool)(ret.arg7 >> 16);
 }
 
 /**

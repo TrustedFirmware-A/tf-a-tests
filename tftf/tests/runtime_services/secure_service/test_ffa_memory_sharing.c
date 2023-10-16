@@ -161,7 +161,7 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	ptr = (uint32_t *)constituents[0].address;
 
 	ret = cactus_mem_send_cmd(SENDER, borrower, mem_func, handle, 0,
-				  true, nr_words_to_write);
+				  nr_words_to_write);
 
 	if (!is_ffa_direct_response(ret)) {
 		return TEST_RESULT_FAIL;
@@ -172,16 +172,22 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 		return TEST_RESULT_FAIL;
 	}
 
-	/* Check that borrower used the memory as expected for this test. */
-	if (!check_written_words(ptr, mem_func, nr_words_to_write)) {
-		ERROR("Words written to shared memory, not as expected.\n");
-		return TEST_RESULT_FAIL;
-	}
+	if (mem_func != FFA_MEM_DONATE_SMC32) {
 
-	if (mem_func != FFA_MEM_DONATE_SMC32 &&
-	    is_ffa_call_error(ffa_mem_reclaim(handle, 0))) {
+		/* Reclaim memory entirely before checking its state. */
+		if (is_ffa_call_error(ffa_mem_reclaim(handle, 0))) {
 			tftf_testcase_printf("Couldn't reclaim memory\n");
 			return TEST_RESULT_FAIL;
+		}
+
+		/*
+		 * Check that borrower used the memory as expected for this
+		 * test.
+		 */
+		if (!check_written_words(ptr, mem_func, nr_words_to_write)) {
+			ERROR("Fail because of state of memory.\n");
+			return TEST_RESULT_FAIL;
+		}
 	}
 
 	return TEST_RESULT_SUCCESS;
@@ -421,8 +427,7 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 	VERBOSE("Memory has been shared!\n");
 
 	ret = cactus_mem_send_cmd(SENDER, RECEIVER, FFA_MEM_LEND_SMC32, handle,
-				  FFA_MEMORY_REGION_FLAG_CLEAR, true,
-				  nr_words_to_write);
+				  FFA_MEMORY_REGION_FLAG_CLEAR, nr_words_to_write);
 
 	if (!is_ffa_direct_response(ret)) {
 		return TEST_RESULT_FAIL;

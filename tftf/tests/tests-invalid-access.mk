@@ -25,4 +25,5 @@ TESTS_SOURCES	+=							\
 		ffa_helpers.c						\
 		spm_common.c						\
 		test_ffa_setup_and_discovery.c				\
+		spm_test_helpers.c					\
 )

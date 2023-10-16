@@ -11,6 +11,7 @@
 
 #include <arch_helpers.h>
 #include <host_shared_data.h>
+#include <realm_rsi.h>
 
 /*
  * A printf formatted function used in the Realm world to log messages
@@ -31,6 +32,7 @@ void realm_printf(const char *fmt, ...)
 			strnlen((const char *)log_buffer, MAX_BUF_SIZE),
 			MAX_BUF_SIZE, fmt, args);
 	va_end(args);
+	rsi_exit_to_host(HOST_CALL_EXIT_PRINT_CMD);
 }
 
 void __attribute__((__noreturn__)) do_panic(const char *file, int line)

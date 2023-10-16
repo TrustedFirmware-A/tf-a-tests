@@ -1260,6 +1260,10 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 				run->entry.gprs[0] = realm->ipa_ns_buffer;
 				re_enter_rec = true;
 				break;
+			case HOST_CALL_EXIT_PRINT_CMD:
+				realm_print_handler(run->exit.gprs[0]);
+				re_enter_rec = true;
+				break;
 			case HOST_CALL_EXIT_SUCCESS_CMD:
 				*host_call_result = TEST_RESULT_SUCCESS;
 				break;

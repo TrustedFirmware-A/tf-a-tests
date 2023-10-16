@@ -69,7 +69,8 @@ enum host_param_index {
 enum host_call_cmd {
         HOST_CALL_GET_SHARED_BUFF_CMD = 1U,
         HOST_CALL_EXIT_SUCCESS_CMD,
-	HOST_CALL_EXIT_FAILED_CMD
+	HOST_CALL_EXIT_FAILED_CMD,
+	HOST_CALL_EXIT_PRINT_CMD
 };
 
 /***************************************

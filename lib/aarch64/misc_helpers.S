@@ -197,9 +197,12 @@ func fixup_gdt_reloc
 	 * Size of Elf64_Rela structure is 24 bytes.
 	 */
 1:
+	/* Skip R_AARCH64_NONE entry with code 0 */
+	ldr	x3, [x1, #8]
+	cbz	x3, 2f
+
 	/* Assert that the relocation type is R_AARCH64_RELATIVE */
 #if ENABLE_ASSERTIONS
-	ldr	x3, [x1, #8]
 	cmp	x3, #0x403
 	ASM_ASSERT(eq)
 #endif

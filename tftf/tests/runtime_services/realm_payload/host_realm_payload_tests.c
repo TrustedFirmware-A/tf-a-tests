@@ -513,3 +513,74 @@ destroy_realm:
 	page_free(base);
 	return host_call_result;
 }
+
+/*
+ * Test set_ripas reject functionality in Realm
+ * Test allocates PAGE and passes to Realm
+ * Realm: verifies that initial RIPAS of page is EMPTY
+ * Realm: requests RIPAS Change to RAM
+ * Host: changes rejects RIPAS change and enters Realm
+ * Realm: verifies REJECT response
+ * Realm: verifies PAGE  has RIPAS=EMPTY
+ */
+
+test_result_t host_realm_reject_set_ripas(void)
+{
+	bool ret1, ret2;
+	u_register_t ret, exit_reason;
+	unsigned int host_call_result = TEST_RESULT_FAIL;
+	struct realm realm;
+	struct rmi_rec_run *run;
+	u_register_t rec_flag[1] = {RMI_RUNNABLE}, base;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			(u_register_t)PAGE_POOL_BASE,
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			0UL, rec_flag, 1U)) {
+		return TEST_RESULT_FAIL;
+	}
+	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
+			NS_REALM_SHARED_MEM_SIZE)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	base = (u_register_t)page_alloc(PAGE_SIZE);
+
+	ret = host_realm_map_protected_data(true, &realm, base, PAGE_SIZE, base);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_realm_map_protected_data failede\n");
+		goto destroy_realm;
+	}
+	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base);
+	ret1 = host_enter_realm_execute(&realm, REALM_REJECT_SET_RIPAS_CMD,
+			RMI_EXIT_RIPAS_CHANGE, 0U);
+
+	if (!ret1) {
+		ERROR("Rec did not request RIPAS change\n");
+		goto destroy_realm;
+	}
+	run = (struct rmi_rec_run *)realm.run[0];
+	if (run->exit.ripas_base != base) {
+		ERROR("Rec requested wrong exit.ripas_base\n");
+		goto destroy_realm;
+	}
+	run->entry.flags = REC_ENTRY_FLAG_RIPAS_RESPONSE_REJECT;
+	ret = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 0U);
+	if (ret != RMI_SUCCESS || exit_reason != RMI_EXIT_HOST_CALL) {
+		ERROR("Re-enter rec failed exit_reason=0x%lx", exit_reason);
+	}
+
+destroy_realm:
+	ret2 = host_destroy_realm(&realm);
+
+	if (!ret2) {
+		ERROR("%s(): destroy=%d\n",
+		__func__, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return host_call_result;
+}
+

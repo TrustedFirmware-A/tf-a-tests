@@ -101,6 +101,34 @@ bool test_realm_set_ripas(void)
 	return true;
 }
 
+bool test_realm_reject_set_ripas(void)
+{
+	u_register_t ret, base, new_base;
+	rsi_ripas_respose_type response;
+	rsi_ripas_type ripas;
+
+	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	ret = rsi_ipa_state_get(base, &ripas);
+	if (ret != RSI_SUCCESS || ripas != RSI_EMPTY) {
+		realm_printf("Wrong initial ripas=0x%lx\n", ripas);
+		return false;
+	}
+	ret = rsi_ipa_state_set(base, base + PAGE_SIZE, RSI_RAM,
+		RSI_NO_CHANGE_DESTROYED, &new_base, &response);
+	if (ret == RSI_SUCCESS && response == RSI_REJECT) {
+		realm_printf("rsi_ipa_state_set passed response = %d\n", response);
+		ret = rsi_ipa_state_get(base, &ripas);
+		if (ret == RSI_SUCCESS && ripas == RSI_EMPTY) {
+			return true;
+		} else {
+			realm_printf("rsi_ipa_state_get failed ripas = %d\n", ripas);
+			return false;
+		}
+	}
+	realm_printf("rsi_ipa_state_set failed ret=0x%lx, response = %d\n", ret, response);
+	return false;
+}
+
 /*
  * This is the entry function for Realm payload, it first requests the shared buffer
  * IPA address from Host using HOST_CALL/RSI, it reads the command to be executed,
@@ -161,6 +189,9 @@ void realm_payload_main(void)
 			fpu_state_read(&rl_fpu_state_read);
 			test_succeed = !fpu_state_compare(&rl_fpu_state_write,
 							  &rl_fpu_state_read);
+			break;
+		case REALM_REJECT_SET_RIPAS_CMD:
+			test_succeed = test_realm_reject_set_ripas();
 			break;
 		case REALM_SET_RIPAS_CMD:
 			test_succeed = test_realm_set_ripas();

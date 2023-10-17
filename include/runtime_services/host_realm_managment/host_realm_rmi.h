@@ -411,6 +411,19 @@ struct rmi_rec_params {
 	}, 0x800, 0x1000);
 };
 
+/* Whether Host has completed emulation for an Emulatable Data Abort */
+#define REC_ENTRY_FLAG_EMUL_MMIO	(UL(1) << 0)
+
+/* Whether to inject a Synchronous External Abort into Realm */
+#define REC_ENTRY_FLAG_INJECT_SEA	(UL(1) << 1)
+
+/* Whether to trap WFI/WFE execution by Realm */
+#define REC_ENTRY_FLAG_TRAP_WFI		(UL(1) << 2)
+#define REC_ENTRY_FLAG_TRAP_WFE		(UL(1) << 3)
+
+/* Host response to RIPAS change request */
+#define REC_ENTRY_FLAG_RIPAS_RESPONSE_REJECT	(UL(1) << 4)
+
 /*
  * Structure contains data passed from the Host to the RMM on REC entry
  */

@@ -96,10 +96,13 @@
 		};
 
 		smmuv3-ns-region {
-			description = "smmuv3-ns-region";
+			description = "smmuv3-memcpy-ns-region";
 			pages-count = <8>;
 			base-address = <0x0 0x90000000>;
 			attributes = <0xb>; /* ns-read-write */
+			smmu-id = <0>;
+			stream-ids = <0x0 0x1>;
+			stream-ids-access-permissions = <0xb 0xb>;
 		};
 	};
 

@@ -20,8 +20,20 @@ static const struct ffa_uuid expected_sp_uuids[] = { {PRIMARY_UUID} };
 #define TEST_DMA_ENGINE_MEMCPY	(2U)
 #define TEST_DMA_ENGINE_RAND48	(3U)
 
-#define TEST_DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_S	(0xffU)
-#define TEST_DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_NS	(0x2ffU)
+/*
+ * Attribute encoding for Inner and Outer:
+ * Read-Allocate Write-Allocate Write-Back Normal Memory
+ */
+#define ATTR_ACACHE_RAWAWB_S	(0xffU)
+#define ATTR_ACACHE_RAWAWB_NS	(0x2ffU)
+
+/* Source attributes occupy the bottom halfword */
+#define DMA_ENGINE_ATTR_SRC_ACACHE_RAWAWB_S	ATTR_ACACHE_RAWAWB_S
+#define DMA_ENGINE_ATTR_SRC_ACACHE_RAWAWB_NS	ATTR_ACACHE_RAWAWB_NS
+
+/* Destination attributes occupy the top halfword */
+#define DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_S	(ATTR_ACACHE_RAWAWB_S << 16)
+#define DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_NS	(ATTR_ACACHE_RAWAWB_NS << 16)
 
 /**************************************************************************
  * test_smmu_spm
@@ -54,7 +66,7 @@ test_result_t test_smmu_spm(void)
 		TEST_DMA_ENGINE_RAND48,
 		PLAT_CACTUS_MEMCPY_BASE,
 		PLAT_CACTUS_MEMCPY_RANGE / 2,
-		TEST_DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_S << 16);
+		DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_S);
 
 	/* Expect the SMMU DMA operation to pass. */
 	if (cactus_get_response(ret) != CACTUS_SUCCESS) {
@@ -70,8 +82,27 @@ test_result_t test_smmu_spm(void)
 		TEST_DMA_ENGINE_MEMCPY,
 		PLAT_CACTUS_MEMCPY_BASE,
 		PLAT_CACTUS_MEMCPY_RANGE,
-		(TEST_DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_S << 16) |
-		TEST_DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_S);
+		DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_S |
+		DMA_ENGINE_ATTR_SRC_ACACHE_RAWAWB_S);
+
+	/* Expect the SMMU DMA operation to pass. */
+	if (cactus_get_response(ret) != CACTUS_SUCCESS) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/*
+	 * Copy first half to second half of the non-secure buffer and
+	 * check both match.
+	 * Source and destination memory attributes are non-secure rawaWB.
+	 * This test helps to validate a scenario where a secure stream
+	 * belonging to Cactus SP accesses non-secure IPA space.
+	 */
+	ret = cactus_send_dma_cmd(HYP_ID, SP_ID(1),
+		TEST_DMA_ENGINE_MEMCPY,
+		PLAT_CACTUS_NS_MEMCPY_BASE,
+		PLAT_CACTUS_MEMCPY_RANGE,
+		DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_NS |
+		DMA_ENGINE_ATTR_SRC_ACACHE_RAWAWB_NS);
 
 	/* Expect the SMMU DMA operation to pass. */
 	if (cactus_get_response(ret) != CACTUS_SUCCESS) {
@@ -127,7 +158,7 @@ test_result_t test_smmu_spm_invalid_access(void)
 		TEST_DMA_ENGINE_RAND48,
 		PLAT_CACTUS_NS_MEMCPY_BASE,
 		PLAT_CACTUS_MEMCPY_RANGE,
-		TEST_DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_NS << 16);
+		DMA_ENGINE_ATTR_DEST_ACACHE_RAWAWB_NS);
 
 	/* Update the buffer back to NS PAS. */
 	retmm = host_rmi_granule_undelegate((u_register_t)PLAT_CACTUS_NS_MEMCPY_BASE);

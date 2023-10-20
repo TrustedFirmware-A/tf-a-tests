@@ -12,11 +12,13 @@
 #include "cactus_message_loop.h"
 #include "cactus_test_cmds.h"
 
+#include <mmio.h>
 #include <platform.h>
 
 /* Secure virtual interrupt that was last handled by Cactus SP. */
 extern uint32_t last_serviced_interrupt[PLATFORM_CORE_COUNT];
 static int flag_set;
+static volatile bool test_espi_handled;
 
 static void handle_sec_wdog_interrupt(void)
 {
@@ -226,4 +228,44 @@ CACTUS_CMD_HANDLER(interrupt_serviced_cmd, CACTUS_LAST_INTERRUPT_SERVICED_CMD)
 	return cactus_response(ffa_dir_msg_dest(*args),
 			       ffa_dir_msg_source(*args),
 			       last_serviced_interrupt[core_pos]);
+}
+
+static void sec_interrupt_test_espi_handled(void)
+{
+	expect(test_espi_handled, false);
+	test_espi_handled = true;
+	NOTICE("Interrupt handler for test espi interrupt called\n");
+
+	/* Perform secure interrupt de-activation. */
+	spm_interrupt_deactivate(IRQ_ESPI_TEST_INTID);
+}
+
+CACTUS_CMD_HANDLER(trigger_espi_cmd, CACTUS_TRIGGER_ESPI_CMD)
+{
+	uint32_t espi_id = cactus_get_espi_id(*args);
+
+	/*
+	 * The SiP function ID 0x82000100 must have been added to the SMC
+	 * whitelist of the Cactus SP that invokes it.
+	 */
+	smc_args plat_sip_call = {
+			.fid = 0x82000100,
+			.arg1 = espi_id,
+	};
+	smc_ret_values ret;
+
+	sp_register_interrupt_handler(sec_interrupt_test_espi_handled,
+				      espi_id);
+	ret = tftf_smc(&plat_sip_call);
+
+	if (ret.ret0 == SMC_UNKNOWN) {
+		ERROR("SiP SMC call not supported\n");
+		return cactus_error_resp(ffa_dir_msg_dest(*args),
+				ffa_dir_msg_source(*args),
+				CACTUS_ERROR_TEST);
+	}
+
+	return cactus_response(ffa_dir_msg_dest(*args),
+			       ffa_dir_msg_source(*args),
+			       test_espi_handled ? 1 : 0);
 }

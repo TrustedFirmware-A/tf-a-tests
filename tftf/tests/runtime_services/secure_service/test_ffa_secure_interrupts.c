@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,6 +7,8 @@
 #include <cactus_test_cmds.h>
 #include <ffa_endpoints.h>
 #include <ffa_helpers.h>
+#include <mmio.h>
+#include <spm_common.h>
 #include <spm_test_helpers.h>
 #include <test_helpers.h>
 #include <timer.h>
@@ -422,5 +424,88 @@ test_result_t test_ffa_sec_interrupt_sp1_waiting_sp2_running(void)
 		return TEST_RESULT_FAIL;
 	}
 
+	return TEST_RESULT_SUCCESS;
+}
+
+/*
+ * @Test_Aim@ Test handling of interrupt belonging to the extended SPI range
+ * while first Secure Partition is in RUNNING state.
+ *
+ * 1. Send a direct message request command to first Cactus SP to trigger the
+ *    eSPI interrupt.
+ *
+ * 2. The Cactus SP either successfully handles the interrupt or fails to do
+ *    so. It sends a value through direct message response indicating if the
+ *    interrupt was handled.
+ *
+ * 3. TFTF sends a direct request message to SP to query the ID of last serviced
+ *    secure virtual interrupt.
+ *
+ * 4. Further, TFTF expects SP to return the appropriate interrupt id through a
+ *    direct response message.
+ */
+test_result_t test_ffa_espi_sec_interrupt(void)
+{
+	struct ffa_value ret_values;
+
+	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+
+	/* Enable ESPI. */
+	ret_values = cactus_interrupt_cmd(SENDER, RECEIVER, IRQ_ESPI_TEST_INTID,
+					  true, INTERRUPT_TYPE_IRQ);
+
+	if (!is_ffa_direct_response(ret_values)) {
+		ERROR("Expected a direct response message while configuring"
+			" interrupt ESPI %u\n", IRQ_ESPI_TEST_INTID);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (cactus_get_response(ret_values) != CACTUS_SUCCESS) {
+		ERROR("Failed to configure ESPI interrupt\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Trigger ESPI while running. */
+	ret_values = cactus_trigger_espi_cmd(SENDER, RECEIVER, IRQ_ESPI_TEST_INTID);
+	if (!is_ffa_direct_response(ret_values)) {
+		ERROR("Expected a direct response message while triggering"
+			" interrupt ESPI %u\n", IRQ_ESPI_TEST_INTID);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (cactus_get_response(ret_values) != 1) {
+		ERROR("Interrupt %u not serviced by SP\n", IRQ_ESPI_TEST_INTID);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Disable ESPI. */
+	ret_values = cactus_interrupt_cmd(SENDER, RECEIVER, IRQ_ESPI_TEST_INTID,
+					  false, INTERRUPT_TYPE_IRQ);
+
+	if (!is_ffa_direct_response(ret_values)) {
+		ERROR("Expected a direct response message while configuring"
+			" interrupt ESPI %u\n", IRQ_ESPI_TEST_INTID);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (cactus_get_response(ret_values) != CACTUS_SUCCESS) {
+		ERROR("Failed to configure ESPI interrupt %u\n", IRQ_ESPI_TEST_INTID);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Check for the last serviced secure virtual interrupt. */
+	ret_values = cactus_get_last_interrupt_cmd(SENDER, RECEIVER);
+
+	if (!is_ffa_direct_response(ret_values)) {
+		ERROR("Expected a direct response for last serviced interrupt"
+			" command\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Make sure Trusted Watchdog timer interrupt was serviced*/
+	if (cactus_get_response(ret_values) != IRQ_ESPI_TEST_INTID) {
+		ERROR("ESPI interrupt %u not serviced by SP\n", IRQ_ESPI_TEST_INTID);
+		return TEST_RESULT_FAIL;
+	}
 	return TEST_RESULT_SUCCESS;
 }

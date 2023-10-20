@@ -12,8 +12,11 @@
 #include <spm_common.h>
 #include <spinlock.h>
 
-/* Currently, Hafnium/SPM supports 1024 virtual interrupt IDs. */
-#define NUM_VINT_ID	1024
+/*
+ * Use extended SPI interrupt ID range, hafnium/SPMC maps virtual interrupts
+ * to physical interrupts 1 to 1.
+ */
+#define NUM_VINT_ID	5120
 
 typedef struct {
 	u_register_t fid;

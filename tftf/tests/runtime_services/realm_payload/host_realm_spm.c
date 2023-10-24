@@ -56,6 +56,7 @@ static test_result_t init_sp(void)
 static test_result_t init_realm(void)
 {
 	u_register_t retrmm;
+	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 
 	if (get_armv9_2_feat_rme_support() == 0U) {
 		return TEST_RESULT_SKIPPED;
@@ -77,7 +78,7 @@ static test_result_t init_realm(void)
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),
-			(u_register_t)PAGE_POOL_MAX_SIZE, 0UL)) {
+			(u_register_t)PAGE_POOL_MAX_SIZE, 0UL, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -92,9 +93,10 @@ static test_result_t init_realm(void)
 	return TEST_RESULT_SUCCESS;
 }
 
-static bool host_realm_handle_fiq_exit(struct realm *realm_ptr)
+static bool host_realm_handle_fiq_exit(struct realm *realm_ptr,
+		unsigned int rec_num)
 {
-	struct rmi_rec_run *run = (struct rmi_rec_run *)realm_ptr->run;
+	struct rmi_rec_run *run = (struct rmi_rec_run *)realm_ptr->run[rec_num];
 	if (run->exit.exit_reason == RMI_EXIT_FIQ) {
 		return true;
 	}
@@ -137,7 +139,7 @@ static bool fpu_cmp_sec(void)
 /* Send request to Realm to fill FPU/SIMD regs with realm template values */
 static bool fpu_fill_rl(void)
 {
-	if (!host_enter_realm_execute(REALM_REQ_FPU_FILL_CMD, NULL, RMI_EXIT_HOST_CALL)) {
+	if (!host_enter_realm_execute(REALM_REQ_FPU_FILL_CMD, NULL, RMI_EXIT_HOST_CALL, 0U)) {
 		ERROR("%s failed %d\n", __func__, __LINE__);
 		return false;
 	}
@@ -147,7 +149,7 @@ static bool fpu_fill_rl(void)
 /* Send request to Realm to compare FPU/SIMD regs with previous realm template values */
 static bool fpu_cmp_rl(void)
 {
-	if (!host_enter_realm_execute(REALM_REQ_FPU_CMP_CMD, NULL, RMI_EXIT_HOST_CALL)) {
+	if (!host_enter_realm_execute(REALM_REQ_FPU_CMP_CMD, NULL, RMI_EXIT_HOST_CALL, 0U)) {
 		ERROR("%s failed %d\n", __func__, __LINE__);
 		return false;
 	}
@@ -230,13 +232,13 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 	 * Spin Realm payload for REALM_TIME_SLEEP ms, This ensures secure wdog
 	 * timer triggers during this time.
 	 */
-	realm_shared_data_set_host_val(HOST_SLEEP_INDEX, REALM_TIME_SLEEP);
-	host_enter_realm_execute(REALM_SLEEP_CMD, &realm_ptr, RMI_EXIT_FIQ);
+	host_shared_data_set_host_val(0U, HOST_SLEEP_INDEX, REALM_TIME_SLEEP);
+	host_enter_realm_execute(REALM_SLEEP_CMD, &realm_ptr, RMI_EXIT_FIQ, 0U);
 
 	/*
 	 * Check if Realm exit reason is FIQ.
 	 */
-	if (!host_realm_handle_fiq_exit(realm_ptr)) {
+	if (!host_realm_handle_fiq_exit(realm_ptr, 0U)) {
 		ERROR("Trusted watchdog timer interrupt not fired\n");
 		host_destroy_realm();
 		return TEST_RESULT_FAIL;

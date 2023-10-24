@@ -30,6 +30,7 @@ extern const char *rmi_exit[];
 test_result_t host_test_realm_create_enter(void)
 {
 	bool ret1, ret2;
+	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -37,7 +38,8 @@ test_result_t host_test_realm_create_enter(void)
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),
-			(u_register_t)PAGE_POOL_MAX_SIZE, 0UL)) {
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			0UL, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
 	}
 	if (!host_create_shared_mem(NS_REALM_SHARED_MEM_BASE,
@@ -45,8 +47,8 @@ test_result_t host_test_realm_create_enter(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	realm_shared_data_set_host_val(HOST_SLEEP_INDEX, SLEEP_TIME_MS);
-	ret1 = host_enter_realm_execute(REALM_SLEEP_CMD, NULL, RMI_EXIT_HOST_CALL);
+	host_shared_data_set_host_val(0U, HOST_SLEEP_INDEX, SLEEP_TIME_MS);
+	ret1 = host_enter_realm_execute(REALM_SLEEP_CMD, NULL, RMI_EXIT_HOST_CALL, 0U);
 	ret2 = host_destroy_realm();
 
 	if (!ret1 || !ret2) {
@@ -67,6 +69,7 @@ test_result_t host_realm_enable_pauth(void)
 	return TEST_RESULT_SKIPPED;
 #else
 	bool ret1, ret2;
+	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -76,7 +79,7 @@ test_result_t host_realm_enable_pauth(void)
 				(u_register_t)(PAGE_POOL_MAX_SIZE +
 					NS_REALM_SHARED_MEM_SIZE),
 				(u_register_t)PAGE_POOL_MAX_SIZE,
-				0UL)) {
+				0UL, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -85,11 +88,12 @@ test_result_t host_realm_enable_pauth(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	ret1 = host_enter_realm_execute(REALM_PAUTH_SET_CMD, NULL, RMI_EXIT_HOST_CALL);
+	ret1 = host_enter_realm_execute(REALM_PAUTH_SET_CMD, NULL, RMI_EXIT_HOST_CALL, 0U);
 
 	if (ret1) {
 		/* Re-enter Realm to compare PAuth registers. */
-		ret1 = host_enter_realm_execute(REALM_PAUTH_CHECK_CMD, NULL, RMI_EXIT_HOST_CALL);
+		ret1 = host_enter_realm_execute(REALM_PAUTH_CHECK_CMD, NULL,
+				RMI_EXIT_HOST_CALL, 0U);
 	}
 
 	ret2 = host_destroy_realm();
@@ -120,6 +124,7 @@ test_result_t host_realm_pauth_fault(void)
 	return TEST_RESULT_SKIPPED;
 #else
 	bool ret1, ret2;
+	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 	if (!host_create_realm_payload((u_register_t)REALM_IMAGE_BASE,
@@ -127,7 +132,7 @@ test_result_t host_realm_pauth_fault(void)
 				(u_register_t)(PAGE_POOL_MAX_SIZE +
 					NS_REALM_SHARED_MEM_SIZE),
 				(u_register_t)PAGE_POOL_MAX_SIZE,
-				0UL)) {
+				0UL, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
 	}
 	if (!host_create_shared_mem(NS_REALM_SHARED_MEM_BASE,
@@ -135,7 +140,7 @@ test_result_t host_realm_pauth_fault(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	ret1 = host_enter_realm_execute(REALM_PAUTH_FAULT, NULL, RMI_EXIT_HOST_CALL);
+	ret1 = host_enter_realm_execute(REALM_PAUTH_FAULT, NULL, RMI_EXIT_HOST_CALL, 0U);
 	ret2 = host_destroy_realm();
 
 	if (!ret1) {
@@ -158,9 +163,10 @@ test_result_t host_realm_pauth_fault(void)
  *
  * @return true in case of PMU interrupt, false otherwise.
  */
-static bool host_realm_handle_irq_exit(struct realm *realm_ptr)
+static bool host_realm_handle_irq_exit(struct realm *realm_ptr,
+		unsigned int rec_num)
 {
-	struct rmi_rec_run *run = (struct rmi_rec_run *)realm_ptr->run;
+	struct rmi_rec_run *run = (struct rmi_rec_run *)realm_ptr->run[rec_num];
 
 	/* Check PMU overflow status */
 	if (run->exit.pmu_ovf_status == RMI_PMU_OVERFLOW_ACTIVE) {
@@ -184,7 +190,7 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr)
 		INFO("Re-entering Realm with vIRQ %lu pending\n", PMU_VIRQ);
 
 		retrmm = host_realm_rec_enter(realm_ptr, &exit_reason,
-						&host_call_result);
+						&host_call_result, rec_num);
 		if ((retrmm == REALM_SUCCESS) &&
 		    (exit_reason == RMI_EXIT_HOST_CALL) &&
 		    (host_call_result == TEST_RESULT_SUCCESS)) {
@@ -209,6 +215,7 @@ static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 {
 	struct realm *realm_ptr;
 	u_register_t feature_flag;
+	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 	bool ret1, ret2;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
@@ -223,7 +230,7 @@ static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			feature_flag)) {
+			feature_flag, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
 	}
 	if (!host_create_shared_mem(NS_REALM_SHARED_MEM_BASE,
@@ -231,12 +238,12 @@ static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 		return TEST_RESULT_FAIL;
 	}
 
-	ret1 = host_enter_realm_execute(cmd, &realm_ptr, RMI_EXIT_IRQ);
+	ret1 = host_enter_realm_execute(cmd, &realm_ptr, RMI_EXIT_IRQ, 0U);
 	if (!ret1 || (cmd != REALM_PMU_INTERRUPT)) {
 		goto test_exit;
 	}
 
-	ret1 = host_realm_handle_irq_exit(realm_ptr);
+	ret1 = host_realm_handle_irq_exit(realm_ptr, 0U);
 
 test_exit:
 	ret2 = host_destroy_realm();

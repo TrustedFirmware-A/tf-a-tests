@@ -16,7 +16,6 @@
 
 #ifndef __ASSEMBLY__
 #include <assert.h>
-#include <platform_def.h>
 #include <stdbool.h>
 #include <stdint.h>
 #endif

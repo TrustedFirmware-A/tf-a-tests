@@ -25,7 +25,7 @@ static fpu_reg_state_t fpu_temp_rl;
  */
 static void realm_sleep_cmd(void)
 {
-	uint64_t sleep = realm_shared_data_get_host_val(HOST_SLEEP_INDEX);
+	uint64_t sleep = realm_shared_data_get_my_host_val(HOST_SLEEP_INDEX);
 
 	realm_printf("Realm: going to sleep for %llums\n", sleep);
 	waitms(sleep);
@@ -64,8 +64,8 @@ void realm_payload_main(void)
 	bool test_succeed = false;
 
 	realm_set_shared_structure((host_shared_data_t *)rsi_get_ns_buffer());
-	if (realm_get_shared_structure() != NULL) {
-		uint8_t cmd = realm_shared_data_get_realm_cmd();
+	if (realm_get_my_shared_structure() != NULL) {
+		uint8_t cmd = realm_shared_data_get_my_realm_cmd();
 
 		switch (cmd) {
 		case REALM_SLEEP_CMD:

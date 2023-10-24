@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <realm_def.h>
 #include <smccc.h>
 #include <utils_def.h>
 
@@ -498,17 +499,20 @@ enum realm_state {
 };
 
 struct realm {
+	unsigned int rec_count;
 	u_register_t par_base;
 	u_register_t par_size;
 	u_register_t rd;
 	u_register_t rtt_addr;
-	u_register_t rec;
-	u_register_t run;
+	u_register_t rec[MAX_REC_COUNT];
+	u_register_t run[MAX_REC_COUNT];
+	u_register_t rec_flag[MAX_REC_COUNT];
+	u_register_t mpidr[MAX_REC_COUNT];
 	u_register_t num_aux;
 	u_register_t rmm_feat_reg0;
 	u_register_t ipa_ns_buffer;
 	u_register_t ns_buffer_size;
-	u_register_t aux_pages[REC_PARAMS_AUX_GRANULES];
+	u_register_t aux_pages_all_rec[MAX_REC_COUNT][REC_PARAMS_AUX_GRANULES];
 	uint8_t      sve_vl;
 	uint8_t      num_bps;
 	uint8_t      num_wps;
@@ -532,13 +536,17 @@ u_register_t host_realm_map_ns_shared(struct realm *realm,
 					u_register_t ns_shared_mem_adr,
 					u_register_t ns_shared_mem_size);
 u_register_t host_realm_rec_create(struct realm *realm);
+unsigned int host_realm_find_rec_by_mpidr(unsigned int mpidr, struct realm *realm);
 u_register_t host_realm_activate(struct realm *realm);
 u_register_t host_realm_destroy(struct realm *realm);
 u_register_t host_realm_rec_enter(struct realm *realm,
 					u_register_t *exit_reason,
-					unsigned int *host_call_result);
+					unsigned int *host_call_result,
+					unsigned int rec_num);
 u_register_t host_realm_init_ipa_state(struct realm *realm, u_register_t level,
 					u_register_t start, uint64_t end);
+u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t target_rec,
+		unsigned long status);
 void host_rmi_init_cmp_result(void);
 bool host_rmi_get_cmp_result(void);
 

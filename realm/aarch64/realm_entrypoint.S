@@ -11,14 +11,20 @@
 	.globl	realm_entrypoint
 
 .section .bss.stacks
-.align 8
-	.fill	REALM_STACK_SIZE
+.align 16
+	.fill	REALM_STACK_SIZE * MAX_REC_COUNT
 stacks_end:
 
 func realm_entrypoint
+	mrs	x0, mpidr_el1
+	mov_imm	x1, MPID_MASK
+	and	x0, x0, x1
+
 	/* Setup the stack pointer. */
-	adr	x1, stacks_end
-	mov	sp, x1
+	bl	realm_setup_my_stack
+
+	/* mpidr 0 is assumed to be primary CPU, jump to warmboot otherwise */
+	cbnz	x0, realm_warmboot_endpoint
 
 	/* Clear BSS */
 	ldr	x0, =__REALM_BSS_START__
@@ -39,9 +45,6 @@ func realm_entrypoint
 	sub	x1, x1, x0
 	bl	inv_dcache_range
 
-	/* Initialize architectural state. */
-	bl	arch_init
-
 	/* Relocate symbols */
 pie_fixup:
 	ldr	x0, =pie_fixup
@@ -49,6 +52,10 @@ pie_fixup:
 	mov	x1, REALM_MAX_LOAD_IMG_SIZE
 	add	x1, x1, x0
 	bl	fixup_gdt_reloc
+
+realm_warmboot_endpoint:
+	/* Initialize architectural state. */
+	bl	arch_init
 #if ENABLE_PAUTH
 	bl	pauth_init_enable
 #endif
@@ -58,6 +65,19 @@ loop:
 	bl	realm_payload_main
 	b	loop
 endfunc realm_entrypoint
+
+/*
+ * Setup the stack pointer.
+ * x0 = mpidr
+ * clobbers x1,x2
+ */
+func realm_setup_my_stack
+	adr	x1, stacks_end
+	mov	x2, REALM_STACK_SIZE
+	mul	x2, x0, x2
+	sub	sp, x1, x2
+	ret
+endfunc	realm_setup_my_stack
 
 /* Initialize architectural state. */
 func arch_init

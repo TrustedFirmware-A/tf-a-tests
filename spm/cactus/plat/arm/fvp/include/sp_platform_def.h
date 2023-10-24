@@ -26,7 +26,7 @@
 
 /* Scratch memory used for SMMUv3 driver testing purposes in Cactus SP */
 #define PLAT_CACTUS_MEMCPY_BASE			ULL(0x7400000)
-#define PLAT_CACTUS_SMMU_NS_MEMCPY_BASE		ULL(0x90000000)
+#define PLAT_CACTUS_NS_MEMCPY_BASE		ULL(0x90000000)
 #define PLAT_CACTUS_MEMCPY_RANGE		ULL(0x8000)
 
 /* Base address of user and PRIV frames in SMMUv3TestEngine */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -27,6 +27,7 @@
 /* Scratch memory used for SMMUv3 driver testing purposes in Cactus SP */
 /* SMMUv3 tests are disabled for TC platform */
 #define PLAT_CACTUS_MEMCPY_BASE		ULL(0xfe400000)
+#define PLAT_CACTUS_NS_MEMCPY_BASE	ULL(0x90000000)
 #define PLAT_CACTUS_MEMCPY_RANGE	ULL(0x8000)
 
 /* Base address of user and PRIV frames in SMMUv3TestEngine */

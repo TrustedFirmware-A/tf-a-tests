@@ -232,7 +232,7 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 	 * Spin Realm payload for REALM_TIME_SLEEP ms, This ensures secure wdog
 	 * timer triggers during this time.
 	 */
-	host_shared_data_set_host_val(0U, HOST_SLEEP_INDEX, REALM_TIME_SLEEP);
+	host_shared_data_set_host_val(0U, HOST_ARG1_INDEX, REALM_TIME_SLEEP);
 	host_enter_realm_execute(REALM_SLEEP_CMD, &realm_ptr, RMI_EXIT_FIQ, 0U);
 
 	/*

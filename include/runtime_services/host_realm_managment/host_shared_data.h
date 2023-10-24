@@ -63,7 +63,7 @@ enum realm_cmd {
  */
 enum host_param_index {
 	HOST_CMD_INDEX = 0U,
-	HOST_SLEEP_INDEX
+	HOST_ARG1_INDEX
 };
 
 enum host_call_cmd {

@@ -582,6 +582,7 @@ test_result_t smc_fuzzer_execute(void)
 test_result_t smc_fuzzing_top(void)
 {
 	test_result_t result = TEST_RESULT_SUCCESS;
+
 	init_smc_fuzzing();
 #ifdef MULTI_CPU_SMC_FUZZER
 	u_register_t lead_mpid, target_mpid;

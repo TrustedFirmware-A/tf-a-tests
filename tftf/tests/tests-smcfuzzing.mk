@@ -44,4 +44,6 @@ TESTS_SOURCES	+=							\
 		smcmalloc.c						\
 		fifo3d.c						\
 		runtestfunction_helpers.c				\
+		sdei_fuzz_helper.c					\
+		tsp_fuzz_helper.c					\
 	)

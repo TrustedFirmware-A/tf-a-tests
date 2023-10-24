@@ -47,4 +47,23 @@
 			functionname = "sdei_shared_reset";
 		};
 	};
+	tsp {
+		bias = <30>;
+		tsp_add_op {
+			bias = <30>;
+			functionname = "tsp_add_op";
+		};
+		tsp_sub_op {
+			bias = <30>;
+			functionname = "tsp_sub_op";
+		};
+		tsp_mul_op {
+			bias = <30>;
+			functionname = "tsp_mul_op";
+		};
+		tsp_div_op {
+			bias = <30>;
+			functionname = "tsp_div_op";
+		};
+	};
 };

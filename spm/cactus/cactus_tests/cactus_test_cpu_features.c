@@ -13,7 +13,8 @@
  * Note Test must exercise FILL and COMPARE command in
  * sequence and on same CPU.
  */
-static fpu_reg_state_t g_fpu_temp;
+static fpu_state_t sp_fpu_state_write;
+static fpu_state_t sp_fpu_state_read;
 static unsigned int core_pos;
 /*
  * Fill SIMD vectors from secure world side with a unique value.
@@ -21,7 +22,7 @@ static unsigned int core_pos;
 CACTUS_CMD_HANDLER(req_simd_fill, CACTUS_REQ_SIMD_FILL_CMD)
 {
 	core_pos = platform_get_core_pos(read_mpidr_el1());
-	fpu_state_fill_regs_and_template(&g_fpu_temp);
+	fpu_state_write_rand(&sp_fpu_state_write);
 	return cactus_response(ffa_dir_msg_dest(*args),
 			       ffa_dir_msg_source(*args),
 			       CACTUS_SUCCESS);
@@ -37,7 +38,11 @@ CACTUS_CMD_HANDLER(req_simd_compare, CACTUS_CMP_SIMD_VALUE_CMD)
 
 	unsigned int core_pos1 = platform_get_core_pos(read_mpidr_el1());
 	if (core_pos1 == core_pos) {
-		test_succeed = fpu_state_compare_template(&g_fpu_temp);
+		fpu_state_read(&sp_fpu_state_read);
+		if (fpu_state_compare(&sp_fpu_state_write,
+				      &sp_fpu_state_read) == 0) {
+			test_succeed = true;
+		}
 	}
 	return cactus_response(ffa_dir_msg_dest(*args),
 			ffa_dir_msg_source(*args),

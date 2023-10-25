@@ -19,20 +19,12 @@
 
 static const struct ffa_uuid expected_sp_uuids[] = { {PRIMARY_UUID} };
 
-static test_result_t fp_vector_compare(uint8_t *a, uint8_t *b,
-	size_t vector_size, uint8_t vectors_num)
-{
-	if (memcmp(a, b, vector_size * vectors_num) != 0) {
-		return TEST_RESULT_FAIL;
-	}
-	return TEST_RESULT_SUCCESS;
-}
-
-static sve_vector_t sve_vectors_input[SVE_NUM_VECTORS] __aligned(16);
-static sve_vector_t sve_vectors_output[SVE_NUM_VECTORS] __aligned(16);
+static sve_z_regs_t sve_vectors_input;
+static sve_z_regs_t sve_vectors_output;
 static int sve_op_1[NS_SVE_OP_ARRAYSIZE];
 static int sve_op_2[NS_SVE_OP_ARRAYSIZE];
-static fpu_reg_state_t g_fpu_template;
+static fpu_state_t g_fpu_state_write;
+static fpu_state_t g_fpu_state_read;
 
 /*
  * Tests that SIMD vectors and FPU state are preserved during the context switches between
@@ -48,7 +40,7 @@ test_result_t test_simd_vectors_preserved(void)
 	 **********************************************************************/
 	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
 
-	fpu_state_fill_regs_and_template(&g_fpu_template);
+	fpu_state_write_rand(&g_fpu_state_write);
 	struct ffa_value ret = cactus_req_simd_fill_send_cmd(SENDER, RECEIVER);
 
 	if (!is_ffa_direct_response(ret)) {
@@ -68,9 +60,14 @@ test_result_t test_simd_vectors_preserved(void)
 	if (cactus_get_response(ret) == CACTUS_ERROR) {
 		return TEST_RESULT_FAIL;
 	}
+
 	/* Normal world verify its FPU/SIMD state registers data */
-	return fpu_state_compare_template(&g_fpu_template) ? TEST_RESULT_SUCCESS :
-		TEST_RESULT_FAIL;
+	fpu_state_read(&g_fpu_state_read);
+	if (fpu_state_compare(&g_fpu_state_write, &g_fpu_state_read) != 0) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }
 
 /*
@@ -95,15 +92,15 @@ test_result_t test_sve_vectors_preserved(void)
 	 * Clear SVE vectors buffers used to compare the SVE state before calling
 	 * into the Swd compared to SVE state restored after returning to NWd.
 	 */
-	memset(sve_vectors_input, sizeof(sve_vector_t) * SVE_NUM_VECTORS, 0);
-	memset(sve_vectors_output, sizeof(sve_vector_t) * SVE_NUM_VECTORS, 0);
+	memset(sve_vectors_input, 0, sizeof(sve_vectors_input));
+	memset(sve_vectors_output, 0, sizeof(sve_vectors_output));
 
 	/* Set ZCR_EL2.LEN to implemented VL (constrained by EL3). */
 	write_zcr_el2(0xf);
 	isb();
 
 	/* Get the implemented VL. */
-	vl = sve_vector_length_get();
+	vl = sve_rdvl_1();
 
 	/* Fill each vector for the VL size with a fixed pattern. */
 	sve_vector = (uint8_t *) sve_vectors_input;
@@ -113,7 +110,7 @@ test_result_t test_sve_vectors_preserved(void)
 	}
 
 	/* Fill SVE vector registers with the buffer contents prepared above. */
-	sve_fill_vector_regs(sve_vectors_input);
+	sve_z_regs_write(&sve_vectors_input);
 
 	/*
 	 * Call cactus secure partition which uses SIMD (and expect it doesn't
@@ -130,12 +127,14 @@ test_result_t test_sve_vectors_preserved(void)
 	}
 
 	/* Get the SVE vectors state after returning to normal world. */
-	sve_read_vector_regs(sve_vectors_output);
+	sve_z_regs_read(&sve_vectors_output);
 
 	/* Compare to state before calling into secure world. */
-	return fp_vector_compare((uint8_t *)sve_vectors_input,
-				 (uint8_t *)sve_vectors_output,
-				 vl, SVE_NUM_VECTORS);
+	if (sve_z_regs_compare(&sve_vectors_input, &sve_vectors_output) != 0UL) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }
 
 /*

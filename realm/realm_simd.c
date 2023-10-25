@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <debug.h>
 #include <stdlib.h>
+#include <sync.h>
+#include <lib/extensions/fpu.h>
 #include <lib/extensions/sve.h>
 
 #include <host_realm_sve.h>
@@ -20,7 +22,19 @@
 static int rl_sve_op_1[RL_SVE_OP_ARRAYSIZE];
 static int rl_sve_op_2[RL_SVE_OP_ARRAYSIZE];
 
-static sve_vector_t rl_sve_vectors_write[SVE_NUM_VECTORS] __aligned(16);
+static sve_z_regs_t rl_sve_z_regs_write;
+static sve_z_regs_t rl_sve_z_regs_read;
+
+static sve_p_regs_t rl_sve_p_regs_write;
+static sve_p_regs_t rl_sve_p_regs_read;
+
+static sve_ffr_regs_t rl_sve_ffr_regs_write;
+static sve_ffr_regs_t rl_sve_ffr_regs_read;
+
+static fpu_cs_regs_t rl_fpu_cs_regs_write;
+static fpu_cs_regs_t rl_fpu_cs_regs_read;
+
+static int volatile realm_got_undef_abort;
 
 /* Returns the maximum supported VL. This test is called only by sve Realm */
 bool test_realm_sve_rdvl(void)
@@ -34,7 +48,7 @@ bool test_realm_sve_rdvl(void)
 	memset((void *)output, 0, sizeof(struct sve_cmd_rdvl));
 
 	sve_config_vq(SVE_VQ_ARCH_MAX);
-	output->rdvl = sve_vector_length_get();
+	output->rdvl = sve_rdvl_1();
 
 	return true;
 }
@@ -115,16 +129,92 @@ bool test_realm_sve_ops(void)
 /* Fill SVE Z registers with known pattern */
 bool test_realm_sve_fill_regs(void)
 {
-	uint32_t vl;
-
 	assert(is_armv8_2_sve_present());
 
 	/* Config Realm with max SVE length */
 	sve_config_vq(SVE_VQ_ARCH_MAX);
-	vl = sve_vector_length_get();
 
-	memset((void *)&rl_sve_vectors_write, 0xcd, vl * SVE_NUM_VECTORS);
-	sve_fill_vector_regs(rl_sve_vectors_write);
+	sve_z_regs_write_rand(&rl_sve_z_regs_write);
+	sve_p_regs_write_rand(&rl_sve_p_regs_write);
+	sve_ffr_regs_write_rand(&rl_sve_ffr_regs_write);
+
+	/* fpcr, fpsr common registers */
+	fpu_cs_regs_write_rand(&rl_fpu_cs_regs_write);
+
+	return true;
+}
+
+/* Compare SVE Z registers with last filled in values */
+bool test_realm_sve_cmp_regs(void)
+{
+	bool rc = true;
+	uint64_t bit_map;
+
+	assert(is_armv8_2_sve_present());
+
+	memset(&rl_sve_z_regs_read, 0, sizeof(rl_sve_z_regs_read));
+	memset(&rl_sve_p_regs_read, 0, sizeof(rl_sve_p_regs_read));
+	memset(&rl_sve_ffr_regs_read, 0, sizeof(rl_sve_ffr_regs_read));
+
+	/* Read all SVE registers */
+	sve_z_regs_read(&rl_sve_z_regs_read);
+	sve_p_regs_read(&rl_sve_p_regs_read);
+	sve_ffr_regs_read(&rl_sve_ffr_regs_read);
+
+	/* Compare the read values with last written values */
+	bit_map = sve_z_regs_compare(&rl_sve_z_regs_write, &rl_sve_z_regs_read);
+	if (bit_map) {
+		rc = false;
+	}
+
+	bit_map = sve_p_regs_compare(&rl_sve_p_regs_write, &rl_sve_p_regs_read);
+	if (bit_map) {
+		rc = false;
+	}
+
+	bit_map = sve_ffr_regs_compare(&rl_sve_ffr_regs_write,
+				       &rl_sve_ffr_regs_read);
+	if (bit_map) {
+		rc = false;
+	}
+
+	/* fpcr, fpsr common registers */
+	fpu_cs_regs_read(&rl_fpu_cs_regs_read);
+	if (fpu_cs_regs_compare(&rl_fpu_cs_regs_write, &rl_fpu_cs_regs_read)) {
+		ERROR("Realm: FPCR/FPSR mismatch\n");
+		rc = false;
+	}
+
+	return rc;
+}
+
+static bool realm_sync_exception_handler(void)
+{
+	uint64_t esr_el1 = read_esr_el1();
+
+	if (EC_BITS(esr_el1) == EC_UNKNOWN) {
+		realm_printf("Realm: received undefined abort. "
+			     "esr_el1: 0x%llx elr_el1: 0x%llx\n",
+			     esr_el1, read_elr_el1());
+		realm_got_undef_abort++;
+	}
+
+	return true;
+}
+
+/* Check if Realm gets undefined abort when it accesses SVE functionality */
+bool test_realm_sve_undef_abort(void)
+{
+	realm_got_undef_abort = 0UL;
+
+	/* install exception handler to catch undef abort */
+	register_custom_sync_exception_handler(&realm_sync_exception_handler);
+	(void)sve_rdvl_1();
+	unregister_custom_sync_exception_handler();
+
+	if (realm_got_undef_abort == 0UL) {
+		return false;
+	}
 
 	return true;
 }

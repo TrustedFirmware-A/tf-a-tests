@@ -18,7 +18,9 @@
 #include <realm_tests.h>
 #include <tftf_lib.h>
 
-static fpu_reg_state_t fpu_temp_rl;
+static fpu_state_t rl_fpu_state_write;
+static fpu_state_t rl_fpu_state_read;
+
 /*
  * This function reads sleep time in ms from shared buffer and spins PE
  * in a loop for that time period.
@@ -98,11 +100,13 @@ void realm_payload_main(void)
 			test_succeed = test_pmuv3_overflow_interrupt();
 			break;
 		case REALM_REQ_FPU_FILL_CMD:
-			fpu_state_fill_regs_and_template(&fpu_temp_rl);
+			fpu_state_write_rand(&rl_fpu_state_write);
 			test_succeed = true;
 			break;
 		case REALM_REQ_FPU_CMP_CMD:
-			test_succeed = fpu_state_compare_template(&fpu_temp_rl);
+			fpu_state_read(&rl_fpu_state_read);
+			test_succeed = !fpu_state_compare(&rl_fpu_state_write,
+							  &rl_fpu_state_read);
 			break;
 		case REALM_SVE_RDVL:
 			test_succeed = test_realm_sve_rdvl();
@@ -118,6 +122,12 @@ void realm_payload_main(void)
 			break;
 		case REALM_SVE_FILL_REGS:
 			test_succeed = test_realm_sve_fill_regs();
+			break;
+		case REALM_SVE_CMP_REGS:
+			test_succeed = test_realm_sve_cmp_regs();
+			break;
+		case REALM_SVE_UNDEF_ABORT:
+			test_succeed = test_realm_sve_undef_abort();
 			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);

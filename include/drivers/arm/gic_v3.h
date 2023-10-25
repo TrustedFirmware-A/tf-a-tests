@@ -34,6 +34,13 @@
 #define IROUTER_IRM_SHIFT	31
 #define IROUTER_IRM_MASK	0x1
 
+/* GICD_TYPER shifts and masks */
+#define	TYPER_ESPI		U(1 << 8)
+#define	TYPER_DVIS		U(1 << 18)
+#define	TYPER_ESPI_RANGE_MASK	U(0x1f)
+#define	TYPER_ESPI_RANGE_SHIFT	U(27)
+#define	TYPER_ESPI_RANGE	U(TYPER_ESPI_MASK << TYPER_ESPI_SHIFT)
+
 /*******************************************************************************
  * GICv3 Re-distributor interface registers & constants
  ******************************************************************************/
@@ -229,6 +236,10 @@ void gicv3_setup_cpuif(void);
  */
 void gicv3_enable_cpuif(void);
 
+/*
+ * Return the value of GICD_TYPER.
+ */
+unsigned int gicv3_get_gicd_typer(void);
 
 #endif /*__ASSEMBLY__*/
 #endif /* __GIC_V3_H__ */

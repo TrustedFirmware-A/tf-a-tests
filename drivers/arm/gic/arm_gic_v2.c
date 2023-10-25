@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <debug.h>
 #include <drivers/arm/gic_v2.h>
+#include <stdbool.h>
 
 void arm_gic_enable_interrupts_local(void)
 {
@@ -119,3 +120,8 @@ void arm_gic_init(uintptr_t gicc_base,
 	INFO("ARM GIC v2 driver initialized\n");
 }
 
+bool arm_gic_is_espi_supported(void)
+{
+	/* ESPI not supported by GICv2. */
+	return false;
+}

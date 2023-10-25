@@ -7,6 +7,7 @@
 #ifndef __ARM_GIC_H__
 #define __ARM_GIC_H__
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /***************************************************************************
@@ -149,5 +150,10 @@ void arm_gic_save_context_global(void);
  * down (like GIC Distributor and Re-distributor) during system suspend.
  *****************************************************************************/
 void arm_gic_restore_context_global(void);
+
+/******************************************************************************
+ * Check if extended SPI range is implemented by GIC.
+ *****************************************************************************/
+bool arm_gic_is_espi_supported(void);
 
 #endif /* __ARM_GIC_H__ */

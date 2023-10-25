@@ -301,6 +301,11 @@ static inline u_register_t host_rtt_level_mapsize(u_register_t level)
 	return (1UL << RTT_LEVEL_SHIFT(level));
 }
 
+static inline bool ipa_is_ns(u_register_t addr, u_register_t rmm_feat_reg0)
+{
+	return (addr >> (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, rmm_feat_reg0) - 1UL) == 1UL);
+}
+
 static inline u_register_t host_realm_rtt_create(struct realm *realm,
 						 u_register_t addr,
 						 u_register_t level,
@@ -649,7 +654,8 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 
 		switch (rtt.state) {
 		case RMI_ASSIGNED:
-			if (rtt.ripas == RMI_EMPTY) {
+			if (ipa_is_ns(map_addr, realm->rmm_feat_reg0)) {
+
 				ret = host_rmi_rtt_unmap_unprotected(
 								rd,
 								map_addr,

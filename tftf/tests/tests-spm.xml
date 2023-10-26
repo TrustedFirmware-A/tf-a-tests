@@ -42,6 +42,14 @@
 	       function="test_ffa_partition_info_v1_0" />
   </testsuite>
 
+  <testsuite name="FF-A SMCCC compliance"
+             description="SMCCC compliance" >
+     <testcase name="FF-A callee preserves GP register set per SMCCC"
+               function="test_smccc_callee_preserved" />
+     <testcase name="FF-A callee preserves extended GP register set per SMCCC"
+               function="test_smccc_ext_callee_preserved" />
+  </testsuite>
+
   <testsuite name="SP exceptions"
              description="SP exceptions" >
 

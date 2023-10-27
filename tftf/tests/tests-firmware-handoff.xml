@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2023, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+  <testsuite name="Firmware Handoff" description="Validate transfer list managed by firmware hanoff framework">
+     <testcase name="Validate transfer list header" function="test_handoff_header" />
+     <testcase name="Validate HW_CONFIG in transfer list" function="test_handoff_dtb_payload" />
+  </testsuite>
+</testsuites>

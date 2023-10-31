@@ -22,6 +22,7 @@ bool test_realm_sve_ops(void);
 bool test_realm_sve_fill_regs(void);
 bool test_realm_sve_cmp_regs(void);
 bool test_realm_sve_undef_abort(void);
+bool test_realm_multiple_rec_psci_denied_cmd(void);
 
 #endif /* REALM_TESTS_H */
 

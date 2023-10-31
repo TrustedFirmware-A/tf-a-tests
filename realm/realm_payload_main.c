@@ -33,24 +33,32 @@ static void realm_sleep_cmd(void)
 	waitms(sleep);
 }
 
+static void realm_loop_cmd(void)
+{
+	while (true) {
+		waitms(500);
+	}
+}
+
 /*
  * This function requests RSI/ABI version from RMM.
  */
-static void realm_get_rsi_version(void)
+static bool realm_get_rsi_version(void)
 {
-	u_register_t version;
+	u_register_t version = 0U;
 
-	version = rsi_get_version();
+	version = rsi_get_version(RSI_ABI_VERSION_VAL);
 	if (version == (u_register_t)SMC_UNKNOWN) {
-		realm_printf("SMC_RSI_ABI_VERSION failed (%ld)", (long)version);
-		return;
+		realm_printf("SMC_RSI_ABI_VERSION failed\n");
+		return false;
 	}
 
-	realm_printf("RSI ABI version %u.%u (expected: %u.%u)",
+	realm_printf("RSI ABI version %u.%u (expected: %u.%u)\n",
 	RSI_ABI_VERSION_GET_MAJOR(version),
 	RSI_ABI_VERSION_GET_MINOR(version),
-	RSI_ABI_VERSION_GET_MAJOR(RSI_ABI_VERSION),
-	RSI_ABI_VERSION_GET_MINOR(RSI_ABI_VERSION));
+	RSI_ABI_VERSION_GET_MAJOR(RSI_ABI_VERSION_VAL),
+	RSI_ABI_VERSION_GET_MINOR(RSI_ABI_VERSION_VAL));
+	return true;
 }
 
 /*
@@ -74,6 +82,13 @@ void realm_payload_main(void)
 			realm_sleep_cmd();
 			test_succeed = true;
 			break;
+		case REALM_LOOP_CMD:
+			realm_loop_cmd();
+			test_succeed = true;
+			break;
+		case REALM_MULTIPLE_REC_PSCI_DENIED_CMD:
+			test_succeed = test_realm_multiple_rec_psci_denied_cmd();
+			break;
 		case REALM_PAUTH_SET_CMD:
 			test_succeed = test_realm_pauth_set_cmd();
 			break;
@@ -84,8 +99,7 @@ void realm_payload_main(void)
 			test_succeed = test_realm_pauth_fault();
 			break;
 		case REALM_GET_RSI_VERSION:
-			realm_get_rsi_version();
-			test_succeed = true;
+			test_succeed = realm_get_rsi_version();
 			break;
 		case REALM_PMU_CYCLE:
 			test_succeed = test_pmuv3_cycle_works_realm();

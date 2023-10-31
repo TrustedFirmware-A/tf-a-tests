@@ -716,9 +716,16 @@ u_register_t host_rmi_granule_undelegate(u_register_t addr)
 	return host_rmi_handler(&(smc_args) {RMI_GRANULE_UNDELEGATE, addr}, 2U).ret0;
 }
 
-u_register_t host_rmi_version(void)
+u_register_t host_rmi_version(u_register_t requested_ver)
 {
-	return host_rmi_handler(&(smc_args) {RMI_VERSION}, 1U).ret0;
+	smc_ret_values ret;
+
+	ret = host_rmi_handler(&(smc_args) {RMI_VERSION, requested_ver}, 2U);
+	if (ret.ret0 == (u_register_t)SMC_UNKNOWN) {
+		return SMC_UNKNOWN;
+	}
+	/* Return lower version. */
+	return ret.ret1;
 }
 
 u_register_t host_realm_create(struct realm *realm)
@@ -1231,6 +1238,7 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 	}
 
 	run = (struct rmi_rec_run *)realm->run[rec_num];
+	realm->host_mpidr[rec_num] = read_mpidr_el1();
 	do {
 		re_enter_rec = false;
 		ret = host_rmi_handler(&(smc_args) {RMI_REC_ENTER,

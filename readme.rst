@@ -60,7 +60,7 @@ To find out more about Trusted Firmware-A Tests, please
 
 .. _Firmware update: https://trustedfirmware-a.readthedocs.io/en/latest/components/firmware-update.html
 .. _EL3 payload: https://trustedfirmware-a.readthedocs.io/en/latest/design/alt-boot-flows.html#el3-payloads-alternative-boot-flow
-.. _Secure partition: https://trustedfirmware-a.readthedocs.io/en/latest/components/secure-partition-manager-design.html
+.. _Secure partition: https://trustedfirmware-a.readthedocs.io/en/latest/components/secure-partition-manager.html
 
 .. _view the full documentation: https://trustedfirmware-a-tests.readthedocs.io/
 .. _trustedfirmware.org: http://www.trustedfirmware.org

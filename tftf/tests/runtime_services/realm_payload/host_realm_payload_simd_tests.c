@@ -30,6 +30,9 @@
 /* Number of SVE configs: SVE_VL */
 #define NUM_SVE_CONFIGS		(1U)
 
+/* Number of SME configs: SVE_SVL, FEAT_FA64, Streaming mode */
+#define NUM_SME_CONFIGS		(3U)
+
 #define NS_NORMAL_SVE			0x1U
 #define NS_STREAMING_SVE		0x2U
 
@@ -42,6 +45,7 @@ typedef enum security_state {
 typedef enum {
 	TEST_FPU = 0U,
 	TEST_SVE,
+	TEST_SME,
 } simd_test_t;
 
 static int ns_sve_op_1[NS_SVE_OP_ARRAYSIZE];
@@ -687,9 +691,18 @@ test_result_t host_non_sve_realm_check_undef_abort(void)
 /* Generate random values and write it to SVE Z, P and FFR registers */
 static void ns_sve_write_rand(void)
 {
+	bool has_ffr = true;
+
+	if (is_feat_sme_supported() && sme_smstat_sm() &&
+	    !sme_feat_fa64_enabled()) {
+		has_ffr = false;
+	}
+
 	sve_z_regs_write_rand(&ns_sve_z_regs_write);
 	sve_p_regs_write_rand(&ns_sve_p_regs_write);
-	sve_ffr_regs_write_rand(&ns_sve_ffr_regs_write);
+	if (has_ffr) {
+		sve_ffr_regs_write_rand(&ns_sve_ffr_regs_write);
+	}
 }
 
 /* Read SVE Z, P and FFR registers and compare it with the last written values */
@@ -697,6 +710,12 @@ static test_result_t ns_sve_read_and_compare(void)
 {
 	test_result_t rc = TEST_RESULT_SUCCESS;
 	uint64_t bitmap;
+	bool has_ffr = true;
+
+	if (is_feat_sme_supported() && sme_smstat_sm() &&
+	    !sme_feat_fa64_enabled()) {
+		has_ffr = false;
+	}
 
 	/* Clear old state */
 	memset((void *)&ns_sve_z_regs_read, 0, sizeof(ns_sve_z_regs_read));
@@ -706,7 +725,9 @@ static test_result_t ns_sve_read_and_compare(void)
 	/* Read Z, P, FFR registers to compare it with the last written values */
 	sve_z_regs_read(&ns_sve_z_regs_read);
 	sve_p_regs_read(&ns_sve_p_regs_read);
-	sve_ffr_regs_read(&ns_sve_ffr_regs_read);
+	if (has_ffr) {
+		sve_ffr_regs_read(&ns_sve_ffr_regs_read);
+	}
 
 	bitmap = sve_z_regs_compare(&ns_sve_z_regs_write, &ns_sve_z_regs_read);
 	if (bitmap != 0UL) {
@@ -722,15 +743,44 @@ static test_result_t ns_sve_read_and_compare(void)
 		rc = TEST_RESULT_FAIL;
 	}
 
-	bitmap = sve_ffr_regs_compare(&ns_sve_ffr_regs_write,
-				      &ns_sve_ffr_regs_read);
-	if (bitmap != 0) {
-		ERROR("SVE FFR regs compare failed (bitmap: 0x%016llx)\n",
-		      bitmap);
-		rc = TEST_RESULT_FAIL;
+	if (has_ffr) {
+		bitmap = sve_ffr_regs_compare(&ns_sve_ffr_regs_write,
+					      &ns_sve_ffr_regs_read);
+		if (bitmap != 0) {
+			ERROR("SVE FFR regs compare failed "
+			      "(bitmap: 0x%016llx)\n", bitmap);
+			rc = TEST_RESULT_FAIL;
+		}
 	}
 
 	return rc;
+}
+
+/*
+ * Generate random values and write it to Streaming SVE Z, P and FFR registers.
+ */
+static void ns_sme_write_rand(void)
+{
+	/*
+	 * TODO: more SME specific registers like ZA, ZT0 can be included later.
+	 */
+
+	/* Fill SVE registers in normal or streaming SVE mode */
+	ns_sve_write_rand();
+}
+
+/*
+ * Read streaming SVE Z, P and FFR registers and compare it with the last
+ * written values
+ */
+static test_result_t ns_sme_read_and_compare(void)
+{
+	/*
+	 * TODO: more SME specific registers like ZA, ZT0 can be included later.
+	 */
+
+	/* Compares SVE registers in normal or streaming SVE mode */
+	return ns_sve_read_and_compare();
 }
 
 static char *simd_type_to_str(simd_test_t type)
@@ -739,6 +789,8 @@ static char *simd_type_to_str(simd_test_t type)
 		return "FPU";
 	} else if (type == TEST_SVE) {
 		return "SVE";
+	} else if (type == TEST_SME) {
+		return "SME";
 	} else {
 		return "UNKNOWN";
 	}
@@ -749,12 +801,62 @@ static void ns_simd_print_cmd_config(bool cmd, simd_test_t type)
 	char __unused *tstr = simd_type_to_str(type);
 	char __unused *cstr = cmd ? "write rand" : "read and compare";
 
-	if (type == TEST_SVE) {
-		INFO("TFTF: NS [%s] %s. Config: zcr: 0x%llx\n", tstr, cstr,
-		     (uint64_t)read_zcr_el2());
+	if (type == TEST_SME) {
+		if (sme_smstat_sm()) {
+			INFO("TFTF: NS [%s] %s. Config: smcr: 0x%llx, SM: on\n",
+			     tstr, cstr, (uint64_t)read_smcr_el2());
+		} else {
+			INFO("TFTF: NS [%s] %s. Config: smcr: 0x%llx, "
+			     "zcr: 0x%llx SM: off\n", tstr, cstr,
+			     (uint64_t)read_smcr_el2(),
+			     (uint64_t)read_zcr_el2());
+		}
+	} else if (type == TEST_SVE) {
+		INFO("TFTF: NS [%s] %s. Config: zcr: 0x%llx\n",
+		     tstr, cstr, (uint64_t)read_zcr_el2());
 	} else {
 		INFO("TFTF: NS [%s] %s\n", tstr, cstr);
 	}
+}
+
+/*
+ * Randomly select TEST_SME or TEST_FPU. For TEST_SME, randomly select below
+ * configurations:
+ * - enable/disable streaming mode
+ *   For streaming mode:
+ *   - enable or disable FA64
+ *   - select random streaming vector length
+ *   For normal SVE mode:
+ *   - select random normal SVE vector length
+ */
+static simd_test_t ns_sme_select_random_config(void)
+{
+	simd_test_t type;
+	static unsigned int counter;
+
+	/* Use a static counter to mostly select TEST_SME case. */
+	if ((counter % 8U) != 0) {
+		/* Use counter to toggle between Streaming mode on or off */
+		if (is_armv8_2_sve_present() && ((counter % 2U) != 0)) {
+			sme_smstop(SMSTOP_SM);
+			sve_config_vq(SVE_GET_RANDOM_VQ);
+		} else {
+			sme_smstart(SMSTART_SM);
+			sme_config_svq(SME_GET_RANDOM_SVQ);
+
+			if ((counter % 3U) != 0) {
+				sme_enable_fa64();
+			} else {
+				sme_disable_fa64();
+			}
+		}
+		type = TEST_SME;
+	} else {
+		type = TEST_FPU;
+	}
+	counter++;
+
+	return type;
 }
 
 /*
@@ -764,13 +866,16 @@ static void ns_simd_print_cmd_config(bool cmd, simd_test_t type)
 static simd_test_t ns_sve_select_random_config(void)
 {
 	simd_test_t type;
+	static unsigned int counter;
 
-	if (rand() % 2) {
+	/* Use a static counter to mostly select TEST_SVE case. */
+	if ((counter % 4U) != 0) {
 		sve_config_vq(SVE_GET_RANDOM_VQ);
 		type = TEST_SVE;
 	} else {
 		type = TEST_FPU;
 	}
+	counter++;
 
 	return type;
 }
@@ -779,13 +884,27 @@ static simd_test_t ns_sve_select_random_config(void)
  * Configure NS world SIMD. Randomly choose to test SVE or FPU registers if
  * system supports SVE.
  *
- * Returns either TEST_FPU or TEST_SVE
+ * Returns either TEST_FPU or TEST_SVE or TEST_SME
  */
 static simd_test_t ns_simd_select_random_config(void)
 {
 	simd_test_t type;
 
-	if (is_armv8_2_sve_present()) {
+	/* cleanup old config for SME */
+	if (is_feat_sme_supported()) {
+		sme_smstop(SMSTOP_SM);
+		sme_enable_fa64();
+	}
+
+	if (is_armv8_2_sve_present() && is_feat_sme_supported()) {
+		if (rand() % 2) {
+			type = ns_sme_select_random_config();
+		} else {
+			type = ns_sve_select_random_config();
+		}
+	} else if (is_feat_sme_supported()) {
+		type = ns_sme_select_random_config();
+	} else if (is_armv8_2_sve_present()) {
 		type = ns_sve_select_random_config();
 	} else {
 		type = TEST_FPU;
@@ -803,7 +922,9 @@ static simd_test_t ns_simd_write_rand(void)
 
 	ns_simd_print_cmd_config(true, type);
 
-	if (type == TEST_SVE) {
+	if (type == TEST_SME) {
+		ns_sme_write_rand();
+	} else if (type == TEST_SVE) {
 		ns_sve_write_rand();
 	} else {
 		fpu_q_regs_write_rand(ns_fpu_q_regs_write);
@@ -822,7 +943,9 @@ static test_result_t ns_simd_read_and_compare(simd_test_t type)
 
 	ns_simd_print_cmd_config(false, type);
 
-	if (type == TEST_SVE) {
+	if (type == TEST_SME) {
+		rc = ns_sme_read_and_compare();
+	} else if (type == TEST_SVE) {
 		rc = ns_sve_read_and_compare();
 	} else {
 		fpu_q_regs_read(ns_fpu_q_regs_read);
@@ -895,8 +1018,10 @@ static bool rl_simd_read_and_compare(simd_test_t type)
  * Within SVE, randomly configure SVE vector length.
  *
  * This testcase runs on below configs:
- * - with SVE
- * - without SVE
+ * - SVE only
+ * - SME only
+ * - with SVE and SME
+ * - without SVE and SME
  */
 test_result_t host_and_realm_check_simd(void)
 {
@@ -952,6 +1077,11 @@ test_result_t host_and_realm_check_simd(void)
 	if (is_armv8_2_sve_present()) {
 		num_simd_types += 1;
 		num_simd_configs += NUM_SVE_CONFIGS;
+	}
+
+	if (is_feat_sme_supported()) {
+		num_simd_types += 1;
+		num_simd_configs += NUM_SME_CONFIGS;
 	}
 
 	if (num_simd_configs) {
@@ -1010,6 +1140,12 @@ test_result_t host_and_realm_check_simd(void)
 
 	rc = TEST_RESULT_SUCCESS;
 rm_realm:
+	/* Cleanup old config */
+	if (is_feat_sme_supported()) {
+		sme_smstop(SMSTOP_SM);
+		sme_enable_fa64();
+	}
+
 	if (!host_destroy_realm()) {
 		return TEST_RESULT_FAIL;
 	}

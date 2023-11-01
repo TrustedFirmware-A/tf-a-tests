@@ -9,6 +9,7 @@
 
 #include <arch.h>
 #include <stdlib.h> /* for rand() */
+#include <lib/extensions/sme.h>
 
 #define fill_sve_helper(num) "ldr z"#num", [%0, #"#num", MUL VL];"
 #define read_sve_helper(num) "str z"#num", [%0, #"#num", MUL VL];"

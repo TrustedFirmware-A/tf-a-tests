@@ -10,34 +10,9 @@
 #include <arch.h>
 #include <arch_features.h>
 #include <arch_helpers.h>
+#include <assert.h>
 #include <debug.h>
 #include <lib/extensions/sme.h>
-
-/*
- * Function : sme_enable
- * Enable SME for nonsecure use at EL2 for TFTF cases.
- */
-void sme_enable(void)
-{
-	u_register_t reg;
-
-	/*
-	 * Make sure SME accesses don't cause traps by setting appropriate
-	 * fields in CPTR_EL2.
-	 */
-	reg = read_cptr_el2();
-	if ((read_hcr_el2() & HCR_E2H_BIT) == 0U) {
-		/* When HCR_EL2.E2H == 0, clear TSM bit in CPTR_EL2. */
-		reg = reg & ~CPTR_EL2_TSM_BIT;
-	} else {
-		/* When HCR_EL2.E2H == 1, set SMEN bits in CPTR_EL2. */
-		reg = reg | (CPTR_EL2_SMEN_MASK << CPTR_EL2_SMEN_SHIFT);
-	}
-	write_cptr_el2(reg);
-
-	isb();
-
-}
 
 /*
  * Function: sme_smstart
@@ -109,4 +84,64 @@ void sme_smstop(smestop_instruction_type_t smstop_type)
 	write_svcr(read_svcr() & svcr);
 
 	isb();
+}
+
+/* Set the Streaming SVE vector length (SVL) in the SMCR_EL2 register */
+void sme_config_svq(uint32_t svq)
+{
+	u_register_t smcr_el2_val;
+
+	/* cap svq to arch supported max value */
+	if (svq > SME_SVQ_ARCH_MAX) {
+		svq = SME_SVQ_ARCH_MAX;
+	}
+
+	smcr_el2_val = read_smcr_el2();
+
+	smcr_el2_val &= ~(MASK(SMCR_ELX_LEN));
+	smcr_el2_val |= INPLACE(SMCR_ELX_LEN, svq);
+
+	write_smcr_el2(smcr_el2_val);
+	isb();
+}
+
+static void set_smcr_fa64(bool enable)
+{
+	if (enable) {
+		write_smcr_el2(read_smcr_el2() | SMCR_ELX_FA64_BIT);
+	} else {
+		write_smcr_el2(read_smcr_el2() & ~SMCR_ELX_FA64_BIT);
+	}
+
+	isb();
+}
+
+/*
+ * Enable FEAT_SME_FA64, This control causes all implemented A64 instructions
+ * to be treated as legal in Streaming SVE mode at EL2, if they are treated as
+ * legal at EL3.
+ */
+void sme_enable_fa64(void)
+{
+	return set_smcr_fa64(true);
+}
+
+/*
+ * Disable FEAT_SME_FA64, This control does not cause any instruction to be
+ * treated as legal in Streaming SVE mode.
+ */
+void sme_disable_fa64(void)
+{
+	return set_smcr_fa64(false);
+}
+
+/* Returns 'true' if the CPU is in Streaming SVE mode */
+bool sme_smstat_sm(void)
+{
+	return ((read_svcr() & SVCR_SM_BIT) != 0U);
+}
+
+bool sme_feat_fa64_enabled(void)
+{
+	return ((read_smcr_el2() & SMCR_ELX_FA64_BIT) != 0U);
 }

@@ -13,7 +13,7 @@
 #include <lib/extensions/fpu.h>
 #include <lib/extensions/sve.h>
 
-#include <host_realm_sve.h>
+#include <host_realm_simd.h>
 #include <host_shared_data.h>
 
 #define RL_SVE_OP_ARRAYSIZE		512U
@@ -210,6 +210,41 @@ bool test_realm_sve_undef_abort(void)
 	/* install exception handler to catch undef abort */
 	register_custom_sync_exception_handler(&realm_sync_exception_handler);
 	(void)sve_rdvl_1();
+	unregister_custom_sync_exception_handler();
+
+	if (realm_got_undef_abort == 0UL) {
+		return false;
+	}
+
+	return true;
+}
+
+/* Reads and returns the ID_AA64PFR1_EL1 and ID_AA64SMFR0_EL1 registers */
+bool test_realm_sme_read_id_registers(void)
+{
+	host_shared_data_t *sd = realm_get_my_shared_structure();
+	struct sme_cmd_id_regs *output;
+
+	output = (struct sme_cmd_id_regs *)sd->realm_cmd_output_buffer;
+	memset((void *)output, 0, sizeof(struct sme_cmd_id_regs));
+
+	realm_printf("Realm: reading ID registers: ID_AA64PFR1_EL1, "
+		    " ID_AA64SMFR0_EL1\n");
+
+	output->id_aa64pfr1_el1 = read_id_aa64pfr1_el1();
+	output->id_aa64smfr0_el1 = read_id_aa64smfr0_el1();
+
+	return true;
+}
+
+/* Check if Realm gets undefined abort when it access SME functionality */
+bool test_realm_sme_undef_abort(void)
+{
+	realm_got_undef_abort = 0UL;
+
+	/* install exception handler to catch undef abort */
+	register_custom_sync_exception_handler(&realm_sync_exception_handler);
+	(void)read_svcr();
 	unregister_custom_sync_exception_handler();
 
 	if (realm_got_undef_abort == 0UL) {

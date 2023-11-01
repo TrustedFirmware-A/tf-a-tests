@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -72,7 +72,7 @@ func __tftf_save_arch_context
 	ret
 
 2:	mrs	x1, mair_el2
-	mrs	x2, hcr_el2
+	mrs	x2, cptr_el2
 	mrs	x3, ttbr0_el2
 	mrs	x4, tcr_el2
 	mrs	x5, vbar_el2
@@ -80,6 +80,8 @@ func __tftf_save_arch_context
 	stp	x1, x2, [x0, #SUSPEND_CTX_MAIR_OFFSET]
 	stp	x3, x4, [x0, #SUSPEND_CTX_TTBR0_OFFSET]
 	stp	x5, x6, [x0, #SUSPEND_CTX_VBAR_OFFSET]
+	mrs	x1, hcr_el2
+	str	x1, [x0, #SUSPEND_CTX_HCR_OFFSET]
 	ret
 endfunc __tftf_save_arch_context
 
@@ -114,10 +116,13 @@ func __tftf_cpu_resume_ep
 	ldp	x3, x4, [x0, #SUSPEND_CTX_TTBR0_OFFSET]
 	ldp	x5, x6, [x0, #SUSPEND_CTX_VBAR_OFFSET]
 	msr	mair_el2, x1
-	msr	hcr_el2, x2
+	msr	cptr_el2, x2
 	msr	ttbr0_el2, x3
 	msr	tcr_el2, x4
 	msr	vbar_el2, x5
+	ldr	x1, [x0, #SUSPEND_CTX_HCR_OFFSET]
+	msr	hcr_el2, x1
+
 	/*
 	 * TLB invalidations need to be completed before enabling MMU
 	 */

@@ -63,6 +63,15 @@
 	  function="host_non_sve_realm_check_undef_abort" />
 	  <testcase name="Check various SIMD state preserved across NS/RL switch"
 	  function="host_and_realm_check_simd" />
+	  <!-- Test Realm for SME -->
+	  <testcase name="Create Realm and test SME ID registers"
+	  function="host_realm_check_sme_id_registers" />
+	  <testcase name="Check if Realm gets undefined abort when it access SME"
+	  function="host_realm_check_sme_undef_abort" />
+	  <testcase name="Check whether RMM preserves NS SME configurations"
+	  function="host_realm_check_sme_configs" />
+	  <testcase name="Intermittently switch to Realm while NS doing SSVE ops"
+	  function="host_sve_realm_check_streaming_vectors_operations" />
 	  <!-- Test case related to PAuth -->
 	  <testcase name="Check if PAuth keys are preserved in RL/SE/NS"
 	  function="host_realm_enable_pauth" />

@@ -610,3 +610,22 @@ bool disable_trusted_wdog_interrupt(ffa_id_t source, ffa_id_t dest)
 {
 	return configure_trusted_wdog_interrupt(source, dest, false);
 }
+
+/**
+ * Initializes receiver permissions in a memory transaction descriptor, using
+ * `mem_func` to determine the appropriate permissions.
+ */
+struct ffa_memory_access ffa_memory_access_init_permissions_from_mem_func(
+	ffa_id_t receiver_id, uint32_t mem_func)
+{
+
+	enum ffa_instruction_access instruction_access =
+		FFA_INSTRUCTION_ACCESS_NOT_SPECIFIED;
+	enum ffa_data_access data_access =
+		(mem_func == FFA_MEM_DONATE_SMC32)
+			? FFA_DATA_ACCESS_NOT_SPECIFIED
+			: FFA_DATA_ACCESS_RW;
+
+	return ffa_memory_access_init_permissions(receiver_id, data_access,
+						  instruction_access, 0);
+}

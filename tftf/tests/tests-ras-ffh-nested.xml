@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2023, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+  <testsuite name="RAS FFH nested" description="RAS errors handled in EL3 as nested exception on top of SMC call">
+     <testcase name="Inject RAS error which gets handled as nested exception during SMC exception" function="test_ras_ffh_nested" />
+  </testsuite>
+</testsuites>

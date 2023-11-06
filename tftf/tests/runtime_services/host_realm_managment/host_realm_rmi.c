@@ -142,10 +142,10 @@ u_register_t host_rmi_realm_destroy(u_register_t rd)
 	return host_rmi_handler(&(smc_args) {RMI_REALM_DESTROY, rd}, 2U).ret0;
 }
 
-static inline u_register_t host_rmi_data_destroy(u_register_t rd,
-						 u_register_t map_addr,
-						 u_register_t *data,
-						 u_register_t *top)
+u_register_t host_rmi_data_destroy(u_register_t rd,
+				   u_register_t map_addr,
+				   u_register_t *data,
+				   u_register_t *top)
 {
 	smc_ret_values rets;
 
@@ -179,11 +179,11 @@ static inline u_register_t host_rmi_rtt_create(u_register_t rd,
 				rd, rtt, map_addr, level}, 5U).ret0;
 }
 
-static inline u_register_t host_rmi_rtt_destroy(u_register_t rd,
-						u_register_t map_addr,
-						u_register_t level,
-						u_register_t *rtt,
-						u_register_t *top)
+u_register_t host_rmi_rtt_destroy(u_register_t rd,
+				  u_register_t map_addr,
+				  u_register_t level,
+				  u_register_t *rtt,
+				  u_register_t *top)
 {
 	smc_ret_values rets;
 
@@ -203,10 +203,10 @@ u_register_t host_rmi_features(u_register_t index, u_register_t *features)
 	return rets.ret0;
 }
 
-static inline u_register_t host_rmi_rtt_init_ripas(u_register_t rd,
-						   u_register_t start,
-						   u_register_t end,
-						   u_register_t *top)
+u_register_t host_rmi_rtt_init_ripas(u_register_t rd,
+				   u_register_t start,
+				   u_register_t end,
+				   u_register_t *top)
 
 {
 	smc_ret_values rets;
@@ -263,10 +263,10 @@ static inline u_register_t host_rmi_rtt_mapunprotected(u_register_t rd,
 				rd, map_addr, level, ns_pa}, 5U).ret0;
 }
 
-static u_register_t host_rmi_rtt_readentry(u_register_t rd,
-					   u_register_t map_addr,
-					   u_register_t level,
-					   struct rtt_entry *rtt)
+u_register_t host_rmi_rtt_readentry(u_register_t rd,
+				   u_register_t map_addr,
+				   u_register_t level,
+				   struct rtt_entry *rtt)
 {
 	smc_ret_values rets;
 
@@ -279,10 +279,10 @@ static u_register_t host_rmi_rtt_readentry(u_register_t rd,
 	return rets.ret0;
 }
 
-static inline u_register_t host_rmi_rtt_unmap_unprotected(u_register_t rd,
-							  u_register_t map_addr,
-							  u_register_t level,
-							  u_register_t *top)
+u_register_t host_rmi_rtt_unmap_unprotected(u_register_t rd,
+					  u_register_t map_addr,
+					  u_register_t level,
+					  u_register_t *top)
 {
 	smc_ret_values rets;
 
@@ -292,7 +292,7 @@ static inline u_register_t host_rmi_rtt_unmap_unprotected(u_register_t rd,
 	return rets.ret0;
 }
 
-static inline u_register_t host_rtt_level_mapsize(u_register_t level)
+u_register_t host_rtt_level_mapsize(u_register_t level)
 {
 	if (level > RTT_MAX_LEVEL) {
 		return PAGE_SIZE;
@@ -315,10 +315,10 @@ static inline u_register_t host_realm_rtt_create(struct realm *realm,
 	return host_rmi_rtt_create(realm->rd, phys, addr, level);
 }
 
-static u_register_t host_rmi_create_rtt_levels(struct realm *realm,
-						u_register_t map_addr,
-						u_register_t level,
-						u_register_t max_level)
+u_register_t host_rmi_create_rtt_levels(struct realm *realm,
+					u_register_t map_addr,
+					u_register_t level,
+					u_register_t max_level)
 {
 	u_register_t rtt, ret;
 
@@ -381,11 +381,11 @@ static u_register_t host_realm_fold_rtt(u_register_t rd, u_register_t addr,
 
 }
 
-u_register_t host_realm_map_protected_data(bool unknown,
-					   struct realm *realm,
-					   u_register_t target_pa,
-					   u_register_t map_size,
-					   u_register_t src_pa)
+u_register_t host_realm_delegate_map_protected_data(bool unknown,
+						    struct realm *realm,
+						    u_register_t target_pa,
+						    u_register_t map_size,
+						    u_register_t src_pa)
 {
 	u_register_t rd = realm->rd;
 	u_register_t map_level, level;
@@ -514,7 +514,6 @@ u_register_t host_realm_map_unprotected(struct realm *realm,
 		ERROR("Unknown map_size=0x%lx\n", map_size);
 		return REALM_ERROR;
 	}
-
 	u_register_t desc = phys | S2TTE_ATTR_FWB_WB_RW;
 
 	ret = host_rmi_rtt_mapunprotected(rd, map_addr, map_level, desc);
@@ -858,7 +857,7 @@ u_register_t host_realm_map_payload_image(struct realm *realm,
 
 	/* MAP image regions */
 	while (i < (realm->par_size / PAGE_SIZE)) {
-		ret = host_realm_map_protected_data(false, realm,
+		ret = host_realm_delegate_map_protected_data(false, realm,
 						realm->par_base + i * PAGE_SIZE,
 						PAGE_SIZE,
 						src_pa + i * PAGE_SIZE);

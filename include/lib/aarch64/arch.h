@@ -828,8 +828,28 @@
 #define EC_SERROR			U(0x2f)
 /* Data Fault Status code, not all error codes listed */
 #define ISS_DFSC_MASK			U(0x3f)
+#define DFSC_L0_TRANS_FAULT		U(4)
+#define DFSC_L1_TRANS_FAULT		U(5)
+#define DFSC_L2_TRANS_FAULT		U(6)
+#define DFSC_L3_TRANS_FAULT		U(7)
+#define DFSC_L0_SEA			U(0x14)
+#define DFSC_L1_SEA			U(0x15)
+#define DFSC_L2_SEA			U(0x16)
+#define DFSC_L3_SEA			U(0x17)
 #define DFSC_EXT_DABORT			U(0x10)
 #define DFSC_GPF_DABORT			U(0x28)
+
+/* Instr Fault Status code, not all error codes listed */
+#define ISS_IFSC_MASK			U(0x3f)
+#define IFSC_L0_TRANS_FAULT		U(4)
+#define IFSC_L1_TRANS_FAULT		U(5)
+#define IFSC_L2_TRANS_FAULT		U(6)
+#define IFSC_L3_TRANS_FAULT		U(7)
+#define IFSC_L0_SEA			U(0x24)
+#define IFSC_L1_SEA			U(0x25)
+#define IFSC_L2_SEA			U(0x26)
+#define IFSC_L3_SEA			U(0x27)
+
 /* ISS encoding an exception from HVC or SVC instruction execution */
 #define ISS_HVC_SMC_IMM16_MASK		U(0xffff)
 

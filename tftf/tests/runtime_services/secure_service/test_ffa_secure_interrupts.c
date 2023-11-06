@@ -13,6 +13,8 @@
 #include <test_helpers.h>
 #include <timer.h>
 
+#include <drivers/arm/arm_gic.h>
+
 #define SENDER		HYP_ID
 #define RECEIVER	SP_ID(1)
 #define RECEIVER_2	SP_ID(2)
@@ -447,6 +449,11 @@ test_result_t test_ffa_sec_interrupt_sp1_waiting_sp2_running(void)
 test_result_t test_ffa_espi_sec_interrupt(void)
 {
 	struct ffa_value ret_values;
+
+	/* Check if extended SPI range is implemented by GIC. */
+	if (!arm_gic_is_espi_supported()) {
+		return TEST_RESULT_SKIPPED;
+	}
 
 	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
 

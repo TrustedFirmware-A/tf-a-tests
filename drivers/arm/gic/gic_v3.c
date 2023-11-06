@@ -505,3 +505,8 @@ void gicv3_init(uintptr_t gicr_base, uintptr_t gicd_base)
 	gicr_base_addr = gicr_base;
 	gicd_base_addr = gicd_base;
 }
+
+unsigned int gicv3_get_gicd_typer(void)
+{
+	return gicd_read_typer(gicd_base_addr);
+}

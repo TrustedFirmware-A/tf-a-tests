@@ -217,12 +217,12 @@ static void cactus_plat_configure_mmu(unsigned int vm_id)
 
 static void register_secondary_entrypoint(void)
 {
-	smc_args args;
+	struct ffa_value args;
 
 	args.fid = FFA_SECONDARY_EP_REGISTER_SMC64;
 	args.arg1 = (u_register_t)&secondary_cold_entry;
 
-	tftf_smc(&args);
+	ffa_service_call(&args);
 }
 
 void __dead2 cactus_main(bool primary_cold_boot,

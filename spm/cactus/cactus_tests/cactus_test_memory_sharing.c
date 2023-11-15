@@ -81,12 +81,12 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 					 cactus_mem_send_get_retrv_flags(*args);
 	uint32_t words_to_write = cactus_mem_send_words_to_write(*args);
 
-	struct ffa_memory_access receiver = ffa_memory_access_init_permissions(
+	struct ffa_memory_access receiver = ffa_memory_access_init(
 		vm_id, FFA_DATA_ACCESS_RW,
 		(mem_func == FFA_MEM_SHARE_SMC32)
 			? FFA_INSTRUCTION_ACCESS_NOT_SPECIFIED
 			: FFA_INSTRUCTION_ACCESS_NX,
-		0);
+		0, NULL);
 
 	expect(memory_retrieve(mb, &m, handle, source, &receiver, 1,
 			       retrv_flags),

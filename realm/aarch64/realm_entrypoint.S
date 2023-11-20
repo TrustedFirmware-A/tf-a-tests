@@ -93,8 +93,8 @@ endfunc	realm_setup_my_stack
 /* Initialize architectural state. */
 func arch_init
 	/* Set the exception vectors. */
-	adr	x0, realm_vector
-	add	x1, x1, :lo12:realm_vector
+	adrp	x0, realm_vector
+	add	x0, x0, :lo12:realm_vector
 	msr	vbar_el1, x0
 	isb
 

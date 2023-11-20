@@ -273,7 +273,9 @@ static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 		return TEST_RESULT_FAIL;
 	}
 
-	ret1 = host_enter_realm_execute(cmd, &realm_ptr, RMI_EXIT_IRQ, 0U);
+	ret1 = host_enter_realm_execute(cmd, &realm_ptr,
+					(cmd == REALM_PMU_INTERRUPT) ?
+					RMI_EXIT_IRQ : RMI_EXIT_HOST_CALL, 0U);
 	if (!ret1 || (cmd != REALM_PMU_INTERRUPT)) {
 		goto test_exit;
 	}

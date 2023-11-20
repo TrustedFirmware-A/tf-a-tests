@@ -250,7 +250,7 @@
 #define RMI_EXIT_RIPAS_CHANGE		4U
 #define RMI_EXIT_HOST_CALL		5U
 #define RMI_EXIT_SERROR			6U
-#define RMI_EXIT_INVALID		0xFFFFFU
+#define RMI_EXIT_INVALID		(RMI_EXIT_SERROR + 1U)
 
 /* RmiRecRunnable types */
 #define RMI_NOT_RUNNABLE		0U

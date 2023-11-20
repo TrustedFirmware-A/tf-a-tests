@@ -7,6 +7,139 @@ Firmware-A version for simplicity. At any point in time, TF-A Tests version
 Tests are not guaranteed to be compatible. This also means that a version
 upgrade on the TF-A-Tests side might not necessarily introduce any new feature.
 
+Version 2.10
+------------
+
+New features
+^^^^^^^^^^^^
+
+-  More tests are made available in this release to help validate the
+   functionalities in the following areas:
+
+   - FF-A
+   - Realm Management Extension
+   - EL3 Runtime
+   - New Platform ports
+
+TFTF
+~~~~
+
+-  FF-A testing:
+
+   - Fixing FF-A version tests and expected error codes.
+   - Remove SPM tests from AArch32 builds.
+   - Support extended set of registers with FF-A calls.
+   - Fix use of instruction permissions in FF-A memory sharing tests.
+   - Extend memory sharing tests that use the clear memory flags.
+   - Test that memory from Root World/Realm can't be shared.
+   - Test the compliance to SMCCC at the non-secure physical instance.
+   - Exercise secure eSPI interrupt handling.
+
+-  New tests:
+
+   - Added test for Errata management firmware interface.
+   - Added basic firmware handoff tests.
+   - Test to verify SErrors synchronized at EL3 boundry.
+   - Introduced RAS KFH support test.
+   - Modified FEAT_FGT test to check for init values.
+   - Updated test_psci_stat.c to support more power states.
+
+-  Platforms:
+
+   - TC:
+
+      - Made TC0 TFTF code generic to TC.
+
+   - Versal:
+
+      - Added platform support and platform specific cases.
+      - Added Versal documentation.
+
+   - Versal NET:
+
+      - Added platform support and platform specific cases.
+      - Added Versal NET documentation.
+
+   - Xilinx:
+      - Reorganized timer code into common path.
+
+-  Miscellaneous:
+
+   - Added helper routines to read, write and compare SVE and FPU registers.
+   - New CPU feature detection helpers.
+   - Introduced clang toolchain support and added python generate_test_list
+     script.
+   - Docs: Updated toolchain requirements and added maintainers for AMD-Xilinx.
+   - Tidy setup and discovery logs.
+   - Added note on building TFA-Tests using clang docs.
+   - Added SME helper routines and added Streaming SVE support.
+   - Introduced SError exception handler.
+   - Updated toolchain requirements documentation.
+   - Check for support for ESPI before testing it.
+
+Realm Management Extension (RME)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   - Added SVE Realm tests and tests for EAC1.
+   - Test to intermittently switch to Realm while doing NS SVE and Streaming
+     SVE ops.
+   - Added tests to check NS SME ID registers and configurations.
+   - Added test to check if RMM doesn't leak Realm contents in SVE registers.
+   - Test to check if non SVE Realm gets undefined abort.
+   - Test to check various SIMD state preserved across NS/RL switch.
+   - Added test to check swtich SME registers to SIMD state.
+   - Testcase for CPU_ON denied.
+   - Test for multiple REC single CPU.
+   - Test for PAuth in Realm.
+   - Enhanced FPU state verification test.
+   - Modified API of RMI_RTT_*_RIPAS, changed handling.
+   - Removed RIPAS_UNDEFINED and modified RIPAS/HIPAS definitions for EAC2.
+   - Removed RMI_VALID_NS status and RMI_ERROR_IN_USE error code
+     RMI_RTT_UNMAP_UNPROTECTED and update API of data/rtt functions.
+   - Updated RSI_VERSION, RMI_VERSION and modified rmi_realm_params structure.
+   - Added support for PMU as per RMM Specification 1.0-eac2.
+   - Added PSCI API to Realms and API for REC force exit.
+   - Added support for multiple REC and CPU and data buffer to pass arg to REC.
+   - Set size of RsiHostCall.gprs[] to 31.
+   - Passing RD pointer in arg0 register X1.
+   - Added host call to flush Realm prints.
+   - Aligned Realm stack.
+   - Introduced new build flag for RME stack and appended realm.bin at end of
+     tftf.bin.
+
+Cactus (Secure-EL1 test partition)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   - Test discovery of EL3 SPMD managed SPs.
+   - Configure partitions load-address from SP layout file.
+   - Use the non-secure memory attribute in descriptor obtain from
+     FFA_MEM_RETRIEVE_RESP.
+   - SPs configured with a unique boot-order field in their respective
+     manifests.
+   - Test to the FFA_PARTITION_INFO_GET_REGS interface.
+   - Defined memory security state attribute for memory transaction desciptor.
+
+Issues resolved since last release
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   - Fixed incremental build issue with Realm payload and build dependency
+     in test-realms-payload.
+   - SME:  use of rdsvl instead of rdvl, enable SME/SME2 during arch init,
+     align test vector arrays to 16 bytes.
+   - SVE: representing Z0-Z31 as array of bytes and moved operation to a lib
+     routine.
+   - Fixed issue in processing dynamic relocations for AArch64.
+   - Reclaim and check for shared memory now supported.
+   - FPU replaced read with write of random value to fpsr/fpcr.
+   - Disabled RMI tests when building for AArch32 architecture.
+   - Fixed command id passed to Realm to compare FPU registers.
+   - Fixed broken links in docs landing page and made generate_test_list
+     backward compatible.
+   - XLAT: added support for 52 bit PA size with 4KB granularity.
+   - Fixed stress test for XLAT v2.
+   - RAS: Moved wait logic from assembly to C and renamed SDEI related
+     functions/events.
+
 Version 2.9
 -----------
 

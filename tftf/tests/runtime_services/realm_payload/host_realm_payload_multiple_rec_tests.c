@@ -48,7 +48,7 @@ test_result_t host_realm_multi_rec_single_cpu(void)
 	}
 
 	for (unsigned int i = 0; i < MAX_REC_COUNT; i++) {
-		host_shared_data_set_host_val(i, HOST_ARG1_INDEX, 10U);
+		host_shared_data_set_host_val(&realm, i, HOST_ARG1_INDEX, 10U);
 		ret1 = host_enter_realm_execute(&realm, REALM_SLEEP_CMD,
 				RMI_EXIT_HOST_CALL, i);
 		if (!ret1) {

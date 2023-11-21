@@ -18,6 +18,7 @@
 #define REALM_SUCCESS			0U
 #define REALM_ERROR			1U
 #define MAX_REC_COUNT			8U
+#define MAX_REALM_COUNT			U(2)
 
 /* Only support 4KB at the moment */
 

@@ -181,7 +181,7 @@ test_result_t host_sve_realm_cmd_rdvl(void)
 	}
 
 	/* Check if rdvl matches the SVE VL created */
-	sd = host_get_shared_structure(0U);
+	sd = host_get_shared_structure(&realm, 0U);
 	rl_output = (struct sve_cmd_rdvl *)sd->realm_cmd_output_buffer;
 	rl_max_sve_vq = SVE_VL_TO_VQ(rl_output->rdvl);
 	if (sve_vq == rl_max_sve_vq) {
@@ -256,7 +256,7 @@ static test_result_t _host_sve_realm_check_id_registers(bool sve_en)
 		goto rm_realm;
 	}
 
-	sd = host_get_shared_structure(0U);
+	sd = host_get_shared_structure(&realm, 0U);
 	r_regs = (struct sve_cmd_id_regs *)sd->realm_cmd_output_buffer;
 
 	/* Check ID register SVE flags */
@@ -343,7 +343,7 @@ test_result_t host_sve_realm_cmd_probe_vl(void)
 		goto rm_realm;
 	}
 
-	sd = host_get_shared_structure(0U);
+	sd = host_get_shared_structure(&realm, 0U);
 	rl_output = (struct sve_cmd_probe_vl *)sd->realm_cmd_output_buffer;
 
 	INFO("Supported SVE vector length in bits (expected):\n");
@@ -1207,7 +1207,7 @@ test_result_t host_realm_check_sme_id_registers(void)
 		goto rm_realm;
 	}
 
-	sd = host_get_shared_structure(0U);
+	sd = host_get_shared_structure(&realm, 0U);
 	r_regs = (struct sme_cmd_id_regs *)sd->realm_cmd_output_buffer;
 
 	/* Check ID register SME flags */

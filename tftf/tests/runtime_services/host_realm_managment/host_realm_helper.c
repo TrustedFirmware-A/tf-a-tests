@@ -41,12 +41,15 @@ const char *rmi_exit[] = {
  * The function handler to print the Realm logged buffer,
  * executed by the secondary core
  */
-void realm_print_handler(unsigned int rec_num)
+void realm_print_handler(struct realm *realm_ptr, unsigned int rec_num)
 {
 	size_t str_len = 0UL;
-	host_shared_data_t *host_shared_data = host_get_shared_structure(rec_num);
-	char *log_buffer = (char *)host_shared_data->log_buffer;
+	host_shared_data_t *host_shared_data;
+	char *log_buffer;
 
+	assert(realm_ptr != NULL);
+	host_shared_data = host_get_shared_structure(realm_ptr, rec_num);
+	log_buffer = (char *)host_shared_data->log_buffer;
 	str_len = strlen((const char *)log_buffer);
 
 	/*
@@ -56,7 +59,7 @@ void realm_print_handler(unsigned int rec_num)
 	if (str_len != 0UL) {
 		/* Avoid memory overflow */
 		log_buffer[MAX_BUF_SIZE - 1] = 0U;
-		mp_printf("Rec%u: %s", rec_num, log_buffer);
+		mp_printf("VMID: %u Rec%u: %s", realm_ptr->vmid, rec_num, log_buffer);
 		(void)memset((char *)log_buffer, 0, MAX_BUF_SIZE);
 	}
 }
@@ -71,7 +74,7 @@ static void host_init_realm_print_buffer(struct realm *realm_ptr)
 	host_shared_data_t *host_shared_data;
 
 	for (unsigned int i = 0U; i < realm_ptr->rec_count; i++) {
-		host_shared_data = host_get_shared_structure(i);
+		host_shared_data = host_get_shared_structure(realm_ptr, i);
 		(void)memset((char *)host_shared_data, 0, sizeof(host_shared_data_t));
 	}
 }
@@ -126,7 +129,14 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 		return false;
 	}
 
-	INFO("Realm base adr=0x%lx\n", realm_payload_adr);
+	if (plat_mem_pool_adr < PAGE_POOL_BASE ||
+	    plat_mem_pool_adr + realm_pages_size > NS_REALM_SHARED_MEM_BASE) {
+		ERROR("Invalid pool range\n");
+		return false;
+	}
+
+	INFO("Realm start adr=0x%lx\n", plat_mem_pool_adr);
+
 	/* Initialize  Host NS heap memory to be used in Realm creation*/
 	if (page_pool_init(plat_mem_pool_adr, realm_pages_size)
 		!= HEAP_INIT_SUCCESS) {
@@ -256,6 +266,12 @@ bool host_create_shared_mem(struct realm *realm_ptr,
 			    u_register_t ns_shared_mem_adr,
 			    u_register_t ns_shared_mem_size)
 {
+	if (ns_shared_mem_adr < NS_REALM_SHARED_MEM_BASE  ||
+			ns_shared_mem_adr + ns_shared_mem_size > PAGE_POOL_END) {
+		ERROR("%s() Invalid adr range\n", "host_realm_map_ns_shared");
+		return false;
+	}
+
 	/* RTT map NS shared region */
 	if (host_realm_map_ns_shared(realm_ptr, ns_shared_mem_adr,
 				ns_shared_mem_size) != REALM_SUCCESS) {
@@ -265,8 +281,9 @@ bool host_create_shared_mem(struct realm *realm_ptr,
 	}
 
 	memset((void *)ns_shared_mem_adr, 0, (size_t)ns_shared_mem_size);
-	host_init_realm_print_buffer(realm_ptr);
+	realm_ptr->host_shared_data = ns_shared_mem_adr;
 	realm_ptr->shared_mem_created = true;
+	host_init_realm_print_buffer(realm_ptr);
 
 	return true;
 }
@@ -322,7 +339,7 @@ bool host_enter_realm_execute(struct realm *realm_ptr,
 		ERROR("Invalid Rec Count\n");
 		return false;
 	}
-	host_shared_data_set_realm_cmd(cmd, rec_num);
+	host_shared_data_set_realm_cmd(realm_ptr, cmd, rec_num);
 	if (!host_enter_realm(realm_ptr, &realm_exit_reason, &host_call_result, rec_num)) {
 		return false;
 	}

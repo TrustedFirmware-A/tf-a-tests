@@ -23,16 +23,19 @@
  *   +---------------------------+
  *
  * The realm memory pool is a combination of PAGE_POOL and NS_SHARED_MEM
- * +--------------------------+     +---------------------------+
- * |  Memory Pool             |     | Heap Memory               |
- * | (NS_REALM_SHARED_MEM_SIZE|     | (PAGE_POOL_MAX_SIZE)      |
- * |  + PAGE_POOL_MAX_SIZE)   | ==> |                           |
- * |                          |     |                           |
- * |                          |     +---------------------------+
- * |                          |     | Shared Region             |
- * |                          |     | (NS_REALM_SHARED_MEM_SIZE)|
- * +--------------------------+     +---------------------------+
- *
+ * +--------------------------------+     +---------------------------+
+ * |  Memory Pool                   |     | Heap Memory               |
+ * | (NS_REALM_SHARED_MEM_SIZE *    |     | (PAGE_POOL_MAX_SIZE)      |
+ * |  MAX_REALM_COUNT)              |     | ....                      |
+ * |  + PAGE_POOL_MAX_SIZE *        | ==> | (PAGE_POOL_MAX_SIZE)      |
+ * |  MAX_REALM_COUNT)              |     |                           |
+ * |                                |     |                           |
+ * |                                |     +---------------------------+
+ * |                                |     | Shared Region             |
+ * |                                |     | (NS_REALM_SHARED_MEM_SIZE)|
+ * |                                |     |  ....                     |
+ * |                                |     | (NS_REALM_SHARED_MEM_SIZE)|
+ * +--------------------------------+     +---------------------------+*
  * Refer to tftf.lds for the layout.
  */
 
@@ -40,7 +43,8 @@
  /* Base address of each section */
  IMPORT_SYM(uintptr_t, __REALM_PAYLOAD_START__, REALM_IMAGE_BASE);
  IMPORT_SYM(uintptr_t, __REALM_POOL_START__, PAGE_POOL_BASE);
- #define NS_REALM_SHARED_MEM_BASE	(PAGE_POOL_BASE + PAGE_POOL_MAX_SIZE)
+ IMPORT_SYM(uintptr_t, __REALM_POOL_END__, PAGE_POOL_END);
+#define NS_REALM_SHARED_MEM_BASE	(PAGE_POOL_BASE + (PAGE_POOL_MAX_SIZE * MAX_REALM_COUNT))
 #endif
 
 #ifdef ENABLE_REALM_PAYLOAD_TESTS

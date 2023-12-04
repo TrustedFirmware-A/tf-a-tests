@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -34,16 +34,19 @@
 #define FUNCID_TYPE_SHIFT		31
 #define FUNCID_CC_SHIFT			30
 #define FUNCID_OEN_SHIFT		24
+#define FUNCID_SVE_HINT_SHIFT		16
 #define FUNCID_NUM_SHIFT		0
 
 #define FUNCID_TYPE_MASK		0x1
 #define FUNCID_CC_MASK			0x1
 #define FUNCID_OEN_MASK			0x3f
+#define FUNCID_SVE_HINT_MASK		0x1
 #define FUNCID_NUM_MASK			0xffff
 
 #define FUNCID_TYPE_WIDTH		1
 #define FUNCID_CC_WIDTH			1
 #define FUNCID_OEN_WIDTH		6
+#define FUNCID_SVE_HINT_WIDTH		1
 #define FUNCID_NUM_WIDTH		16
 
 #define SMC_64				1

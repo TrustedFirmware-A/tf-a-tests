@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -158,6 +158,21 @@ typedef struct {
  * Trigger an SMC call.
  */
 smc_ret_values tftf_smc(const smc_args *args);
+
+/* Assembler routine to trigger a SMC call. */
+smc_ret_values asm_tftf_smc64(uint32_t fid, u_register_t arg1, u_register_t arg2,
+			      u_register_t arg3, u_register_t arg4,
+			      u_register_t arg5, u_register_t arg6,
+			      u_register_t arg7);
+
+/*
+ * Update the SVE hint for the current CPU. Any SMC call made through tftf_smc
+ * will update the SVE hint bit in the SMC Function ID.
+ */
+void tftf_smc_set_sve_hint(bool sve_hint_flag);
+
+/* Return the SVE hint bit value for the current CPU */
+bool tftf_smc_get_sve_hint(void);
 
 /*
  * Trigger an HVC call.

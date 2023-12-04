@@ -8,50 +8,124 @@
 #include <arch_helpers.h>
 #include <assert.h>
 #include <debug.h>
+#include <lib/extensions/fpu.h>
 #include <lib/extensions/sve.h>
+#include <tftf_lib.h>
 
-static inline uint64_t sve_read_zcr_elx(void)
-{
-	return IS_IN_EL2() ? read_zcr_el2() : read_zcr_el1();
-}
+static uint8_t zero_mem[512];
 
-static inline void sve_write_zcr_elx(uint64_t reg_val)
-{
-	if (IS_IN_EL2()) {
-		write_zcr_el2(reg_val);
-	} else {
-		write_zcr_el1(reg_val);
-	}
+#define sve_traps_save_disable(flags)						\
+	do {									\
+		if (IS_IN_EL2()) {						\
+			flags = read_cptr_el2();				\
+			write_cptr_el2(flags & ~(CPTR_EL2_TZ_BIT));		\
+		} else {							\
+			flags = read_cpacr_el1();				\
+			write_cpacr_el1(flags |					\
+					CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE));\
+		}								\
+		isb();								\
+	} while (false)
 
-	isb();
-}
+#define sve_traps_restore(flags)						\
+	do {									\
+		if (IS_IN_EL2()) {						\
+			write_cptr_el2(flags);					\
+		} else {							\
+			write_cpacr_el1(flags);					\
+		}								\
+		isb();								\
+	} while (false)
 
-static void _sve_config_vq(uint8_t sve_vq)
+static void config_vq(uint8_t sve_vq)
 {
 	u_register_t zcr_elx;
 
-	zcr_elx = sve_read_zcr_elx();
 	if (IS_IN_EL2()) {
+		zcr_elx = read_zcr_el2();
 		zcr_elx &= ~(MASK(ZCR_EL2_SVE_VL));
 		zcr_elx |= INPLACE(ZCR_EL2_SVE_VL, sve_vq);
+		write_zcr_el2(zcr_elx);
 	} else {
+		zcr_elx = read_zcr_el1();
 		zcr_elx &= ~(MASK(ZCR_EL1_SVE_VL));
 		zcr_elx |= INPLACE(ZCR_EL1_SVE_VL, sve_vq);
+		write_zcr_el1(zcr_elx);
 	}
-	sve_write_zcr_elx(zcr_elx);
+	isb();
+}
+
+/* Returns the SVE implemented VL in bytes (constrained by ZCR_EL3.LEN) */
+uint64_t sve_rdvl_1(void)
+{
+	uint64_t vl;
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
+
+	__asm__ volatile(
+		".arch_extension sve\n"
+		"rdvl %0, #1;"
+		".arch_extension nosve\n"
+		: "=r" (vl)
+	);
+
+	sve_traps_restore(flags);
+	return vl;
+}
+
+uint64_t sve_read_zcr_elx(void)
+{
+	unsigned long flags;
+	uint64_t rval;
+
+	sve_traps_save_disable(flags);
+
+	if (IS_IN_EL2()) {
+		rval = read_zcr_el2();
+	} else {
+		rval = read_zcr_el1();
+	}
+
+	sve_traps_restore(flags);
+
+	return rval;
+}
+
+void sve_write_zcr_elx(uint64_t rval)
+{
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
+
+	if (IS_IN_EL2()) {
+		write_zcr_el2(rval);
+	} else {
+		write_zcr_el1(rval);
+	}
+	isb();
+
+	sve_traps_restore(flags);
+
+	return;
 }
 
 /* Set the SVE vector length in the current EL's ZCR_ELx register */
 void sve_config_vq(uint8_t sve_vq)
 {
+	unsigned long flags;
+
 	assert(is_armv8_2_sve_present());
+	sve_traps_save_disable(flags);
 
 	/* cap vq to arch supported max value */
 	if (sve_vq > SVE_VQ_ARCH_MAX) {
 		sve_vq = SVE_VQ_ARCH_MAX;
 	}
 
-	_sve_config_vq(sve_vq);
+	config_vq(sve_vq);
+
+	sve_traps_restore(flags);
 }
 
 /*
@@ -65,8 +139,9 @@ uint32_t sve_probe_vl(uint8_t sve_max_vq)
 {
 	uint32_t vl_bitmap = 0;
 	uint8_t vq, rdvl_vq;
+	unsigned long flags;
 
-	assert(is_armv8_2_sve_present());
+	sve_traps_save_disable(flags);
 
 	/* cap vq to arch supported max value */
 	if (sve_max_vq > SVE_VQ_ARCH_MAX) {
@@ -74,13 +149,15 @@ uint32_t sve_probe_vl(uint8_t sve_max_vq)
 	}
 
 	for (vq = 0; vq <= sve_max_vq; vq++) {
-		_sve_config_vq(vq);
+		config_vq(vq);
 		rdvl_vq = SVE_VL_TO_VQ(sve_rdvl_1());
 		if (vl_bitmap & BIT_32(rdvl_vq)) {
 			continue;
 		}
 		vl_bitmap |= BIT_32(rdvl_vq);
 	}
+
+	sve_traps_restore(flags);
 
 	return vl_bitmap;
 }
@@ -89,7 +166,7 @@ uint32_t sve_probe_vl(uint8_t sve_max_vq)
  * Write SVE Z[0-31] registers passed in 'z_regs' for Normal SVE or Streaming
  * SVE mode
  */
-void sve_z_regs_write(const sve_z_regs_t *z_regs)
+static void z_regs_write(const sve_z_regs_t *z_regs)
 {
 	__asm__ volatile(
 		".arch_extension sve\n"
@@ -130,10 +207,27 @@ void sve_z_regs_write(const sve_z_regs_t *z_regs)
 }
 
 /*
+ * Write SVE Z[0-31] registers passed in 'z_regs' for Normal SVE or Streaming
+ * SVE mode
+ */
+void sve_z_regs_write(const sve_z_regs_t *z_regs)
+{
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
+	z_regs_write(z_regs);
+	sve_traps_restore(flags);
+}
+
+/*
  * Read SVE Z[0-31] and store it in 'zregs' for Normal SVE or Streaming SVE mode
  */
 void sve_z_regs_read(sve_z_regs_t *z_regs)
 {
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
+
 	__asm__ volatile(
 		".arch_extension sve\n"
 		read_sve_helper(0)
@@ -170,13 +264,11 @@ void sve_z_regs_read(sve_z_regs_t *z_regs)
 		read_sve_helper(31)
 		".arch_extension nosve\n"
 		: : "r" (z_regs));
+
+	sve_traps_restore(flags);
 }
 
-/*
- * Write SVE P[0-15] registers passed in 'p_regs' for Normal SVE or Streaming
- * SVE mode
- */
-void sve_p_regs_write(const sve_p_regs_t *p_regs)
+static void p_regs_write(const sve_p_regs_t *p_regs)
 {
 	__asm__ volatile(
 		".arch_extension sve\n"
@@ -201,11 +293,28 @@ void sve_p_regs_write(const sve_p_regs_t *p_regs)
 }
 
 /*
+ * Write SVE P[0-15] registers passed in 'p_regs' for Normal SVE or Streaming
+ * SVE mode
+ */
+void sve_p_regs_write(const sve_p_regs_t *p_regs)
+{
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
+	p_regs_write(p_regs);
+	sve_traps_restore(flags);
+}
+
+/*
  * Read SVE P[0-15] registers and store it in 'p_regs' for Normal SVE or
  * Streaming SVE mode
  */
 void sve_p_regs_read(sve_p_regs_t *p_regs)
 {
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
+
 	__asm__ volatile(
 		".arch_extension sve\n"
 		read_sve_p_helper(0)
@@ -226,13 +335,11 @@ void sve_p_regs_read(sve_p_regs_t *p_regs)
 		read_sve_p_helper(15)
 		".arch_extension nosve\n"
 		: : "r" (p_regs));
+
+	sve_traps_restore(flags);
 }
 
-/*
- * Write SVE FFR registers passed in 'ffr_regs' for Normal SVE or Streaming SVE
- * mode
- */
-void sve_ffr_regs_write(const sve_ffr_regs_t *ffr_regs)
+static void ffr_regs_write(const sve_ffr_regs_t *ffr_regs)
 {
 	uint8_t sve_p_reg[SVE_P_REG_LEN_BYTES];
 
@@ -250,12 +357,28 @@ void sve_ffr_regs_write(const sve_ffr_regs_t *ffr_regs)
 }
 
 /*
+ * Write SVE FFR registers passed in 'ffr_regs' for Normal SVE or Streaming SVE
+ * mode
+ */
+void sve_ffr_regs_write(const sve_ffr_regs_t *ffr_regs)
+{
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
+	ffr_regs_write(ffr_regs);
+	sve_traps_restore(flags);
+}
+
+/*
  * Read SVE FFR registers and store it in 'ffr_regs' for Normal SVE or Streaming
  * SVE mode
  */
 void sve_ffr_regs_read(sve_ffr_regs_t *ffr_regs)
 {
 	uint8_t sve_p_reg[SVE_P_REG_LEN_BYTES];
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
 
 	/* Save p0. Read FFR to p0 and save p0 (ffr) to 'ffr_regs'. Restore p0 */
 	__asm__ volatile(
@@ -268,6 +391,8 @@ void sve_ffr_regs_read(sve_ffr_regs_t *ffr_regs)
 		:
 		: "r" (ffr_regs), "r" (sve_p_reg)
 		: "memory");
+
+	sve_traps_restore(flags);
 }
 
 /*
@@ -279,6 +404,9 @@ void sve_z_regs_write_rand(sve_z_regs_t *z_regs)
 	uint32_t rval;
 	uint32_t z_size;
 	uint8_t *z_reg;
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
 
 	z_size = (uint32_t)sve_rdvl_1();
 
@@ -290,7 +418,9 @@ void sve_z_regs_write_rand(sve_z_regs_t *z_regs)
 
 		memset((void *)z_reg, rval * (i + 1), z_size);
 	}
-	sve_z_regs_write(z_regs);
+	z_regs_write(z_regs);
+
+	sve_traps_restore(flags);
 }
 
 /*
@@ -302,6 +432,9 @@ void sve_p_regs_write_rand(sve_p_regs_t *p_regs)
 	uint32_t p_size;
 	uint8_t *p_reg;
 	uint32_t rval;
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
 
 	p_size = (uint32_t)sve_rdvl_1() / 8;
 
@@ -313,7 +446,9 @@ void sve_p_regs_write_rand(sve_p_regs_t *p_regs)
 
 		memset((void *)p_reg, rval * (i + 1), p_size);
 	}
-	sve_p_regs_write(p_regs);
+	p_regs_write(p_regs);
+
+	sve_traps_restore(flags);
 }
 
 /*
@@ -325,6 +460,9 @@ void sve_ffr_regs_write_rand(sve_ffr_regs_t *ffr_regs)
 	uint32_t ffr_size;
 	uint8_t *ffr_reg;
 	uint32_t rval;
+	unsigned long flags;
+
+	sve_traps_save_disable(flags);
 
 	ffr_size = (uint32_t)sve_rdvl_1() / 8;
 
@@ -335,7 +473,9 @@ void sve_ffr_regs_write_rand(sve_ffr_regs_t *ffr_regs)
 
 		memset((void *)ffr_reg, rval * (i + 1), ffr_size);
 	}
-	sve_ffr_regs_write(ffr_regs);
+	ffr_regs_write(ffr_regs);
+
+	sve_traps_restore(flags);
 }
 
 /*
@@ -350,6 +490,7 @@ uint64_t sve_z_regs_compare(const sve_z_regs_t *s1, const sve_z_regs_t *s2)
 {
 	uint32_t z_size;
 	uint64_t cmp_bitmap = 0UL;
+	bool sve_hint;
 
 	/*
 	 * 'rdvl' returns Streaming SVE VL if PSTATE.SM=1 else returns normal
@@ -357,11 +498,28 @@ uint64_t sve_z_regs_compare(const sve_z_regs_t *s1, const sve_z_regs_t *s2)
 	 */
 	z_size = (uint32_t)sve_rdvl_1();
 
+	/* Ignore sve_hint for Streaming SVE mode */
+	if (is_feat_sme_supported() && sme_smstat_sm()) {
+		sve_hint = false;
+	} else {
+		sve_hint = tftf_smc_get_sve_hint();
+	}
+
 	for (uint32_t i = 0U; i < SVE_NUM_VECTORS; i++) {
 		uint8_t *s1_z = (uint8_t *)s1 + (i * z_size);
 		uint8_t *s2_z = (uint8_t *)s2 + (i * z_size);
 
-		if ((memcmp(s1_z, s2_z, z_size) == 0)) {
+		/*
+		 * For Z register the comparison is successful when
+		 * 1. whole Z register of 's1' and 's2' is equal or
+		 * 2. sve_hint is set and the lower 128 bits of 's1' and 's2' is
+		 *    equal and remaining upper bits of 's2' is zero
+		 */
+		if ((memcmp(s1_z, s2_z, z_size) == 0) ||
+		    (sve_hint && (z_size > FPU_Q_SIZE) &&
+		     (memcmp(s1_z, s2_z, FPU_Q_SIZE) == 0) &&
+		     (memcmp(s2_z + FPU_Q_SIZE, zero_mem,
+			     z_size - FPU_Q_SIZE) == 0))) {
 			continue;
 		}
 
@@ -384,15 +542,29 @@ uint64_t sve_p_regs_compare(const sve_p_regs_t *s1, const sve_p_regs_t *s2)
 {
 	uint32_t p_size;
 	uint64_t cmp_bitmap = 0UL;
+	bool sve_hint;
 
 	/* Size of one predicate register 1/8 of Z register */
 	p_size = (uint32_t)sve_rdvl_1() / 8U;
+
+	/* Ignore sve_hint for Streaming SVE mode */
+	if (is_feat_sme_supported() && sme_smstat_sm()) {
+		sve_hint = false;
+	} else {
+		sve_hint = tftf_smc_get_sve_hint();
+	}
 
 	for (uint32_t i = 0U; i < SVE_NUM_P_REGS; i++) {
 		uint8_t *s1_p = (uint8_t *)s1 + (i * p_size);
 		uint8_t *s2_p = (uint8_t *)s2 + (i * p_size);
 
-		if ((memcmp(s1_p, s2_p, p_size) == 0)) {
+		/*
+		 * For P register the comparison is successful when
+		 * 1. whole P register of 's1' and 's2' is equal or
+		 * 2. sve_hint is set and the P register of 's2' is zero
+		 */
+		if ((memcmp(s1_p, s2_p, p_size) == 0) ||
+		    (sve_hint && (memcmp(s2_p, zero_mem, p_size) == 0))) {
 			continue;
 		}
 
@@ -415,15 +587,29 @@ uint64_t sve_ffr_regs_compare(const sve_ffr_regs_t *s1, const sve_ffr_regs_t *s2
 {
 	uint32_t ffr_size;
 	uint64_t cmp_bitmap = 0UL;
+	bool sve_hint;
 
 	/* Size of one FFR register 1/8 of Z register */
 	ffr_size = (uint32_t)sve_rdvl_1() / 8U;
+
+	/* Ignore sve_hint for Streaming SVE mode */
+	if (is_feat_sme_supported() && sme_smstat_sm()) {
+		sve_hint = false;
+	} else {
+		sve_hint = tftf_smc_get_sve_hint();
+	}
 
 	for (uint32_t i = 0U; i < SVE_NUM_FFR_REGS; i++) {
 		uint8_t *s1_ffr = (uint8_t *)s1 + (i * ffr_size);
 		uint8_t *s2_ffr = (uint8_t *)s2 + (i * ffr_size);
 
-		if ((memcmp(s1_ffr, s2_ffr, ffr_size) == 0)) {
+		/*
+		 * For FFR register the comparison is successful when
+		 * 1. whole FFR register of 's1' and 's2' is equal or
+		 * 2. sve_hint is set and the FFR register of 's2' is zero
+		 */
+		if ((memcmp(s1_ffr, s2_ffr, ffr_size) == 0) ||
+		    (sve_hint && (memcmp(s2_ffr, zero_mem, ffr_size) == 0))) {
 			continue;
 		}
 

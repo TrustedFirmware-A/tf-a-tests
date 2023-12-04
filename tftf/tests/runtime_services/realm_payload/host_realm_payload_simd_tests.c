@@ -27,8 +27,8 @@
 /* Number of FPU configs: none */
 #define NUM_FPU_CONFIGS		(0U)
 
-/* Number of SVE configs: SVE_VL */
-#define NUM_SVE_CONFIGS		(1U)
+/* Number of SVE configs: SVE_VL, SVE hint */
+#define NUM_SVE_CONFIGS		(2U)
 
 /* Number of SME configs: SVE_SVL, FEAT_FA64, Streaming mode */
 #define NUM_SME_CONFIGS		(3U)
@@ -807,13 +807,15 @@ static void ns_simd_print_cmd_config(bool cmd, simd_test_t type)
 			     tstr, cstr, (uint64_t)read_smcr_el2());
 		} else {
 			INFO("TFTF: NS [%s] %s. Config: smcr: 0x%llx, "
-			     "zcr: 0x%llx SM: off\n", tstr, cstr,
+			     "zcr: 0x%llx sve_hint: %d SM: off\n", tstr, cstr,
 			     (uint64_t)read_smcr_el2(),
-			     (uint64_t)read_zcr_el2());
+			     (uint64_t)sve_read_zcr_elx(),
+			     tftf_smc_get_sve_hint());
 		}
 	} else if (type == TEST_SVE) {
-		INFO("TFTF: NS [%s] %s. Config: zcr: 0x%llx\n",
-		     tstr, cstr, (uint64_t)read_zcr_el2());
+		INFO("TFTF: NS [%s] %s. Config: zcr: 0x%llx, sve_hint: %d\n",
+		     tstr, cstr, (uint64_t)sve_read_zcr_elx(),
+		     tftf_smc_get_sve_hint());
 	} else {
 		INFO("TFTF: NS [%s] %s\n", tstr, cstr);
 	}
@@ -840,6 +842,12 @@ static simd_test_t ns_sme_select_random_config(void)
 		if (is_armv8_2_sve_present() && ((counter % 2U) != 0)) {
 			sme_smstop(SMSTOP_SM);
 			sve_config_vq(SVE_GET_RANDOM_VQ);
+
+			if ((counter % 3U) != 0) {
+				tftf_smc_set_sve_hint(true);
+			} else {
+				tftf_smc_set_sve_hint(false);
+			}
 		} else {
 			sme_smstart(SMSTART_SM);
 			sme_config_svq(SME_GET_RANDOM_SVQ);
@@ -861,7 +869,7 @@ static simd_test_t ns_sme_select_random_config(void)
 
 /*
  * Randomly select TEST_SVE or TEST_FPU. For TEST_SVE, configure zcr_el2 with
- * random vector length
+ * random vector length and randomly enable or disable SMC SVE hint bit.
  */
 static simd_test_t ns_sve_select_random_config(void)
 {
@@ -871,6 +879,13 @@ static simd_test_t ns_sve_select_random_config(void)
 	/* Use a static counter to mostly select TEST_SVE case. */
 	if ((counter % 4U) != 0) {
 		sve_config_vq(SVE_GET_RANDOM_VQ);
+
+		if ((counter % 2U) != 0) {
+			tftf_smc_set_sve_hint(true);
+		} else {
+			tftf_smc_set_sve_hint(false);
+		}
+
 		type = TEST_SVE;
 	} else {
 		type = TEST_FPU;
@@ -894,6 +909,11 @@ static simd_test_t ns_simd_select_random_config(void)
 	if (is_feat_sme_supported()) {
 		sme_smstop(SMSTOP_SM);
 		sme_enable_fa64();
+	}
+
+	/* Cleanup old config for SVE */
+	if (is_armv8_2_sve_present()) {
+		tftf_smc_set_sve_hint(false);
 	}
 
 	if (is_armv8_2_sve_present() && is_feat_sme_supported()) {
@@ -1144,6 +1164,11 @@ rm_realm:
 	if (is_feat_sme_supported()) {
 		sme_smstop(SMSTOP_SM);
 		sme_enable_fa64();
+	}
+
+	/* Cleanup old config */
+	if (is_armv8_2_sve_present()) {
+		tftf_smc_set_sve_hint(false);
 	}
 
 	if (!host_destroy_realm()) {

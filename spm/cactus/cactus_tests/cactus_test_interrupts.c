@@ -256,7 +256,17 @@ CACTUS_CMD_HANDLER(trigger_espi_cmd, CACTUS_TRIGGER_ESPI_CMD)
 
 	sp_register_interrupt_handler(sec_interrupt_test_espi_handled,
 				      espi_id);
-	ret = tftf_smc(&plat_sip_call);
+
+	/*
+	 * Call the low level assembler routine to make the SMC call bypassing
+	 * tftf_smc, as tftf_smc will set SVE hint bit in SMC FID when CPU
+	 * supports SVE and SVE traps are enabled.
+	 *
+	 * This can be changed to tftf_smc call once SPMC disregards SVE hint bit
+	 * from function identification.
+	 */
+	ret = asm_tftf_smc64(plat_sip_call.fid, plat_sip_call.arg1, 0, 0, 0,
+			     0, 0, 0);
 
 	if (ret.ret0 == SMC_UNKNOWN) {
 		ERROR("SiP SMC call not supported\n");

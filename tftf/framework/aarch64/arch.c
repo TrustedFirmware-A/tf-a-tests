@@ -7,6 +7,8 @@
 
 #include <arch_features.h>
 #include <arch_helpers.h>
+#include <arch_features.h>
+#include <tftf_lib.h>
 
 void tftf_arch_setup(void)
 {
@@ -38,6 +40,11 @@ void tftf_arch_setup(void)
 		if (is_feat_sme_supported()) {
 			write_smcr_el2(SMCR_EL2_RESET_VAL);
 			isb();
+		}
+
+		/* Clear SVE hint bit */
+		if (is_armv8_2_sve_present()) {
+			tftf_smc_set_sve_hint(false);
 		}
 	}
 }

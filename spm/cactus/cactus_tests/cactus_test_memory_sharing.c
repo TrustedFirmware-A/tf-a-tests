@@ -11,6 +11,7 @@
 #include <ffa_helpers.h>
 #include <sp_helpers.h>
 #include "sp_tests.h"
+#include "spm_common.h"
 #include "stdint.h"
 #include <xlat_tables_defs.h>
 #include <lib/xlat_tables/xlat_tables_v2.h>
@@ -159,12 +160,17 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 
 	VERBOSE("Memory has been mapped\n");
 
-	/* Check that memory has been cleared by the SPMC before using it. */
-	if ((retrv_flags & FFA_MEMORY_REGION_FLAG_CLEAR) != 0U) {
-		VERBOSE("Check if memory has been cleared!\n");
-		for (uint32_t i = 0; i < composite->constituent_count; i++) {
-			ptr = (uint32_t *) composite->constituents[i].address;
-			for (uint32_t j = 0; j < words_to_write; j++) {
+	for (uint32_t i = 0; i < composite->constituent_count; i++) {
+		ptr = (uint32_t *) composite->constituents[i].address;
+
+		for (uint32_t j = 0; j < words_to_write; j++) {
+
+			/**
+			 * Check that memory has been cleared by the SPMC
+			 * before using it.
+			 */
+			if ((retrv_flags & FFA_MEMORY_REGION_FLAG_CLEAR) != 0U) {
+				VERBOSE("Check if memory has been cleared.\n");
 				if (ptr[j] != 0) {
 					/*
 					 * If it hasn't been cleared, shouldn't
@@ -174,6 +180,43 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 					cactus_mem_unmap_and_relinquish(composite,
 							      mb->send,
 							      handle, vm_id);
+					ffa_rx_release();
+					return cactus_error_resp(
+						vm_id, source,
+						CACTUS_ERROR_TEST);
+				}
+			} else {
+				/*
+				 * In RME enabled systems, the memory is expected
+				 * to be scrubbed on PAS updates from S to NS.
+				 * As well, it is likely that the memory
+				 * addresses are shadowed, and the contents are
+				 * not visible accross updates from the
+				 * different address spaces. As such, the SP
+				 * shall not rely on memory content to be
+				 * in any form. FFA_MEM_LEND/FFA_MEM_DONATE are
+				 * thus considered for memory allocation
+				 * purposes.
+				 *
+				 * Expect valid data if:
+				 * - Operation between SPs.
+				 * - Memory sharing from NWd to SP.
+				 */
+				if (mem_func != FFA_MEM_SHARE_SMC32 &&
+				    !IS_SP_ID(m->sender)) {
+					continue;
+				}
+
+				VERBOSE("Check memory contents. Expect %u "
+					"words of %x\n", words_to_write,
+					mem_func + 0xFFA);
+
+				/* SPs writing `mem_func` + 0xFFA. */
+				if (ptr[i] != mem_func + 0xFFA) {
+					ERROR("Memory content NOT as expected!\n");
+					cactus_mem_unmap_and_relinquish(
+						composite, mb->send, handle,
+						vm_id);
 					ffa_rx_release();
 					return cactus_error_resp(
 						vm_id, source,
@@ -190,7 +233,7 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 	for (uint32_t i = 0; i < composite->constituent_count; i++) {
 		ptr = (uint32_t *) composite->constituents[i].address;
 		for (uint32_t j = 0; j < words_to_write; j++) {
-			ptr[j] = mem_func;
+			ptr[j] = mem_func + 0xFFA;
 		}
 	}
 
@@ -225,12 +268,13 @@ CACTUS_CMD_HANDLER(req_mem_send_cmd, CACTUS_REQ_MEM_SEND_CMD)
 	ffa_memory_handle_t handle;
 	ffa_id_t vm_id = ffa_dir_msg_dest(*args);
 	ffa_id_t source = ffa_dir_msg_source(*args);
+	uint32_t *ptr;
 	bool non_secure = cactus_req_mem_send_get_non_secure(*args);
 	void *share_page_addr =
 		non_secure ? share_page_non_secure(vm_id) : share_page(vm_id);
 	unsigned int mem_attrs;
 	int ret;
-
+	const uint32_t words_to_write = 10;
 	struct ffa_memory_access receiver =
 		ffa_memory_access_init_permissions_from_mem_func(receiver_id,
 								 mem_func);
@@ -263,6 +307,18 @@ CACTUS_CMD_HANDLER(req_mem_send_cmd, CACTUS_REQ_MEM_SEND_CMD)
 		      ret);
 		return cactus_error_resp(vm_id, source,
 					 CACTUS_ERROR_TEST);
+	}
+
+	/* Write to memory before sharing to SP. */
+	if (IS_SP_ID(receiver_id)) {
+		for (size_t i = 0; i < constituents_count; i++) {
+			VERBOSE("Sharing Address: %p\n",
+					constituents[i].address);
+			ptr = (uint32_t *)constituents[i].address;
+			for (size_t j = 0; j < words_to_write; j++) {
+				ptr[j] = mem_func + 0xFFA;
+			}
+		}
 	}
 
 	handle = memory_init_and_send(mb->send, PAGE_SIZE, vm_id, &receiver, 1,

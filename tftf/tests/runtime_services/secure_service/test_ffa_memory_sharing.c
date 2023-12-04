@@ -210,6 +210,14 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 		register_custom_sync_exception_handler(data_abort_handler);
 	}
 
+	for (size_t i = 0; i < constituents_count; i++) {
+		VERBOSE("Sharing Address: %p\n", constituents[i].address);
+		ptr = (uint32_t *)constituents[i].address;
+		for (size_t j = 0; j < nr_words_to_write; j++) {
+			ptr[j] = mem_func + 0xFFA;
+		}
+	}
+
 	handle = memory_init_and_send((struct ffa_memory_region *)mb.send,
 					MAILBOX_SIZE, SENDER, &receiver, 1,
 					constituents, constituents_count,
@@ -253,10 +261,12 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 			ptr = constituents[i].address;
 
 			/*
-			 * Check that borrower used the memory as expected for this
-			 * test.
+			 * Check that borrower used the memory as expected
+			 * for FFA_MEM_SHARE test.
 			 */
-			if (!check_written_words(ptr, mem_func,
+			if (mem_func == FFA_MEM_SHARE_SMC32 &&
+			    !check_written_words(ptr,
+						 mem_func + 0xFFAU,
 						 nr_words_to_write)) {
 				ERROR("Fail because of state of memory.\n");
 				return TEST_RESULT_FAIL;
@@ -481,7 +491,6 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 	uint32_t fragment_length;
 	ffa_memory_handle_t handle;
 	struct ffa_value ret;
-	uint32_t *ptr;
 	/* Arbitrarily write 10 words after using shared memory. */
 	const uint32_t nr_words_to_write = 10U;
 
@@ -532,14 +541,6 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 
 	if (is_ffa_call_error(ret)) {
 		ERROR("Memory reclaim failed!\n");
-		return TEST_RESULT_FAIL;
-	}
-
-	ptr = (uint32_t *)constituents[0].address;
-
-	/* Check that borrower used the memory as expected for this test. */
-	if (!check_written_words(ptr, FFA_MEM_LEND_SMC32, nr_words_to_write)) {
-		ERROR("Words written to shared memory, not as expected.\n");
 		return TEST_RESULT_FAIL;
 	}
 

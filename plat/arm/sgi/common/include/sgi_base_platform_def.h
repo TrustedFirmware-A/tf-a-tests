@@ -80,7 +80,7 @@
 #define PLAT_LOCAL_PSTATE_WIDTH		4
 
 /* Platform specific page table and MMU setup constants */
-#define MAX_XLAT_TABLES			5
+#define MAX_XLAT_TABLES			6
 #define MAX_MMAP_REGIONS		16
 
 /*******************************************************************************

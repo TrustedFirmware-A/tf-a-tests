@@ -110,7 +110,7 @@ func sync_exception_vector_entry
 	/* Save original stack pointer value on the stack */
 	add	x1, x0, #0x100
 	str	x1, [x0, #0xf8]
-	b	print_exception
+	b	realm_print_exception
 0:	restore_gp_regs
 	add	sp, sp, #0x100
 	eret
@@ -136,5 +136,5 @@ func crash_dump
 
 	/* Print the saved CPU context on the UART. */
 	mov	x0, sp
-	b	print_exception
+	b	realm_print_exception
 endfunc crash_dump

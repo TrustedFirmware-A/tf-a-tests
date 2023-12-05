@@ -26,6 +26,7 @@ REALM_SOURCES:=								\
 	$(addprefix realm/,						\
 	aarch64/realm_entrypoint.S					\
 	aarch64/realm_exceptions.S					\
+	realm_exception_report.c					\
 	realm_debug.c							\
 	realm_interrupt.c						\
 	realm_multiple_rec.c						\
@@ -50,10 +51,6 @@ REALM_SOURCES += lib/${ARCH}/cache_helpers.S				\
 	lib/extensions/sve/aarch64/sve_helpers.S			\
 	lib/extensions/sme/aarch64/sme.c				\
 	lib/extensions/sme/aarch64/sme_helpers.S
-
-# TODO: Remove dependency on TFTF files.
-REALM_SOURCES	+=							\
-	tftf/framework/${ARCH}/exception_report.c
 
 REALM_LINKERFILE:=	realm/realm.ld.S
 

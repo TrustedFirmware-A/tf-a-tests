@@ -291,18 +291,34 @@ bool host_destroy_realm(void)
 	return true;
 }
 
+/*
+ * Enter Realm and run command passed in 'cmd' and compare the exit reason with
+ * 'test_exit_reason'.
+ *
+ * Returns:
+ *	true:  On success. 'test_exit_reason' matches Realm exit reason. For
+ *	       RMI_EXIT_HOST_CALL exit reason, the 'host_call_result' is
+ *	       TEST_RESULT_SUCCESS.
+ *	false: On error.
+ */
 bool host_enter_realm_execute(uint8_t cmd, struct realm **realm_ptr,
-		int test_exit_reason, unsigned int rec_num)
+			      unsigned int test_exit_reason,
+			      unsigned int rec_num)
 {
-	u_register_t exit_reason = RMI_EXIT_INVALID;
+	u_register_t realm_exit_reason = RMI_EXIT_INVALID;
 	unsigned int host_call_result = TEST_RESULT_FAIL;
+
+	if (test_exit_reason >= RMI_EXIT_INVALID) {
+		ERROR("Invalid RmiRecExitReason\n");
+		return false;
+	}
 
 	if (rec_num >= realm.rec_count) {
 		ERROR("Invalid Rec Count\n");
 		return false;
 	}
 	host_shared_data_set_realm_cmd(cmd, rec_num);
-	if (!host_enter_realm(&exit_reason, &host_call_result, rec_num)) {
+	if (!host_enter_realm(&realm_exit_reason, &host_call_result, rec_num)) {
 		return false;
 	}
 
@@ -310,20 +326,27 @@ bool host_enter_realm_execute(uint8_t cmd, struct realm **realm_ptr,
 		*realm_ptr = &realm;
 	}
 
-	if ((exit_reason == RMI_EXIT_HOST_CALL) && (host_call_result == TEST_RESULT_SUCCESS)) {
-		return true;
+	if (test_exit_reason == realm_exit_reason) {
+		if (realm_exit_reason != RMI_EXIT_HOST_CALL) {
+			return true;
+		} else if (host_call_result == TEST_RESULT_SUCCESS) {
+			return true;
+		}
 	}
 
-	if (test_exit_reason == exit_reason) {
-		 return true;
-	}
-
-	if (exit_reason <= RMI_EXIT_SERROR) {
-		ERROR("%s(%u) RMI_EXIT_%s host_call_result=%u\n",
-		__func__, cmd, rmi_exit[exit_reason], host_call_result);
+	if (realm_exit_reason < RMI_EXIT_INVALID) {
+		if ((realm_exit_reason == RMI_EXIT_HOST_CALL) &&
+		    (test_exit_reason == realm_exit_reason)) {
+			ERROR("%s(%u) RMI_EXIT_HOST_CALL failed\n", __func__,
+			      cmd);
+		} else {
+			ERROR("%s(%u) Got RMI_EXIT_%s. Expected RMI_EXIT_%s.\n",
+			      __func__, cmd, rmi_exit[realm_exit_reason],
+			      rmi_exit[test_exit_reason]);
+		}
 	} else {
-		ERROR("%s(%u) 0x%lx host_call_result=%u\n",
-		__func__, cmd, exit_reason, host_call_result);
+		ERROR("%s(%u) Unknown or unsupported RmiRecExitReason: 0x%lx\n",
+		__func__, cmd, realm_exit_reason);
 	}
 	return false;
 }

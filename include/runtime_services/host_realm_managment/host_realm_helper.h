@@ -23,7 +23,8 @@ bool host_create_shared_mem(
 bool host_destroy_realm(void);
 void host_rec_send_sgi(unsigned int sgi, unsigned int rec_num);
 bool host_enter_realm_execute(uint8_t cmd, struct realm **realm_ptr,
-		int test_exit_reason, unsigned int rec_num);
+			      unsigned int test_exit_reason,
+			      unsigned int rec_num);
 test_result_t host_cmp_result(void);
 void realm_print_handler(unsigned int rec_num);
 

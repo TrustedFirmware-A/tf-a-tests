@@ -5,8 +5,8 @@
  */
 
 #include <arch_helpers.h>
-#include "ffa_helpers.h"
 #include <cactus_test_cmds.h>
+#include "ffa_helpers.h"
 #include <debug.h>
 #include <ffa_endpoints.h>
 #include <ffa_svc.h>

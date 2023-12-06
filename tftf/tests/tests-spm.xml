@@ -98,6 +98,10 @@
                function="test_hypervisor_share_retrieve_multiple_receivers" />
      <testcase name="Hypervisor lend + memory retrieve request (multiple receivers)"
                function="test_hypervisor_lend_retrieve_multiple_receivers" />
+   <testcase name="Hypervisor share + memory retrieve request (fragmented)"
+               function="test_hypervisor_share_retrieve_fragmented" />
+     <testcase name="Hypervisor lend + memory retrieve request (fragmented)"
+               function="test_hypervisor_lend_retrieve_fragmented" />
      <testcase name="Lend Memory to Secure World"
                function="test_mem_lend_sp" />
      <testcase name="Lend memory, clear flag set"

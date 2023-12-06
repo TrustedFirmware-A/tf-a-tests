@@ -639,13 +639,11 @@ static bool verify_composite(struct ffa_composite_memory_region *composite,
 /**
  * Helper for performing a hypervisor retrieve request test.
  */
-static test_result_t
-hypervisor_retrieve_request_test_helper(uint32_t mem_func,
-					bool multiple_receivers)
+static test_result_t hypervisor_retrieve_request_test_helper(
+	uint32_t mem_func, bool multiple_receivers, bool fragmented)
 {
 	static struct ffa_memory_region_constituent
 		sent_constituents[FRAGMENTED_SHARE_PAGE_COUNT];
-	uint32_t sent_constituents_count = 1;
 
 	__aligned(PAGE_SIZE) static uint8_t page[PAGE_SIZE * 2] = {0};
 	struct ffa_memory_region *hypervisor_retrieve_response =
@@ -680,6 +678,10 @@ hypervisor_retrieve_request_test_helper(uint32_t mem_func,
 	 */
 	uint32_t receiver_count =
 		multiple_receivers ? ARRAY_SIZE(receivers) : 1;
+
+
+	uint32_t sent_constituents_count =
+		fragmented ? ARRAY_SIZE(sent_constituents) : 1;
 
 	/* Add a page per constituent, so that we exhaust the size of a single
 	 * fragment (for testing). In a real world scenario, the whole region
@@ -746,8 +748,7 @@ hypervisor_retrieve_request_test_helper(uint32_t mem_func,
 		return TEST_RESULT_FAIL;
 	}
 
-	{
-		uint32_t i = 0;
+	for (uint32_t i = 0; i < hypervisor_retrieve_response->receiver_count; i++) {
 		struct ffa_composite_memory_region *composite =
 			ffa_memory_region_get_composite(
 				hypervisor_retrieve_response, i);
@@ -776,25 +777,35 @@ hypervisor_retrieve_request_test_helper(uint32_t mem_func,
 
 test_result_t test_hypervisor_share_retrieve(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC32, false);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC32, false, false);
 }
 
 test_result_t test_hypervisor_lend_retrieve(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC32, false);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC32, false, false);
 }
 
 test_result_t test_hypervisor_donate_retrieve(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_DONATE_SMC32, false);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_DONATE_SMC32, false, false);
 }
 
 test_result_t test_hypervisor_share_retrieve_multiple_receivers(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC32, true);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC32, true, false);
 }
 
 test_result_t test_hypervisor_lend_retrieve_multiple_receivers(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC32, true);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC32, true, false);
+}
+
+test_result_t test_hypervisor_share_retrieve_fragmented(void)
+{
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC32, false, true);
+}
+
+test_result_t test_hypervisor_lend_retrieve_fragmented(void)
+{
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC32, false, true);
 }

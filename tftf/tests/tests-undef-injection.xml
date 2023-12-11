@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2023, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+  <testsuite name="UNDEF Injection" description="UNDEF injection from EL3 to lower EL">
+      <testcase name="UNDEF Injection to lower EL"
+                function="test_undef_injection" />
+  </testsuite>
+</testsuites>

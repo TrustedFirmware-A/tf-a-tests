@@ -66,6 +66,8 @@ static fpu_q_reg_t ns_fpu_q_regs_read[FPU_Q_COUNT];
 static fpu_cs_regs_t ns_fpu_cs_regs_write;
 static fpu_cs_regs_t ns_fpu_cs_regs_read;
 
+static struct realm realm;
+
 /* Skip test if SVE is not supported in H/W or in RMI features */
 #define CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(_reg0)				\
 	do {									\
@@ -97,7 +99,8 @@ static test_result_t host_create_sve_realm_payload(bool sve_en, uint8_t sve_vq)
 	}
 
 	/* Initialise Realm payload */
-	if (!host_create_realm_payload((u_register_t)REALM_IMAGE_BASE,
+	if (!host_create_realm_payload(&realm,
+				       (u_register_t)REALM_IMAGE_BASE,
 				       (u_register_t)PAGE_POOL_BASE,
 				       (u_register_t)(PAGE_POOL_MAX_SIZE +
 						      NS_REALM_SHARED_MEM_SIZE),
@@ -107,7 +110,7 @@ static test_result_t host_create_sve_realm_payload(bool sve_en, uint8_t sve_vq)
 	}
 
 	/* Create shared memory between Host and Realm */
-	if (!host_create_shared_mem(NS_REALM_SHARED_MEM_BASE,
+	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
 				    NS_REALM_SHARED_MEM_SIZE)) {
 		return TEST_RESULT_FAIL;
 	}
@@ -170,7 +173,7 @@ test_result_t host_sve_realm_cmd_rdvl(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	realm_rc = host_enter_realm_execute(REALM_SVE_RDVL, NULL,
+	realm_rc = host_enter_realm_execute(&realm, REALM_SVE_RDVL,
 					    RMI_EXIT_HOST_CALL, 0U);
 	if (realm_rc != true) {
 		rc = TEST_RESULT_FAIL;
@@ -191,7 +194,7 @@ test_result_t host_sve_realm_cmd_rdvl(void)
 	}
 
 rm_realm:
-	if (!host_destroy_realm()) {
+	if (!host_destroy_realm(&realm)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -218,7 +221,7 @@ test_result_t host_sve_realm_test_invalid_vl(void)
 	rc = host_create_sve_realm_payload(true, (sve_vq + 1));
 	if (rc == TEST_RESULT_SUCCESS) {
 		ERROR("Error: Realm created with invalid SVE VL %u\n", (sve_vq + 1));
-		host_destroy_realm();
+		host_destroy_realm(&realm);
 		return TEST_RESULT_FAIL;
 	}
 
@@ -246,7 +249,7 @@ static test_result_t _host_sve_realm_check_id_registers(bool sve_en)
 		return rc;
 	}
 
-	realm_rc = host_enter_realm_execute(REALM_SVE_ID_REGISTERS, NULL,
+	realm_rc = host_enter_realm_execute(&realm, REALM_SVE_ID_REGISTERS,
 					    RMI_EXIT_HOST_CALL, 0U);
 	if (!realm_rc) {
 		rc = TEST_RESULT_FAIL;
@@ -280,7 +283,7 @@ static test_result_t _host_sve_realm_check_id_registers(bool sve_en)
 	}
 
 rm_realm:
-	host_destroy_realm();
+	host_destroy_realm(&realm);
 	return rc;
 }
 
@@ -333,7 +336,7 @@ test_result_t host_sve_realm_cmd_probe_vl(void)
 	 */
 	vl_bitmap_expected = sve_probe_vl(sve_vq);
 
-	realm_rc = host_enter_realm_execute(REALM_SVE_PROBE_VL, NULL,
+	realm_rc = host_enter_realm_execute(&realm, REALM_SVE_PROBE_VL,
 					    RMI_EXIT_HOST_CALL, 0U);
 	if (!realm_rc) {
 		rc = TEST_RESULT_FAIL;
@@ -356,7 +359,7 @@ test_result_t host_sve_realm_cmd_probe_vl(void)
 	}
 
 rm_realm:
-	if (!host_destroy_realm()) {
+	if (!host_destroy_realm(&realm)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -394,7 +397,7 @@ test_result_t host_sve_realm_check_config_register(void)
 		ns_zcr_el2 = read_zcr_el2();
 
 		/* Call Realm to run SVE command */
-		realm_rc = host_enter_realm_execute(REALM_SVE_RDVL, NULL,
+		realm_rc = host_enter_realm_execute(&realm, REALM_SVE_RDVL,
 						    RMI_EXIT_HOST_CALL, 0U);
 		if (!realm_rc) {
 			ERROR("Realm command REALM_SVE_RDVL failed\n");
@@ -410,7 +413,7 @@ test_result_t host_sve_realm_check_config_register(void)
 		}
 	}
 
-	if (!host_destroy_realm()) {
+	if (!host_destroy_realm(&realm)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -427,7 +430,7 @@ test_result_t host_sve_realm_check_config_register(void)
 static bool callback_realm_do_sve(void)
 {
 
-	return !host_enter_realm_execute(REALM_SVE_OPS, NULL,
+	return !host_enter_realm_execute(&realm, REALM_SVE_OPS,
 					 RMI_EXIT_HOST_CALL, 0U);
 }
 
@@ -440,7 +443,7 @@ static bool callback_realm_do_sve(void)
  */
 static bool callback_realm_do_fpu(void)
 {
-	return !host_enter_realm_execute(REALM_REQ_FPU_FILL_CMD, NULL,
+	return !host_enter_realm_execute(&realm, REALM_REQ_FPU_FILL_CMD,
 					 RMI_EXIT_HOST_CALL, 0U);
 }
 
@@ -507,7 +510,7 @@ static test_result_t run_sve_vectors_operations(bool realm_sve_en,
 	}
 
 rm_realm:
-	if (!host_destroy_realm()) {
+	if (!host_destroy_realm(&realm)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -622,7 +625,7 @@ test_result_t host_sve_realm_check_vectors_leaked(void)
 	}
 
 	/* 4. Call Realm to fill in Z registers */
-	realm_rc = host_enter_realm_execute(REALM_SVE_FILL_REGS, NULL,
+	realm_rc = host_enter_realm_execute(&realm, REALM_SVE_FILL_REGS,
 					    RMI_EXIT_HOST_CALL, 0U);
 	if (!realm_rc) {
 		rc = TEST_RESULT_FAIL;
@@ -648,7 +651,7 @@ test_result_t host_sve_realm_check_vectors_leaked(void)
 	}
 
 rm_realm:
-	if (!host_destroy_realm()) {
+	if (!host_destroy_realm(&realm)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -672,7 +675,7 @@ test_result_t host_non_sve_realm_check_undef_abort(void)
 		return rc;
 	}
 
-	realm_rc = host_enter_realm_execute(REALM_SVE_UNDEF_ABORT, NULL,
+	realm_rc = host_enter_realm_execute(&realm, REALM_SVE_UNDEF_ABORT,
 					    RMI_EXIT_HOST_CALL, 0U);
 	if (!realm_rc) {
 		ERROR("Realm didn't receive undefined abort\n");
@@ -681,7 +684,7 @@ test_result_t host_non_sve_realm_check_undef_abort(void)
 		rc = TEST_RESULT_SUCCESS;
 	}
 
-	if (!host_destroy_realm()) {
+	if (!host_destroy_realm(&realm)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1007,7 +1010,7 @@ static simd_test_t rl_simd_write_rand(bool rl_sve_en)
 		rl_fill_cmd = REALM_REQ_FPU_FILL_CMD;
 	}
 
-	rc = host_enter_realm_execute(rl_fill_cmd, NULL, RMI_EXIT_HOST_CALL, 0U);
+	rc = host_enter_realm_execute(&realm, rl_fill_cmd, RMI_EXIT_HOST_CALL, 0U);
 	assert(rc);
 
 	return type;
@@ -1025,7 +1028,7 @@ static bool rl_simd_read_and_compare(simd_test_t type)
 		rl_cmp_cmd = REALM_REQ_FPU_CMP_CMD;
 	}
 
-	return host_enter_realm_execute(rl_cmp_cmd, NULL, RMI_EXIT_HOST_CALL,
+	return host_enter_realm_execute(&realm, rl_cmp_cmd, RMI_EXIT_HOST_CALL,
 					0U);
 }
 
@@ -1171,7 +1174,7 @@ rm_realm:
 		tftf_smc_set_sve_hint(false);
 	}
 
-	if (!host_destroy_realm()) {
+	if (!host_destroy_realm(&realm)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1197,7 +1200,7 @@ test_result_t host_realm_check_sme_id_registers(void)
 		return rc;
 	}
 
-	realm_rc = host_enter_realm_execute(REALM_SME_ID_REGISTERS, NULL,
+	realm_rc = host_enter_realm_execute(&realm, REALM_SME_ID_REGISTERS,
 					    RMI_EXIT_HOST_CALL, 0U);
 	if (!realm_rc) {
 		rc = TEST_RESULT_FAIL;
@@ -1220,7 +1223,7 @@ test_result_t host_realm_check_sme_id_registers(void)
 	}
 
 rm_realm:
-	host_destroy_realm();
+	host_destroy_realm(&realm);
 	return rc;
 }
 
@@ -1240,7 +1243,7 @@ test_result_t host_realm_check_sme_undef_abort(void)
 		return rc;
 	}
 
-	realm_rc = host_enter_realm_execute(REALM_SME_UNDEF_ABORT, NULL,
+	realm_rc = host_enter_realm_execute(&realm, REALM_SME_UNDEF_ABORT,
 					    RMI_EXIT_HOST_CALL, 0U);
 	if (!realm_rc) {
 		ERROR("Realm didn't receive undefined abort\n");
@@ -1249,7 +1252,7 @@ test_result_t host_realm_check_sme_undef_abort(void)
 		rc = TEST_RESULT_SUCCESS;
 	}
 
-	host_destroy_realm();
+	host_destroy_realm(&realm);
 	return rc;
 }
 
@@ -1318,13 +1321,12 @@ test_result_t host_realm_check_sme_configs(void)
 		 * SVE support, so run SVE command else run FPU command
 		 */
 		if (sve_en) {
-			realm_rc = host_enter_realm_execute(REALM_SVE_RDVL, NULL,
+			realm_rc = host_enter_realm_execute(&realm, REALM_SVE_RDVL,
 							    RMI_EXIT_HOST_CALL,
 							    0U);
 		} else {
-			realm_rc = host_enter_realm_execute(
+			realm_rc = host_enter_realm_execute(&realm,
 							REALM_REQ_FPU_FILL_CMD,
-							NULL,
 							RMI_EXIT_HOST_CALL, 0U);
 		}
 
@@ -1357,7 +1359,7 @@ test_result_t host_realm_check_sme_configs(void)
 		sme_smstop(SMSTOP_SM);
 	}
 
-	if (!host_destroy_realm()) {
+	if (!host_destroy_realm(&realm)) {
 		return TEST_RESULT_FAIL;
 	}
 

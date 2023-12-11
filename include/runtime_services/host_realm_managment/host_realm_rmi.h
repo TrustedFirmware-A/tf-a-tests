@@ -503,25 +503,28 @@ enum realm_state {
 };
 
 struct realm {
-	unsigned int rec_count;
-	u_register_t par_base;
-	u_register_t par_size;
-	u_register_t rd;
-	u_register_t rtt_addr;
-	u_register_t rec[MAX_REC_COUNT];
-	u_register_t run[MAX_REC_COUNT];
-	u_register_t rec_flag[MAX_REC_COUNT];
-	u_register_t mpidr[MAX_REC_COUNT];
-	u_register_t host_mpidr[MAX_REC_COUNT];
-	u_register_t num_aux;
-	u_register_t rmm_feat_reg0;
-	u_register_t ipa_ns_buffer;
-	u_register_t ns_buffer_size;
-	u_register_t aux_pages_all_rec[MAX_REC_COUNT][REC_PARAMS_AUX_GRANULES];
-	uint8_t      sve_vl;
-	uint8_t      num_bps;
-	uint8_t      num_wps;
-	uint8_t      pmu_num_ctrs;
+	unsigned int     rec_count;
+	u_register_t     par_base;
+	u_register_t     par_size;
+	u_register_t     rd;
+	u_register_t     rtt_addr;
+	u_register_t     rec[MAX_REC_COUNT];
+	u_register_t     run[MAX_REC_COUNT];
+	u_register_t     rec_flag[MAX_REC_COUNT];
+	u_register_t     mpidr[MAX_REC_COUNT];
+	u_register_t     host_mpidr[MAX_REC_COUNT];
+	u_register_t     num_aux;
+	u_register_t     rmm_feat_reg0;
+	u_register_t     ipa_ns_buffer;
+	u_register_t     ns_buffer_size;
+	u_register_t     aux_pages_all_rec[MAX_REC_COUNT][REC_PARAMS_AUX_GRANULES];
+	uint8_t          sve_vl;
+	uint8_t          num_bps;
+	uint8_t          num_wps;
+	uint8_t          pmu_num_ctrs;
+	bool             payload_created;
+	bool             shared_mem_created;
+	unsigned short   vmid;
 	enum realm_state state;
 };
 

@@ -25,6 +25,7 @@ static bool secure_mailbox_initialised;
 
 static fpu_state_t ns_fpu_state_write;
 static fpu_state_t ns_fpu_state_read;
+static struct realm realm;
 
 typedef enum security_state {
 	NONSECURE_WORLD = 0U,
@@ -55,7 +56,7 @@ static test_result_t init_realm(void)
 	/*
 	 * Initialise Realm payload
 	 */
-	if (!host_create_realm_payload((u_register_t)REALM_IMAGE_BASE,
+	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),
@@ -66,7 +67,7 @@ static test_result_t init_realm(void)
 	/*
 	 * Create shared memory between Host and Realm
 	 */
-	if (!host_create_shared_mem(NS_REALM_SHARED_MEM_BASE,
+	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
 			NS_REALM_SHARED_MEM_SIZE)) {
 		return TEST_RESULT_FAIL;
 	}
@@ -120,7 +121,7 @@ static bool fpu_cmp_sec(void)
 /* Send request to Realm to fill FPU/SIMD regs with realm template values */
 static bool fpu_fill_rl(void)
 {
-	if (!host_enter_realm_execute(REALM_REQ_FPU_FILL_CMD, NULL, RMI_EXIT_HOST_CALL, 0U)) {
+	if (!host_enter_realm_execute(&realm, REALM_REQ_FPU_FILL_CMD, RMI_EXIT_HOST_CALL, 0U)) {
 		ERROR("%s failed %d\n", __func__, __LINE__);
 		return false;
 	}
@@ -130,7 +131,7 @@ static bool fpu_fill_rl(void)
 /* Send request to Realm to compare FPU/SIMD regs with previous realm template values */
 static bool fpu_cmp_rl(void)
 {
-	if (!host_enter_realm_execute(REALM_REQ_FPU_CMP_CMD, NULL, RMI_EXIT_HOST_CALL, 0U)) {
+	if (!host_enter_realm_execute(&realm, REALM_REQ_FPU_CMP_CMD, RMI_EXIT_HOST_CALL, 0U)) {
 		ERROR("%s failed %d\n", __func__, __LINE__);
 		return false;
 	}
@@ -180,7 +181,6 @@ static bool fpu_cmp_rl(void)
  */
 test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 {
-	struct realm *realm_ptr;
 	struct ffa_value ret_values;
 	test_result_t res;
 
@@ -220,12 +220,12 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 	 * timer triggers during this time.
 	 */
 	host_shared_data_set_host_val(0U, HOST_ARG1_INDEX, REALM_TIME_SLEEP);
-	host_enter_realm_execute(REALM_SLEEP_CMD, &realm_ptr, RMI_EXIT_FIQ, 0U);
+	host_enter_realm_execute(&realm, REALM_SLEEP_CMD, RMI_EXIT_FIQ, 0U);
 
 	/*
 	 * Check if Realm exit reason is FIQ.
 	 */
-	if (!host_realm_handle_fiq_exit(realm_ptr, 0U)) {
+	if (!host_realm_handle_fiq_exit(&realm, 0U)) {
 		ERROR("Trusted watchdog timer interrupt not fired\n");
 		goto destroy_realm;
 	}
@@ -250,7 +250,7 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 		goto destroy_realm;
 	}
 
-	if (!host_destroy_realm()) {
+	if (!host_destroy_realm(&realm)) {
 		ERROR("host_destroy_realm error\n");
 		return TEST_RESULT_FAIL;
 	}
@@ -258,7 +258,7 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 	return TEST_RESULT_SUCCESS;
 
 destroy_realm:
-	host_destroy_realm();
+	host_destroy_realm(&realm);
 	return TEST_RESULT_FAIL;
 }
 
@@ -404,12 +404,12 @@ test_result_t host_realm_fpu_access_in_rl_ns_se(void)
 		}
 	}
 
-	if (!host_destroy_realm()) {
+	if (!host_destroy_realm(&realm)) {
 		ERROR("host_destroy_realm error\n");
 		return TEST_RESULT_FAIL;
 	}
 	return TEST_RESULT_SUCCESS;
 destroy_realm:
-	host_destroy_realm();
+	host_destroy_realm(&realm);
 	return TEST_RESULT_FAIL;
 }

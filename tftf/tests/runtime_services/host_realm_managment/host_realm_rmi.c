@@ -917,9 +917,9 @@ u_register_t host_realm_init_ipa_state(struct realm *realm, u_register_t level,
 				return REALM_ERROR;
 			}
 
-			/* There's an entry at a lower level, recurse */
-			host_realm_init_ipa_state(realm, start,
-						  start + map_size, level + 1);
+			/* There's an entry at a higher level, recurse */
+			host_realm_init_ipa_state(realm, level + 1U, start,
+						  start + map_size);
 		} else if (ret != RMI_SUCCESS) {
 			return REALM_ERROR;
 		}

@@ -890,10 +890,13 @@ u_register_t host_realm_init_ipa_state(struct realm *realm, u_register_t level,
 					u_register_t start, uint64_t end)
 {
 	u_register_t rd = realm->rd, ret;
-	u_register_t map_size = host_rtt_level_mapsize(level);
 	u_register_t top;
 
-	while (start < end) {
+	do {
+		if (level > RTT_MAX_LEVEL) {
+			return REALM_ERROR;
+		}
+
 		ret = host_rmi_rtt_init_ripas(rd, start, end, &top);
 		if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
 			int cur_level = RMI_RETURN_INDEX(ret);
@@ -907,27 +910,20 @@ u_register_t host_realm_init_ipa_state(struct realm *realm, u_register_t level,
 					ERROR("%s() failed, ret=0x%lx line=%u\n",
 						"host_rmi_create_rtt_levels",
 						ret, __LINE__);
-					return ret;
+					return REALM_ERROR;
 				}
+
 				/* Retry with the RTT levels in place */
 				continue;
 			}
-
-			if (level >= RTT_MAX_LEVEL) {
-				return REALM_ERROR;
-			}
-
-			/* There's an entry at a higher level, recurse */
-			host_realm_init_ipa_state(realm, level + 1U, start,
-						  start + map_size);
-		} else if (ret != RMI_SUCCESS) {
-			return REALM_ERROR;
 		}
 
-		start += map_size;
-	}
+		/* Retry on the next level */
+		level++;
 
-	return RMI_SUCCESS;
+	} while (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT);
+
+	return ret == RMI_SUCCESS ? RMI_SUCCESS : REALM_ERROR;
 }
 
 u_register_t host_realm_map_ns_shared(struct realm *realm,

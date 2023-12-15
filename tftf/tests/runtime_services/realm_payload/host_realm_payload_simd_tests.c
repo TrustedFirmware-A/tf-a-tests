@@ -99,7 +99,7 @@ static test_result_t host_create_sve_realm_payload(bool sve_en, uint8_t sve_vq)
 	}
 
 	/* Initialise Realm payload */
-	if (!host_create_realm_payload(&realm,
+	if (!host_create_activate_realm_payload(&realm,
 				       (u_register_t)REALM_IMAGE_BASE,
 				       (u_register_t)PAGE_POOL_BASE,
 				       (u_register_t)(PAGE_POOL_MAX_SIZE +

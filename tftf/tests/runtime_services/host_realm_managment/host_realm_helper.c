@@ -242,12 +242,6 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 		goto destroy_realm;
 	}
 
-	/* Activate Realm */
-	if (host_realm_activate(realm_ptr) != REALM_SUCCESS) {
-		ERROR("%s() failed\n", "host_realm_activate");
-		goto destroy_realm;
-	}
-
 	realm_ptr->payload_created = true;
 
 	return true;
@@ -259,6 +253,45 @@ destroy_realm:
 	}
 	realm_ptr->payload_created = false;
 
+	return false;
+}
+
+bool host_create_activate_realm_payload(struct realm *realm_ptr,
+			u_register_t realm_payload_adr,
+			u_register_t plat_mem_pool_adr,
+			u_register_t plat_mem_pool_size,
+			u_register_t realm_pages_size,
+			u_register_t feature_flag,
+			const u_register_t *rec_flag,
+			unsigned int rec_count)
+
+{
+	bool ret;
+
+	ret = host_create_realm_payload(realm_ptr,
+			realm_payload_adr,
+			plat_mem_pool_adr,
+			plat_mem_pool_size,
+			realm_pages_size,
+			feature_flag,
+			rec_flag,
+			rec_count);
+	if (!ret) {
+		goto destroy_realm;
+	} else {
+		/* Activate Realm */
+		if (host_realm_activate(realm_ptr) != REALM_SUCCESS) {
+			ERROR("%s() failed\n", "host_realm_activate");
+			goto destroy_realm;
+		}
+	}
+	return true;
+
+destroy_realm:
+	if (host_realm_destroy(realm_ptr) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_realm_destroy");
+	}
+	realm_ptr->payload_created = false;
 	return false;
 }
 

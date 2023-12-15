@@ -56,7 +56,7 @@ static test_result_t init_realm(void)
 	/*
 	 * Initialise Realm payload
 	 */
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),

@@ -40,4 +40,5 @@ TESTS_SOURCES	+=							\
 		randsmcmod.c						\
 		smcmalloc.c						\
 		fifo3d.c						\
+		runtestfunction.c					\
 	)

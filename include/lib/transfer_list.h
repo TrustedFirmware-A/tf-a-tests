@@ -12,7 +12,7 @@
 
 #include <lib/utils_def.h>
 
-#define TRANSFER_LIST_SIGNATURE U(0x006ed0ff)
+#define TRANSFER_LIST_SIGNATURE U(0x4a0fb10b)
 #define TRANSFER_LIST_VERSION U(0x0001)
 
 // Init value of maximum alignment required by any TE data in the TL

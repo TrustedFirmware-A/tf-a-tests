@@ -11,12 +11,17 @@
 #include "fifo3d.h"
 #include <libfdt.h>
 
+#include <plat_topology.h>
+#include <power_management.h>
 #include <tftf_lib.h>
 
 extern char _binary___dtb_start[];
 extern void runtestfunction(char *funcstr);
 
 struct memmod tmod __aligned(65536) __section("smcfuzz");
+static int cntndarray;
+static struct rand_smc_node *ndarray;
+static struct memmod *mmod;
 
 /*
  * switch to use either standard C malloc or custom SMC malloc
@@ -405,7 +410,7 @@ struct rand_smc_node *createsmctree(int *casz,
 /*
  * Function executes a single SMC fuzz test instance with a supplied seed.
  */
-test_result_t smc_fuzzing_instance(uint32_t seed)
+test_result_t init_smc_fuzzing(void)
 {
 	/*
 	 * Setting up malloc block parameters
@@ -426,20 +431,26 @@ test_result_t smc_fuzzing_instance(uint32_t seed)
 	tmod.checkadd = 1U;
 	tmod.checknumentries = 0U;
 	tmod.memerror = 0U;
-	struct memmod *mmod;
 	mmod = &tmod;
-	int cntndarray;
-	struct rand_smc_node *tlnode;
 
 	/*
 	 * Creating SMC bias tree
 	 */
-	struct rand_smc_node *ndarray = createsmctree(&cntndarray, &tmod);
+	ndarray = createsmctree(&cntndarray, &tmod);
 
 	if (tmod.memerror != 0) {
 		return TEST_RESULT_FAIL;
 	}
 
+	return TEST_RESULT_SUCCESS;
+}
+
+/*
+ * Declaration of single fuzzing instance(seed based)
+ */
+test_result_t smc_fuzzing_instance(uint32_t seed)
+{
+	struct rand_smc_node *tlnode;
 	/*
 	 * Initialize pseudo random number generator with supplied seed.
 	 */
@@ -479,7 +490,14 @@ test_result_t smc_fuzzing_instance(uint32_t seed)
 			}
 		}
 	}
+	return TEST_RESULT_SUCCESS;
+}
 
+/*
+ * free memory after fuzzing is complete
+ */
+test_result_t smc_fuzzing_deinit(void)
+{
 	/*
 	 * End of test SMC selection and freeing of nodes
 	 */
@@ -503,9 +521,9 @@ test_result_t smc_fuzzing_instance(uint32_t seed)
 }
 
 /*
- * Top of SMC fuzzing module
+ * Execute fuzzing module
  */
-test_result_t smc_fuzzing_top(void)
+test_result_t smc_fuzzer_execute(void)
 {
 	/* These SMC_FUZZ_x macros are supplied by the build system. */
 	test_result_t results[SMC_FUZZ_INSTANCE_COUNT];
@@ -556,4 +574,47 @@ test_result_t smc_fuzzing_top(void)
 	printf("\n");
 
 	return result;
+}
+
+/*
+ * Top level of fuzzing module
+ */
+test_result_t smc_fuzzing_top(void)
+{
+	test_result_t result = TEST_RESULT_SUCCESS;
+
+	init_smc_fuzzing();
+#ifdef MULTI_CPU_SMC_FUZZER
+	u_register_t lead_mpid, target_mpid;
+	int cpu_node;
+	int32_t aff_info __unused;
+	int64_t ret;
+
+	lead_mpid = read_mpidr_el1() & MPID_MASK;
+	for_each_cpu(cpu_node) {
+		target_mpid = tftf_get_mpidr_from_node(cpu_node) & MPID_MASK;
+		if (lead_mpid == target_mpid) {
+			/* Run on this CPU */
+			if (smc_fuzzer_execute() != TEST_RESULT_SUCCESS)
+				return TEST_RESULT_FAIL;
+		} else {
+			/* Power on other CPU to run through fuzzing instructions */
+			ret = tftf_cpu_on(target_mpid,
+					(uintptr_t) smc_fuzzer_execute, 0);
+			if (ret != PSCI_E_SUCCESS) {
+				ERROR("CPU ON failed for 0x%llx\n",
+						(unsigned long long) target_mpid);
+				return TEST_RESULT_FAIL;
+			}
+
+		}
+	}
+
+	smc_fuzzing_deinit();
+	return result;
+#else
+	result = smc_fuzzer_execute();
+	smc_fuzzing_deinit();
+	return result;
+#endif
 }

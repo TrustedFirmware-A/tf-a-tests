@@ -29,7 +29,7 @@ static void realm_sleep_cmd(void)
 {
 	uint64_t sleep = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
 
-	realm_printf("Realm: going to sleep for %llums\n", sleep);
+	realm_printf("going to sleep for %llums\n", sleep);
 	waitms(sleep);
 }
 

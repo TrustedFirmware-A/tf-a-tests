@@ -35,7 +35,7 @@ static bool exception_handler(void)
 
 void dummy_func(void)
 {
-	realm_printf("Realm: shouldn't reach here.\n");
+	realm_printf("shouldn't reach here.\n");
 	rsi_exit_to_host(HOST_CALL_EXIT_FAILED_CMD);
 }
 
@@ -48,7 +48,7 @@ bool test_realm_pauth_fault(void)
 	}
 
 	register_custom_sync_exception_handler(exception_handler);
-	realm_printf("Realm: overwrite LR to generate fault.\n");
+	realm_printf("overwrite LR to generate fault.\n");
 	__asm__("mov	x17, x30;	"
 		"mov	x30, %0;	"	/* overwite LR. */
 		"isb;			"

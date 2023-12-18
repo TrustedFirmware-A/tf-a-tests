@@ -25,10 +25,10 @@ static uint64_t is_secondary_cpu_booted;
 
 static void rec1_handler(u_register_t cxt_id)
 {
-	realm_printf("Realm: running on CPU = 0x%lx cxt_id= 0x%lx\n",
+	realm_printf("running on CPU = 0x%lx cxt_id= 0x%lx\n",
 			read_mpidr_el1() & MPID_MASK, cxt_id);
 	if (cxt_id < CXT_ID_MAGIC || cxt_id > CXT_ID_MAGIC + MAX_REC_COUNT) {
-		realm_printf("Realm: Wrong cxt_id\n");
+		realm_printf("Wrong cxt_id\n");
 		rsi_exit_to_host(HOST_CALL_EXIT_FAILED_CMD);
 	}
 	is_secondary_cpu_booted++;

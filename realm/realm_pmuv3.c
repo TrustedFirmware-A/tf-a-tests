@@ -154,7 +154,7 @@ bool test_pmuv3_cycle_works_realm(void)
 	disable_counting();
 	clear_counters();
 
-	realm_printf("Realm: counted from %lu to %lu\n",
+	realm_printf("counted from %lu to %lu\n",
 		ccounter_start, ccounter_end);
 	if (ccounter_start != ccounter_end) {
 		return true;
@@ -171,7 +171,7 @@ bool test_pmuv3_event_works_realm(void)
 	u_register_t evcounter_end;
 
 	if (GET_CNT_NUM == 0) {
-		realm_printf("Realm: no event counters implemented\n");
+		realm_printf("no event counters implemented\n");
 		return false;
 	}
 
@@ -189,7 +189,7 @@ bool test_pmuv3_event_works_realm(void)
 	evcounter_end = read_pmevcntrn_el0(0);
 	clear_counters();
 
-	realm_printf("Realm: counted from %lu to %lu\n",
+	realm_printf("counted from %lu to %lu\n",
 		evcounter_start, evcounter_end);
 	if (evcounter_start != evcounter_end) {
 		return true;
@@ -210,7 +210,7 @@ bool test_pmuv3_rmm_preserves(void)
 	u_register_t pmu_cfg_end[3];
 	unsigned int impl_ev_ctrs = GET_CNT_NUM;
 
-	realm_printf("Realm: testing %u event counters\n", impl_ev_ctrs);
+	realm_printf("testing %u event counters\n", impl_ev_ctrs);
 
 	pmu_reset();
 
@@ -235,19 +235,19 @@ bool test_pmuv3_rmm_preserves(void)
 	read_all_pmu_configs(pmu_cfg_end);
 
 	if (memcmp(ctr_start, ctr_end, sizeof(ctr_start)) != 0) {
-		realm_printf("Realm: SMC call did not preserve %s\n",
+		realm_printf("SMC call did not preserve %s\n",
 				"counters");
 		return false;
 	}
 
 	if (memcmp(ctr_cfg_start, ctr_cfg_end, sizeof(ctr_cfg_start)) != 0) {
-		realm_printf("Realm: SMC call did not preserve %s\n",
+		realm_printf("SMC call did not preserve %s\n",
 				"counter config");
 		return false;
 	}
 
 	if (memcmp(pmu_cfg_start, pmu_cfg_end, sizeof(pmu_cfg_start)) != 0) {
-		realm_printf("Realm: SMC call did not preserve %s\n",
+		realm_printf("SMC call did not preserve %s\n",
 				"PMU registers");
 		return false;
 	}
@@ -284,7 +284,7 @@ bool test_pmuv3_overflow_interrupt(void)
 	/* Enable interrupt on event counter #0 */
 	write_pmintenset_el1((1UL << 0));
 
-	realm_printf("Realm: waiting for PMU vIRQ...\n");
+	realm_printf("waiting for PMU vIRQ...\n");
 
 	enable_counting();
 	execute_nops();
@@ -304,12 +304,12 @@ bool test_pmuv3_overflow_interrupt(void)
 	pmu_reset();
 
 	if (delay_time == 0ULL) {
-		realm_printf("Realm: PMU vIRQ %sreceived in %llums\n",	"not ",
+		realm_printf("PMU vIRQ %sreceived in %llums\n",	"not ",
 				DELAY_MS);
 		return false;
 	}
 
-	realm_printf("Realm: PMU vIRQ %sreceived in %llums\n", "",
+	realm_printf("PMU vIRQ %sreceived in %llums\n", "",
 			DELAY_MS - delay_time);
 
 	return true;

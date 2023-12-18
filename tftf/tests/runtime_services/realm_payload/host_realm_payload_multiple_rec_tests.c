@@ -36,8 +36,6 @@ test_result_t host_realm_multi_rec_single_cpu(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)(PAGE_POOL_MAX_SIZE +
-			NS_REALM_SHARED_MEM_SIZE),
 			(u_register_t)PAGE_POOL_MAX_SIZE,
 			0UL, rec_flag, MAX_REC_COUNT)) {
 		return TEST_RESULT_FAIL;
@@ -94,8 +92,6 @@ test_result_t host_realm_multi_rec_psci_denied(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)(PAGE_POOL_MAX_SIZE +
-			NS_REALM_SHARED_MEM_SIZE),
 			(u_register_t)PAGE_POOL_MAX_SIZE,
 			0UL, rec_flag, 3U)) {
 		return TEST_RESULT_FAIL;
@@ -237,8 +233,6 @@ test_result_t host_realm_multi_rec_exit_irq(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)(PAGE_POOL_MAX_SIZE +
-			NS_REALM_SHARED_MEM_SIZE),
 			(u_register_t)PAGE_POOL_MAX_SIZE,
 			0UL, rec_flag, rec_count)) {
 		return TEST_RESULT_FAIL;

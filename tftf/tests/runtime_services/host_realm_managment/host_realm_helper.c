@@ -59,7 +59,7 @@ void realm_print_handler(struct realm *realm_ptr, unsigned int rec_num)
 	if (str_len != 0UL) {
 		/* Avoid memory overflow */
 		log_buffer[MAX_BUF_SIZE - 1] = 0U;
-		mp_printf("VMID: %u Rec%u: %s", realm_ptr->vmid, rec_num, log_buffer);
+		mp_printf("[VMID %u][Rec %u]: %s", realm_ptr->vmid, rec_num, log_buffer);
 		(void)memset((char *)log_buffer, 0, MAX_BUF_SIZE);
 	}
 }
@@ -108,7 +108,6 @@ static bool host_enter_realm(struct realm *realm_ptr,
 bool host_create_realm_payload(struct realm *realm_ptr,
 			       u_register_t realm_payload_adr,
 			       u_register_t plat_mem_pool_adr,
-			       u_register_t plat_mem_pool_size,
 			       u_register_t realm_pages_size,
 			       u_register_t feature_flag,
 			       const u_register_t *rec_flag,
@@ -122,10 +121,9 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 	}
 
 	if (plat_mem_pool_adr  == 0UL ||
-			plat_mem_pool_size == 0UL ||
 			realm_pages_size == 0UL) {
 		ERROR("plat_mem_pool_size or "
-			"plat_mem_pool_size or realm_pages_size is NULL\n");
+			"realm_pages_size is NULL\n");
 		return false;
 	}
 
@@ -259,7 +257,6 @@ destroy_realm:
 bool host_create_activate_realm_payload(struct realm *realm_ptr,
 			u_register_t realm_payload_adr,
 			u_register_t plat_mem_pool_adr,
-			u_register_t plat_mem_pool_size,
 			u_register_t realm_pages_size,
 			u_register_t feature_flag,
 			const u_register_t *rec_flag,
@@ -271,7 +268,6 @@ bool host_create_activate_realm_payload(struct realm *realm_ptr,
 	ret = host_create_realm_payload(realm_ptr,
 			realm_payload_adr,
 			plat_mem_pool_adr,
-			plat_mem_pool_size,
 			realm_pages_size,
 			feature_flag,
 			rec_flag,

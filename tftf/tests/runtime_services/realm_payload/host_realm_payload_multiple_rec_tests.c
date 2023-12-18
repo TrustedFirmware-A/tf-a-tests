@@ -34,7 +34,7 @@ test_result_t host_realm_multi_rec_single_cpu(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),
@@ -48,7 +48,7 @@ test_result_t host_realm_multi_rec_single_cpu(void)
 	}
 
 	for (unsigned int i = 0; i < MAX_REC_COUNT; i++) {
-		host_shared_data_set_host_val(i, HOST_ARG1_INDEX, 10U);
+		host_shared_data_set_host_val(&realm, i, HOST_ARG1_INDEX, 10U);
 		ret1 = host_enter_realm_execute(&realm, REALM_SLEEP_CMD,
 				RMI_EXIT_HOST_CALL, i);
 		if (!ret1) {
@@ -92,7 +92,7 @@ test_result_t host_realm_multi_rec_psci_denied(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),
@@ -235,7 +235,7 @@ test_result_t host_realm_multi_rec_exit_irq(void)
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 	SKIP_TEST_IF_LESS_THAN_N_CPUS(rec_count);
 
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),

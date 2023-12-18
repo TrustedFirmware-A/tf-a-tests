@@ -56,7 +56,7 @@ static test_result_t init_realm(void)
 	/*
 	 * Initialise Realm payload
 	 */
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)(PAGE_POOL_MAX_SIZE +
 			NS_REALM_SHARED_MEM_SIZE),
@@ -219,7 +219,7 @@ test_result_t host_realm_sec_interrupt_can_preempt_rl(void)
 	 * Spin Realm payload for REALM_TIME_SLEEP ms, This ensures secure wdog
 	 * timer triggers during this time.
 	 */
-	host_shared_data_set_host_val(0U, HOST_ARG1_INDEX, REALM_TIME_SLEEP);
+	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, REALM_TIME_SLEEP);
 	host_enter_realm_execute(&realm, REALM_SLEEP_CMD, RMI_EXIT_FIQ, 0U);
 
 	/*

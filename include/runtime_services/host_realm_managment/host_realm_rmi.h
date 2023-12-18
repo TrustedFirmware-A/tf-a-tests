@@ -503,6 +503,7 @@ enum realm_state {
 };
 
 struct realm {
+	u_register_t     host_shared_data;
 	unsigned int     rec_count;
 	u_register_t     par_base;
 	u_register_t     par_size;

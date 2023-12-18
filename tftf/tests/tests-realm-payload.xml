@@ -10,6 +10,8 @@
   <testsuite name="Realm payload at EL1" description="Test Realm EL1 framework capabilities" >
 	  <testcase name="Realm EL1 creation and execution test"
 	  function="host_test_realm_create_enter" />
+	  <testcase name="Multiple Realm EL1 creation and execution test"
+	  function="host_test_multiple_realm_create_enter" />
 	  <testcase name="Realm payload multi rec single cpu"
 	  function="host_realm_multi_rec_single_cpu" />
 	  <testcase name="Realm payload multi rec psci denied"

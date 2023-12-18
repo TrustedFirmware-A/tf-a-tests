@@ -102,8 +102,6 @@ static test_result_t host_create_sve_realm_payload(bool sve_en, uint8_t sve_vq)
 	if (!host_create_activate_realm_payload(&realm,
 				       (u_register_t)REALM_IMAGE_BASE,
 				       (u_register_t)PAGE_POOL_BASE,
-				       (u_register_t)(PAGE_POOL_MAX_SIZE +
-						      NS_REALM_SHARED_MEM_SIZE),
 				       (u_register_t)PAGE_POOL_MAX_SIZE,
 				       feature_flag, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;

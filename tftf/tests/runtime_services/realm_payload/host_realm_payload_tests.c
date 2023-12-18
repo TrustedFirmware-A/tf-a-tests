@@ -38,8 +38,6 @@ test_result_t host_test_realm_create_enter(void)
 	for (unsigned int i = 0U; i < 5U; i++) {
 		if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 				(u_register_t)PAGE_POOL_BASE,
-				(u_register_t)(PAGE_POOL_MAX_SIZE +
-				NS_REALM_SHARED_MEM_SIZE),
 				(u_register_t)PAGE_POOL_MAX_SIZE,
 				0UL, rec_flag, 1U)) {
 			return TEST_RESULT_FAIL;
@@ -76,8 +74,6 @@ test_result_t host_test_realm_rsi_version(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)(PAGE_POOL_MAX_SIZE +
-			NS_REALM_SHARED_MEM_SIZE),
 			(u_register_t)PAGE_POOL_MAX_SIZE,
 			0UL, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
@@ -116,8 +112,6 @@ test_result_t host_realm_enable_pauth(void)
 	pauth_test_lib_fill_regs_and_template();
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 				(u_register_t)PAGE_POOL_BASE,
-				(u_register_t)(PAGE_POOL_MAX_SIZE +
-					NS_REALM_SHARED_MEM_SIZE),
 				(u_register_t)PAGE_POOL_MAX_SIZE,
 				0UL, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
@@ -170,8 +164,6 @@ test_result_t host_realm_pauth_fault(void)
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 				(u_register_t)PAGE_POOL_BASE,
-				(u_register_t)(PAGE_POOL_MAX_SIZE +
-					NS_REALM_SHARED_MEM_SIZE),
 				(u_register_t)PAGE_POOL_MAX_SIZE,
 				0UL, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
@@ -268,8 +260,6 @@ static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)(PAGE_POOL_MAX_SIZE +
-			NS_REALM_SHARED_MEM_SIZE),
 			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
@@ -373,8 +363,6 @@ test_result_t host_test_multiple_realm_create_enter(void)
 
 	if (!host_create_activate_realm_payload(&realm1, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)(PAGE_POOL_MAX_SIZE +
-			NS_REALM_SHARED_MEM_SIZE),
 			(u_register_t)PAGE_POOL_MAX_SIZE,
 			0UL, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
@@ -383,8 +371,6 @@ test_result_t host_test_multiple_realm_create_enter(void)
 
 	if (!host_create_activate_realm_payload(&realm2, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE + PAGE_POOL_MAX_SIZE,
-			(u_register_t)(PAGE_POOL_MAX_SIZE +
-			NS_REALM_SHARED_MEM_SIZE),
 			(u_register_t)PAGE_POOL_MAX_SIZE,
 			0UL, rec_flag, 1U)) {
 		ret2 = host_destroy_realm(&realm1);

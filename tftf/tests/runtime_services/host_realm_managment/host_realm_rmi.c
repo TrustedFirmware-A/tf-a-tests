@@ -110,11 +110,11 @@ u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t targe
 				target_rec, status}, 4U)).ret0;
 }
 
-static inline u_register_t host_rmi_data_create(bool unknown,
-						u_register_t rd,
-						u_register_t data,
-						u_register_t map_addr,
-						u_register_t src)
+u_register_t host_rmi_data_create(bool unknown,
+				  u_register_t rd,
+				  u_register_t data,
+				  u_register_t map_addr,
+				  u_register_t src)
 {
 	if (unknown) {
 		return host_rmi_handler(&(smc_args) {RMI_DATA_CREATE_UNKNOWN,
@@ -240,11 +240,11 @@ static inline u_register_t host_rmi_rec_aux_count(u_register_t rd,
 	return rets.ret0;
 }
 
-static inline u_register_t host_rmi_rtt_set_ripas(u_register_t rd,
-						  u_register_t rec,
-						  u_register_t start,
-						  u_register_t end,
-						  u_register_t *top)
+u_register_t host_rmi_rtt_set_ripas(u_register_t rd,
+				    u_register_t rec,
+				    u_register_t start,
+				    u_register_t end,
+				    u_register_t *top)
 {
 	smc_ret_values rets;
 
@@ -299,6 +299,11 @@ static inline u_register_t host_rtt_level_mapsize(u_register_t level)
 	}
 
 	return (1UL << RTT_LEVEL_SHIFT(level));
+}
+
+static inline bool ipa_is_ns(u_register_t addr, u_register_t rmm_feat_reg0)
+{
+	return (addr >> (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, rmm_feat_reg0) - 1UL) == 1UL);
 }
 
 static inline u_register_t host_realm_rtt_create(struct realm *realm,
@@ -376,16 +381,16 @@ static u_register_t host_realm_fold_rtt(u_register_t rd, u_register_t addr,
 
 }
 
-static u_register_t host_realm_map_protected_data(bool unknown,
-						  struct realm *realm,
-						  u_register_t target_pa,
-						  u_register_t map_size,
-						  u_register_t src_pa)
+u_register_t host_realm_map_protected_data(bool unknown,
+					   struct realm *realm,
+					   u_register_t target_pa,
+					   u_register_t map_size,
+					   u_register_t src_pa)
 {
 	u_register_t rd = realm->rd;
 	u_register_t map_level, level;
 	u_register_t ret = 0UL;
-	u_register_t size;
+	u_register_t size = 0UL;
 	u_register_t phys = target_pa;
 	u_register_t map_addr = target_pa;
 	u_register_t end_addr = map_addr + map_size;
@@ -649,7 +654,8 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 
 		switch (rtt.state) {
 		case RMI_ASSIGNED:
-			if (rtt.ripas == RMI_EMPTY) {
+			if (ipa_is_ns(map_addr, realm->rmm_feat_reg0)) {
+
 				ret = host_rmi_rtt_unmap_unprotected(
 								rd,
 								map_addr,

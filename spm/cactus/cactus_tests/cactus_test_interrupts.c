@@ -86,8 +86,9 @@ CACTUS_CMD_HANDLER(sleep_fwd_cmd, CACTUS_FWD_SLEEP_CMD)
 			/* Received FFA_INTERRUPT in blocked state. */
 			VERBOSE("Processing FFA_INTERRUPT while"
 				" blocked on direct response\n");
-			unsigned int my_core_pos =
-				platform_get_core_pos(read_mpidr_el1());
+
+			/* Get vCPU index for currently running vCPU. */
+			unsigned int my_core_pos = spm_get_my_core_pos();
 
 			ffa_ret = ffa_run(fwd_dest, my_core_pos);
 		} else {

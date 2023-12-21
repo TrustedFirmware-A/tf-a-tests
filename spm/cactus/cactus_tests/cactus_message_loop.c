@@ -11,6 +11,7 @@
 #include <ffa_helpers.h>
 #include <events.h>
 #include <platform.h>
+#include <spm_helpers.h>
 
 /**
  * Counter of the number of handled requests, for each CPU. The number of
@@ -43,9 +44,8 @@ bool cactus_handle_cmd(struct ffa_value *cmd_args, struct ffa_value *ret,
 {
 	uint64_t in_cmd;
 
-	/* Get which core it is running from. */
-	unsigned int core_pos = platform_get_core_pos(
-						read_mpidr_el1() & MPID_MASK);
+	/* Get vCPU index for currently running vCPU. */
+	unsigned int core_pos = spm_get_my_core_pos();
 
 	if (cmd_args == NULL || ret == NULL) {
 		ERROR("Invalid arguments passed to %s!\n", __func__);

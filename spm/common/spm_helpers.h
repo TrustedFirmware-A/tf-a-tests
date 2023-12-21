@@ -23,4 +23,6 @@ uint32_t spm_interrupt_get(void);
 int64_t spm_interrupt_enable(uint32_t int_id, bool enable, enum interrupt_pin pin);
 int64_t spm_interrupt_deactivate(uint32_t vint_id);
 
+unsigned int spm_get_my_core_pos(void);
+
 #endif /* SPMC_H */

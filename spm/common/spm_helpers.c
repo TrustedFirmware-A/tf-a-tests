@@ -56,3 +56,16 @@ int64_t spm_interrupt_deactivate(uint32_t vint_id)
 
 	return (int64_t)ret.ret0;
 }
+
+/**
+ * Return vCPU index for the currently running vCPU.
+ * Virtual MPIDR holds the linear vCPU index information in lower bits.
+ * Keep only first 24 bits (mapping to Aff0/Aff1/Aff2).
+ * Omit Aff3, bit [31], U[30], MT[24].
+ */
+unsigned int spm_get_my_core_pos(void)
+{
+	uint64_t mpidr = read_mpidr_el1();
+
+	return (unsigned int)(mpidr & 0xffffff);
+}

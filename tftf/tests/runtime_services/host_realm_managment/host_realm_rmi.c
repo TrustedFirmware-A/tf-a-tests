@@ -393,8 +393,6 @@ u_register_t host_realm_map_protected_data(bool unknown,
 	u_register_t size = 0UL;
 	u_register_t phys = target_pa;
 	u_register_t map_addr = target_pa;
-	u_register_t end_addr = map_addr + map_size;
-	u_register_t top;
 
 	if (!IS_ALIGNED(map_addr, map_size)) {
 		return REALM_ERROR;
@@ -412,23 +410,6 @@ u_register_t host_realm_map_protected_data(bool unknown,
 		return REALM_ERROR;
 	}
 
-	ret = host_rmi_rtt_init_ripas(rd, map_addr, end_addr, &top);
-	if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
-		ret = host_rmi_create_rtt_levels(realm, map_addr,
-						 RMI_RETURN_INDEX(ret),
-						 map_level);
-		if (ret != RMI_SUCCESS) {
-			ERROR("%s() failed, ret=0x%lx line=%u\n",
-				"host_rmi_create_rtt_levels", ret, __LINE__);
-			goto err;
-		}
-		ret = host_rmi_rtt_init_ripas(rd, map_addr, end_addr, &top);
-		if (ret != RMI_SUCCESS) {
-			ERROR("%s() failed, ret=0x%lx line=%u\n",
-				"host_rmi_rtt_init_ripas", ret, __LINE__);
-			goto err;
-		}
-	}
 	for (size = 0UL; size < map_size; size += PAGE_SIZE) {
 		ret = host_rmi_granule_delegate(phys);
 		if (ret != RMI_SUCCESS) {

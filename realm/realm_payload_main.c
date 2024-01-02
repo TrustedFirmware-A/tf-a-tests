@@ -16,6 +16,7 @@
 #include "realm_def.h"
 #include <realm_rsi.h>
 #include <realm_tests.h>
+#include <sync.h>
 #include <tftf_lib.h>
 
 static fpu_state_t rl_fpu_state_write;
@@ -161,6 +162,26 @@ static bool test_realm_data_access_cmd(void)
 	return false;
 }
 
+static bool realm_exception_handler(void)
+{
+	u_register_t base, far, esr;
+
+	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	far = read_far_el1();
+	esr = read_esr_el1();
+
+	if (far == base) {
+		/* return ESR to Host */
+		realm_shared_data_set_my_realm_val(HOST_ARG2_INDEX, esr);
+		rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
+	}
+	realm_printf("Realm Abort fail incorrect FAR=0x%lx ESR+0x%lx\n", far, esr);
+	rsi_exit_to_host(HOST_CALL_EXIT_FAILED_CMD);
+
+	/* Should not return. */
+	return false;
+}
+
 /*
  * This is the entry function for Realm payload, it first requests the shared buffer
  * IPA address from Host using HOST_CALL/RSI, it reads the command to be executed,
@@ -173,6 +194,7 @@ void realm_payload_main(void)
 {
 	bool test_succeed = false;
 
+	register_custom_sync_exception_handler(realm_exception_handler);
 	realm_set_shared_structure((host_shared_data_t *)rsi_get_ns_buffer());
 	if (realm_get_my_shared_structure() != NULL) {
 		uint8_t cmd = realm_shared_data_get_my_realm_cmd();

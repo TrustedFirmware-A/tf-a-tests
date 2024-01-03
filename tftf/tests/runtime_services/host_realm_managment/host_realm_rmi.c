@@ -292,15 +292,6 @@ u_register_t host_rmi_rtt_unmap_unprotected(u_register_t rd,
 	return rets.ret0;
 }
 
-u_register_t host_rtt_level_mapsize(u_register_t level)
-{
-	if (level > RTT_MAX_LEVEL) {
-		return PAGE_SIZE;
-	}
-
-	return (1UL << RTT_LEVEL_SHIFT(level));
-}
-
 static inline bool ipa_is_ns(u_register_t addr, u_register_t rmm_feat_reg0)
 {
 	return (addr >> (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, rmm_feat_reg0) - 1UL) == 1UL);
@@ -311,7 +302,7 @@ static inline u_register_t host_realm_rtt_create(struct realm *realm,
 						 u_register_t level,
 						 u_register_t phys)
 {
-	addr = ALIGN_DOWN(addr, host_rtt_level_mapsize(level - 1U));
+	addr = ALIGN_DOWN(addr, RTT_MAP_SIZE(level - 1U));
 	return host_rmi_rtt_create(realm->rd, phys, addr, level);
 }
 
@@ -547,7 +538,7 @@ static u_register_t host_realm_rtt_destroy(struct realm *realm,
 					   u_register_t *rtt,
 					   u_register_t *top)
 {
-	addr = ALIGN_DOWN(addr, host_rtt_level_mapsize(level - 1U));
+	addr = ALIGN_DOWN(addr, RTT_MAP_SIZE(level - 1U));
 	return host_rmi_rtt_destroy(realm->rd, addr, level, rtt, top);
 }
 
@@ -615,7 +606,7 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 						   u_register_t end)
 {
 	u_register_t rd = realm->rd;
-	u_register_t map_size = host_rtt_level_mapsize(level);
+	u_register_t map_size = RTT_MAP_SIZE(level);
 	u_register_t map_addr, next_addr, rtt_out_addr, end_addr, top;
 	struct rtt_entry rtt;
 	u_register_t ret;
@@ -863,7 +854,7 @@ u_register_t host_realm_map_payload_image(struct realm *realm,
 						src_pa + i * PAGE_SIZE);
 		if (ret != RMI_SUCCESS) {
 			ERROR("%s() failed, par_base=0x%lx ret=0x%lx\n",
-				"host_realm_map_protected_data",
+				"host_realm_delegate_map_protected_data",
 				realm->par_base, ret);
 			return REALM_ERROR;
 		}

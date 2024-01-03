@@ -16,6 +16,10 @@
 	  function="host_realm_multi_rec_multiple_cpu" />
 	  <testcase name="Realm payload multi rec validations"
 	  function="host_realm_multi_rec_multiple_cpu2" />
+	  <testcase name="New Realm PAS Validation"
+	  function="host_realm_pas_validation_new" />
+          <testcase name="Active Realm PAS validation"
+          function="host_realm_pas_validation_active" />
 	  <testcase name="Realm SEA Empty"
 	  function="host_realm_sea_empty" />
 	  <testcase name="Realm SEA Unprotected"

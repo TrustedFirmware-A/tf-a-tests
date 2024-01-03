@@ -350,6 +350,7 @@ typedef enum {
 #define PAGE_SHIFT			FOUR_KB_SHIFT
 #define RTT_LEVEL_SHIFT(l)		XLAT_ADDR_SHIFT(l)
 #define RTT_L2_BLOCK_SIZE		(1UL << RTT_LEVEL_SHIFT(2U))
+#define RTT_MAP_SIZE(level)		(1UL << RTT_LEVEL_SHIFT(level))
 
 #define REC_CREATE_NR_GPRS		8U
 #define REC_HVC_NR_GPRS			7U

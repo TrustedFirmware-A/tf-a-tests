@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -11,6 +11,7 @@ TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	extensions/ecv/test_ecv.c					\
 	extensions/fgt/test_fgt.c					\
 	extensions/pmuv3/test_pmuv3.c					\
+	extensions/mpam/test_mpam.c					\
 	extensions/mte/test_mte.c					\
 	extensions/pauth/test_pauth.c					\
 	extensions/sme/test_sme.c					\

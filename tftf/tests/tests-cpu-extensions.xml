@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+  Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -16,6 +16,7 @@
     <testcase name="Use Pointer Authentication Instructions" function="test_pauth_instructions" />
     <testcase name="Check for Pointer Authentication key leakage from EL3" function="test_pauth_leakage" />
     <testcase name="Check for Pointer Authentication key leakage from TSP" function="test_pauth_leakage_tsp" />
+    <testcase name="Access MPAM registers" function="test_mpam_reg_access" />
     <testcase name="Use MTE Instructions" function="test_mte_instructions" />
     <testcase name="Check for MTE register leakage" function="test_mte_leakage" />
     <testcase name="Use FGT Registers" function="test_fgt_enabled" />

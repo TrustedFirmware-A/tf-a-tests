@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+include ../make_helpers/build_macros.mk
+
 # Default number of threads per CPU on FVP
 FVP_MAX_PE_PER_CPU	:= 1
 
@@ -30,6 +32,8 @@ PLAT		?=	fvp
 
 ASFLAGS		:=	-nostdinc -ffreestanding -Wa,--fatal-warnings -Werror
 ASFLAGS		+=	-Iplat/${PLAT}/ -I.
+
+LDFLAGS		+=	$(call ld_option,--no-warn-rwx-segments)
 
 PLAT_BUILD_DIR	:=	build/${PLAT}
 SOURCES		:=	entrypoint.S spin.S uart.S plat/${PLAT}/platform.S

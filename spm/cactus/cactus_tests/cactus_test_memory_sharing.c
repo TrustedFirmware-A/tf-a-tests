@@ -11,6 +11,7 @@
 #include <ffa_helpers.h>
 #include <sp_helpers.h>
 #include "sp_tests.h"
+#include "stdint.h"
 #include <xlat_tables_defs.h>
 #include <lib/xlat_tables/xlat_tables_v2.h>
 #include <sync.h>
@@ -70,7 +71,7 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 {
 	struct ffa_memory_region *m;
 	struct ffa_composite_memory_region *composite;
-	int ret;
+	int ret = -1;
 	unsigned int mem_attrs;
 	uint32_t *ptr;
 	ffa_id_t source = ffa_dir_msg_source(*args);
@@ -94,10 +95,6 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 
 	composite = ffa_memory_region_get_composite(m, 0);
 
-	VERBOSE("Address: %p; page_count: %x %x\n",
-		composite->constituents[0].address,
-		composite->constituents[0].page_count, PAGE_SIZE);
-
 	/* This test is only concerned with RW permissions. */
 	if (m->receivers[0].receiver_permissions.permissions.data_access !=
 	    FFA_DATA_ACCESS_RW) {
@@ -111,32 +108,42 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 		mem_attrs |= MT_NS;
 	}
 
-	ret = mmap_add_dynamic_region(
-			(uint64_t)composite->constituents[0].address,
-			(uint64_t)composite->constituents[0].address,
-			composite->constituents[0].page_count * PAGE_SIZE,
-			mem_attrs);
+	for (uint32_t i = 0; i < composite->constituent_count; i++) {
+		uint64_t base_address = (uint64_t)composite->constituents[i]
+								.address;
+		size_t size = composite->constituents[i].page_count * PAGE_SIZE;
 
-	if (ret != 0) {
-		ERROR("Failed to map received memory region(%d)!\n", ret);
-		return cactus_error_resp(vm_id, source, CACTUS_ERROR_TEST);
+		ret = mmap_add_dynamic_region(
+			base_address, base_address, size, mem_attrs);
+
+		if (ret != 0) {
+			ERROR("Failed to map received memory region %llx "
+			      "size: %lu (error:%d)\n",
+			      base_address, size, ret);
+			return cactus_error_resp(vm_id,
+						 source,
+						 CACTUS_ERROR_TEST);
+		}
 	}
 
 	VERBOSE("Memory has been mapped\n");
 
-	ptr = (uint32_t *) composite->constituents[0].address;
-
 	/* Check that memory has been cleared by the SPMC before using it. */
 	if ((retrv_flags & FFA_MEMORY_REGION_FLAG_CLEAR) != 0U) {
 		VERBOSE("Check if memory has been cleared!\n");
-		for (uint32_t i = 0; i < words_to_write; i++) {
-			if (ptr[i] != 0) {
-				/*
-				 * If it hasn't been cleared, shouldn't be used.
-				 */
-				ERROR("Memory should have been cleared!\n");
-				return cactus_error_resp(
-					vm_id, source, CACTUS_ERROR_TEST);
+		for (uint32_t i = 0; i < composite->constituent_count; i++) {
+			ptr = (uint32_t *) composite->constituents[i].address;
+			for (uint32_t j = 0; j < words_to_write; j++) {
+				if (ptr[j] != 0) {
+					/*
+					 * If it hasn't been cleared, shouldn't
+					 * be used.
+					 */
+					ERROR("Memory NOT cleared!\n");
+					return cactus_error_resp(
+						vm_id, source,
+						CACTUS_ERROR_TEST);
+				}
 			}
 		}
 	}
@@ -145,9 +152,11 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 	register_custom_sync_exception_handler(data_abort_gpf_handler);
 
 	/* Write mem_func to retrieved memory region for validation purposes. */
-	VERBOSE("Writing: %x\n", mem_func);
-	for (unsigned int i = 0U; i < words_to_write; i++) {
-		ptr[i] = mem_func;
+	for (uint32_t i = 0; i < composite->constituent_count; i++) {
+		ptr = (uint32_t *) composite->constituents[i].address;
+		for (uint32_t j = 0; j < words_to_write; j++) {
+			ptr[j] = mem_func;
+		}
 	}
 
 	unregister_custom_sync_exception_handler();
@@ -157,14 +166,21 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 	 * relinquish is needed.
 	 */
 	if (mem_func != FFA_MEM_DONATE_SMC32) {
-		ret = mmap_remove_dynamic_region(
-			(uint64_t)composite->constituents[0].address,
-			composite->constituents[0].page_count * PAGE_SIZE);
+		for (uint32_t i = 0; i < composite->constituent_count; i++) {
+		uint64_t base_address = (uint64_t)composite->constituents[i]
+								.address;
+		size_t size = composite->constituents[i].page_count * PAGE_SIZE;
 
-		if (ret != 0) {
-			ERROR("Failed to unmap received memory region(%d)!\n", ret);
-			return cactus_error_resp(vm_id, source,
-						 CACTUS_ERROR_TEST);
+			ret = mmap_remove_dynamic_region(
+				(uint64_t)composite->constituents[i].address,
+				composite->constituents[i].page_count * PAGE_SIZE);
+			if (ret != 0) {
+				ERROR("Failed to unmap received memory region %llx "
+				      "size: %lu (error:%d)\n",
+				      base_address, size, ret);
+				return cactus_error_resp(
+					vm_id, source, CACTUS_ERROR_TEST);
+			}
 		}
 
 		if (!memory_relinquish((struct ffa_mem_relinquish *)mb->send,

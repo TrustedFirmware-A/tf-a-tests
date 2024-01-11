@@ -1111,17 +1111,12 @@ u_register_t host_realm_destroy(struct realm *realm)
 		return REALM_SUCCESS;
 	}
 
-	if (realm->state == REALM_STATE_NEW) {
-		goto undo_from_new_state;
-	}
-
-	if (realm->state != REALM_STATE_ACTIVE) {
-		ERROR("Invalid realm state found 0x%x\n", realm->state);
-		return REALM_ERROR;
-	}
-
+	/* For each REC - Destroy, undelegate and free */
 	for (unsigned int i = 0U; i < realm->rec_count; i++) {
-		/* For each REC - Destroy, undelegate and free */
+		if (realm->rec[i] == 0U) {
+			break;
+		}
+
 		ret = host_rmi_rec_destroy(realm->rec[i]);
 		if (ret != RMI_SUCCESS) {
 			ERROR("%s() failed, rec=0x%lx ret=0x%lx\n",
@@ -1157,13 +1152,14 @@ u_register_t host_realm_destroy(struct realm *realm)
 		ERROR("host_realm_tear_down_rtt_range() line=%u\n", __LINE__);
 		return REALM_ERROR;
 	}
-	if (host_realm_tear_down_rtt_range(realm, 0UL, realm->ipa_ns_buffer,
-			(realm->ipa_ns_buffer + realm->ns_buffer_size)) !=
-			RMI_SUCCESS) {
-		ERROR("host_realm_tear_down_rtt_range() line=%u\n", __LINE__);
-		return REALM_ERROR;
+	if (realm->shared_mem_created == true) {
+		if (host_realm_tear_down_rtt_range(realm, 0UL, realm->ipa_ns_buffer,
+				(realm->ipa_ns_buffer + realm->ns_buffer_size)) !=
+				RMI_SUCCESS) {
+			ERROR("host_realm_tear_down_rtt_range() line=%u\n", __LINE__);
+			return REALM_ERROR;
+		}
 	}
-undo_from_new_state:
 
 	/*
 	 * RD Destroy, undelegate and free

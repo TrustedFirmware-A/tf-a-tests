@@ -232,7 +232,7 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	ptr = (uint32_t *)constituents[0].address;
 
 	ret = cactus_mem_send_cmd(SENDER, borrower, mem_func, handle, 0,
-				  nr_words_to_write);
+				  nr_words_to_write, false);
 
 	if (!is_ffa_direct_response(ret) ||
 	    cactus_get_response(ret) != CACTUS_SUCCESS) {
@@ -526,7 +526,8 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 	VERBOSE("Memory has been shared!\n");
 
 	ret = cactus_mem_send_cmd(SENDER, RECEIVER, FFA_MEM_LEND_SMC32, handle,
-				  FFA_MEMORY_REGION_FLAG_CLEAR, nr_words_to_write);
+				  FFA_MEMORY_REGION_FLAG_CLEAR,
+				  nr_words_to_write, false);
 
 	if (!is_ffa_direct_response(ret)) {
 		return TEST_RESULT_FAIL;

@@ -32,6 +32,7 @@
 /* Offset of various control fields belonging to User Frame */
 #define CMD_OFF		(0x0U)
 #define UCTRL_OFF	(0x4U)
+#define ATTR_OFF	(0x20U)
 #define SEED_OFF	(0x24U)
 #define BEGIN_OFF	(0x28U)
 #define END_CTRL_OFF	(0x30U)

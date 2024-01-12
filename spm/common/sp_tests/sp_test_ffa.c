@@ -17,7 +17,7 @@
 
 /* FFA version test helpers */
 #define FFA_MAJOR 1U
-#define FFA_MINOR 1U
+#define FFA_MINOR 2U
 
 static uint32_t spm_version;
 
@@ -133,11 +133,11 @@ static void ffa_partition_info_get_regs_test(void)
 	struct ffa_value ret = { 0 };
 
 	VERBOSE("FF-A Partition Info regs interface tests\n");
-	ret = ffa_version(MAKE_FFA_VERSION(1, 1));
+	ret = ffa_version(MAKE_FFA_VERSION(1, 2));
 	uint32_t version = ret.fid;
 
 	if (version == FFA_ERROR_NOT_SUPPORTED) {
-		ERROR("FFA_VERSION 1.1 not supported, skipping"
+		ERROR("FFA_VERSION 1.2 not supported, skipping"
 			" FFA_PARTITION_INFO_GET_REGS test.\n");
 		return;
 	}

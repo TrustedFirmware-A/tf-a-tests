@@ -105,13 +105,13 @@ static bool host_enter_realm(struct realm *realm_ptr,
 	return true;
 }
 
-bool host_create_realm_payload(struct realm *realm_ptr,
-			       u_register_t realm_payload_adr,
-			       u_register_t plat_mem_pool_adr,
-			       u_register_t realm_pages_size,
-			       u_register_t feature_flag,
-			       const u_register_t *rec_flag,
-			       unsigned int rec_count)
+bool host_prepare_realm_payload(struct realm *realm_ptr,
+				u_register_t realm_payload_adr,
+				u_register_t plat_mem_pool_adr,
+				u_register_t realm_pages_size,
+				u_register_t feature_flag,
+				const u_register_t *rec_flag,
+				unsigned int rec_count)
 {
 	int8_t value;
 
@@ -250,22 +250,10 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 		return false;
 	}
 
-	if (host_realm_init_ipa_state(realm_ptr, 0U, 0U, 1ULL << 32)
-		!= RMI_SUCCESS) {
-		ERROR("%s() failed\n", "host_realm_init_ipa_state");
-		goto destroy_realm;
-	}
-
 	/* RTT map Realm image */
 	if (host_realm_map_payload_image(realm_ptr, realm_payload_adr) !=
 			REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_realm_map_payload_image");
-		goto destroy_realm;
-	}
-
-	/* Create REC */
-	if (host_realm_rec_create(realm_ptr) != REALM_SUCCESS) {
-		ERROR("%s() failed\n", "host_realm_rec_create");
 		goto destroy_realm;
 	}
 
@@ -280,6 +268,48 @@ destroy_realm:
 	}
 	realm_ptr->payload_created = false;
 
+	return false;
+}
+
+bool host_create_realm_payload(struct realm *realm_ptr,
+			       u_register_t realm_payload_adr,
+			       u_register_t plat_mem_pool_adr,
+			       u_register_t realm_pages_size,
+			       u_register_t feature_flag,
+			       const u_register_t *rec_flag,
+			       unsigned int rec_count)
+{
+	bool ret;
+
+	ret = host_prepare_realm_payload(realm_ptr,
+			realm_payload_adr,
+			plat_mem_pool_adr,
+			realm_pages_size,
+			feature_flag,
+			rec_flag,
+			rec_count);
+	if (!ret) {
+		goto destroy_realm;
+	} else {
+		/* Create REC */
+		if (host_realm_rec_create(realm_ptr) != REALM_SUCCESS) {
+			ERROR("%s() failed\n", "host_realm_rec_create");
+			goto destroy_realm;
+		}
+
+		if (host_realm_init_ipa_state(realm_ptr, 0U, 0U, 1ULL << 32)
+			!= RMI_SUCCESS) {
+			ERROR("%s() failed\n", "host_realm_init_ipa_state");
+			goto destroy_realm;
+		}
+	}
+	return true;
+
+destroy_realm:
+	if (host_realm_destroy(realm_ptr) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_realm_destroy");
+	}
+	realm_ptr->payload_created = false;
 	return false;
 }
 

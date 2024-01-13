@@ -10,6 +10,21 @@
 #include <host_realm_rmi.h>
 #include <tftf_lib.h>
 
+/*
+ * Creates realm, initializes heap and creates RTTs
+ */
+bool host_prepare_realm_payload(struct realm *realm_ptr,
+		u_register_t realm_payload_adr,
+		u_register_t plat_mem_pool_adr,
+		u_register_t realm_pages_size,
+		u_register_t feature_flag,
+		const u_register_t *rec_flag,
+		unsigned int rec_count);
+
+/*
+ * Creates realm, initializes heap, creates RTTs and also
+ * Creates recs
+ */
 bool host_create_realm_payload(struct realm *realm_ptr,
 		u_register_t realm_payload_adr,
 		u_register_t plat_mem_pool_adr,
@@ -17,6 +32,11 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 		u_register_t feature_flag,
 		const u_register_t *rec_flag,
 		unsigned int rec_count);
+
+/*
+ * Creates realm, initializes heap, creates RTTs,
+ * creates recs and activate realm
+ */
 bool host_create_activate_realm_payload(struct realm *realm_ptr,
 		u_register_t realm_payload_adr,
 		u_register_t plat_mem_pool_adr,

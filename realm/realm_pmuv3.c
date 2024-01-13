@@ -162,6 +162,21 @@ bool test_pmuv3_cycle_works_realm(void)
 	return false;
 }
 
+/* Test if max counter available is same as that programmed by host */
+bool test_pmuv3_counter(void)
+{
+	uint64_t num_cnts, num_cnts_host;
+
+	num_cnts_host = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	num_cnts = GET_PMU_CNT;
+	realm_printf("CPU=%u num_cnts=%lu num_cnts_host=%lu\n", read_mpidr_el1() & MPID_MASK,
+			num_cnts, num_cnts_host);
+	if (num_cnts == num_cnts_host) {
+		return true;
+	}
+	return false;
+}
+
 /*
  * Try an event counter with some NOPs to see if it works.
  */
@@ -170,7 +185,7 @@ bool test_pmuv3_event_works_realm(void)
 	u_register_t evcounter_start;
 	u_register_t evcounter_end;
 
-	if (GET_CNT_NUM == 0) {
+	if (GET_PMU_CNT == 0) {
 		realm_printf("no event counters implemented\n");
 		return false;
 	}
@@ -208,7 +223,7 @@ bool test_pmuv3_rmm_preserves(void)
 	u_register_t ctr_end[MAX_COUNTERS] = {0};
 	u_register_t ctr_cfg_end[MAX_COUNTERS] = {0};
 	u_register_t pmu_cfg_end[3];
-	unsigned int impl_ev_ctrs = GET_CNT_NUM;
+	unsigned int impl_ev_ctrs = GET_PMU_CNT;
 
 	realm_printf("testing %u event counters\n", impl_ev_ctrs);
 

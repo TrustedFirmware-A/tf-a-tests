@@ -58,6 +58,8 @@
 	  function="host_realm_pmuv3_rmm_preserves" />
 	  <testcase name="PMUv3 overflow interrupt"
 	  function="host_realm_pmuv3_overflow_interrupt" />
+	  <testcase name="PMUv3 multiple rec validations"
+	  function="host_realm_pmuv3_mul_rec" />
 	  <testcase name="Test Secure interrupt can preempt Realm EL1"
 	  function="host_realm_sec_interrupt_can_preempt_rl" />
 	  <testcase name="Check that FPU state registers context is preserved in RL/SE/NS"

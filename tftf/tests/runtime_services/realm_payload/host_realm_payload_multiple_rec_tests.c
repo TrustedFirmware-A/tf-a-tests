@@ -21,6 +21,7 @@
 
 static uint64_t is_secondary_cpu_on;
 static struct realm realm;
+static struct realm realm1;
 
 /*
  * Test tries to create max Rec
@@ -543,4 +544,249 @@ destroy_realm:
 		return TEST_RESULT_FAIL;
 	}
 	return ret3;
+}
+
+/*
+ * Test PMU counters available to each REC matches that programmed by host
+ * Test PMU counters are preserved for each rec
+ */
+static test_result_t cpu_on_handler_pmu(void)
+{
+	bool ret1;
+	unsigned int i;
+
+	spin_lock(&secondary_cpu_lock);
+	i = is_secondary_cpu_on++;
+	spin_unlock(&secondary_cpu_lock);
+	ret1 = host_enter_realm_execute(&realm, REALM_PMU_COUNTER, RMI_EXIT_HOST_CALL, i);
+	if (!ret1) {
+		return TEST_RESULT_FAIL;
+	}
+	ret1 = host_enter_realm_execute(&realm1, REALM_PMU_COUNTER, RMI_EXIT_HOST_CALL, i);
+	if (!ret1) {
+		return TEST_RESULT_FAIL;
+	}
+	ret1 = host_enter_realm_execute(&realm, REALM_PMU_PRESERVE, RMI_EXIT_HOST_CALL, i);
+	if (!ret1) {
+		return TEST_RESULT_FAIL;
+	}
+	ret1 = host_enter_realm_execute(&realm1, REALM_PMU_PRESERVE, RMI_EXIT_HOST_CALL, i);
+	if (ret1) {
+		return TEST_RESULT_SUCCESS;
+	}
+	return TEST_RESULT_FAIL;
+}
+
+/*
+ * Test realm creation with more PMU counter than available, expect failure
+ * Test realm creation with 0 PMU counter
+ * expect failure if FEAT_HPMN0 is not supported
+ * expect success if FEAT_HPMN0 is supported
+ * Create 2 Realms first one with MAX PMU counters
+ * second realm with lesser PMU counter than available
+ * Schedule multiple rec on multiple CPU
+ * Test PMU counters available to each REC matches that programmed by host
+ * Test PMU counters are preserved for each rec
+ */
+test_result_t host_realm_pmuv3_mul_rec(void)
+{
+	u_register_t feature_flag;
+	u_register_t rmm_feat_reg0;
+	u_register_t rec_flag[8U] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
+		RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
+	bool ret1 = 0U, ret2;
+	unsigned int num_cnts, i = 0U;
+	u_register_t other_mpidr, my_mpidr, ret;
+	int cpu_node;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	/* Get Max PMU counter implemented through RMI_FEATURES */
+	if (host_rmi_features(0UL, &rmm_feat_reg0) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_rmi_features");
+		return TEST_RESULT_FAIL;
+	}
+
+	num_cnts = EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS, rmm_feat_reg0);
+	host_set_pmu_state();
+	is_secondary_cpu_on = 0;
+	my_mpidr = read_mpidr_el1() & MPID_MASK;
+
+	if (num_cnts == 0U) {
+		ERROR("No PMU counters implemented\n");
+		return TEST_RESULT_SKIPPED;
+	}
+
+	feature_flag = RMI_FEATURE_REGISTER_0_PMU_EN |
+			INPLACE(FEATURE_PMU_NUM_CTRS, num_cnts + 1U);
+
+
+	/* Request more PMU counter than total, expect failure */
+	if (host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			(u_register_t)PAGE_POOL_BASE,
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			feature_flag, rec_flag, 1U)) {
+		ERROR("Realm create should have failed\n");
+		host_destroy_realm(&realm);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Request 0 PMU counter */
+	feature_flag = RMI_FEATURE_REGISTER_0_PMU_EN |
+			INPLACE(FEATURE_PMU_NUM_CTRS, 0U);
+
+	ret1 = host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+				(u_register_t)PAGE_POOL_BASE,
+				(u_register_t)PAGE_POOL_MAX_SIZE,
+				feature_flag, rec_flag, 1U);
+
+	if (!get_feat_hpmn0_supported()) {
+		if (ret1) {
+			ERROR("Realm create with 0 PMU Counter should have failed\n");
+			host_destroy_realm(&realm);
+			return TEST_RESULT_FAIL;
+		}
+	} else {
+		if (!ret1) {
+			ERROR("Realm create with 0 PMU Counter should not have failed\n");
+			return TEST_RESULT_FAIL;
+		}
+		host_destroy_realm(&realm);
+	}
+
+	/* Test 2 create first realm with max PMU counters */
+	feature_flag = RMI_FEATURE_REGISTER_0_PMU_EN |
+			INPLACE(FEATURE_PMU_NUM_CTRS, num_cnts);
+
+	/* Prepare realm0, create recs for realm0 later */
+	if (!host_prepare_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			(u_register_t)PAGE_POOL_BASE,
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			feature_flag, rec_flag, MAX_REC_COUNT)) {
+		goto test_exit;
+		return TEST_RESULT_FAIL;
+	}
+	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
+			NS_REALM_SHARED_MEM_SIZE)) {
+		goto test_exit;
+	}
+
+	/* Second realm with less num of PMU counters */
+	feature_flag = RMI_FEATURE_REGISTER_0_PMU_EN |
+			INPLACE(FEATURE_PMU_NUM_CTRS, num_cnts - 1U);
+
+	if (!host_create_activate_realm_payload(&realm1, (u_register_t)REALM_IMAGE_BASE,
+			(u_register_t)PAGE_POOL_BASE + PAGE_POOL_MAX_SIZE,
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			feature_flag, rec_flag, MAX_REC_COUNT)) {
+		goto test_exit2;
+	}
+	if (!host_create_shared_mem(&realm1, NS_REALM_SHARED_MEM_BASE + NS_REALM_SHARED_MEM_SIZE,
+			NS_REALM_SHARED_MEM_SIZE)) {
+		goto test_exit2;
+	}
+
+	/* create realm0 recs, activate realm0 */
+	if (host_realm_rec_create(&realm) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_realm_rec_create");
+		goto test_exit2;
+	}
+
+	if (host_realm_init_ipa_state(&realm, 0U, 0U, 1ULL << 32)
+		!= RMI_SUCCESS) {
+		ERROR("%s() failed\n", "host_realm_init_ipa_state");
+		goto test_exit2;
+	}
+
+	if (host_realm_activate(&realm) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_realm_activate");
+		goto test_exit2;
+	}
+	INFO("MAX PMU Counter=%u\n", num_cnts);
+
+	/* Pass num of PMU counters programmed to realm */
+	for (unsigned int j = 0U; j < MAX_REC_COUNT; j++) {
+		host_shared_data_set_host_val(&realm, j, HOST_ARG1_INDEX, num_cnts);
+		host_shared_data_set_host_val(&realm1, j, HOST_ARG1_INDEX, num_cnts - 1U);
+	}
+
+	/*
+	 * Enter realm0 rec0 test PMU counters available is same as that programmed by host
+	 * Validation is done by the Realm and will return error if the count does not match
+	 */
+	ret1 = host_enter_realm_execute(&realm, REALM_PMU_COUNTER, RMI_EXIT_HOST_CALL, 0U);
+	if (!ret1) {
+		goto test_exit2;
+	}
+
+	/* Enter realm1 rec0 test PMU counters available is same as that programmed by host */
+	ret1 = host_enter_realm_execute(&realm1, REALM_PMU_COUNTER, RMI_EXIT_HOST_CALL, 0U);
+	if (!ret1) {
+		goto test_exit2;
+	}
+
+	/* Test if Realm0 rec0 entering/exiting preserves PMU state */
+	ret1 = host_enter_realm_execute(&realm, REALM_PMU_PRESERVE, RMI_EXIT_HOST_CALL, 0U);
+	if (!ret1) {
+		goto test_exit2;
+	}
+
+	/* Test if Realm1 rec0 entering/exiting preserves PMU state */
+	ret1 = host_enter_realm_execute(&realm1, REALM_PMU_PRESERVE, RMI_EXIT_HOST_CALL, 0U);
+	if (!ret1) {
+		goto test_exit2;
+	}
+
+	/* Turn on all CPUs */
+	for_each_cpu(cpu_node) {
+		if (i == (MAX_REC_COUNT - 1U)) {
+			break;
+		}
+		other_mpidr = tftf_get_mpidr_from_node(cpu_node);
+		if (other_mpidr == my_mpidr) {
+			continue;
+		}
+
+		/* Power on the other CPU */
+		ret = tftf_try_cpu_on(other_mpidr, (uintptr_t)cpu_on_handler_pmu, 0);
+		if (ret != PSCI_E_SUCCESS) {
+			ERROR("TFTF CPU ON failed\n");
+			goto test_exit2;
+		}
+		i++;
+	}
+
+	/* Wait for all CPU to power up */
+	while (is_secondary_cpu_on != MAX_REC_COUNT - 1U) {
+		waitms(100);
+	}
+
+	/* Wait for all CPU to power down */
+	for_each_cpu(cpu_node) {
+		other_mpidr = tftf_get_mpidr_from_node(cpu_node) & MPID_MASK;
+		if (other_mpidr == my_mpidr) {
+			continue;
+		}
+		while (tftf_psci_affinity_info(other_mpidr, MPIDR_AFFLVL0) != PSCI_STATE_OFF) {
+			continue;
+		}
+	}
+
+test_exit2:
+	ret2 = host_destroy_realm(&realm1);
+	if (!ret1 || !ret2) {
+		ERROR("%s() enter=%u destroy=%u\n", __func__, ret1, ret2);
+	}
+test_exit:
+	ret2 = host_destroy_realm(&realm);
+	if (!ret1 || !ret2) {
+		ERROR("%s() enter=%u destroy=%u\n", __func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!host_check_pmu_state()) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }

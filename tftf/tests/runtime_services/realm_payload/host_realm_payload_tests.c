@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -24,6 +24,11 @@
 #define SLEEP_TIME_MS	20U
 
 extern const char *rmi_exit[];
+
+#if ENABLE_PAUTH
+static uint128_t pauth_keys_before[NUM_KEYS];
+static uint128_t pauth_keys_after[NUM_KEYS];
+#endif
 
 /*
  * @Test_Aim@ Test realm payload creation, execution and destruction  iteratively
@@ -97,7 +102,8 @@ test_result_t host_test_realm_rsi_version(void)
 }
 
 /*
- * @Test_Aim@ Test PAuth in realm
+ * @Test_Aim@ Create realm with multiple rec
+ * Test PAuth registers are preserved for each rec
  */
 test_result_t host_realm_enable_pauth(void)
 {
@@ -105,16 +111,17 @@ test_result_t host_realm_enable_pauth(void)
 	return TEST_RESULT_SKIPPED;
 #else
 	bool ret1, ret2;
-	u_register_t rec_flag[1] = {RMI_RUNNABLE};
+	u_register_t rec_flag[MAX_REC_COUNT] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
+		RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,};
 	struct realm realm;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	pauth_test_lib_fill_regs_and_template();
+	pauth_test_lib_fill_regs_and_template(pauth_keys_before);
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 				(u_register_t)PAGE_POOL_BASE,
 				(u_register_t)PAGE_POOL_MAX_SIZE,
-				0UL, rec_flag, 1U)) {
+				0UL, rec_flag, MAX_REC_COUNT)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -123,24 +130,33 @@ test_result_t host_realm_enable_pauth(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	ret1 = host_enter_realm_execute(&realm, REALM_PAUTH_SET_CMD, RMI_EXIT_HOST_CALL, 0U);
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		ret1 = host_enter_realm_execute(&realm, REALM_PAUTH_SET_CMD,
+				RMI_EXIT_HOST_CALL, i);
 
-	if (ret1) {
+		if (!ret1) {
+			ERROR("Pauth set cmd failed\n");
+			break;
+		}
 		/* Re-enter Realm to compare PAuth registers. */
 		ret1 = host_enter_realm_execute(&realm, REALM_PAUTH_CHECK_CMD,
-				RMI_EXIT_HOST_CALL, 0U);
+			RMI_EXIT_HOST_CALL, i);
+		if (!ret1) {
+			ERROR("Pauth check cmd failed\n");
+			break;
+		}
 	}
 
 	ret2 = host_destroy_realm(&realm);
 
-	if (!ret1) {
+	if (!ret1 || !ret2) {
 		ERROR("%s(): enter=%d destroy=%d\n",
 				__func__, ret1, ret2);
 		return TEST_RESULT_FAIL;
 	}
 
 	/* Check if PAuth keys are preserved. */
-	if (!pauth_test_lib_compare_template()) {
+	if (!pauth_test_lib_compare_template(pauth_keys_before, pauth_keys_after)) {
 		ERROR("%s(): NS PAuth keys not preserved\n",
 				__func__);
 		return TEST_RESULT_FAIL;

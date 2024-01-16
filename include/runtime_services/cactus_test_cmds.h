@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -623,6 +623,27 @@ static inline struct ffa_value cactus_trigger_espi_cmd(
 static inline uint32_t cactus_get_espi_id(struct ffa_value ret)
 {
 	return (uint32_t)ret.arg4;
+}
+
+/*
+ * Request SP to mimic handling a RAS error delegated by an EL3 logical secure
+ * partition.
+ *
+ * The command ID is the hex representation of the string 'rase' which
+ * denotes RAS Error.
+ */
+#define CACTUS_RAS_DELEGATE_CMD U(0x72617365)
+
+static inline struct ffa_value cactus_ras_delegate_send_cmd(
+	ffa_id_t source, ffa_id_t dest, uint64_t event_id)
+{
+	return cactus_send_cmd(source, dest, CACTUS_RAS_DELEGATE_CMD, event_id, 0, 0,
+			       0);
+}
+
+static inline uint64_t cactus_ras_get_event_id(struct ffa_value ret)
+{
+	return (uint64_t)ret.arg4;
 }
 
 #endif

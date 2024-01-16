@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -142,16 +142,12 @@ struct ffa_value ffa_msg_send_direct_resp32(ffa_id_t source_id,
 	return ffa_service_call(&args);
 }
 
-
-/**
- * Initialises the header of the given `ffa_memory_region`, not including the
- * composite memory region offset.
- */
-static void ffa_memory_region_init_header(
-	struct ffa_memory_region *memory_region, ffa_id_t sender,
-	ffa_memory_attributes_t attributes, ffa_memory_region_flags_t flags,
-	ffa_memory_handle_t handle, uint32_t tag, ffa_id_t receiver,
-	ffa_memory_access_permissions_t permissions)
+void ffa_memory_region_init_header(struct ffa_memory_region *memory_region,
+				   ffa_id_t sender,
+				   ffa_memory_attributes_t attributes,
+				   ffa_memory_region_flags_t flags,
+				   ffa_memory_handle_t handle, uint32_t tag,
+				   uint32_t receiver_count)
 {
 	memory_region->sender = sender;
 	memory_region->attributes = attributes;
@@ -160,67 +156,47 @@ static void ffa_memory_region_init_header(
 	memory_region->tag = tag;
 	memory_region->memory_access_desc_size =
 		sizeof(struct ffa_memory_access);
-	memory_region->receiver_count = 1;
-	memory_region->receivers[0].receiver_permissions.receiver = receiver;
-	memory_region->receivers[0].receiver_permissions.permissions =
-		permissions;
-	memory_region->receivers[0].receiver_permissions.flags = 0;
-	memory_region->receivers[0].reserved_0 = 0;
-	/* Receivers at the end of the `ffa_memory_region` structure. */
-	memory_region->receivers_offset = sizeof(struct ffa_memory_region);
+	memory_region->receiver_count = receiver_count;
+	memory_region->receivers_offset =
+		offsetof(struct ffa_memory_region, receivers);
 	memset(memory_region->reserved, 0, sizeof(memory_region->reserved));
 }
 
 /**
- * Initialises the given `ffa_memory_region` and copies as many as possible of
- * the given constituents to it.
+ * Copies as many as possible of the given constituents to the respective
+ * memory region and sets the respective offset.
  *
  * Returns the number of constituents remaining which wouldn't fit, and (via
  * return parameters) the size in bytes of the first fragment of data copied to
  * `memory_region` (attributes, constituents and memory region header size), and
  * the total size of the memory sharing message including all constituents.
  */
-uint32_t ffa_memory_region_init(
+static uint32_t ffa_memory_region_init_constituents(
 	struct ffa_memory_region *memory_region, size_t memory_region_max_size,
-	ffa_id_t sender, ffa_id_t receiver,
 	const struct ffa_memory_region_constituent constituents[],
-	uint32_t constituent_count, uint32_t tag,
-	ffa_memory_region_flags_t flags, enum ffa_data_access data_access,
-	enum ffa_instruction_access instruction_access,
-	enum ffa_memory_type type, enum ffa_memory_cacheability cacheability,
-	enum ffa_memory_shareability shareability, uint32_t *total_length,
+	uint32_t constituent_count, uint32_t *total_length,
 	uint32_t *fragment_length)
 {
-	ffa_memory_access_permissions_t permissions = 0;
-	ffa_memory_attributes_t attributes = 0;
 	struct ffa_composite_memory_region *composite_memory_region;
 	uint32_t fragment_max_constituents;
-	uint32_t count_to_copy;
-	uint32_t i;
 	uint32_t constituents_offset;
+	uint32_t count_to_copy;
 
-	/* Set memory region's permissions. */
-	ffa_set_data_access_attr(&permissions, data_access);
-	ffa_set_instruction_access_attr(&permissions, instruction_access);
-
-	/* Set memory region's page attributes. */
-	ffa_set_memory_type_attr(&attributes, type);
-	ffa_set_memory_cacheability_attr(&attributes, cacheability);
-	ffa_set_memory_shareability_attr(&attributes, shareability);
-
-	ffa_memory_region_init_header(memory_region, sender, attributes, flags,
-				      0, tag, receiver, permissions);
 	/*
 	 * Note that `sizeof(struct_ffa_memory_region)` and `sizeof(struct
 	 * ffa_memory_access)` must both be multiples of 16 (as verified by the
 	 * asserts in `ffa_memory.c`, so it is guaranteed that the offset we
 	 * calculate here is aligned to a 64-bit boundary and so 64-bit values
 	 * can be copied without alignment faults.
+	 * If there are multiple receiver endpoints, their respective access
+	 * structure should point to the same offset value.
 	 */
-	memory_region->receivers[0].composite_memory_region_offset =
-		sizeof(struct ffa_memory_region) +
-		memory_region->receiver_count *
-			sizeof(struct ffa_memory_access);
+	for (uint32_t i = 0; i < memory_region->receiver_count; i++) {
+		memory_region->receivers[i].composite_memory_region_offset =
+			sizeof(struct ffa_memory_region) +
+			memory_region->receiver_count *
+				sizeof(struct ffa_memory_access);
+	}
 
 	composite_memory_region =
 		ffa_memory_region_get_composite(memory_region, 0);
@@ -240,7 +216,7 @@ uint32_t ffa_memory_region_init(
 		count_to_copy = fragment_max_constituents;
 	}
 
-	for (i = 0; i < constituent_count; ++i) {
+	for (uint32_t i = 0; i < constituent_count; ++i) {
 		if (i < count_to_copy) {
 			composite_memory_region->constituents[i] =
 				constituents[i];
@@ -268,41 +244,115 @@ uint32_t ffa_memory_region_init(
 /**
  * Initialises the given `ffa_memory_region` to be used for an
  * `FFA_MEM_RETRIEVE_REQ` by the receiver of a memory transaction.
+ * Initialises the given `ffa_memory_region` and copies as many as possible of
+ * the given constituents to it.
+ *
+ * Returns the number of constituents remaining which wouldn't fit, and (via
+ * return parameters) the size in bytes of the first fragment of data copied to
+ * `memory_region` (attributes, constituents and memory region header size), and
+ * the total size of the memory sharing message including all constituents.
+ */
+uint32_t ffa_memory_region_init(
+	struct ffa_memory_region *memory_region, size_t memory_region_max_size,
+	ffa_id_t sender, struct ffa_memory_access receivers[],
+	uint32_t receiver_count,
+	const struct ffa_memory_region_constituent constituents[],
+	uint32_t constituent_count, uint32_t tag,
+	ffa_memory_region_flags_t flags, enum ffa_memory_type type,
+	enum ffa_memory_cacheability cacheability,
+	enum ffa_memory_shareability shareability, uint32_t *total_length,
+	uint32_t *fragment_length)
+{
+	ffa_memory_attributes_t attributes = {
+		.type = type,
+		.cacheability = cacheability,
+		.shareability = shareability,
+	};
+
+	ffa_memory_region_init_header(memory_region, sender, attributes, flags,
+				      0, tag, receiver_count);
+
+	memcpy(memory_region->receivers, receivers,
+	       receiver_count * sizeof(struct ffa_memory_access));
+
+	return ffa_memory_region_init_constituents(
+		memory_region, memory_region_max_size, constituents,
+		constituent_count, total_length, fragment_length);
+}
+
+uint32_t ffa_memory_fragment_init(
+	struct ffa_memory_region_constituent *fragment,
+	size_t fragment_max_size,
+	const struct ffa_memory_region_constituent constituents[],
+	uint32_t constituent_count, uint32_t *fragment_length)
+{
+	const uint32_t fragment_max_constituents =
+		fragment_max_size /
+		sizeof(struct ffa_memory_region_constituent);
+
+	uint32_t count_to_copy =
+		MIN(constituent_count, fragment_max_constituents);
+
+	for (uint32_t i = 0; i < count_to_copy; ++i) {
+		fragment[i] = constituents[i];
+	}
+
+	if (fragment_length != NULL) {
+		*fragment_length = count_to_copy *
+				   sizeof(struct ffa_memory_region_constituent);
+	}
+
+	return constituent_count - count_to_copy;
+}
+
+/**
+ * Initialises the given `ffa_memory_region` to be used for an
+ * `FFA_MEM_RETRIEVE_REQ` by the receiver of a memory transaction.
  *
  * Returns the size of the message written.
  */
 uint32_t ffa_memory_retrieve_request_init(
 	struct ffa_memory_region *memory_region, ffa_memory_handle_t handle,
-	ffa_id_t sender, ffa_id_t receiver, uint32_t tag,
-	ffa_memory_region_flags_t flags, enum ffa_data_access data_access,
-	enum ffa_instruction_access instruction_access,
+	ffa_id_t sender, struct ffa_memory_access receivers[],
+	uint32_t receiver_count, uint32_t tag, ffa_memory_region_flags_t flags,
 	enum ffa_memory_type type, enum ffa_memory_cacheability cacheability,
 	enum ffa_memory_shareability shareability)
 {
-	ffa_memory_access_permissions_t permissions = 0;
-	ffa_memory_attributes_t attributes = 0;
-
-	/* Set memory region's permissions. */
-	ffa_set_data_access_attr(&permissions, data_access);
-	ffa_set_instruction_access_attr(&permissions, instruction_access);
-
-	/* Set memory region's page attributes. */
-	ffa_set_memory_type_attr(&attributes, type);
-	ffa_set_memory_cacheability_attr(&attributes, cacheability);
-	ffa_set_memory_shareability_attr(&attributes, shareability);
+	ffa_memory_attributes_t attributes = {
+		.type = type,
+		.cacheability = cacheability,
+		.shareability = shareability,
+	};
 
 	ffa_memory_region_init_header(memory_region, sender, attributes, flags,
-					handle, tag, receiver, permissions);
+				      handle, tag, receiver_count);
+
+	memcpy(memory_region->receivers, receivers,
+	       receiver_count * sizeof(struct ffa_memory_access));
+
 	/*
 	 * Offset 0 in this case means that the hypervisor should allocate the
 	 * address ranges. This is the only configuration supported by Hafnium,
 	 * as it enforces 1:1 mappings in the stage 2 page tables.
 	 */
-	memory_region->receivers[0].composite_memory_region_offset = 0;
-	memory_region->receivers[0].reserved_0 = 0;
+	for (uint32_t i = 0; i < receiver_count; i++) {
+		memory_region->receivers[i].composite_memory_region_offset = 0;
+		memory_region->receivers[i].reserved_0 = 0;
+	}
 
 	return sizeof(struct ffa_memory_region) +
 	       memory_region->receiver_count * sizeof(struct ffa_memory_access);
+}
+
+/**
+ * Configure `region` for a hypervisor retrieve request - i.e. all fields except
+ * `handle` are initialized to 0.
+ */
+void ffa_hypervisor_retrieve_request_init(struct ffa_memory_region *region,
+					  ffa_memory_handle_t handle)
+{
+	memset(region, 0, sizeof(struct ffa_memory_region));
+	region->handle = handle;
 }
 
 /*
@@ -545,6 +595,34 @@ struct ffa_value ffa_mem_reclaim(uint64_t handle, uint32_t flags)
 	return ffa_service_call(&args);
 }
 
+struct ffa_value ffa_mem_frag_rx(ffa_memory_handle_t handle,
+				 uint32_t fragment_offset)
+{
+	/* Note that sender MBZ at virtual instance. */
+	struct ffa_value args = {
+		.fid = FFA_MEM_FRAG_RX,
+		.arg1 = (uint32_t)handle,
+		.arg2 = (uint32_t)(handle >> 32),
+		.arg3 = fragment_offset,
+	};
+
+	return ffa_service_call(&args);
+}
+
+struct ffa_value ffa_mem_frag_tx(ffa_memory_handle_t handle,
+				 uint32_t fragment_length)
+{
+	struct ffa_value args = {
+		.fid = FFA_MEM_FRAG_TX,
+		.arg1 = (uint32_t)handle,
+		.arg2 = (uint32_t)(handle >> 32),
+		.arg3 = fragment_length,
+	};
+
+	/* Note that sender MBZ at virtual instance. */
+	return ffa_service_call(&args);
+}
+
 /** Create Notifications Bitmap for the given VM */
 struct ffa_value ffa_notification_bitmap_create(ffa_id_t vm_id,
 						ffa_vcpu_count_t vcpu_count)
@@ -704,4 +782,24 @@ struct ffa_value ffa_console_log(const char *message, size_t char_count)
 			&args.arg7);
 
 	return ffa_service_call(&args);
+}
+
+/**
+ * Initializes receiver permissions in a memory transaction descriptor.
+ */
+struct ffa_memory_access ffa_memory_access_init_permissions(
+	ffa_id_t receiver_id, enum ffa_data_access data_access,
+	enum ffa_instruction_access instruction_access,
+	ffa_memory_receiver_flags_t flags)
+{
+	struct ffa_memory_access access;
+	access.reserved_0 = 0;
+	access.composite_memory_region_offset = 0;
+	access.receiver_permissions.flags = flags;
+	access.receiver_permissions.receiver = receiver_id;
+	access.receiver_permissions.permissions.data_access = data_access;
+	access.receiver_permissions.permissions.instruction_access =
+		instruction_access;
+
+	return access;
 }

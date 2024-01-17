@@ -537,13 +537,13 @@ ffa_memory_handle_t memory_send(
 		*ret = ffa_mem_donate(total_length, fragment_length);
 		break;
 	default:
-		ERROR("%s: Invalid func id %d!\n", __func__, mem_func);
+		ERROR("%s: Invalid func id %x!\n", __func__, mem_func);
 		return FFA_MEMORY_HANDLE_INVALID;
 	}
 
 	if (is_ffa_call_error(*ret)) {
 		VERBOSE("%s: Failed to send memory: %d\n", __func__,
-			ffa_error_code(ret));
+			ffa_error_code(*ret));
 		return FFA_MEMORY_HANDLE_INVALID;
 	}
 

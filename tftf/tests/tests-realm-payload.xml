@@ -97,5 +97,7 @@
 	  function="host_realm_enable_pauth" />
 	  <testcase name="Generate PAuth Fault by overwriting LR"
 	  function="host_realm_pauth_fault" />
+	  <testcase name="Check if DIT Bit is preserved in RL/NS"
+	  function="host_realm_enable_dit" />
   </testsuite>
 </testsuites>

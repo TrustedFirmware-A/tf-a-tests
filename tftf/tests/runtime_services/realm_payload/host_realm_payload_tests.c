@@ -1221,3 +1221,55 @@ destroy_realm:
 
 	return res;
 }
+
+/*
+ * @Test_Aim@ Test to check if DIT bit is preserved across NS/RL switch
+ */
+test_result_t host_realm_enable_dit(void)
+{
+	bool ret1, ret2;
+	struct realm realm;
+	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
+	RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, dit;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			(u_register_t)PAGE_POOL_BASE,
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			0UL, rec_flag, MAX_REC_COUNT)) {
+		return TEST_RESULT_FAIL;
+	}
+	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
+			NS_REALM_SHARED_MEM_SIZE)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Enable FEAT_DIT on Host */
+	write_dit(DIT_BIT);
+	for (unsigned int i = 0; i < MAX_REC_COUNT; i++) {
+		host_shared_data_set_host_val(&realm, i, HOST_ARG1_INDEX, 10U);
+		ret1 = host_enter_realm_execute(&realm, REALM_DIT_CHECK_CMD,
+				RMI_EXIT_HOST_CALL, i);
+		if (!ret1) {
+			break;
+		}
+	}
+
+	ret2 = host_destroy_realm(&realm);
+
+	dit = read_dit();
+	if (dit != DIT_BIT) {
+		ERROR("Host DIT bit not preserved\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	write_dit(0U);
+	if (!ret1 || !ret2) {
+		ERROR("%s(): enter=%d destroy=%d\n",
+		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}

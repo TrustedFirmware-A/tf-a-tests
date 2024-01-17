@@ -21,9 +21,6 @@
 #define PLAT_ARM_DEVICE0_BASE		TC_DEVICE0_BASE
 #define PLAT_ARM_DEVICE0_SIZE		TC_DEVICE0_SIZE
 
-#define CACTUS_PL011_UART_BASE		PL011_UART1_BASE
-#define CACTUS_PL011_UART_CLK_IN_HZ	PL011_UART1_CLK_IN_HZ
-
 /* Scratch memory used for SMMUv3 driver testing purposes in Cactus SP */
 /* SMMUv3 tests are disabled for TC platform */
 #define PLAT_CACTUS_MEMCPY_BASE		ULL(0xfe400000)

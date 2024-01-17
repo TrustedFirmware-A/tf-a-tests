@@ -105,7 +105,7 @@ test_result_t test_share_forbidden_ranges(void)
 		(uintptr_t)0x0000880080001000,
 	};
 
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
 	for (unsigned i = 0; i < 3; i++) {
 		if (!test_memory_send_expect_denied(
@@ -155,7 +155,7 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	/***********************************************************************
 	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
 	 **********************************************************************/
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
 	GET_TFTF_MAILBOX(mb);
 
@@ -258,7 +258,7 @@ test_result_t test_consecutive_donate(void)
 	const uint32_t constituents_count = sizeof(constituents) /
 				sizeof(struct ffa_memory_region_constituent);
 
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
 	test_result_t ret = test_memory_send_sp(FFA_MEM_DONATE_SMC32, SP_ID(1),
 						constituents,
@@ -302,7 +302,7 @@ static test_result_t test_req_mem_send_sp_to_sp(uint32_t mem_func,
 	/***********************************************************************
 	 * Check if SPMC's ffa_version and presence of expected FF-A endpoints.
 	 **********************************************************************/
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
 	ret = cactus_req_mem_send_send_cmd(HYP_ID, sender_sp, mem_func,
 					   receiver_sp, non_secure);
@@ -334,7 +334,7 @@ static test_result_t test_req_mem_send_sp_to_vm(uint32_t mem_func,
 	/**********************************************************************
 	 * Check if SPMC's ffa_version and presence of expected FF-A endpoints.
 	 *********************************************************************/
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
 	ret = cactus_req_mem_send_send_cmd(HYP_ID, sender_sp, mem_func,
 					   receiver_vm, false);
@@ -426,7 +426,7 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 		ffa_memory_access_init_permissions_from_mem_func(
 			RECEIVER, FFA_MEM_LEND_SMC32);
 
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
 	GET_TFTF_MAILBOX(mb);
 

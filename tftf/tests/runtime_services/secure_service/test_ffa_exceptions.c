@@ -60,7 +60,7 @@ test_result_t rl_memory_cannot_be_accessed_in_s(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
 	GET_TFTF_MAILBOX(mb);
 

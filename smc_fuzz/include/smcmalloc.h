@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "fifo3d.h"
 
 #define TOTALMEMORYSIZE (0x10000)
 #define BLKSPACEDIV (4)

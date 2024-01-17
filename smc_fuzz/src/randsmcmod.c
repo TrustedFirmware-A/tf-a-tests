@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,6 +9,7 @@
 #include <drivers/arm/private_timer.h>
 #include <events.h>
 #include "fifo3d.h"
+#include "nfifo.h"
 #include <libfdt.h>
 
 #include <plat_topology.h>
@@ -16,7 +17,7 @@
 #include <tftf_lib.h>
 
 extern char _binary___dtb_start[];
-extern void runtestfunction(char *funcstr);
+extern void runtestfunction(int funcid);
 
 struct memmod tmod __aligned(65536) __section("smcfuzz");
 static int cntndarray;
@@ -119,13 +120,14 @@ struct rand_smc_node {
 	int *biases;				 // Biases of the individual nodes
 	int *biasarray;				 // Array of biases across all nodes
 	char **snames;				 // String that is unique to the SMC call called in test
+	int *snameid;				 // ID that is unique to the SMC call called in test
 	struct rand_smc_node *treenodes;	 // Selection of nodes that are farther down in the tree
-						// that reference further rand_smc_node objects
+						 // that reference further rand_smc_node objects
 	int *norcall;				// Specifies whether a particular node is a leaf node or tree node
-	int entries;				// Number of nodes in object
-	int biasent;				// Number that gives the total number of entries in biasarray
-						// based on all biases of the nodes
-	char **nname;				// Array of node names
+	int entries;				 // Number of nodes in object
+	int biasent;				 // Number that gives the total number of entries in biasarray
+						 // based on all biases of the nodes
+	char **nname;				 // Array of node names
 };
 
 
@@ -156,6 +158,9 @@ struct rand_smc_node *createsmctree(int *casz,
 	int cntndarray;
 	struct rand_smc_node nrnode;
 	struct rand_smc_node *tndarray;
+	struct nfifo nf;
+
+	nfifoinit(&nf, mmod);
 
 	f3d.col = 0;
 	f3d.curr_col = 0;
@@ -166,9 +171,6 @@ struct rand_smc_node *createsmctree(int *casz,
 
 	fhdptr = (struct fdt_header *)_binary___dtb_start;
 
-	if (fdt_check_header((void *)fhdptr) != 0) {
-		printf("ERROR, not device tree compliant\n");
-	}
 	fhd = *fhdptr;
 	cntndarray = 0;
 	nrnode.entries = 0;
@@ -244,6 +246,8 @@ struct rand_smc_node *createsmctree(int *casz,
 			if (strcmp(cset, "functionname") == 0) {
 				pullstringdt(&dtb, dtb_beg, 0, cset);
 				push_3dfifo_fname(&f3d, cset);
+				pushnme(cset, &nf, mmod);
+				push_3dfifo_fid(&f3d, searchnme(cset, &nf, mmod));
 				leafnode = 1;
 				if (bias_count == 0U) {
 					bintnode = 1U;
@@ -279,6 +283,7 @@ struct rand_smc_node *createsmctree(int *casz,
 				for (unsigned int j = 0U; (int)j < cntndarray; j++) {
 					tndarray[j].biases = GENMALLOC(ndarray[j].entries * sizeof(int));
 					tndarray[j].snames = GENMALLOC(ndarray[j].entries * sizeof(char *));
+					tndarray[j].snameid = GENMALLOC(ndarray[j].entries * sizeof(int));
 					tndarray[j].norcall = GENMALLOC(ndarray[j].entries * sizeof(int));
 					tndarray[j].nname = GENMALLOC(ndarray[j].entries * sizeof(char *));
 					tndarray[j].treenodes = GENMALLOC(ndarray[j].entries * sizeof(struct rand_smc_node));
@@ -286,6 +291,7 @@ struct rand_smc_node *createsmctree(int *casz,
 					for (unsigned int i = 0U; (int)i < ndarray[j].entries; i++) {
 						tndarray[j].snames[i] = GENMALLOC(1 * sizeof(char[MAX_NAME_CHARS]));
 						strlcpy(tndarray[j].snames[i], ndarray[j].snames[i], MAX_NAME_CHARS);
+						tndarray[j].snameid[i] = ndarray[j].snameid[i];
 						tndarray[j].nname[i] = GENMALLOC(1 * sizeof(char[MAX_NAME_CHARS]));
 						strlcpy(tndarray[j].nname[i], ndarray[j].nname[i], MAX_NAME_CHARS);
 						tndarray[j].biases[i] = ndarray[j].biases[i];
@@ -303,6 +309,7 @@ struct rand_smc_node *createsmctree(int *casz,
 				}
 				tndarray[cntndarray].biases = GENMALLOC(f3d.row[f3d.col + 1] * sizeof(int));
 				tndarray[cntndarray].snames = GENMALLOC(f3d.row[f3d.col + 1] * sizeof(char *));
+				tndarray[cntndarray].snameid = GENMALLOC(f3d.row[f3d.col + 1] * sizeof(int));
 				tndarray[cntndarray].norcall = GENMALLOC(f3d.row[f3d.col + 1] * sizeof(int));
 				tndarray[cntndarray].nname = GENMALLOC(f3d.row[f3d.col + 1] * sizeof(char *));
 				tndarray[cntndarray].treenodes = GENMALLOC(f3d.row[f3d.col + 1] * sizeof(struct rand_smc_node));
@@ -313,9 +320,11 @@ struct rand_smc_node *createsmctree(int *casz,
 				 */
 				int cntbias = 0;
 				int bias_count = 0;
+
 				for (unsigned int j = 0U; (int)j < f3d.row[f3d.col + 1]; j++) {
 					tndarray[cntndarray].snames[j] = GENMALLOC(1 * sizeof(char[MAX_NAME_CHARS]));
 					strlcpy(tndarray[cntndarray].snames[j], f3d.fnamefifo[f3d.col + 1][j], MAX_NAME_CHARS);
+					tndarray[cntndarray].snameid[j] = f3d.fidfifo[f3d.col + 1][j];
 					tndarray[cntndarray].nname[j] = GENMALLOC(1 * sizeof(char[MAX_NAME_CHARS]));
 					strlcpy(tndarray[cntndarray].nname[j], f3d.nnfifo[f3d.col + 1][j], MAX_NAME_CHARS);
 					tndarray[cntndarray].biases[j] = f3d.biasfifo[f3d.col + 1][j];
@@ -355,6 +364,7 @@ struct rand_smc_node *createsmctree(int *casz,
 						GENFREE(ndarray[j].norcall);
 						GENFREE(ndarray[j].biasarray);
 						GENFREE(ndarray[j].snames);
+						GENFREE(ndarray[j].snameid);
 						GENFREE(ndarray[j].nname);
 						GENFREE(ndarray[j].treenodes);
 					}
@@ -377,6 +387,7 @@ struct rand_smc_node *createsmctree(int *casz,
 				GENFREE(f3d.nnfifo[f3d.col + 1]);
 				GENFREE(f3d.fnamefifo[f3d.col + 1]);
 				GENFREE(f3d.biasfifo[f3d.col + 1]);
+				GENFREE(f3d.fidfifo[f3d.col + 1]);
 				f3d.curr_col -= 1;
 			}
 		}
@@ -393,15 +404,16 @@ struct rand_smc_node *createsmctree(int *casz,
 				GENFREE(f3d.nnfifo[i]);
 				GENFREE(f3d.fnamefifo[i]);
 				GENFREE(f3d.biasfifo[i]);
+				GENFREE(f3d.fidfifo[i]);
 			}
 			GENFREE(f3d.nnfifo);
 			GENFREE(f3d.fnamefifo);
 			GENFREE(f3d.biasfifo);
+			GENFREE(f3d.fidfifo);
 			GENFREE(f3d.row);
 			dtdone = 1;
 		}
 	}
-
 
 	*casz = cntndarray;
 	return ndarray;
@@ -445,9 +457,6 @@ test_result_t init_smc_fuzzing(void)
 	return TEST_RESULT_SUCCESS;
 }
 
-/*
- * Declaration of single fuzzing instance(seed based)
- */
 test_result_t smc_fuzzing_instance(uint32_t seed)
 {
 	struct rand_smc_node *tlnode;
@@ -479,11 +488,13 @@ test_result_t smc_fuzzing_instance(uint32_t seed)
 	for (unsigned int i = 0U; i < SMC_FUZZ_CALLS_PER_INSTANCE; i++) {
 		tlnode = &ndarray[cntndarray - 1];
 		int nd = 0;
+
 		while (nd == 0) {
 			int nch = rand()%tlnode->biasent;
 			int selent = tlnode->biasarray[nch];
+
 			if (tlnode->norcall[selent] == 0) {
-				runtestfunction(tlnode->snames[selent]);
+				runtestfunction(tlnode->snameid[selent]);
 				nd = 1;
 			} else {
 				tlnode = &tlnode->treenodes[selent];
@@ -493,9 +504,6 @@ test_result_t smc_fuzzing_instance(uint32_t seed)
 	return TEST_RESULT_SUCCESS;
 }
 
-/*
- * free memory after fuzzing is complete
- */
 test_result_t smc_fuzzing_deinit(void)
 {
 	/*
@@ -511,6 +519,7 @@ test_result_t smc_fuzzing_deinit(void)
 			GENFREE(ndarray[j].norcall);
 			GENFREE(ndarray[j].biasarray);
 			GENFREE(ndarray[j].snames);
+			GENFREE(ndarray[j].snameid);
 			GENFREE(ndarray[j].nname);
 			GENFREE(ndarray[j].treenodes);
 		}
@@ -521,7 +530,7 @@ test_result_t smc_fuzzing_deinit(void)
 }
 
 /*
- * Execute fuzzing module
+ * Top of SMC fuzzing module
  */
 test_result_t smc_fuzzer_execute(void)
 {
@@ -576,14 +585,11 @@ test_result_t smc_fuzzer_execute(void)
 	return result;
 }
 
-/*
- * Top level of fuzzing module
- */
 test_result_t smc_fuzzing_top(void)
 {
 	test_result_t result = TEST_RESULT_SUCCESS;
-
 	init_smc_fuzzing();
+
 #ifdef MULTI_CPU_SMC_FUZZER
 	u_register_t lead_mpid, target_mpid;
 	int cpu_node;

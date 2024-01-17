@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,8 +11,8 @@
 /*
  * Invoke the SMC call based on the function name specified.
  */
-void runtestfunction(char *funcstr)
+void runtestfunction(int funcid)
 {
-	run_sdei_fuzz(funcstr);
-	run_tsp_fuzz(funcstr);
+	run_sdei_fuzz(funcid);
+	run_tsp_fuzz(funcid);
 }

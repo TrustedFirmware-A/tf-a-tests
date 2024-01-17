@@ -20,50 +20,50 @@
 		bias = <30>;
 		sdei_version {
 			bias = <30>;
-			functionname = "sdei_version";
+			functionname = "sdei_version_funcid";
 		};
 		sdei_pe_unmask {
 			bias = <30>;
-			functionname = "sdei_pe_unmask";
+			functionname = "sdei_pe_unmask_funcid";
 		};
 		sdei_pe_mask {
 			bias = <30>;
-			functionname = "sdei_pe_mask";
+			functionname = "sdei_pe_mask_funcid";
 		};
 		sdei_event_status {
 			bias = <30>;
-			functionname = "sdei_event_status";
+			functionname = "sdei_event_status_funcid";
 		};
 		sdei_event_signal {
 			bias = <30>;
-			functionname = "sdei_event_signal";
+			functionname = "sdei_event_signal_funcid";
 		};
 		sdei_private_reset {
 			bias = <30>;
-			functionname = "sdei_private_reset";
+			functionname = "sdei_private_reset_funcid";
 		};
 		sdei_shared_reset {
 			bias = <30>;
-			functionname = "sdei_shared_reset";
+			functionname = "sdei_shared_reset_funcid";
 		};
 	};
 	tsp {
 		bias = <30>;
 		tsp_add_op {
 			bias = <30>;
-			functionname = "tsp_add_op";
+			functionname = "tsp_add_op_funcid";
 		};
 		tsp_sub_op {
 			bias = <30>;
-			functionname = "tsp_sub_op";
+			functionname = "tsp_sub_op_funcid";
 		};
 		tsp_mul_op {
 			bias = <30>;
-			functionname = "tsp_mul_op";
+			functionname = "tsp_mul_op_funcid";
 		};
 		tsp_div_op {
 			bias = <30>;
-			functionname = "tsp_div_op";
+			functionname = "tsp_div_op_funcid";
 		};
 	};
 };

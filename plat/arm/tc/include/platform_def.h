@@ -80,7 +80,7 @@
 #define TC_GICC_BASE			0x2C000000
 
 /* SoC's PL011 UART0 related constants */
-#define PL011_UART0_BASE		0x7FF70000
+#define PL011_UART0_BASE		0x2A400000
 #define PL011_UART0_CLK_IN_HZ		7372800
 
 /* SoC's PL011 UART1 related constants */

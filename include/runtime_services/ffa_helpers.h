@@ -497,6 +497,34 @@ struct ffa_memory_region_attributes {
 	ffa_memory_receiver_flags_t flags;
 };
 
+/**
+ * Endpoint RX/TX descriptor, as defined by Table 13.27 in FF-A v1.1 EAC0.
+ * It's used by the Hypervisor to describe the RX/TX buffers mapped by a VM
+ * to the SPMC, in order to allow indirect messaging.
+ */
+struct ffa_endpoint_rxtx_descriptor {
+	ffa_id_t endpoint_id;
+	uint16_t reserved;
+
+	/*
+	 * 8-byte aligned offset from the base address of this descriptor to the
+	 * `ffa_composite_memory_region` describing the RX buffer.
+	 */
+	uint32_t rx_offset;
+
+	/*
+	 * 8-byte aligned offset from the base address of this descriptor to the
+	 * `ffa_composite_memory_region` describing the TX buffer.
+	 */
+	uint32_t tx_offset;
+
+	/* Pad to align on 16-byte boundary. */
+	uint32_t pad;
+};
+
+_Static_assert(sizeof(struct ffa_endpoint_rxtx_descriptor) == 16,
+	       "ffa_endpoint_rx_tx_descriptor must be 16 bytes wide");
+
 /** Flags to control the behaviour of a memory sharing transaction. */
 typedef uint32_t ffa_memory_region_flags_t;
 
@@ -759,6 +787,7 @@ struct ffa_value ffa_features_with_input_property(uint32_t feature,
 struct ffa_value ffa_partition_info_get(const struct ffa_uuid uuid);
 struct ffa_value ffa_rx_release(void);
 struct ffa_value ffa_rxtx_map(uintptr_t send, uintptr_t recv, uint32_t pages);
+struct ffa_value ffa_rxtx_unmap_with_id(uint32_t id);
 struct ffa_value ffa_rxtx_unmap(void);
 struct ffa_value ffa_mem_donate(uint32_t descriptor_length,
 				uint32_t fragment_length);
@@ -799,6 +828,14 @@ struct ffa_memory_access ffa_memory_access_init(
 	enum ffa_instruction_access instruction_access,
 	ffa_memory_receiver_flags_t flags,
 	struct ffa_memory_access_impdef *impdef);
+
+void ffa_endpoint_rxtx_descriptor_init(
+    struct ffa_endpoint_rxtx_descriptor *desc, ffa_id_t endpoint_id,
+    void *rx_address, void *tx_address);
+
+struct ffa_value ffa_rxtx_map_forward(
+	struct ffa_endpoint_rxtx_descriptor *desc, ffa_id_t endpoint_id,
+	void *rx_address, void *tx_address);
 
 #endif /* __ASSEMBLY__ */
 

@@ -525,7 +525,7 @@ typedef uint32_t ffa_memory_region_flags_t;
 #define FFA_MEMORY_REGION_TRANSACTION_TYPE_DONATE ((0x3U) << 3)
 
 /** The maximum number of recipients a memory region may be sent to. */
-#define MAX_MEM_SHARE_RECIPIENTS 1U
+#define MAX_MEM_SHARE_RECIPIENTS 2U
 
 struct ffa_memory_access_impdef {
 	uint64_t val[2];

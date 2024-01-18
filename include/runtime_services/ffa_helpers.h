@@ -625,6 +625,43 @@ static inline ffa_id_t ffa_frag_sender(struct ffa_value args)
 }
 
 /**
+ * To maintain forwards compatability we can't make assumptions about the size
+ * of the endpoint memory access descriptor so provide a helper function
+ * to get a receiver from the receiver array using the memory access descriptor
+ * size field from the memory region descriptor struct.
+ * Returns NULL if we cannot return the receiver.
+ */
+static inline struct ffa_memory_access *ffa_memory_region_get_receiver(
+	struct ffa_memory_region *memory_region, uint32_t receiver_index)
+{
+	uint32_t memory_access_desc_size =
+		memory_region->memory_access_desc_size;
+
+	if (receiver_index >= memory_region->receiver_count) {
+		return NULL;
+	}
+
+	/*
+	 * Memory access descriptor size cannot be greater than the size of
+	 * the memory access descriptor defined by the current FF-A version.
+	 */
+	if (memory_access_desc_size > sizeof(struct ffa_memory_access)) {
+		return NULL;
+	}
+
+	/* Check we cannot use receivers offset to cause overflow. */
+	if (memory_region->receivers_offset !=
+	    sizeof(struct ffa_memory_region)) {
+		return NULL;
+	}
+
+	return (struct ffa_memory_access *)((uint8_t *)memory_region +
+					    memory_region->receivers_offset +
+					    (receiver_index *
+					     memory_access_desc_size));
+}
+
+/**
  * Gets the `ffa_composite_memory_region` for the given receiver from an
  * `ffa_memory_region`, or NULL if it is not valid.
  */

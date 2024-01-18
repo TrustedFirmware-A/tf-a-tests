@@ -67,3 +67,9 @@ IRQ support in TSP/Resume preempted STD SMC
 IRQ support in TSP/Resume preempted STD SMC from other CPUs
 IRQ support in TSP/Resume preempted STD SMC after PSCI CPU OFF/ON cycle
 IRQ support in TSP/Resume preempted STD SMC after PSCI SYSTEM SUSPEND
+
+#TESTS: runtime-instrumentation
+Runtime Instrumentation Validation
+
+#TESTS: debugfs
+DebugFS

@@ -218,8 +218,10 @@ test_result_t test_ffa_ns_interrupt_signaled(void)
 
 	if ((ffa_func_id(ret_values) != FFA_ERROR) ||
 	    (ffa_error_code(ret_values) != FFA_ERROR_BUSY)) {
-		ERROR("Expected FFA_ERROR(BUSY)! Got %x(%x)\n",
-		      ffa_func_id(ret_values), ffa_error_code(ret_values));
+		ERROR("Expected FFA_ERROR(BUSY)! Got %s(%s)\n",
+		      ffa_func_name(ffa_func_id(ret_values)),
+		      ffa_error_name(ffa_error_code(ret_values)));
+
 		return TEST_RESULT_FAIL;
 	}
 
@@ -560,8 +562,9 @@ test_result_t test_ffa_SPx_signaled_SPy_ME(void)
 
 	if ((ffa_func_id(ret_values) != FFA_ERROR) ||
 	    (ffa_error_code(ret_values) != FFA_ERROR_BUSY)) {
-		ERROR("Expected FFA_ERROR(BUSY)! Got %x(%x)\n",
-		      ffa_func_id(ret_values), ffa_error_code(ret_values));
+		ERROR("Expected FFA_ERROR(BUSY)! Got %s(%s)\n",
+		      ffa_func_name(ffa_func_id(ret_values)),
+		      ffa_error_name(ffa_error_code(ret_values)));
 		return TEST_RESULT_FAIL;
 	}
 

@@ -99,18 +99,20 @@ static void ffa_features_test(void)
 				test_target.expected_ret : FFA_ERROR;
 
 		if (ffa_func_id(ffa_ret) != expected_ret) {
-			ERROR("Unexpected return: %x (expected %x)."
+			ERROR("Unexpected return: %s (expected %s)."
 			      " FFA_FEATURES test: %s.\n",
-			      ffa_func_id(ffa_ret), expected_ret,
+			      ffa_func_name(ffa_func_id(ffa_ret)),
+			      ffa_func_name(expected_ret),
 			      test_target.test_name);
 		}
 
 		if (expected_ret == FFA_ERROR) {
 			if (ffa_error_code(ffa_ret) !=
 			    FFA_ERROR_NOT_SUPPORTED) {
-				ERROR("Unexpected error code: %x (expected %x)."
+				ERROR("Unexpected error code: %s (expected %s)."
 				      " FFA_FEATURES test: %s.\n",
-				      ffa_error_code(ffa_ret), expected_ret,
+				      ffa_error_name(ffa_error_code(ffa_ret)),
+				      ffa_error_name(expected_ret),
 				      test_target.test_name);
 			}
 		}

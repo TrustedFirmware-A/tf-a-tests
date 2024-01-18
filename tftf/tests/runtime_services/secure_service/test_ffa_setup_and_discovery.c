@@ -94,19 +94,20 @@ test_result_t test_ffa_features(void)
 			>= test_target.version_added ?
 			test_target.expected_ret : FFA_ERROR;
 		if (ffa_func_id(ffa_ret) != expected_ret) {
-			tftf_testcase_printf("%s returned %x, expected %x\n",
-					test_target.test_name,
-					ffa_func_id(ffa_ret),
-					expected_ret);
+			tftf_testcase_printf(
+				"%s returned %s, expected %s\n",
+				test_target.test_name,
+				ffa_func_name(ffa_func_id(ffa_ret)),
+				ffa_func_name(expected_ret));
 			return TEST_RESULT_FAIL;
 		}
 		if ((expected_ret == FFA_ERROR) &&
 				(ffa_error_code(ffa_ret) != FFA_ERROR_NOT_SUPPORTED)) {
-			tftf_testcase_printf("%s failed for the wrong reason: "
-					"returned %x, expected %x\n",
-					test_target.test_name,
-					ffa_error_code(ffa_ret),
-					FFA_ERROR_NOT_SUPPORTED);
+			tftf_testcase_printf(
+				"%s failed for the wrong reason: returned %s, expected %s\n",
+				test_target.test_name,
+				ffa_error_name(ffa_error_code(ffa_ret)),
+				ffa_error_name(FFA_ERROR_NOT_SUPPORTED));
 			return TEST_RESULT_FAIL;
 		}
 	}
@@ -225,7 +226,8 @@ static test_result_t test_ffa_rxtx_map(uint32_t expected_return)
 	 */
 	CONFIGURE_AND_MAP_MAILBOX(mb, PAGE_SIZE, ret);
 	if (ffa_func_id(ret) != expected_return) {
-		ERROR("Failed to map RXTX buffers %x!\n", ffa_error_code(ret));
+		ERROR("Failed to map RXTX buffers: %s!\n",
+		      ffa_error_name(ffa_error_code(ret)));
 		return TEST_RESULT_FAIL;
 	}
 
@@ -353,8 +355,8 @@ test_result_t test_ffa_spm_id_get(void)
 	struct ffa_value ffa_ret = ffa_spm_id_get();
 
 	if (is_ffa_call_error(ffa_ret)) {
-		ERROR("FFA_SPM_ID_GET call failed! Error code: 0x%x\n",
-			ffa_error_code(ffa_ret));
+		ERROR("FFA_SPM_ID_GET call failed! Error code: %s\n",
+		      ffa_error_name(ffa_error_code(ffa_ret)));
 		return TEST_RESULT_FAIL;
 	}
 

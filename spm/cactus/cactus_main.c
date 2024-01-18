@@ -61,10 +61,12 @@ static void __dead2 message_loop(ffa_id_t vm_id, struct mailbox_buffers *mb)
 	ffa_ret = ffa_msg_wait();
 
 	for (;;) {
-		VERBOSE("Woke up with func id: %x\n", ffa_func_id(ffa_ret));
+		VERBOSE("Woke up with func id: %s\n",
+			ffa_func_name(ffa_func_id(ffa_ret)));
 
 		if (ffa_func_id(ffa_ret) == FFA_ERROR) {
-			ERROR("Error: %x\n", ffa_error_code(ffa_ret));
+			ERROR("Error: %s\n",
+			      ffa_error_name(ffa_error_code(ffa_ret)));
 			break;
 		}
 
@@ -72,8 +74,8 @@ static void __dead2 message_loop(ffa_id_t vm_id, struct mailbox_buffers *mb)
 		    ffa_func_id(ffa_ret) != FFA_MSG_SEND_DIRECT_REQ_SMC64 &&
 		    ffa_func_id(ffa_ret) != FFA_INTERRUPT &&
 		    ffa_func_id(ffa_ret) != FFA_RUN) {
-			ERROR("%s(%u) unknown func id 0x%x\n",
-				__func__, vm_id, ffa_func_id(ffa_ret));
+			ERROR("%s(%u) unknown func id %s\n", __func__, vm_id,
+			      ffa_func_name(ffa_func_id(ffa_ret)));
 			break;
 		}
 
@@ -304,9 +306,8 @@ void __dead2 cactus_main(bool primary_cold_boot,
 		VERBOSE("Mapping RXTX Region\n");
 		CONFIGURE_AND_MAP_MAILBOX(mb, PAGE_SIZE, ret);
 		if (ffa_func_id(ret) != FFA_SUCCESS_SMC32) {
-			ERROR(
-			    "Failed to map RXTX buffers. Error: %x\n",
-			    ffa_error_code(ret));
+			ERROR("Failed to map RXTX buffers. Error: %s\n",
+			      ffa_error_name(ffa_error_code(ret)));
 			panic();
 		}
 	}

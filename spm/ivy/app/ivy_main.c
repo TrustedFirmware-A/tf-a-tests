@@ -42,8 +42,8 @@ init:
 	VERBOSE("Mapping RXTX Regions\n");
 	CONFIGURE_AND_MAP_MAILBOX(mb, PAGE_SIZE, ret);
 	if (ffa_func_id(ret) != FFA_SUCCESS_SMC32) {
-		ERROR("Failed to map RXTX buffers. Error %x\n",
-		      ffa_error_code(ret));
+		ERROR("Failed to map RXTX buffers. Error %s\n",
+		      ffa_error_name(ffa_error_code(ret)));
 		panic();
 	}
 
@@ -53,7 +53,8 @@ init:
 
 	while (1) {
 		if (ffa_func_id(ret) != FFA_MSG_SEND_DIRECT_REQ_SMC32) {
-			ERROR("unknown FF-A request %x\n", ffa_func_id(ret));
+			ERROR("unknown FF-A request %s\n",
+			      ffa_func_name(ffa_func_id(ret)));
 			goto init;
 		}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2023, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2024, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -417,6 +417,9 @@
 #define ID_AA64PFR1_RAS_FRAC_SHIFT		U(12)
 #define ID_AA64PFR1_RAS_FRAC_WIDTH		U(4)
 #define ID_AA64PFR1_RASV1P1_SUPPORTED		ULL(0x1)
+
+#define ID_AA64PFR1_MPAM_FRAC_SHIFT   		U(16)
+#define ID_AA64PFR1_MPAM_FRAC_MASK    		ULL(0xf)
 
 /* ID_PFR1_EL1 definitions */
 #define ID_PFR1_VIRTEXT_SHIFT	U(12)

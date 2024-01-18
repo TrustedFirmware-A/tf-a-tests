@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -222,6 +222,14 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 			tftf_testcase_printf("ARMv8.7-afp not supported\n");	\
 			return TEST_RESULT_SKIPPED;				\
 		}								\
+	} while (false)
+
+#define SKIP_TEST_IF_MPAM_NOT_SUPPORTED()                                     \
+	do {                                                                    \
+		if(!is_feat_mpam_supported()){                                  \
+			tftf_testcase_printf("ARMv8.4-mpam not supported\n");   \
+			return TEST_RESULT_SKIPPED;                             \
+		}                                                               \
 	} while (false)
 
 #ifdef __aarch64__

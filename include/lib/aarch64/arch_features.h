@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -210,6 +210,19 @@ static inline bool is_feat_rng_trap_present(void)
 	return (((read_id_aa64pfr1_el1() >> ID_AA64PFR1_EL1_RNDR_TRAP_SHIFT) &
 			ID_AA64PFR1_EL1_RNDR_TRAP_MASK)
 			== ID_AA64PFR1_EL1_RNG_TRAP_SUPPORTED);
+}
+
+static inline bool is_feat_mpam_supported(void)
+{
+	/*
+	 * If the MPAM version retreived from the Processor Feature registers
+	 * is a non-zero value, then MPAM is supported.
+	 */
+
+	return (((((read_id_aa64pfr0_el1() >>
+		ID_AA64PFR0_MPAM_SHIFT) & ID_AA64PFR0_MPAM_MASK) << 4) |
+		((read_id_aa64pfr1_el1() >>
+		ID_AA64PFR1_MPAM_FRAC_SHIFT) & ID_AA64PFR1_MPAM_FRAC_MASK)) != 0U);
 }
 
 static inline unsigned int spe_get_version(void)

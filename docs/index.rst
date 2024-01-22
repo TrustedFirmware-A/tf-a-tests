@@ -12,6 +12,7 @@ Trusted Firmware-A Tests Documentation
    design
    implementing-tests
    porting/index
+   plat/index
    change-log
    license
 

@@ -827,6 +827,6 @@ struct ffa_memory_access ffa_memory_access_init_permissions_from_mem_func(
 			? FFA_DATA_ACCESS_NOT_SPECIFIED
 			: FFA_DATA_ACCESS_RW;
 
-	return ffa_memory_access_init_permissions(receiver_id, data_access,
-						  instruction_access, 0);
+	return ffa_memory_access_init(receiver_id, data_access,
+				      instruction_access, 0, NULL);
 }

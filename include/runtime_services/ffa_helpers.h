@@ -527,6 +527,10 @@ typedef uint32_t ffa_memory_region_flags_t;
 /** The maximum number of recipients a memory region may be sent to. */
 #define MAX_MEM_SHARE_RECIPIENTS 1U
 
+struct ffa_memory_access_impdef {
+	uint64_t val[2];
+};
+
 /**
  * This corresponds to table "Endpoint memory access descriptor" of the FFA 1.0
  * specification.
@@ -538,6 +542,8 @@ struct ffa_memory_access {
 	 * an `ffa_composite_memory_region` struct.
 	 */
 	uint32_t composite_memory_region_offset;
+	/* Space for implementation defined information */
+	struct ffa_memory_access_impdef impdef;
 	uint64_t reserved_0;
 };
 
@@ -751,10 +757,11 @@ struct ffa_value ffa_partition_info_get_regs(const struct ffa_uuid uuid,
 					     const uint16_t start_index,
 					     const uint16_t tag);
 
-struct ffa_memory_access ffa_memory_access_init_permissions(
+struct ffa_memory_access ffa_memory_access_init(
 	ffa_id_t receiver_id, enum ffa_data_access data_access,
 	enum ffa_instruction_access instruction_access,
-	ffa_memory_receiver_flags_t flags);
+	ffa_memory_receiver_flags_t flags,
+	struct ffa_memory_access_impdef *impdef);
 
 #endif /* __ASSEMBLY__ */
 

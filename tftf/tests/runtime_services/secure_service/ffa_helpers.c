@@ -787,10 +787,11 @@ struct ffa_value ffa_console_log(const char *message, size_t char_count)
 /**
  * Initializes receiver permissions in a memory transaction descriptor.
  */
-struct ffa_memory_access ffa_memory_access_init_permissions(
+struct ffa_memory_access ffa_memory_access_init(
 	ffa_id_t receiver_id, enum ffa_data_access data_access,
 	enum ffa_instruction_access instruction_access,
-	ffa_memory_receiver_flags_t flags)
+	ffa_memory_receiver_flags_t flags,
+	struct ffa_memory_access_impdef *impdef)
 {
 	struct ffa_memory_access access;
 	access.reserved_0 = 0;
@@ -800,6 +801,8 @@ struct ffa_memory_access ffa_memory_access_init_permissions(
 	access.receiver_permissions.permissions.data_access = data_access;
 	access.receiver_permissions.permissions.instruction_access =
 		instruction_access;
+	access.impdef = impdef != NULL ? *impdef :
+		(struct ffa_memory_access_impdef){{0, 0}};
 
 	return access;
 }

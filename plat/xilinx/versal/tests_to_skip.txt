@@ -39,8 +39,14 @@ PSCI CPU ON OFF Stress Tests/PSCI CPU ON OFF stress test
 PSCI CPU ON OFF Stress Tests/Repeated hotplug of all cores to stress test CPU_ON and CPU_OFF
 PSCI CPU ON OFF Stress Tests/Random hotplug cores in a large iteration to stress boot path code
 
- #TESTS: TSP
- IRQ support in TSP/Resume preempted STD SMC after PSCI CPU OFF/ON cycle
- IRQ support in TSP/Resume preempted STD SMC after PSCI SYSTEM SUSPEND
- IRQ support in TSP/Resume preempted STD SMC
- TSP PSTATE test
+#TESTS: TSP
+IRQ support in TSP/Resume preempted STD SMC after PSCI CPU OFF/ON cycle
+IRQ support in TSP/Resume preempted STD SMC after PSCI SYSTEM SUSPEND
+IRQ support in TSP/Resume preempted STD SMC
+TSP PSTATE test
+
+#TESTS: runtime-instrumentation
+Runtime Instrumentation Validation
+
+#TESTS: debugfs
+DebugFS

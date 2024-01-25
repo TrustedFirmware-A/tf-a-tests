@@ -323,7 +323,7 @@ bool hypervisor_retrieve_request(struct mailbox_buffers *mb, uint64_t handle,
 	 * because `mb->recv` will be overwritten if sending a fragmented
 	 * message.
 	 */
-	memcpy(out, mb->recv, total_size);
+	memcpy(out, mb->recv, fragment_size);
 
 	if (region_out->receiver_count == 0) {
 		VERBOSE("copied region has no recivers\n");
@@ -370,7 +370,7 @@ bool hypervisor_retrieve_request(struct mailbox_buffers *mb, uint64_t handle,
 			return false;
 		}
 
-		fragment_size = ret.arg3;
+		fragment_size = ret.arg2;
 		if (fragment_size == 0) {
 			ERROR("%s: fragment size must not be 0\n", __func__);
 			return false;

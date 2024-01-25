@@ -525,7 +525,7 @@ typedef uint32_t ffa_memory_region_flags_t;
 #define FFA_MEMORY_REGION_TRANSACTION_TYPE_DONATE ((0x3U) << 3)
 
 /** The maximum number of recipients a memory region may be sent to. */
-#define MAX_MEM_SHARE_RECIPIENTS 1U
+#define MAX_MEM_SHARE_RECIPIENTS 2U
 
 struct ffa_memory_access_impdef {
 	uint64_t val[2];
@@ -622,6 +622,43 @@ static inline ffa_memory_handle_t ffa_frag_handle(struct ffa_value r)
 static inline ffa_id_t ffa_frag_sender(struct ffa_value args)
 {
 	return (args.arg4 >> 16) & 0xffff;
+}
+
+/**
+ * To maintain forwards compatability we can't make assumptions about the size
+ * of the endpoint memory access descriptor so provide a helper function
+ * to get a receiver from the receiver array using the memory access descriptor
+ * size field from the memory region descriptor struct.
+ * Returns NULL if we cannot return the receiver.
+ */
+static inline struct ffa_memory_access *ffa_memory_region_get_receiver(
+	struct ffa_memory_region *memory_region, uint32_t receiver_index)
+{
+	uint32_t memory_access_desc_size =
+		memory_region->memory_access_desc_size;
+
+	if (receiver_index >= memory_region->receiver_count) {
+		return NULL;
+	}
+
+	/*
+	 * Memory access descriptor size cannot be greater than the size of
+	 * the memory access descriptor defined by the current FF-A version.
+	 */
+	if (memory_access_desc_size > sizeof(struct ffa_memory_access)) {
+		return NULL;
+	}
+
+	/* Check we cannot use receivers offset to cause overflow. */
+	if (memory_region->receivers_offset !=
+	    sizeof(struct ffa_memory_region)) {
+		return NULL;
+	}
+
+	return (struct ffa_memory_access *)((uint8_t *)memory_region +
+					    memory_region->receivers_offset +
+					    (receiver_index *
+					     memory_access_desc_size));
 }
 
 /**

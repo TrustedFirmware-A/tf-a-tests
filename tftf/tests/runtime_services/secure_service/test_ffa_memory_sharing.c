@@ -636,6 +636,100 @@ static bool verify_composite(struct ffa_composite_memory_region *composite,
 	return true;
 }
 
+static bool verify_receivers_impdef(struct ffa_memory_access_impdef impdef1,
+				    struct ffa_memory_access_impdef impdef2)
+{
+	if (impdef1.val[0] != impdef2.val[0] ||
+	    impdef1.val[1] != impdef2.val[1]) {
+		ERROR("ipmdef1.val[0]=%llu expected=%llu"
+		      " ipmdef1.val[1]=%llu expected=%llu\n",
+		      impdef1.val[0], impdef2.val[0],
+		      impdef1.val[1], impdef2.val[1]);
+		return false;
+	}
+
+	return true;
+}
+
+static bool verify_permissions(
+		ffa_memory_access_permissions_t permissions1,
+		ffa_memory_access_permissions_t permissions2)
+{
+	uint8_t access1;
+	uint8_t access2;
+
+	access1 = permissions1.data_access;
+	access2 = permissions2.data_access;
+
+	if (access1 != access2) {
+		ERROR("permissions1.data_access=%u expected=%u\n",
+		      access1, access2);
+		return false;
+	}
+
+	access1 = permissions1.instruction_access;
+	access2 = permissions2.instruction_access;
+
+	if (access1 != access2) {
+		ERROR("permissions1.instruction_access=%u expected=%u\n",
+		      access1, access2);
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Used by hypervisor retrieve request test: validate descriptors provided by
+ * SPMC.
+ */
+static bool verify_receivers(struct ffa_memory_access *receivers1,
+			     struct ffa_memory_access *receivers2,
+			     uint32_t receivers_count)
+{
+	for (uint32_t i = 0; i < receivers_count; i++) {
+		if (receivers1[i].receiver_permissions.receiver !=
+		    receivers2[i].receiver_permissions.receiver) {
+			ERROR("receivers1[%u].receiver_permissions.receiver=%x"
+			      " expected=%x\n", i,
+			      receivers1[i].receiver_permissions.receiver,
+			      receivers2[i].receiver_permissions.receiver);
+			return false;
+		}
+
+		if (receivers1[i].receiver_permissions.flags !=
+		    receivers2[i].receiver_permissions.flags) {
+			ERROR("receivers1[%u].receiver_permissions.flags=%u"
+			      " expected=%u\n", i,
+			      receivers1[i].receiver_permissions.flags,
+			      receivers2[i].receiver_permissions.flags);
+			return false;
+		}
+
+		if (!verify_permissions(
+			receivers1[i].receiver_permissions.permissions,
+			receivers2[i].receiver_permissions.permissions)) {
+			return false;
+		}
+
+		if (receivers1[i].composite_memory_region_offset !=
+		    receivers2[i].composite_memory_region_offset) {
+			ERROR("receivers1[%u].composite_memory_region_offset=%u"
+			      " expected %u\n",
+			      i, receivers1[i].composite_memory_region_offset,
+			      receivers2[i].composite_memory_region_offset);
+			return false;
+		}
+
+		if (!verify_receivers_impdef(receivers1[i].impdef,
+					     receivers1[i].impdef)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /**
  * Helper for performing a hypervisor retrieve request test.
  */
@@ -644,7 +738,6 @@ static test_result_t hypervisor_retrieve_request_test_helper(
 {
 	static struct ffa_memory_region_constituent
 		sent_constituents[FRAGMENTED_SHARE_PAGE_COUNT];
-
 	__aligned(PAGE_SIZE) static uint8_t page[PAGE_SIZE * 2] = {0};
 	struct ffa_memory_region *hypervisor_retrieve_response =
 		(struct ffa_memory_region *)page;
@@ -652,7 +745,8 @@ static test_result_t hypervisor_retrieve_request_test_helper(
 	struct mailbox_buffers mb;
 	ffa_memory_handle_t handle;
 	struct ffa_value ret;
-
+	struct ffa_composite_memory_region *composite;
+	struct ffa_memory_access *retrvd_receivers;
 	uint32_t expected_flags = 0;
 
 	ffa_memory_attributes_t expected_attrs = {
@@ -679,9 +773,16 @@ static test_result_t hypervisor_retrieve_request_test_helper(
 	uint32_t receiver_count =
 		multiple_receivers ? ARRAY_SIZE(receivers) : 1;
 
-
 	uint32_t sent_constituents_count =
 		fragmented ? ARRAY_SIZE(sent_constituents) : 1;
+
+	/* Prepare the composite offset for the comparison. */
+	for (uint32_t i = 0; i < receiver_count; i++) {
+		receivers[i].composite_memory_region_offset =
+			sizeof(struct ffa_memory_region) +
+			receiver_count *
+				sizeof(struct ffa_memory_access);
+	}
 
 	/* Add a page per constituent, so that we exhaust the size of a single
 	 * fragment (for testing). In a real world scenario, the whole region
@@ -711,8 +812,8 @@ static test_result_t hypervisor_retrieve_request_test_helper(
 		panic();
 	}
 
-	handle = memory_init_and_send(mb.send, MAILBOX_SIZE, SENDER, receivers, receiver_count,
-				      sent_constituents,
+	handle = memory_init_and_send(mb.send, MAILBOX_SIZE, SENDER, receivers,
+				      receiver_count, sent_constituents,
 				      sent_constituents_count, mem_func, &ret);
 	if (handle == FFA_MEMORY_HANDLE_INVALID) {
 		ERROR("Memory share failed: %d\n", ffa_error_code(ret));
@@ -733,34 +834,37 @@ static test_result_t hypervisor_retrieve_request_test_helper(
 	 * Verify the received `FFA_MEM_RETRIEVE_RESP` aligns with
 	 * transaction description sent above.
 	 */
-	expected_response = (struct ffa_memory_region){
+	expected_response = (struct ffa_memory_region) {
 		.sender = SENDER,
 		.attributes = expected_attrs,
 		.flags = expected_flags,
 		.handle = handle,
 		.tag = 0,
 		.memory_access_desc_size = sizeof(struct ffa_memory_access),
-		.receiver_count = 1,
+		.receiver_count = receiver_count,
 		.receivers_offset =
 			offsetof(struct ffa_memory_region, receivers),
 	};
-	if (!verify_retrieve_response(hypervisor_retrieve_response, &expected_response)) {
+
+	if (!verify_retrieve_response(hypervisor_retrieve_response,
+				      &expected_response)) {
 		return TEST_RESULT_FAIL;
 	}
 
-	for (uint32_t i = 0; i < hypervisor_retrieve_response->receiver_count; i++) {
-		struct ffa_composite_memory_region *composite =
-			ffa_memory_region_get_composite(
-				hypervisor_retrieve_response, i);
-		if (composite == NULL) {
-			ERROR("composite %d is null\n", i);
-			return TEST_RESULT_FAIL;
-		}
+	retrvd_receivers =
+		ffa_memory_region_get_receiver(hypervisor_retrieve_response, 0);
 
-		if (!verify_composite(composite, &composite->constituents[i],
-				      sent_constituents_count, sent_constituents_count)) {
-			return TEST_RESULT_FAIL;
-		}
+	if (!verify_receivers(retrvd_receivers,
+			      receivers, receiver_count)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	composite = ffa_memory_region_get_composite(
+				hypervisor_retrieve_response, 0);
+
+	if (!verify_composite(composite, composite->constituents,
+			      sent_constituents_count, sent_constituents_count)) {
+		return TEST_RESULT_FAIL;
 	}
 
 	/*

@@ -20,14 +20,14 @@ You can see a `summary of all the lists`_ on the TrustedFirmware.org website.
 Issue Tracker
 ^^^^^^^^^^^^^
 
-Specific issues may be raised using the `issue tracker`_ on the
-TrustedFirmware.org website. Using this tracker makes it easy for the
-maintainers to prioritise and respond to your ticket.
+Specific issues may be raised using the `issue tracker`_ on Github. Using this
+tracker makes it easy for the maintainers to prioritise and respond to your
+ticket.
 
 --------------
 
-*Copyright (c) 2019-2022, Arm Limited. All rights reserved.*
+*Copyright (c) 2019-2024, Arm Limited. All rights reserved.*
 
-.. _`issue tracker`: https://developer.trustedfirmware.org
+.. _`issue tracker`: https://github.com/TrustedFirmware-A/tf-a-tests/issues
 .. _`TF-A-Tests development`: https://lists.trustedfirmware.org/mailman3/lists/tf-a-tests.lists.trustedfirmware.org/
 .. _`summary of all the lists`: https://lists.trustedfirmware.org/mailman3/lists/

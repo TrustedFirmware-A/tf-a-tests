@@ -9,6 +9,7 @@
 #include "sp_tests.h"
 
 #include <ffa_helpers.h>
+#include <spm_helpers.h>
 #include <debug.h>
 
 /* Booleans to keep track of which CPUs handled NPI. */
@@ -33,9 +34,8 @@ bool get_npi_handled(uint32_t vcpu_id)
 
 void notification_pending_interrupt_handler(void)
 {
-	/* Get which core it is running from. */
-	unsigned int core_pos = platform_get_core_pos(
-						read_mpidr_el1() & MPID_MASK);
+	/* Get vCPU index for currently running vCPU. */
+	unsigned int core_pos = spm_get_my_core_pos();
 
 	VERBOSE("NPI handled in core %u\n", core_pos);
 

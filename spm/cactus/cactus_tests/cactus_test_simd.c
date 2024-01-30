@@ -7,6 +7,7 @@
 #include "cactus_message_loop.h"
 #include "cactus_test_cmds.h"
 #include <fpu.h>
+#include <spm_helpers.h>
 #include "spm_common.h"
 
 /*
@@ -21,7 +22,8 @@ static unsigned int core_pos;
  */
 CACTUS_CMD_HANDLER(req_simd_fill, CACTUS_REQ_SIMD_FILL_CMD)
 {
-	core_pos = platform_get_core_pos(read_mpidr_el1());
+	/* Get vCPU index for currently running vCPU. */
+	core_pos = spm_get_my_core_pos();
 	fpu_state_write_rand(&sp_fpu_state_write);
 	return cactus_response(ffa_dir_msg_dest(*args),
 			       ffa_dir_msg_source(*args),
@@ -36,7 +38,8 @@ CACTUS_CMD_HANDLER(req_simd_compare, CACTUS_CMP_SIMD_VALUE_CMD)
 {
 	bool test_succeed = false;
 
-	unsigned int core_pos1 = platform_get_core_pos(read_mpidr_el1());
+	/* Get vCPU index for currently running vCPU. */
+	unsigned int core_pos1 = spm_get_my_core_pos();
 	if (core_pos1 == core_pos) {
 		fpu_state_read(&sp_fpu_state_read);
 		if (fpu_state_compare(&sp_fpu_state_write,

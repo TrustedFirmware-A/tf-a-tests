@@ -22,14 +22,36 @@
  * ---------------------------------------------------------------------
  */
 func platform_get_core_pos
+        /*
+         * Check for MT bit in MPIDR. If not set, shift MPIDR to left to make it
+         * look as if in a multi-threaded implementation.
+         */
+        tst     x0, #MPIDR_MT_MASK
+        lsl     x3, x0, #MPIDR_AFFINITY_BITS
+        csel    x3, x3, x0, eq
+
 	/* x1 = core-id inside cluster */
-	ubfx	x1, x0, #MPIDR_AFF0_SHIFT, #MPIDR_AFFINITY_BITS
+	ubfx	x0, x3, #MPIDR_AFF0_SHIFT, #MPIDR_AFFINITY_BITS
+	ubfx	x1, x3, #MPIDR_AFF1_SHIFT, #MPIDR_AFFINITY_BITS
 	/* x2 = cluster-id */
-	ubfx	x2, x0, #MPIDR_AFF1_SHIFT, #MPIDR_AFFINITY_BITS
+	ubfx	x2, x3, #MPIDR_AFF2_SHIFT, #MPIDR_AFFINITY_BITS
+
+	/* check if cpu_id valid */
+	cmp x1, #PLATFORM_CORE_COUNT_PER_CLUSTER
+	b.hi    error
+
+	/* check if cluster valid */
+	cmp x2, #PLATFORM_CLUSTER_COUNT
+	b.hi    error
 
 	/* core-position = cluster-id * cores per cluster + core-id */
-	mov	x3, #PLATFORM_CORE_COUNT_PER_CLUSTER
-	madd	x0, x2, x3, x1
+	mov     x3, #PLATFORM_CORE_COUNT_PER_CLUSTER
+	madd	x1, x2, x3, x1
+	mov	x3, #PLATFORM_MAX_PE_PER_CPU
+	madd	x0, x1, x3, x0
+	ret
+error:
+	mov     x0, #-1
 	ret
 endfunc platform_get_core_pos
 

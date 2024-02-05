@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -113,4 +113,16 @@ CACTUS_CMD_HANDLER(req_deadlock_cmd, CACTUS_REQ_DEADLOCK_CMD)
 		ffa_dir_msg_source(*args), deadlock_dest, deadlock_next_dest);
 
 	return base_deadlock_handler(vm_id, source, deadlock_dest, deadlock_next_dest);
+}
+
+CACTUS_CMD_HANDLER(ras_delegate_cmd, CACTUS_RAS_DELEGATE_CMD)
+{
+	uint64_t event_id = cactus_ras_get_event_id(*args);
+
+	INFO("Received RAS cmd at %x, value %llu.\n", ffa_dir_msg_dest(*args),
+						      event_id);
+
+	return cactus_success_resp(ffa_dir_msg_dest(*args),
+				   ffa_dir_msg_source(*args),
+				   event_id);
 }

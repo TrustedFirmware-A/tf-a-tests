@@ -100,12 +100,6 @@
 	device-regions {
 		compatible = "arm,ffa-manifest-device-regions";
 
-		uart2 {
-			base-address = <0x00000000 0x1c0b0000>;
-			pages-count = <1>;
-			attributes = <0x3>; /* read-write */
-		};
-
 		smmuv3-testengine {
 			/*
 			 * SMMUv3TestEngine is a DMA IP modeled in the

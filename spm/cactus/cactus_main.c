@@ -286,21 +286,15 @@ void __dead2 cactus_main(bool primary_cold_boot,
 		goto msg_loop;
 	}
 
-	if (ffa_id == SPM_VM_ID_FIRST) {
-		console_init(CACTUS_PL011_UART_BASE,
-			     CACTUS_PL011_UART_CLK_IN_HZ,
-			     PL011_BAUDRATE);
-
-		set_putc_impl(PL011_AS_STDOUT);
-
-		cactus_print_boot_info(boot_info_header);
-	} else {
-		set_putc_impl(FFA_SVC_SMC_CALL_AS_STDOUT);
-	}
+	set_putc_impl(FFA_SVC_SMC_CALL_AS_STDOUT);
 
 	/* Below string is monitored by CI expect script. */
 	NOTICE("Booting Secure Partition (ID: %x)\n%s\n%s\n",
 		ffa_id, build_message, version_string);
+
+	if (ffa_id == SP_ID(1)) {
+		cactus_print_boot_info(boot_info_header);
+	}
 
 	if (ffa_id == (SPM_VM_ID_FIRST + 2)) {
 		VERBOSE("Mapping RXTX Region\n");

@@ -157,6 +157,9 @@ int plat_get_image_source(unsigned int image_id, uintptr_t *dev_handle,
 	assert(image_id < ARRAY_SIZE(policies));
 
 	policy = &policies[image_id];
+	if (policy->check == NULL) {
+		return result;
+	}
 	result = policy->check(policy->image_spec);
 	if (result == IO_SUCCESS) {
 		*image_spec = policy->image_spec;

@@ -24,6 +24,7 @@ TESTS_SOURCES	+=							\
 		${ARCH}/ffa_arch_helpers.S				\
 		ffa_helpers.c						\
 		spm_common.c						\
+		test_ffa_memory_sharing.c				\
 		test_ffa_setup_and_discovery.c				\
 		spm_test_helpers.c					\
 )

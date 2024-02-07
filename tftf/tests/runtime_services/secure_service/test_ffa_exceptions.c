@@ -84,9 +84,12 @@ test_result_t rl_memory_cannot_be_accessed_in_s(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	/* Retrieve the shared page and attempt accessing it. */
+	/*
+	 * Retrieve the shared page and attempt accessing it.
+	 * Tell SP to expect an exception.
+	 */
 	ret = cactus_mem_send_cmd(SENDER, RECEIVER, FFA_MEM_SHARE_SMC32,
-				  handle, 0, 1);
+				  handle, 0, 1, true);
 
 	/* Undelegate the shared page. */
 	retmm = host_rmi_granule_undelegate((u_register_t)&share_page);

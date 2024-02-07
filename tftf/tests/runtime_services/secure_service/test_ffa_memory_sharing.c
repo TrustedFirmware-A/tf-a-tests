@@ -1,14 +1,22 @@
 /*
- * Copyright (c) 2020-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include "arch_features.h"
+#include "arch_helpers.h"
+#include "ffa_helpers.h"
+#include "ffa_svc.h"
+#include "stdint.h"
+#include "utils_def.h"
 #include <debug.h>
 #include "ffa_helpers.h"
+#include <sync.h>
 
 #include <cactus_test_cmds.h>
 #include <ffa_endpoints.h>
+#include <host_realm_rmi.h>
 #include <spm_common.h>
 #include <spm_test_helpers.h>
 #include <test_helpers.h>
@@ -35,8 +43,11 @@ static const struct ffa_uuid expected_sp_uuids[] = {
 /* Memory section to be used for memory share operations */
 static __aligned(PAGE_SIZE) uint8_t
 	share_page[PAGE_SIZE * FRAGMENTED_SHARE_PAGE_COUNT];
+static __aligned(PAGE_SIZE) uint8_t donate_page[PAGE_SIZE];
 static __aligned(PAGE_SIZE) uint8_t consecutive_donate_page[PAGE_SIZE];
 static __aligned(PAGE_SIZE) uint8_t four_share_pages[PAGE_SIZE * 4];
+
+static bool gpc_abort_triggered;
 
 static bool check_written_words(uint32_t *ptr, uint32_t word, uint32_t wcount)
 {
@@ -88,6 +99,34 @@ static bool test_memory_send_expect_denied(uint32_t mem_func,
 	}
 
 	return true;
+}
+
+static bool data_abort_handler(void)
+{
+	uint64_t esr_elx = IS_IN_EL2() ? read_esr_el2() : read_esr_el1();
+
+	VERBOSE("%s esr_elx %llx\n", __func__, esr_elx);
+
+	if (EC_BITS(esr_elx) == EC_DABORT_CUR_EL) {
+		/* Synchronous data abort triggered by Granule protection */
+		if ((ISS_BITS(esr_elx) & ISS_DFSC_MASK) == DFSC_GPF_DABORT) {
+			VERBOSE("%s GPF Data Abort caught to address: %llx\n",
+				__func__, (uint64_t)read_far_el2());
+			gpc_abort_triggered = true;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool get_gpc_abort_triggered(void)
+{
+	bool ret = gpc_abort_triggered;
+
+	gpc_abort_triggered = false;
+
+	return ret;
 }
 
 /**
@@ -144,6 +183,10 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	ffa_memory_handle_t handle;
 	uint32_t *ptr;
 	struct mailbox_buffers mb;
+	unsigned int rme_supported = get_armv9_2_feat_rme_support();
+	const bool check_gpc_fault =
+		mem_func != FFA_MEM_SHARE_SMC32 &&
+		rme_supported != 0U;
 
 	/* Arbitrarily write 5 words after using memory. */
 	const uint32_t nr_words_to_write = 5;
@@ -159,12 +202,20 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 
 	GET_TFTF_MAILBOX(mb);
 
-	if (constituents_count != 1) {
-		WARN("Test expects constituents_count to be 1\n");
+	/*
+	 * If the RME is enabled for the platform under test, check that the
+	 * GPCs are working as expected, as such setup the exception handler.
+	 */
+	if (check_gpc_fault) {
+		register_custom_sync_exception_handler(data_abort_handler);
 	}
 
 	for (size_t i = 0; i < constituents_count; i++) {
-		VERBOSE("TFTF - Address: %p\n", constituents[0].address);
+		VERBOSE("Sharing Address: %p\n", constituents[i].address);
+		ptr = (uint32_t *)constituents[i].address;
+		for (size_t j = 0; j < nr_words_to_write; j++) {
+			ptr[j] = mem_func + 0xFFA;
+		}
 	}
 
 	handle = memory_init_and_send((struct ffa_memory_region *)mb.send,
@@ -181,15 +232,21 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	ptr = (uint32_t *)constituents[0].address;
 
 	ret = cactus_mem_send_cmd(SENDER, borrower, mem_func, handle, 0,
-				  nr_words_to_write);
+				  nr_words_to_write, false);
 
-	if (!is_ffa_direct_response(ret)) {
+	if (!is_ffa_direct_response(ret) ||
+	    cactus_get_response(ret) != CACTUS_SUCCESS) {
+		ffa_mem_reclaim(handle, 0);
+		ERROR("Failed memory send operation!\n");
 		return TEST_RESULT_FAIL;
 	}
 
-	if (cactus_get_response(ret) != CACTUS_SUCCESS) {
-		ERROR("Failed memory send operation!\n");
-		return TEST_RESULT_FAIL;
+	/*
+	 * If there is RME support, look to trigger an exception as soon as the
+	 * security state is update, due to GPC fault.
+	 */
+	if (check_gpc_fault) {
+		*ptr = 0xBEEF;
 	}
 
 	if (mem_func != FFA_MEM_DONATE_SMC32) {
@@ -200,12 +257,27 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 			return TEST_RESULT_FAIL;
 		}
 
-		/*
-		 * Check that borrower used the memory as expected for this
-		 * test.
-		 */
-		if (!check_written_words(ptr, mem_func, nr_words_to_write)) {
-			ERROR("Fail because of state of memory.\n");
+		for (uint32_t i = 0; i < constituents_count; i++) {
+			ptr = constituents[i].address;
+
+			/*
+			 * Check that borrower used the memory as expected
+			 * for FFA_MEM_SHARE test.
+			 */
+			if (mem_func == FFA_MEM_SHARE_SMC32 &&
+			    !check_written_words(ptr,
+						 mem_func + 0xFFAU,
+						 nr_words_to_write)) {
+				ERROR("Fail because of state of memory.\n");
+				return TEST_RESULT_FAIL;
+			}
+		}
+	}
+
+	if (check_gpc_fault) {
+		unregister_custom_sync_exception_handler();
+		if (!get_gpc_abort_triggered()) {
+			ERROR("No exception due to GPC for lend/donate with RME.\n");
 			return TEST_RESULT_FAIL;
 		}
 	}
@@ -229,6 +301,7 @@ test_result_t test_mem_share_sp(void)
 test_result_t test_mem_lend_sp(void)
 {
 	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)four_share_pages, 4, 0},
 		{(void *)share_page, 1, 0}
 	};
 
@@ -242,7 +315,7 @@ test_result_t test_mem_lend_sp(void)
 test_result_t test_mem_donate_sp(void)
 {
 	struct ffa_memory_region_constituent constituents[] = {
-		{(void *)share_page, 1, 0}
+		{(void *)donate_page, 1, 0}
 	};
 	const uint32_t constituents_count = sizeof(constituents) /
 				sizeof(struct ffa_memory_region_constituent);
@@ -418,7 +491,6 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 	uint32_t fragment_length;
 	ffa_memory_handle_t handle;
 	struct ffa_value ret;
-	uint32_t *ptr;
 	/* Arbitrarily write 10 words after using shared memory. */
 	const uint32_t nr_words_to_write = 10U;
 
@@ -454,7 +526,8 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 	VERBOSE("Memory has been shared!\n");
 
 	ret = cactus_mem_send_cmd(SENDER, RECEIVER, FFA_MEM_LEND_SMC32, handle,
-				  FFA_MEMORY_REGION_FLAG_CLEAR, nr_words_to_write);
+				  FFA_MEMORY_REGION_FLAG_CLEAR,
+				  nr_words_to_write, false);
 
 	if (!is_ffa_direct_response(ret)) {
 		return TEST_RESULT_FAIL;
@@ -469,14 +542,6 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 
 	if (is_ffa_call_error(ret)) {
 		ERROR("Memory reclaim failed!\n");
-		return TEST_RESULT_FAIL;
-	}
-
-	ptr = (uint32_t *)constituents[0].address;
-
-	/* Check that borrower used the memory as expected for this test. */
-	if (!check_written_words(ptr, FFA_MEM_LEND_SMC32, nr_words_to_write)) {
-		ERROR("Words written to shared memory, not as expected.\n");
 		return TEST_RESULT_FAIL;
 	}
 
@@ -912,4 +977,187 @@ test_result_t test_hypervisor_share_retrieve_fragmented(void)
 test_result_t test_hypervisor_lend_retrieve_fragmented(void)
 {
 	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC32, false, true);
+}
+
+/**
+ * Test helper that performs memory sharing operation, and alters the PAS
+ * of the memory, to validate that SPM intersects the operation in case the PAS
+ * is not coherent with its use. Relevant for the functioning of FFA_MEM_LEND
+ * and FFA_MEM_DONATE from NWd to an SP.
+ *
+ * In cases the memory is not in NS state, the SPMC should intersect memory
+ * management call with an appropriate FFA_ERROR.
+ */
+static test_result_t test_ffa_mem_send_realm_expect_fail(
+		uint32_t mem_func, ffa_id_t borrower,
+		struct ffa_memory_region_constituent *constituents,
+		size_t constituents_count, uint64_t delegate_addr)
+{
+	struct ffa_value ret;
+	uint32_t remaining_constituent_count;
+	uint32_t total_length;
+	uint32_t fragment_length;
+	struct mailbox_buffers mb;
+	u_register_t ret_rmm;
+	test_result_t result = TEST_RESULT_FAIL;
+	struct ffa_memory_access receiver =
+		ffa_memory_access_init_permissions_from_mem_func(borrower,
+								 mem_func);
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/***********************************************************************
+	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
+	 **********************************************************************/
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	GET_TFTF_MAILBOX(mb);
+
+	register_custom_sync_exception_handler(data_abort_handler);
+
+	/*
+	 * Delegate page to a realm. This should make memory sharing operation
+	 * fail.
+	 */
+	ret_rmm = host_rmi_granule_delegate((u_register_t)delegate_addr);
+
+	if (ret_rmm != 0UL) {
+		INFO("Delegate operation returns 0x%lx for address %llx\n",
+		     ret_rmm, delegate_addr);
+		return TEST_RESULT_FAIL;
+	}
+
+	remaining_constituent_count = ffa_memory_region_init(
+		(struct ffa_memory_region *)mb.send, MAILBOX_SIZE, SENDER,
+		&receiver, 1, constituents, constituents_count, 0,
+		FFA_MEMORY_REGION_FLAG_CLEAR,
+		FFA_MEMORY_NOT_SPECIFIED_MEM, 0, 0,
+		&total_length, &fragment_length);
+
+	if (remaining_constituent_count != 0) {
+		goto out;
+	}
+
+	switch (mem_func) {
+	case FFA_MEM_LEND_SMC32:
+		ret = ffa_mem_lend(total_length, fragment_length);
+		break;
+	case FFA_MEM_DONATE_SMC32:
+		ret = ffa_mem_donate(total_length, fragment_length);
+		break;
+	default:
+		ERROR("Not expected for func name: %x\n", mem_func);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!is_expected_ffa_error(ret, FFA_ERROR_DENIED)) {
+		goto out;
+	}
+
+	/* Undelegate to reestablish the same security state for PAS. */
+	ret_rmm = host_rmi_granule_undelegate((u_register_t)delegate_addr);
+
+	for (uint32_t i = 0; i < constituents_count; i++) {
+		uint32_t *ptr = (uint32_t *)constituents[i].address;
+
+		*ptr = 0xFFA;
+	}
+
+	if (get_gpc_abort_triggered()) {
+		ERROR("Exception due to GPC for lend/donate with RME. Not"
+		      " expected for this case.\n");
+		result = TEST_RESULT_FAIL;
+	} else {
+		result = TEST_RESULT_SUCCESS;
+	}
+out:
+	unregister_custom_sync_exception_handler();
+
+	if (ret_rmm != 0UL) {
+		INFO("Undelegate operation returns 0x%lx for address %llx\n",
+		     ret_rmm, (uint64_t)delegate_addr);
+		return TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/**
+ * Memory to be shared between partitions is described in a composite, with
+ * various constituents. In an RME system, the memory must be in NS PAS in
+ * operations from NWd to an SP. In case the PAS is not following this
+ * expectation memory lend/donate should fail, and all constituents must
+ * remain in the NS PAS.
+ *
+ * This test validates that if one page in the middle of one of the constituents
+ * is not in the NS PAS the operation fails.
+ */
+test_result_t test_ffa_mem_send_sp_realm_memory(void)
+{
+	test_result_t ret;
+	uint32_t mem_func[] = {FFA_MEM_LEND_SMC32, FFA_MEM_DONATE_SMC32};
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)four_share_pages, 4, 0},
+		{(void *)share_page, 1, 0}
+	};
+
+	const uint32_t constituents_count = sizeof(constituents) /
+				sizeof(struct ffa_memory_region_constituent);
+
+	for (unsigned j = 0; j < ARRAY_SIZE(mem_func); j++) {
+		for (unsigned int i = 0; i < 4; i++) {
+			/* Address to be delegated to Realm PAS. */
+			uint64_t realm_addr =
+				(uint64_t)&four_share_pages[i * PAGE_SIZE];
+
+			INFO("%s memory with realm addr: %llx\n",
+			     mem_func[j] == FFA_MEM_LEND_SMC32
+				? "Lend"
+				: "Donate",
+			     realm_addr);
+
+			ret = test_ffa_mem_send_realm_expect_fail(
+				mem_func[j], SP_ID(1), constituents,
+				constituents_count, realm_addr);
+
+			if (ret != TEST_RESULT_SUCCESS) {
+				break;
+			}
+		}
+	}
+
+	return ret;
+}
+
+/**
+ * Memory to be shared between partitions is described in a composite, with
+ * various constituents. In an RME system, the memory must be in NS PAS in
+ * operations from NWd to an SP. In case the PAS is not following this
+ * expectation memory lend/donate should fail, and all constituents must
+ * remain in the NS PAS.
+ *
+ * This test validates the case in which the memory lend/donate fail in
+ * case one of the constituents in the composite is not in the NS PAS.
+ */
+test_result_t test_ffa_mem_lend_sp_realm_memory_separate_constituent(void)
+{
+	test_result_t ret;
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)four_share_pages, 4, 0},
+		{(void *)share_page, 1, 0}
+	};
+	const uint32_t constituents_count = sizeof(constituents) /
+				sizeof(struct ffa_memory_region_constituent);
+	/* Address to be delegated to Realm PAS. */
+	uint64_t realm_addr = (uint64_t)&share_page[0];
+
+	INFO("Sharing memory with realm addr: %llx\n", realm_addr);
+
+	ret = test_ffa_mem_send_realm_expect_fail(
+		FFA_MEM_LEND_SMC32, SP_ID(1), constituents,
+		constituents_count, realm_addr);
+
+	return ret;
 }

@@ -129,6 +129,38 @@ bool test_realm_reject_set_ripas(void)
 	return false;
 }
 
+static bool test_realm_instr_fetch_cmd(void)
+{
+	u_register_t base;
+	void (*func_ptr)(void);
+	rsi_ripas_type ripas;
+
+	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	rsi_ipa_state_get(base, &ripas);
+	realm_printf("Initial ripas=0x%lx\n", ripas);
+	/* causes instruction abort */
+	realm_printf("Generate Instruction Abort\n");
+	func_ptr = (void (*)(void))base;
+	func_ptr();
+	/* should not return */
+	return false;
+}
+
+static bool test_realm_data_access_cmd(void)
+{
+	u_register_t base;
+	rsi_ripas_type ripas;
+
+	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	rsi_ipa_state_get(base, &ripas);
+	realm_printf("Initial ripas=0x%lx\n", ripas);
+	/* causes data abort */
+	realm_printf("Generate Data Abort\n");
+	*((volatile uint64_t *)base);
+	/* should not return */
+	return false;
+}
+
 /*
  * This is the entry function for Realm payload, it first requests the shared buffer
  * IPA address from Host using HOST_CALL/RSI, it reads the command to be executed,
@@ -156,8 +188,15 @@ void realm_payload_main(void)
 			break;
 		case REALM_MULTIPLE_REC_PSCI_DENIED_CMD:
 			test_succeed = test_realm_multiple_rec_psci_denied_cmd();
+			break;
 		case REALM_MULTIPLE_REC_MULTIPLE_CPU_CMD:
 			test_succeed = test_realm_multiple_rec_multiple_cpu_cmd();
+			break;
+		case REALM_INSTR_FETCH_CMD:
+			test_succeed = test_realm_instr_fetch_cmd();
+			break;
+		case REALM_DATA_ACCESS_CMD:
+			test_succeed = test_realm_data_access_cmd();
 			break;
 		case REALM_PAUTH_SET_CMD:
 			test_succeed = test_realm_pauth_set_cmd();

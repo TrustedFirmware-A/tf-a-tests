@@ -549,37 +549,64 @@ u_register_t host_rmi_granule_undelegate(u_register_t addr);
 u_register_t host_rmi_realm_create(u_register_t rd, u_register_t params_ptr);
 u_register_t host_rmi_realm_destroy(u_register_t rd);
 u_register_t host_rmi_features(u_register_t index, u_register_t *features);
+u_register_t host_rmi_data_destroy(u_register_t rd,
+				   u_register_t map_addr,
+				   u_register_t *data,
+				   u_register_t *top);
+u_register_t host_rmi_rtt_readentry(u_register_t rd,
+				    u_register_t map_addr,
+				    u_register_t level,
+				    struct rtt_entry *rtt);
+u_register_t host_rmi_rtt_destroy(u_register_t rd,
+				  u_register_t map_addr,
+				  u_register_t level,
+				  u_register_t *rtt,
+				  u_register_t *top);
+u_register_t host_rmi_rtt_init_ripas(u_register_t rd,
+				   u_register_t start,
+				   u_register_t end,
+				   u_register_t *top);
+u_register_t host_rmi_create_rtt_levels(struct realm *realm,
+					u_register_t map_addr,
+					u_register_t level,
+					u_register_t max_level);
+u_register_t host_rmi_rtt_unmap_unprotected(u_register_t rd,
+					    u_register_t map_addr,
+					    u_register_t level,
+					    u_register_t *top);
+u_register_t host_rmi_rtt_set_ripas(u_register_t rd,
+				    u_register_t rec,
+				    u_register_t start,
+				    u_register_t end,
+				    u_register_t *top);
+u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t target_rec,
+				    unsigned long status);
+void host_rmi_init_cmp_result(void);
+bool host_rmi_get_cmp_result(void);
 
 /* Realm management */
 u_register_t host_realm_create(struct realm *realm);
 u_register_t host_realm_map_payload_image(struct realm *realm,
 					  u_register_t realm_payload_adr);
 u_register_t host_realm_map_ns_shared(struct realm *realm,
-					u_register_t ns_shared_mem_adr,
-					u_register_t ns_shared_mem_size);
+				      u_register_t ns_shared_mem_adr,
+				      u_register_t ns_shared_mem_size);
 u_register_t host_realm_rec_create(struct realm *realm);
 unsigned int host_realm_find_rec_by_mpidr(unsigned int mpidr, struct realm *realm);
 u_register_t host_realm_activate(struct realm *realm);
 u_register_t host_realm_destroy(struct realm *realm);
 u_register_t host_realm_rec_enter(struct realm *realm,
-					u_register_t *exit_reason,
-					unsigned int *host_call_result,
-					unsigned int rec_num);
+				  u_register_t *exit_reason,
+				  unsigned int *host_call_result,
+				  unsigned int rec_num);
 u_register_t host_realm_init_ipa_state(struct realm *realm, u_register_t level,
-					u_register_t start, uint64_t end);
-u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t target_rec,
-		unsigned long status);
-void host_rmi_init_cmp_result(void);
-bool host_rmi_get_cmp_result(void);
-u_register_t host_realm_map_protected_data(bool unknown,
-			struct realm *realm,
-			u_register_t target_pa,
-			u_register_t map_size,
-			u_register_t src_pa);
-u_register_t host_rmi_rtt_set_ripas(u_register_t rd,
-				  u_register_t rec,
-				  u_register_t start,
-				  u_register_t end,
-				  u_register_t *top);
+				       u_register_t start, uint64_t end);
+u_register_t host_realm_delegate_map_protected_data(bool unknown,
+					   struct realm *realm,
+					   u_register_t target_pa,
+					   u_register_t map_size,
+					   u_register_t src_pa);
+u_register_t host_realm_map_unprotected(struct realm *realm, u_register_t ns_pa,
+					u_register_t map_size);
 
 #endif /* HOST_REALM_RMI_H */

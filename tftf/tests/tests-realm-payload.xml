@@ -16,6 +16,12 @@
 	  function="host_realm_multi_rec_multiple_cpu" />
 	  <testcase name="Realm payload multi rec validations"
 	  function="host_realm_multi_rec_multiple_cpu2" />
+	  <testcase name="Realm Abort Unassigned RAM"
+	  function="host_realm_abort_unassigned_ram" />
+	  <testcase name="Realm Abort Unassigned Destroyed"
+	  function="host_realm_abort_unassigned_destroyed" />
+	  <testcase name="Realm Abort Assigned destroyed"
+	  function="host_realm_abort_assigned_destroyed" />
 	  <testcase name="Realm payload multi rec single cpu"
 	  function="host_realm_multi_rec_single_cpu" />
 	  <testcase name="Realm payload multi rec psci denied"

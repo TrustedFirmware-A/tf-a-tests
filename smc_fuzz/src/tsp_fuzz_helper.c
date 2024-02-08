@@ -1,10 +1,14 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
+#include <fuzz_names.h>
 #include <tsp_fuzz_helper.h>
 
+/*
+ * Generic TSP based function call for math operations
+ */
 void tftf_test_tsp_smc(uint64_t tsp_id, char *funcstr)
 {
 		uint64_t fn_identifier = TSP_FAST_FID(tsp_id);
@@ -22,15 +26,18 @@ void tftf_test_tsp_smc(uint64_t tsp_id, char *funcstr)
 		}
 }
 
-void run_tsp_fuzz(char *funcstr)
+/*
+ * TSP function called from fuzzer
+ */
+void run_tsp_fuzz(int funcid)
 {
-	if (strcmp(funcstr, "tsp_add_op") == CMP_SUCCESS) {
+	if (funcid == tsp_add_op_funcid) {
 		tftf_test_tsp_smc(TSP_ADD, "tsp_add_op");
-	} else if (strcmp(funcstr, "tsp_sub_op") == CMP_SUCCESS) {
+	} else if (funcid == tsp_sub_op_funcid) {
 		tftf_test_tsp_smc(TSP_SUB, "tsp_sub_op");
-	} else if (strcmp(funcstr, "tsp_mul_op") == CMP_SUCCESS) {
+	} else if (funcid == tsp_mul_op_funcid) {
 		tftf_test_tsp_smc(TSP_MUL, "tsp_mul_op");
-	} else if (strcmp(funcstr, "tsp_div_op") == CMP_SUCCESS) {
+	} else if (funcid == tsp_div_op_funcid) {
 		tftf_test_tsp_smc(TSP_DIV, "tsp_div_op");
 	}
 }

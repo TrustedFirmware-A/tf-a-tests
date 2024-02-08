@@ -46,4 +46,5 @@ TESTS_SOURCES	+=							\
 		runtestfunction_helpers.c				\
 		sdei_fuzz_helper.c					\
 		tsp_fuzz_helper.c					\
+		nfifo.c							\
 	)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,5 +11,18 @@
 #include <tftf_lib.h>
 #include <timer.h>
 
-void tftf_test_tsp_smc(uint64_t tsp_id, char *);
-void run_tsp_fuzz(char *);
+#ifndef tsp_add_op_funcid
+#define tsp_add_op_funcid 0
+#endif
+#ifndef tsp_sub_op_funcid
+#define tsp_sub_op_funcid 0
+#endif
+#ifndef tsp_mul_op_funcid
+#define tsp_mul_op_funcid 0
+#endif
+#ifndef tsp_div_op_funcid
+#define tsp_div_op_funcid 0
+#endif
+
+void tftf_test_tsp_smc(uint64_t tsp_id, char *funcstr);
+void run_tsp_fuzz(int funcid);

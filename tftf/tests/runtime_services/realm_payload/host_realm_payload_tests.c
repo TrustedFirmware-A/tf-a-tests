@@ -1674,3 +1674,151 @@ destroy_realm:
 	}
 	return test_result;
 }
+
+/*
+ * Test aims to generate SEA in Realm by accessing
+ * PAGE with IPA outside realm IPA space and
+ * Generate Data abort by accessing
+ * PAGE with IPA outside max PA supported
+ * Rec0 and Rec2 tries to create Data Abort to realm
+ * Rec1 and Rec3 tries to create Instruction Abort to realm
+ * Realm exception handler runs and returns ESR
+ * Host validates ESR
+ */
+test_result_t host_realm_sea_adr_fault(void)
+{
+	bool ret1, ret2;
+	test_result_t res = TEST_RESULT_FAIL;
+	u_register_t base_ipa, esr, feature_flag, base;
+	struct realm realm;
+	u_register_t rec_flag[4U] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
+	struct rmi_rec_run *run;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	feature_flag = INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 0x2CU);
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			(u_register_t)PAGE_POOL_BASE,
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			feature_flag, rec_flag, 4U)) {
+		return TEST_RESULT_FAIL;
+	}
+	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
+			NS_REALM_SHARED_MEM_SIZE)) {
+		goto destroy_realm;
+	}
+
+	/* Any Adr */
+	base = TFTF_BASE;
+	/* IPA outside Realm space */
+	base_ipa = base | (1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
+					realm.rmm_feat_reg0) + 1U));
+	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, 1U, HOST_ARG1_INDEX, base_ipa);
+
+	INFO("base_ipa=0x%lx\n", base_ipa);
+
+	run = (struct rmi_rec_run *)realm.run[0];
+
+	/* Rec0 expect SEA in realm due to Data access to address outside Realm IPA size */
+	ret1 = host_enter_realm_execute(&realm, REALM_DATA_ACCESS_CMD,
+			RMI_EXIT_HOST_CALL, 0U);
+	if (!ret1) {
+		ERROR("Rec0 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
+				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
+		goto destroy_realm;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 0U, HOST_ARG2_INDEX);
+	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA)
+			|| (EC_BITS(esr) != EC_DABORT_CUR_EL)
+			|| ((esr & (1UL << ESR_ISS_EABORT_EA_BIT)) == 0U)) {
+		ERROR("Rec0 incorrect ESR=0x%lx\n", esr);
+		goto destroy_realm;
+	}
+	INFO("Rec0 ESR=0x%lx\n", esr);
+
+	run = (struct rmi_rec_run *)realm.run[1];
+
+	/* Rec1 expect SEA in realm due to Instruction access to address outside Realm IPA size */
+	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
+		RMI_EXIT_HOST_CALL, 1U);
+	if (!ret1) {
+		ERROR("Rec1 did not fault\n");
+		goto destroy_realm;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 1U, HOST_ARG2_INDEX);
+	if (((esr & ISS_DFSC_MASK) != IFSC_NO_WALK_SEA)
+			|| (EC_BITS(esr) != EC_IABORT_CUR_EL)
+			|| ((esr & (1UL << ESR_ISS_EABORT_EA_BIT)) == 0U)) {
+		ERROR("Rec1 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
+				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
+		goto destroy_realm;
+	}
+	INFO("Rec1 ESR=0x%lx\n", esr);
+
+	/* IPA outside max PA supported */
+	base_ipa |= (1UL << 53U);
+
+	INFO("base_ipa=0x%lx\n", base_ipa);
+
+	host_shared_data_set_host_val(&realm, 2U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, 3U, HOST_ARG1_INDEX, base_ipa);
+
+	run = (struct rmi_rec_run *)realm.run[2];
+
+	/* Rec2 expect SEA in realm due to Data access to address outside Realm IPA size */
+	ret1 = host_enter_realm_execute(&realm, REALM_DATA_ACCESS_CMD,
+			RMI_EXIT_HOST_CALL, 2U);
+	if (!ret1) {
+		ERROR("Rec2 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
+				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
+		goto destroy_realm;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 2U, HOST_ARG2_INDEX);
+	if (((esr & ISS_DFSC_MASK) != DFSC_L0_ADR_SIZE_FAULT)
+			|| (EC_BITS(esr) != EC_DABORT_CUR_EL)
+			|| ((esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
+		ERROR("Rec2 incorrect ESR=0x%lx\n", esr);
+		goto destroy_realm;
+	}
+	INFO("Rec2 ESR=0x%lx\n", esr);
+
+	run = (struct rmi_rec_run *)realm.run[3];
+
+	/* Rec3 expect SEA in realm due to Instruction access to address outside Realm IPA size */
+	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
+		RMI_EXIT_HOST_CALL, 3U);
+	if (!ret1) {
+		ERROR("Rec3 did not fault\n");
+		goto destroy_realm;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 3U, HOST_ARG2_INDEX);
+	if (((esr & ISS_IFSC_MASK) != IFSC_L0_ADR_SIZE_FAULT)
+			|| (EC_BITS(esr) != EC_IABORT_CUR_EL)
+			|| ((esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
+		ERROR("Rec3 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
+				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
+		goto destroy_realm;
+	}
+	INFO("Rec3 ESR=0x%lx\n", esr);
+	res = TEST_RESULT_SUCCESS;
+
+destroy_realm:
+	ret2 = host_destroy_realm(&realm);
+
+	if (!ret2) {
+		ERROR("%s(): destroy=%d\n",
+		__func__, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return res;
+}

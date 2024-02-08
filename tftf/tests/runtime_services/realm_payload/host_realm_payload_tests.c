@@ -950,3 +950,258 @@ destroy_realm:
 
 	return res;
 }
+
+/*
+ * Test aims to generate SEA in Realm by accessing
+ * PAGE with HIPAS=assigned/unassigned and RIPAS=EMPTY
+ * Host creates and executes 4 recs to generate SEA
+ * Rec exception handler runs and returns back ESR to Host
+ * Host validates ESR
+ * Rec0 generated IA unassigned empty
+ * Rec1 generated DA unassigned empty
+ * Rec2 generated IA for assigned empty
+ * Rec3 generated DA for assigned empty
+ */
+test_result_t host_realm_sea_empty(void)
+{
+	bool ret1, ret2;
+	test_result_t res = TEST_RESULT_FAIL;
+	u_register_t ret, base, esr;
+	struct realm realm;
+	struct rtt_entry rtt;
+	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			(u_register_t)PAGE_POOL_BASE,
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			0UL, rec_flag, 4U)) {
+		return TEST_RESULT_FAIL;
+	}
+	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
+			NS_REALM_SHARED_MEM_SIZE)) {
+		goto destroy_realm;
+	}
+
+	base = (u_register_t)page_alloc(PAGE_SIZE);
+
+	ret = host_rmi_rtt_readentry(realm.rd, base, 3U, &rtt);
+	if (rtt.state != RMI_UNASSIGNED ||
+			(rtt.ripas != RMI_EMPTY)) {
+		ERROR("wrong initial state\n");
+		goto destroy_realm;
+	}
+	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, 1U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, 2U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, 3U, HOST_ARG1_INDEX, base);
+
+	/* Rec0 expect IA due to SEA unassigned empty page */
+	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
+			RMI_EXIT_HOST_CALL, 0U);
+	if (!ret1) {
+		ERROR("Rec0 did not fault\n");
+		goto destroy_realm;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 0U, HOST_ARG2_INDEX);
+	if (((esr & ISS_IFSC_MASK) != IFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_IABORT_CUR_EL)) {
+		ERROR("Rec0 incorrect ESR=0x%lx\n", esr);
+		goto destroy_realm;
+	}
+	INFO("Rec0 ESR=0x%lx\n", esr);
+
+	/* Rec1 expect DA due to SEA unassigned empty page */
+	ret1 = host_enter_realm_execute(&realm, REALM_DATA_ACCESS_CMD,
+			RMI_EXIT_HOST_CALL, 1U);
+	if (!ret1) {
+		ERROR("Rec1 did not fault\n");
+		goto destroy_realm;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 1U, HOST_ARG2_INDEX);
+	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_DABORT_CUR_EL)) {
+		ERROR("Rec1 incorrect ESR=0x%lx\n", esr);
+		goto destroy_realm;
+	}
+	INFO("Rec1 ESR=0x%lx\n", esr);
+
+	/* DATA_CREATE_UNKNOWN */
+	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_realm_map_protected_data failed\n");
+		goto destroy_realm;
+	}
+	ret = host_rmi_rtt_readentry(realm.rd, base, 3U, &rtt);
+	if (rtt.state != RMI_ASSIGNED ||
+			(rtt.ripas != RMI_EMPTY)) {
+		ERROR("wrong state after DATA_CRATE_UNKNOWN\n");
+		goto undelegate_destroy;
+	}
+	INFO("state base = 0x%lx rtt.state=0x%lx rtt.ripas=0x%lx\n",
+			base, rtt.state, rtt.ripas);
+
+	/* Rec2 expect IA due to SEA assigned empty page */
+	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
+		RMI_EXIT_HOST_CALL, 2U);
+
+	if (!ret1) {
+		ERROR("Rec2 did not fault\n");
+		goto undelegate_destroy;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 2U, HOST_ARG2_INDEX);
+	if (((esr & ISS_IFSC_MASK) != IFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_IABORT_CUR_EL)) {
+		ERROR("Rec2 incorrect ESR=0x%lx\n", esr);
+		goto destroy_realm;
+	}
+	INFO("Rec2 ESR=0x%lx\n", esr);
+
+	/* Rec3 expect DA due to SEA unassigned empty page */
+	ret1 = host_enter_realm_execute(&realm, REALM_DATA_ACCESS_CMD,
+			RMI_EXIT_HOST_CALL, 3U);
+	if (!ret1) {
+		ERROR("Rec3 did not fault\n");
+		goto undelegate_destroy;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 3U, HOST_ARG2_INDEX);
+	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_DABORT_CUR_EL)) {
+		ERROR("Rec3 incorrect ESR=0x%lx\n", esr);
+	}
+	INFO("Rec3 ESR=0x%lx\n", esr);
+	res = TEST_RESULT_SUCCESS;
+
+undelegate_destroy:
+	ret = host_rmi_granule_undelegate(base);
+destroy_realm:
+	ret2 = host_destroy_realm(&realm);
+
+	if (!ret2) {
+		ERROR("%s(): destroy=%d\n",
+		__func__, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return res;
+}
+
+/*
+ * Test aims to generate SEA in Realm by
+ * executing instructions in unprotected IPA - Rec0
+ * In Rec 1 , when HIPAS=UNASSIGNED_NS, we expect to get a Data abort.
+ * Then Host will inject SEA to realm.
+ * Realm exception handler runs and returns ESR back to Host
+ * Host validates ESR
+ */
+test_result_t host_realm_sea_unprotected(void)
+{
+
+	bool ret1, ret2;
+	test_result_t res = TEST_RESULT_FAIL;
+	u_register_t ret, base, base_ipa, esr;
+	unsigned int host_call_result;
+	u_register_t exit_reason;
+	struct realm realm;
+	struct rtt_entry rtt;
+	struct rmi_rec_run *run;
+	u_register_t rec_flag[2U] = {RMI_RUNNABLE, RMI_RUNNABLE};
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			(u_register_t)PAGE_POOL_BASE,
+			(u_register_t)PAGE_POOL_MAX_SIZE,
+			0UL, rec_flag, 2U)) {
+		return TEST_RESULT_FAIL;
+	}
+	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
+			NS_REALM_SHARED_MEM_SIZE)) {
+		goto destroy_realm;
+	}
+
+	/* Can choose any unprotected IPA adr, TFTF_BASE chosen for convenience */
+	base = TFTF_BASE;
+	base_ipa = base | (1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
+					realm.rmm_feat_reg0) - 1U));
+
+
+	ret = host_rmi_rtt_readentry(realm.rd, base, 3U, &rtt);
+	if (rtt.state != RMI_UNASSIGNED) {
+		ERROR("wrong state\n");
+		goto destroy_realm;
+	}
+
+	run = (struct rmi_rec_run *)realm.run[0];
+	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, 1U, HOST_ARG1_INDEX, base_ipa);
+
+	/* Rec0 expect SEA in realm due to IA unprotected IPA page */
+	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
+			RMI_EXIT_HOST_CALL, 0U);
+	if (!ret1) {
+		ERROR("Rec0 did not fault\n");
+		goto destroy_realm;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 0U, HOST_ARG2_INDEX);
+	if (((esr & ISS_IFSC_MASK) != IFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_IABORT_CUR_EL)) {
+		ERROR("Rec0 incorrect ESR=0x%lx\n", esr);
+		goto destroy_realm;
+	}
+	INFO("Rec0 ESR=0x%lx\n", esr);
+
+	run = (struct rmi_rec_run *)realm.run[1U];
+
+	/* Rec1 expect rec exit due to DA unprotected IPA page when HIPAS is UNASSIGNED_NS */
+	ret1 = host_enter_realm_execute(&realm, REALM_DATA_ACCESS_CMD,
+			RMI_EXIT_SYNC, 1U);
+
+	if (!ret1 || (run->exit.hpfar >> 4U) != (base_ipa >> PAGE_SIZE_SHIFT)
+		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < DFSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > DFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
+		ERROR("Rec1 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
+				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
+		goto destroy_realm;
+	}
+	INFO("Host DA FAR=0x%lx, HPFAR=0x%lx\n", run->exit.far, run->exit.hpfar);
+	INFO("Injecting SEA to Realm\n");
+
+	/* Inject SEA back to Realm */
+	run->entry.flags = REC_ENTRY_FLAG_INJECT_SEA;
+
+	/* Rec1 re-entry expect exception handler to run, return ESR */
+	ret = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 1U);
+	if (ret != RMI_SUCCESS || exit_reason != RMI_EXIT_HOST_CALL) {
+		ERROR("rec1 failed ret=0x%lx exit_reason=0x%lx", ret, run->exit.exit_reason);
+		goto destroy_realm;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 1U, HOST_ARG2_INDEX);
+	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_DABORT_CUR_EL)) {
+		ERROR("Rec1 incorrect ESR=0x%lx\n", esr);
+		goto destroy_realm;
+	}
+	INFO("Rec1 ESR=0x%lx\n", esr);
+	res = host_call_result;
+
+destroy_realm:
+	ret2 = host_destroy_realm(&realm);
+
+	if (!ret2) {
+		ERROR("%s(): destroy=%d\n",
+		__func__, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return res;
+}

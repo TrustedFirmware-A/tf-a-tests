@@ -103,6 +103,12 @@ void host_shared_data_set_host_val(struct realm *realm_ptr,
 		unsigned int rec_num, uint8_t index, u_register_t val);
 
 /*
+ * Get data shared from realm to Host
+ */
+u_register_t host_shared_data_get_realm_val(struct realm *realm_ptr,
+		unsigned int rec_num, uint8_t index);
+
+/*
  * Set command to be send from Host to realm
  */
 void host_shared_data_set_realm_cmd(struct realm *realm_ptr, uint8_t cmd,

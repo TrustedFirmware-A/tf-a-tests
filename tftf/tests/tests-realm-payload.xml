@@ -16,6 +16,10 @@
 	  function="host_realm_multi_rec_multiple_cpu" />
 	  <testcase name="Realm payload multi rec validations"
 	  function="host_realm_multi_rec_multiple_cpu2" />
+	  <testcase name="Realm SEA Empty"
+	  function="host_realm_sea_empty" />
+	  <testcase name="Realm SEA Unprotected"
+	  function="host_realm_sea_unprotected" />
 	  <testcase name="Realm Abort Unassigned RAM"
 	  function="host_realm_abort_unassigned_ram" />
 	  <testcase name="Realm Abort Unassigned Destroyed"

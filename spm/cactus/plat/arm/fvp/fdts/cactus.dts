@@ -80,6 +80,9 @@
 			pages-count = <4>;
 			base-address = <0x00000000 0x7400000>;
 			attributes = <0x3>; /* read-write */
+			smmu-id = <0>;
+			stream-ids = <0x0 0x1>;
+			stream-ids-access-permissions = <0x3 0x3>;
 		};
 
 		smmuv3-memcpy-dst {
@@ -87,13 +90,19 @@
 			pages-count = <4>;
 			base-address = <0x00000000 0x7404000>;
 			attributes = <0x3>; /* read-write */
+			smmu-id = <0>;
+			stream-ids = <0x0 0x1>;
+			stream-ids-access-permissions = <0x3 0x3>;
 		};
 
 		smmuv3-ns-region {
-			description = "smmuv3-ns-region";
+			description = "smmuv3-memcpy-ns-region";
 			pages-count = <8>;
 			base-address = <0x0 0x90000000>;
 			attributes = <0xb>; /* ns-read-write */
+			smmu-id = <0>;
+			stream-ids = <0x0 0x1>;
+			stream-ids-access-permissions = <0xb 0xb>;
 		};
 	};
 

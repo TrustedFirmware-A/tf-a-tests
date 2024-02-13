@@ -132,6 +132,10 @@ struct ffa_boot_info_header {
 /** Query interrupt ID of the Managed Exit Interrupt. */
 #define FFA_FEATURE_MEI 0x3U
 
+/** Minimum and maximum buffer size reported by FFA_FEATURES(FFA_RXTX_MAP) */
+#define FFA_RXTX_MAP_MIN_BUF_4K 0
+#define FFA_RXTX_MAP_MAX_BUF_PAGE_COUNT 1
+
 /** Partition property: partition supports receipt of direct requests. */
 #define FFA_PARTITION_DIRECT_REQ_RECV (UINT32_C(1) << 0)
 

@@ -114,6 +114,41 @@ test_result_t test_ffa_features(void)
 	return TEST_RESULT_SUCCESS;
 }
 
+/**
+ * Test that `FFA_FEATURES(FFA_RXTX_MAP_SMC64)` returns a parameter explaining
+ * the maximum and minimum buffer size on v1.2 or greater.
+ */
+test_result_t test_ffa_features_rxtx_map(void)
+{
+
+	struct ffa_value args = {
+		.fid = FFA_FEATURES,
+		.arg1 = FFA_RXTX_MAP_SMC64,
+	};
+	struct ffa_value ret;
+	uint32_t param;
+	const uint32_t expected_param = (FFA_RXTX_MAP_MIN_BUF_4K << 0) |
+					(FFA_RXTX_MAP_MAX_BUF_PAGE_COUNT << 16);
+
+	SKIP_TEST_IF_FFA_VERSION_LESS_THAN(1, 2);
+
+	ret = ffa_service_call(&args);
+	if (ffa_func_id(ret) != FFA_SUCCESS_SMC32) {
+		ERROR("FFA_FEATURES failed: %d(%d)\n", ffa_func_id(ret),
+		      ffa_error_code(ret));
+		return TEST_RESULT_FAIL;
+	}
+
+	param = ret.arg2;
+	if (param != expected_param) {
+		ERROR("Unexpected param (expected %d, got %d)\n",
+		      expected_param, param);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
 /******************************************************************************
  * FF-A Version ABI Tests
  ******************************************************************************/

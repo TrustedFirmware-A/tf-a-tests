@@ -115,8 +115,10 @@ static const mmap_region_t cactus_mmap[] __attribute__((used)) = {
 	/* scratch memory allocated to be used for running SMMU tests */
 	MAP_REGION_FLAT(PLAT_CACTUS_MEMCPY_BASE, PLAT_CACTUS_MEMCPY_RANGE,
 			MT_MEMORY | MT_RW),
+#if PLAT_fvp
 	MAP_REGION_FLAT(PLAT_CACTUS_NS_MEMCPY_BASE, PLAT_CACTUS_MEMCPY_RANGE,
 			MT_MEMORY | MT_RW | MT_NS),
+#endif
 	{0}
 };
 

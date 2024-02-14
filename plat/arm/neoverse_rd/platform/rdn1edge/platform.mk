@@ -12,7 +12,7 @@ PLAT_SOURCES		+=	plat/arm/neoverse_rd/platform/rdn1edge/topology.c
 
 PLAT_TESTS_SKIP_LIST	:=	plat/arm/neoverse_rd/platform/rdn1edge/tests_to_skip.txt
 
-ifdef CSS_SGI_PLATFORM_VARIANT
-$(error "CSS_SGI_PLATFORM_VARIANT should not be set for RD-N1-Edge, \
-    currently set to ${CSS_SGI_PLATFORM_VARIANT}.")
+ifdef NRD_PLATFORM_VARIANT
+$(error "NRD_PLATFORM_VARIANT should not be set for RD-N1-Edge, \
+    currently set to ${NRD_PLATFORM_VARIANT}.")
 endif

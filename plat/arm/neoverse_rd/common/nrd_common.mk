@@ -23,5 +23,5 @@ ifeq (${USE_NVM},1)
 $(error "USE_NVM is not supported on SGI platforms")
 endif
 
-# Pass CSS_SGI_PLATFORM_VARIANT flag to the build system
-$(eval $(call add_define,TFTF_DEFINES,CSS_SGI_PLATFORM_VARIANT))
+# Pass NRD_PLATFORM_VARIANT flag to the build system
+$(eval $(call add_define,TFTF_DEFINES,NRD_PLATFORM_VARIANT))

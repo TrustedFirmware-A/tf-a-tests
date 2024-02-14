@@ -28,7 +28,7 @@ static const struct {
 	{ 6, 0 },
 	/* Cluster7: 1 core */
 	{ 7, 0 },
-#if (CSS_SGI_PLATFORM_VARIANT == 0)
+#if (NRD_PLATFORM_VARIANT == 0)
 	/* Cluster8: 1 core */
 	{ 8, 0 },
 	/* Cluster9: 1 core */
@@ -73,7 +73,7 @@ const unsigned char plat_pd_tree_desc[] = {
 	CSS_SGI_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 8th node */
 	CSS_SGI_MAX_CPUS_PER_CLUSTER,
-#if (CSS_SGI_PLATFORM_VARIANT == 0)
+#if (NRD_PLATFORM_VARIANT == 0)
 	/* Number of children for the 9th node */
 	CSS_SGI_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 10th node */

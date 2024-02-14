@@ -13,9 +13,9 @@
  * The RD-N2 Cfg1 platform is a variant of the RD-N2 platform with a
  * reduced interconnect mesh size (3x3) and core count (8-cores).
  *
- * The $CSS_SGI_PLATFORM_VARIANT flag is set to 1 for RD-N2-Cfg1 platform.
+ * The $NRD_PLATFORM_VARIANT flag is set to 1 for RD-N2-Cfg1 platform.
  */
-#if (CSS_SGI_PLATFORM_VARIANT == 1)
+#if (NRD_PLATFORM_VARIANT == 1)
 #define PLAT_ARM_CLUSTER_COUNT		U(8)
 #else
 #define PLAT_ARM_CLUSTER_COUNT		U(16)
@@ -25,7 +25,7 @@
 
 /* GIC-600 & interrupt handling related constants */
 #define PLAT_ARM_GICD_BASE		UL(0x30000000)
-#if (CSS_SGI_PLATFORM_VARIANT == 1)
+#if (NRD_PLATFORM_VARIANT == 1)
 #define PLAT_ARM_GICR_BASE		UL(0x30100000)
 #else
 #define PLAT_ARM_GICR_BASE		UL(0x301C0000)

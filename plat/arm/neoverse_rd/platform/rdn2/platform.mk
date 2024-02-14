@@ -14,8 +14,8 @@ PLAT_TESTS_SKIP_LIST	:=	plat/arm/neoverse_rd/platform/rdn2/tests_to_skip.txt
 
 RD_N2_VARIANTS		:=	0 1 3
 
-ifneq ($(CSS_SGI_PLATFORM_VARIANT), \
-  $(filter $(CSS_SGI_PLATFORM_VARIANT),$(RD_N2_VARIANTS)))
-  $(error "CSS_SGI_PLATFORM_VARIANT for RD-N2 should be 0 1 or 3, currently \
-    set to ${CSS_SGI_PLATFORM_VARIANT}.")
+ifneq ($(NRD_PLATFORM_VARIANT), \
+  $(filter $(NRD_PLATFORM_VARIANT),$(RD_N2_VARIANTS)))
+  $(error "NRD_PLATFORM_VARIANT for RD-N2 should be 0 1 or 3, currently \
+    set to ${NRD_PLATFORM_VARIANT}.")
 endif

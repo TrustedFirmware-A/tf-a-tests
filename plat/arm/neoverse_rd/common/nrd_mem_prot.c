@@ -9,12 +9,12 @@
 #define SGI_DRAM1_NS_START	(TFTF_BASE + 0x4000000)
 #define SGI_DRAM1_NS_SIZE	0x10000000
 
-static const mem_region_t sgi_ram_ranges[] = {
+static const mem_region_t nrd_ram_ranges[] = {
 	{ SGI_DRAM1_NS_START, SGI_DRAM1_NS_SIZE },
 };
 
 const mem_region_t *plat_get_prot_regions(int *nelem)
 {
-	*nelem = ARRAY_SIZE(sgi_ram_ranges);
-	return sgi_ram_ranges;
+	*nelem = ARRAY_SIZE(nrd_ram_ranges);
+	return nrd_ram_ranges;
 }

@@ -56,37 +56,37 @@ const unsigned char plat_pd_tree_desc[] = {
 	/* Number of root nodes */
 	PLAT_ARM_CLUSTER_COUNT,
 	/* Number of children for the 1st node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 2nd node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 3rd node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 4th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 5th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 6th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 7th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 8th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 9th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 10th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 11th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 12th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 13th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 14th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 15th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 16th node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER
+	NRD_MAX_CPUS_PER_CLUSTER
 };
 
 const unsigned char *tftf_plat_get_pwr_domain_tree_desc(void)

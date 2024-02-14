@@ -10,8 +10,8 @@
 #include <nrd_soc_platform_def.h>
 
 #define PLAT_ARM_CLUSTER_COUNT		U(2)
-#define CSS_SGI_MAX_CPUS_PER_CLUSTER	U(4)
-#define CSS_SGI_MAX_PE_PER_CPU		U(1)
+#define NRD_MAX_CPUS_PER_CLUSTER	U(4)
+#define NRD_MAX_PE_PER_CPU		U(1)
 
 /* GIC related constants */
 #define PLAT_ARM_GICD_BASE		UL(0x30000000)

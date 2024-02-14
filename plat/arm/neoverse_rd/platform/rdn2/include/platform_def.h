@@ -20,8 +20,8 @@
 #else
 #define PLAT_ARM_CLUSTER_COUNT		U(16)
 #endif
-#define CSS_SGI_MAX_CPUS_PER_CLUSTER	U(1)
-#define CSS_SGI_MAX_PE_PER_CPU		U(1)
+#define NRD_MAX_CPUS_PER_CLUSTER	U(1)
+#define NRD_MAX_PE_PER_CPU		U(1)
 
 /* GIC-600 & interrupt handling related constants */
 #define PLAT_ARM_GICD_BASE		UL(0x30000000)

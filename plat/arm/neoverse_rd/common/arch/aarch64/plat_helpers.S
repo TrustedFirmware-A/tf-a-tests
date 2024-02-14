@@ -18,13 +18,13 @@
  *
  * Function to calculate the core position on sgi platforms.
  *
- * (ClusterId * CSS_SGI_MAX_CPUS_PER_CLUSTER * CSS_SGI_MAX_PE_PER_CPU) +
- * (CPUId * CSS_SGI_MAX_PE_PER_CPU) +
+ * (ClusterId * NRD_MAX_CPUS_PER_CLUSTER * NRD_MAX_PE_PER_CPU) +
+ * (CPUId * NRD_MAX_PE_PER_CPU) +
  * ThreadId
  *
  * which can be simplified as:
  *
- * ((ClusterId * CSS_SGI_MAX_CPUS_PER_CLUSTER + CPUId) * CSS_SGI_MAX_PE_PER_CPU)
+ * ((ClusterId * NRD_MAX_CPUS_PER_CLUSTER + CPUId) * NRD_MAX_PE_PER_CPU)
  * + ThreadId
  * ---------------------------------------------------------------------
  */
@@ -43,9 +43,9 @@ func platform_get_core_pos
 	ubfx	x2, x3, #MPIDR_AFF2_SHIFT, #MPIDR_AFFINITY_BITS
 
 	/* Compute linear position */
-	mov	x3, #CSS_SGI_MAX_CPUS_PER_CLUSTER
+	mov	x3, #NRD_MAX_CPUS_PER_CLUSTER
 	madd	x1, x2, x3, x1
-	mov	x3, #CSS_SGI_MAX_PE_PER_CPU
+	mov	x3, #NRD_MAX_PE_PER_CPU
 	madd	x0, x1, x3, x0
 	ret
 endfunc platform_get_core_pos

@@ -34,9 +34,9 @@ const unsigned char plat_pd_tree_desc[] = {
 	/* Number of root nodes */
 	PLAT_ARM_CLUSTER_COUNT,
 	/* Number of children for the 1st node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER,
+	NRD_MAX_CPUS_PER_CLUSTER,
 	/* Number of children for the 2nd node */
-	CSS_SGI_MAX_CPUS_PER_CLUSTER
+	NRD_MAX_CPUS_PER_CLUSTER
 };
 
 const unsigned char *tftf_plat_get_pwr_domain_tree_desc(void)

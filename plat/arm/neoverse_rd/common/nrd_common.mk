@@ -20,7 +20,7 @@ PLAT_SOURCES	:=	drivers/arm/gic/arm_gic_v2v3.c			\
 include plat/arm/common/arm_common.mk
 
 ifeq (${USE_NVM},1)
-$(error "USE_NVM is not supported on SGI platforms")
+$(error "USE_NVM is not supported on Neoverse RD platforms")
 endif
 
 # Pass NRD_PLATFORM_VARIANT flag to the build system

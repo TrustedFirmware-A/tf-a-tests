@@ -6,11 +6,11 @@
 
 #include <platform.h>
 
-#define SGI_DRAM1_NS_START	(TFTF_BASE + 0x4000000)
-#define SGI_DRAM1_NS_SIZE	0x10000000
+#define NRD_DRAM1_NS_START	(TFTF_BASE + 0x4000000)
+#define NRD_DRAM1_NS_SIZE	0x10000000
 
 static const mem_region_t nrd_ram_ranges[] = {
-	{ SGI_DRAM1_NS_START, SGI_DRAM1_NS_SIZE },
+	{ NRD_DRAM1_NS_START, NRD_DRAM1_NS_SIZE },
 };
 
 const mem_region_t *plat_get_prot_regions(int *nelem)

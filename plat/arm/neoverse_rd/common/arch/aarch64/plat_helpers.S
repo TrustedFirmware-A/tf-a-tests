@@ -16,7 +16,7 @@
 /*----------------------------------------------------------------------
  * unsigned int platform_get_core_pos(unsigned long mpid)
  *
- * Function to calculate the core position on sgi platforms.
+ * Function to calculate the core position on Neoverse RD platforms.
  *
  * (ClusterId * NRD_MAX_CPUS_PER_CLUSTER * NRD_MAX_PE_PER_CPU) +
  * (CPUId * NRD_MAX_PE_PER_CPU) +

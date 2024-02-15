@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,7 +7,7 @@
 #include <platform.h>
 #include <psci.h>
 
-/* State IDs for local power states on SGI platforms. */
+/* State IDs for local power states on TC platform. */
 #define TC_PS_RUN_STATE_ID		0 /* Valid for CPUs and Clusters */
 #define TC_PS_RETENTION_STATE_ID	1 /* Valid for only CPUs */
 #define TC_PS_OFF_STATE_ID		2 /* Valid for CPUs and Clusters */

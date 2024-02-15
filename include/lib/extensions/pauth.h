@@ -11,6 +11,11 @@
 #include <stdint.h>
 
 #ifdef __aarch64__
+/* Number of ARMv8.3-PAuth keys */
+#define NUM_KEYS        5U
+
+static const char * const key_name[] = {"IA", "IB", "DA", "DB", "GA"};
+
 /* Initialize 128-bit ARMv8.3-PAuth key */
 uint128_t init_apkey(void);
 
@@ -24,13 +29,13 @@ void pauth_disable(void);
  * Fill Pauth Keys and template with random values if keys werenot initialized earlier,
  * Else Copy PAuth key registers to template.
  */
-void pauth_test_lib_fill_regs_and_template(void);
+void pauth_test_lib_fill_regs_and_template(uint128_t *pauth_keys_arr);
 
 /* Read and Compare PAuth registers with provided template values. */
-bool pauth_test_lib_compare_template(void);
+bool pauth_test_lib_compare_template(uint128_t *pauth_keys_before, uint128_t *pauth_keys_after);
 
 /* Read and Store PAuth registers in template. */
-void pauth_test_lib_read_keys(void);
+void pauth_test_lib_read_keys(uint128_t *pauth_keys_arr);
 
 /* Test PAuth instructions. */
 void pauth_test_lib_test_intrs(void);

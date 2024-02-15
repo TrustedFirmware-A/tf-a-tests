@@ -11,14 +11,6 @@
 #include <debug.h>
 #include <pauth.h>
 
-/* Number of ARMv8.3-PAuth keys */
-#define NUM_KEYS        5U
-
-static const char * const key_name[] = {"IA", "IB", "DA", "DB", "GA"};
-
-static uint128_t pauth_keys_before[NUM_KEYS];
-static uint128_t pauth_keys_after[NUM_KEYS];
-
 /*
  * This is only a toy implementation to generate a seemingly random
  * 128-bit key from sp, x30 and cntpct_el0 values.
@@ -49,11 +41,11 @@ static bool is_pauth_key_enabled(uint64_t key_bit)
 	return false;
 }
 
-bool pauth_test_lib_compare_template(void)
+bool pauth_test_lib_compare_template(uint128_t *pauth_keys_before, uint128_t *pauth_keys_after)
 {
 	bool result = true;
 
-	pauth_test_lib_read_keys();
+	pauth_test_lib_read_keys(pauth_keys_after);
 	for (unsigned int i = 0U; i < NUM_KEYS; ++i) {
 		if (pauth_keys_before[i] != pauth_keys_after[i]) {
 			ERROR("AP%sKey_EL1 read 0x%llx:%llx "
@@ -73,7 +65,7 @@ bool pauth_test_lib_compare_template(void)
  * Program or read ARMv8.3-PAuth keys (if already enabled)
  * and store them in <pauth_keys_before> buffer
  */
-void pauth_test_lib_fill_regs_and_template(void)
+void pauth_test_lib_fill_regs_and_template(uint128_t *pauth_keys_before)
 {
 	uint128_t plat_key;
 
@@ -146,30 +138,30 @@ void pauth_test_lib_fill_regs_and_template(void)
 
 /*
  * Read ARMv8.3-PAuth keys and store them in
- * <pauth_keys_after> buffer
+ * <pauth_keys_arr> buffer
  */
-void pauth_test_lib_read_keys(void)
+void pauth_test_lib_read_keys(uint128_t *pauth_keys_arr)
 {
-	(void)memset(pauth_keys_after, 0, NUM_KEYS * sizeof(uint128_t));
+	(void)memset(pauth_keys_arr, 0, NUM_KEYS * sizeof(uint128_t));
 
 	/* Read APIAKey_EL1 */
-	pauth_keys_after[0] = read_apiakeylo_el1() |
+	pauth_keys_arr[0] = read_apiakeylo_el1() |
 		((uint128_t)(read_apiakeyhi_el1()) << 64U);
 
 	/* Read APIBKey_EL1 */
-	pauth_keys_after[1] = read_apibkeylo_el1() |
+	pauth_keys_arr[1] = read_apibkeylo_el1() |
 		((uint128_t)(read_apibkeyhi_el1()) << 64U);
 
 	/* Read APDAKey_EL1 */
-	pauth_keys_after[2] = read_apdakeylo_el1() |
+	pauth_keys_arr[2] = read_apdakeylo_el1() |
 		((uint128_t)(read_apdakeyhi_el1()) << 64U);
 
 	/* Read APDBKey_EL1 */
-	pauth_keys_after[3] = read_apdbkeylo_el1() |
+	pauth_keys_arr[3] = read_apdbkeylo_el1() |
 		((uint128_t)(read_apdbkeyhi_el1()) << 64U);
 
 	/* Read APGAKey_EL1 */
-	pauth_keys_after[4] = read_apgakeylo_el1() |
+	pauth_keys_arr[4] = read_apgakeylo_el1() |
 		((uint128_t)(read_apgakeyhi_el1()) << 64U);
 }
 

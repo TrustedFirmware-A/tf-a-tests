@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2023-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -7,12 +7,15 @@
 
 #include <stdio.h>
 #include <arch_features.h>
+#include <assert.h>
 #include <debug.h>
 #include <pauth.h>
 #include <realm_rsi.h>
 #include <sync.h>
 
-static volatile bool set_cmd_done;
+static volatile bool set_cmd_done[MAX_REC_COUNT];
+static uint128_t pauth_keys_before[MAX_REC_COUNT][NUM_KEYS];
+static uint128_t pauth_keys_after[MAX_REC_COUNT][NUM_KEYS];
 
 static bool exception_handler(void)
 {
@@ -68,19 +71,28 @@ bool test_realm_pauth_fault(void)
  */
 bool test_realm_pauth_set_cmd(void)
 {
+	unsigned int rec = read_mpidr_el1() & MPID_MASK;
+
 	if (!is_armv8_3_pauth_present()) {
 		return false;
 	}
+	assert(rec < MAX_REC_COUNT);
 	pauth_test_lib_test_intrs();
-	pauth_test_lib_fill_regs_and_template();
-	set_cmd_done = true;
+	pauth_test_lib_fill_regs_and_template(pauth_keys_before[rec]);
+	set_cmd_done[rec] = true;
 	return true;
 }
 
 bool test_realm_pauth_check_cmd(void)
 {
-	if (!is_armv8_3_pauth_present() || !set_cmd_done) {
+	unsigned int rec = read_mpidr_el1() & MPID_MASK;
+	bool ret;
+
+	assert(rec < MAX_REC_COUNT);
+	if (!is_armv8_3_pauth_present() || !set_cmd_done[rec]) {
 		return false;
 	}
-	return pauth_test_lib_compare_template();
+	ret = pauth_test_lib_compare_template(pauth_keys_before[rec], pauth_keys_after[rec]);
+	realm_printf("Pauth key comparison ret=%d\n", ret);
+	return ret;
 }

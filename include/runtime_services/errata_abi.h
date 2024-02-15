@@ -37,7 +37,7 @@
  */
 #define TOTAL_ABI_CALLS		(3U)
 
-#define ERRATA_COUNT		(17U)
+#define ERRATA_COUNT		(32U)
 
 typedef struct {
 	uint32_t id;

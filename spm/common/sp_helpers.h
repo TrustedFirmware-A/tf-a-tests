@@ -8,6 +8,8 @@
 #define SP_HELPERS_H
 
 #include <stdint.h>
+
+#include <debug.h>
 #include <tftf_lib.h>
 #include <spm_common.h>
 #include <spinlock.h>

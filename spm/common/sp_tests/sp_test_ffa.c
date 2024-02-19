@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -195,7 +195,7 @@ static void ffa_partition_info_get_test(struct mailbox_buffers *mb)
 	ffa_partition_info_wrong_test();
 }
 
-void ffa_version_test(void)
+static void ffa_version_test(void)
 {
 	struct ffa_value ret = ffa_version(FFA_VERSION_COMPILED);
 
@@ -212,7 +212,7 @@ void ffa_version_test(void)
 	EXPECT((int)compatible, (int)true);
 }
 
-void ffa_spm_id_get_test(void)
+static void ffa_spm_id_get_test(void)
 {
 	if (spm_version >= FFA_VERSION_1_1) {
 		struct ffa_value ret = ffa_spm_id_get();
@@ -236,9 +236,9 @@ void ffa_spm_id_get_test(void)
 
 void ffa_tests(struct mailbox_buffers *mb)
 {
-	const char *test_ffa = "FF-A setup and discovery";
+	const char *test_ffa_str = "FF-A setup and discovery";
 
-	announce_test_section_start(test_ffa);
+	announce_test_section_start(test_ffa_str);
 
 	ffa_features_test();
 	ffa_version_test();
@@ -246,5 +246,5 @@ void ffa_tests(struct mailbox_buffers *mb)
 	ffa_partition_info_get_test(mb);
 	ffa_partition_info_get_regs_test();
 
-	announce_test_section_end(test_ffa);
+	announce_test_section_end(test_ffa_str);
 }

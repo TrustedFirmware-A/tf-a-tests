@@ -217,6 +217,12 @@ u_register_t host_rmi_rtt_init_ripas(u_register_t rd,
 	return rets.ret0;
 }
 
+/*
+ * RMI_RTT_FOLD destroys a homogeneous child RTT,
+ * and moves information which was stored in the child RTT into the parent RTTE.
+ * Input rd, base adr of IPA range in RTT, level of RTT
+ * Output result, base PA of child RTT which was destroyed
+ */
 static inline u_register_t host_rmi_rtt_fold(u_register_t rd,
 					     u_register_t map_addr,
 					     u_register_t level,
@@ -292,7 +298,7 @@ u_register_t host_rmi_rtt_unmap_unprotected(u_register_t rd,
 	return rets.ret0;
 }
 
-static inline bool ipa_is_ns(u_register_t addr, u_register_t rmm_feat_reg0)
+bool host_ipa_is_ns(u_register_t addr, u_register_t rmm_feat_reg0)
 {
 	return (addr >> (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, rmm_feat_reg0) - 1UL) == 1UL);
 }
@@ -339,34 +345,29 @@ u_register_t host_rmi_create_rtt_levels(struct realm *realm,
 	return REALM_SUCCESS;
 }
 
-static u_register_t host_realm_fold_rtt(u_register_t rd, u_register_t addr,
-					u_register_t level)
+u_register_t host_realm_fold_rtt(u_register_t rd, u_register_t addr,
+				 u_register_t level)
 {
-	struct rtt_entry rtt;
 	u_register_t pa, ret;
 
-	ret = host_rmi_rtt_readentry(rd, addr, level, &rtt);
-
-	if (ret != RMI_SUCCESS) {
-		ERROR("%s() failed, level=0x%lx addr=0x%lx ret=0x%lx\n",
-			"host_rmi_rtt_readentry", level, addr, ret);
-		return REALM_ERROR;
-	}
-
-	if (rtt.state != RMI_TABLE) {
-		ERROR("%s() failed, rtt.state=%lu\n", "rmi_rtt_readentry",
-			rtt.state);
-		return REALM_ERROR;
-	}
-
-	ret = host_rmi_rtt_fold(rd, addr, level + 1U, &pa);
+	ret = host_rmi_rtt_fold(rd, addr, level, &pa);
 	if (ret != RMI_SUCCESS) {
 		ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
 			"host_rmi_rtt_fold", addr, ret);
 		return REALM_ERROR;
 	}
 
-	page_free(rtt.out_addr);
+	/*
+	 * RMI_RTT_FOLD returns PA of the RTT which was destroyed
+	 * Corresponding IPA needs to be undelegated and freed
+	 */
+	ret = host_rmi_granule_undelegate(pa);
+	if (ret != RMI_SUCCESS) {
+		ERROR("%s() failed, rtt=0x%lx ret=0x%lx\n",
+			"host_rmi_granule_undelegate", pa, ret);
+		return REALM_ERROR;
+	}
+	page_free(pa);
 
 	return REALM_SUCCESS;
 
@@ -379,25 +380,13 @@ u_register_t host_realm_delegate_map_protected_data(bool unknown,
 						    u_register_t src_pa)
 {
 	u_register_t rd = realm->rd;
-	u_register_t map_level, level;
+	u_register_t level;
 	u_register_t ret = 0UL;
 	u_register_t size = 0UL;
 	u_register_t phys = target_pa;
 	u_register_t map_addr = target_pa;
 
 	if (!IS_ALIGNED(map_addr, map_size)) {
-		return REALM_ERROR;
-	}
-
-	switch (map_size) {
-	case PAGE_SIZE:
-		map_level = 3UL;
-		break;
-	case RTT_L2_BLOCK_SIZE:
-		map_level = 2UL;
-		break;
-	default:
-		ERROR("Unknown map_size=0x%lx\n", map_size);
 		return REALM_ERROR;
 	}
 
@@ -412,10 +401,10 @@ u_register_t host_realm_delegate_map_protected_data(bool unknown,
 		ret = host_rmi_data_create(unknown, rd, phys, map_addr, src_pa);
 
 		if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
-			/* Create missing RTTs and retry */
+			/* Create missing RTTs till L3 and retry */
 			level = RMI_RETURN_INDEX(ret);
 			ret = host_rmi_create_rtt_levels(realm, map_addr, level,
-							 map_level);
+							 3U);
 			if (ret != RMI_SUCCESS) {
 				ERROR("%s() failed, ret=0x%lx line=%u\n",
 					"host_rmi_create_rtt_levels",
@@ -436,20 +425,6 @@ u_register_t host_realm_delegate_map_protected_data(bool unknown,
 		phys += PAGE_SIZE;
 		src_pa += PAGE_SIZE;
 		map_addr += PAGE_SIZE;
-	}
-
-	if (map_size == RTT_L2_BLOCK_SIZE) {
-		ret = host_realm_fold_rtt(rd, target_pa, map_level);
-		if (ret != RMI_SUCCESS) {
-			ERROR("%s() failed, ret=0x%lx\n",
-				"host_realm_fold_rtt", ret);
-			goto err;
-		}
-	}
-
-	if (ret != RMI_SUCCESS) {
-		ERROR("%s() failed, ret=0x%lx\n", __func__, ret);
-		goto err;
 	}
 
 	return REALM_SUCCESS;
@@ -625,7 +600,7 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 
 		switch (rtt.state) {
 		case RMI_ASSIGNED:
-			if (ipa_is_ns(map_addr, realm->rmm_feat_reg0)) {
+			if (host_ipa_is_ns(map_addr, realm->rmm_feat_reg0)) {
 
 				ret = host_rmi_rtt_unmap_unprotected(
 								rd,

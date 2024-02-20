@@ -10,6 +10,10 @@
   <testsuite name="Realm payload at EL1" description="Test Realm EL1 framework capabilities" >
 	  <testcase name="Realm EL1 creation and execution test"
 	  function="host_test_realm_create_enter" />
+	  <testcase name="Realm RTT fold unfold test Unassigned Empty"
+	  function="host_test_rtt_fold_unfold_unassigned_empty" />
+	  <testcase name="Realm RTT fold unfold test Unassigned RAM"
+	  function="host_test_rtt_fold_unfold_unassigned_ram" />
 	  <testcase name="Multiple Realm EL1 creation and execution test"
 	  function="host_test_multiple_realm_create_enter" />
 	  <testcase name="Realm payload multi rec multiple cpu"

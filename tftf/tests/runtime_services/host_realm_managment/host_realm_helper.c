@@ -215,6 +215,18 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 		}
 	}
 
+	/*
+	 * At the moment, TFTF does not have support for FEAT_LPA2, so if
+	 * S2SZ is larger than 48 bits, truncate it to ensure we don't surpass
+	 * the maximum IPA size for a realm with no LPA2 support.
+	 */
+	if (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, realm_ptr->rmm_feat_reg0) > 48U) {
+		realm_ptr->rmm_feat_reg0 &=
+				~MASK(RMI_FEATURE_REGISTER_0_S2SZ);
+		realm_ptr->rmm_feat_reg0 |=
+				INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48U);
+	}
+
 	/* Create Realm */
 	if (host_realm_create(realm_ptr) != REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_realm_create");

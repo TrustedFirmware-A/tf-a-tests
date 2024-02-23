@@ -7,6 +7,7 @@
 #include <arch_helpers.h>
 #include <cactus_test_cmds.h>
 #include "ffa_helpers.h"
+#include "tftf_lib.h"
 #include <debug.h>
 #include <ffa_endpoints.h>
 #include <ffa_svc.h>
@@ -114,4 +115,56 @@ test_result_t rl_memory_cannot_be_accessed_in_s(void)
 	}
 
 	return host_cmp_result();
+}
+
+/**
+ * Map the NS RXTX buffers to the SPM, invoke the TRP delegation
+ * service to change the RX buffer PAS to realm, invoke the
+ * FFA_PARTITON_INFO_GET interface, such that SPM does NS access
+ * to realm region and triggers GPF.
+ */
+test_result_t test_ffa_rxtx_to_realm_pas(void)
+{
+	struct mailbox_buffers mb;
+	u_register_t retmm;
+	struct ffa_value ret;
+
+	GET_TFTF_MAILBOX(mb);
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/* Delegate the shared page to Realm. */
+	retmm = host_rmi_granule_delegate((u_register_t)mb.recv);
+	if (retmm != 0UL) {
+		ERROR("Granule delegate failed, ret=0x%lx\n", retmm);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = ffa_partition_info_get((struct ffa_uuid){{0}});
+
+	if (!is_expected_ffa_error(ret, FFA_ERROR_ABORTED)) {
+		ERROR("FFA_PARTITON_INFO_GET should terminate with"
+		       "FFA_ERROR_ABORTED\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Undelegate the shared page. */
+	retmm = host_rmi_granule_undelegate((u_register_t)mb.recv);
+	if (retmm != 0UL) {
+		ERROR("Granule undelegate failed, ret=0x%lx\n", retmm);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = ffa_partition_info_get((struct ffa_uuid){{0}});
+
+	if (is_ffa_call_error(ret)) {
+		ERROR("FFA_PARTITON_INFO_GET should succeed.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	ffa_rx_release();
+
+	return TEST_RESULT_SUCCESS;
 }

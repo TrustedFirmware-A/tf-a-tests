@@ -27,4 +27,5 @@ TESTS_SOURCES	+=							\
 		test_ffa_memory_sharing.c				\
 		test_ffa_setup_and_discovery.c				\
 		spm_test_helpers.c					\
+		test_ffa_exceptions.c					\
 )

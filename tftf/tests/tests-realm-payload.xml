@@ -14,6 +14,12 @@
 	  function="host_test_rtt_fold_unfold_unassigned_empty" />
 	  <testcase name="Realm RTT fold unfold test Unassigned RAM"
 	  function="host_test_rtt_fold_unfold_unassigned_ram" />
+	  <testcase name="Realm RTT fold unfold test Assigned Empty"
+	  function="host_test_rtt_fold_unfold_assigned_empty" />
+	  <testcase name="Realm RTT fold unfold test Assigned RAM"
+	  function="host_test_rtt_fold_unfold_assigned_ram" />
+	  <testcase name="Realm RTT fold unfold test Assigned NS"
+	  function="host_test_rtt_fold_unfold_assigned_ns" />
 	  <testcase name="Multiple Realm EL1 creation and execution test"
 	  function="host_test_multiple_realm_create_enter" />
 	  <testcase name="Realm payload multi rec multiple cpu"

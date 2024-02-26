@@ -260,10 +260,10 @@ u_register_t host_rmi_rtt_set_ripas(u_register_t rd,
 	return rets.ret0;
 }
 
-static inline u_register_t host_rmi_rtt_mapunprotected(u_register_t rd,
-							u_register_t map_addr,
-							u_register_t level,
-							u_register_t ns_pa)
+u_register_t host_rmi_rtt_mapunprotected(u_register_t rd,
+					 u_register_t map_addr,
+					 u_register_t level,
+					 u_register_t ns_pa)
 {
 	return host_rmi_handler(&(smc_args) {RMI_RTT_MAP_UNPROTECTED,
 				rd, map_addr, level, ns_pa}, 5U).ret0;
@@ -475,6 +475,9 @@ u_register_t host_realm_map_unprotected(struct realm *realm,
 		break;
 	case RTT_L2_BLOCK_SIZE:
 		map_level = 2UL;
+		break;
+	case RTT_L1_BLOCK_SIZE:
+		map_level = 1UL;
 		break;
 	default:
 		ERROR("Unknown map_size=0x%lx\n", map_size);

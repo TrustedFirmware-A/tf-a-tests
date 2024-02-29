@@ -367,6 +367,14 @@ em_cpu_t cortex_A510_errata_list = {
 	},
 };
 
+em_cpu_t cortex_X4_errata_list = {
+	.cpu_pn = 0xD82,
+	.cpu_errata = {
+		{2701112, 0x00, 0x00},
+		{-1}
+	},
+};
+
 em_cpu_t cortex_A715_errata_list = {
 	.cpu_pn = 0xD4D,
 	.cpu_errata = {
@@ -564,6 +572,12 @@ test_result_t test_em_cpu_features(void)
 	{
 		VERBOSE("MIDR matches A78_AE > %x\n", midr_val);
 		cpu_ptr = &cortex_A78_AE_errata_list;
+		break;
+	}
+	case 0xD82:
+	{
+		VERBOSE("MIDR matches Cortex-X4 -> %x\n", midr_val);
+		cpu_ptr =  &cortex_X4_errata_list;
 		break;
 	}
 	default:

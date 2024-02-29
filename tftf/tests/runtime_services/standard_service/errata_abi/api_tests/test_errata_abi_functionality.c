@@ -433,6 +433,15 @@ em_cpu_t cortex_X3_errata_list = {
 	},
 };
 
+em_cpu_t cortex_A520_errata_list = {
+	.cpu_pn = 0xD80,
+	.cpu_errata = {
+		{2630792, 0x00, 0x01},
+		{2858100, 0x00, 0x01},
+		{-1}
+	},
+};
+
 /*
  * Test function checks for the em_version implemented
  * - Test fails if the version returned is < 1.0.
@@ -626,6 +635,12 @@ test_result_t test_em_cpu_features(void)
 	{
 		VERBOSE("MIDR matches Cortex-X3 -> %x\n", midr_val);
 		cpu_ptr = &cortex_X3_errata_list;
+		break;
+	}
+	case 0xD80:
+	{
+		VERBOSE("MIDR matches A520 -> %x\n", midr_val);
+		cpu_ptr = &cortex_A520_errata_list;
 		break;
 	}
 	default:

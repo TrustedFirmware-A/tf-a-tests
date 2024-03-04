@@ -100,111 +100,81 @@ static test_result_t sdei_event_check_pstate(void)
 
 	if (is_armv8_1_pan_present()) {
 		printf("PAN Enabled so testing PAN PSTATE bit\n");
+
+		/* Test that the SPAN condition is met.
+		 * Unset the SPAN bit
+		 */
+		u_register_t old_sctlr = read_sctlr_el2();
+
+		write_sctlr_el2(old_sctlr & ~SCTLR_SPAN_BIT);
+
+		u_register_t old_hcr_el2 = read_hcr_el2();
+
 		/*
 		 * Check that when the SPAN bit is 0
 		 * the PAN PSTATE bit is maintained
 		 */
 
-		/* When PAN bit is 0 */
-		u_register_t expected_pan = 0;
+		if ((old_hcr_el2 & HCR_TGE_BIT) == 0U) {
+			/*
+			 * Check that when the HCR_EL2.TGE != 1
+			 * the PAN bit is maintained
+			 */
 
-		write_pan(expected_pan);
-		ret = sdei_event_signal(read_mpidr_el1());
-		if (ret < 0) {
-			tftf_testcase_printf("SDEI event signal failed: " \
-					     "0x%llx\n", ret);
-			goto err2;
-		}
-		sdei_handler_done();
-		if (pan != expected_pan) {
-			tftf_testcase_printf("PAN PSTATE bit not maintained " \
-					     "during SDEI event signal\n" \
-					     "Expected PAN: 0x%lx, " \
-					     "Actual PAN: 0x%lx\n",
-					     expected_pan, pan);
-			ret = -1;
-			goto err1;
-		}
+			/* When PAN bit is 0 */
+			u_register_t expected_pan = 0;
+			write_pan(expected_pan);
 
-		/* When PAN bit is 1 */
-		expected_pan = PAN_BIT;
-		write_pan(expected_pan);
-		ret = sdei_event_signal(read_mpidr_el1());
-		if (ret < 0) {
-			tftf_testcase_printf("SDEI event signal failed: " \
-					     "0x%llx\n", ret);
-			goto err2;
-		}
-		sdei_handler_done();
-		if (pan != expected_pan) {
-			tftf_testcase_printf("PAN PSTATE bit not maintained " \
-					     "during SDEI event signal\n" \
-					     "Expected PAN: 0x%lx, " \
-					     "Actual PAN: 0x%lx\n",
-					     expected_pan, pan);
-			ret = -1;
-			goto err1;
-		}
+			ret = sdei_event_signal(read_mpidr_el1());
+			if (ret < 0) {
+				tftf_testcase_printf("SDEI event signal failed: " \
+						"0x%llx\n", ret);
+				goto err2;
+			}
+			sdei_handler_done();
+			if (pan != expected_pan) {
+				tftf_testcase_printf("PAN PSTATE bit not maintained" \
+						"during SDEI event signal " \
+						"when the SPAN bit is unset and " \
+						"HCR_EL2.TGE != 1 \n" \
+						"Expected PAN: 0x%lx, " \
+						"Actual PAN: 0x%lx\n",
+						expected_pan, pan);
+				ret = -1;
+				goto err1;
+			}
 
-		/* Test that the SPAN condition is met */
-		/* Set the SPAN bit */
-		u_register_t old_sctlr = read_sctlr_el2();
+			/* When PAN Bit is 1 */
+			expected_pan = PAN_BIT;
+			write_pan(expected_pan);
+			ret = sdei_event_signal(read_mpidr_el1());
+			if (ret < 0) {
+				tftf_testcase_printf("SDEI event signal failed: " \
+						"0x%llx\n", ret);
+				goto err2;
+			}
+			sdei_handler_done();
+			if (pan != expected_pan) {
+				tftf_testcase_printf("PAN PSTATE bit not maintained" \
+						"during SDEI event signal " \
+						"when the SPAN bit is unset and " \
+						"HCR_EL2.TGE != 1 \n" \
+						"Expected PAN: 0x%lx, " \
+						"Actual PAN: 0x%lx\n",
+						expected_pan, pan);
+				ret = -1;
+				goto err1;
+			}
 
-		write_sctlr_el2(old_sctlr & ~SCTLR_SPAN_BIT);
-
-		expected_pan = 0;
-		/*
-		 * Check that when the HCR_EL2.{E2H, TGE} != {1, 1}
-		 * the PAN bit is maintained
-		 */
-		ret = sdei_event_signal(read_mpidr_el1());
-		if (ret < 0) {
-			tftf_testcase_printf("SDEI event signal failed: " \
-					     "0x%llx\n", ret);
-			goto err2;
-		}
-		sdei_handler_done();
-		if (pan != expected_pan) {
-			tftf_testcase_printf("PAN PSTATE bit not maintained " \
-					     "during SDEI event signal " \
-					     "when the SPAN bit is set and " \
-					     "HCR_EL2.{E2H, TGE} != {1, 1}\n" \
-					     "Expected PAN: 0x%lx, " \
-					     "Actual PAN: 0x%lx\n",
-					     expected_pan, pan);
-			ret = -1;
-			goto err1;
-		}
-
-		expected_pan = PAN_BIT;
-		write_pan(expected_pan);
-		ret = sdei_event_signal(read_mpidr_el1());
-		if (ret < 0) {
-			tftf_testcase_printf("SDEI event signal failed: " \
-					     "0x%llx\n", ret);
-			goto err2;
-		}
-		sdei_handler_done();
-		if (pan != expected_pan) {
-			tftf_testcase_printf("PAN PSTATE bit not maintained " \
-					     "during SDEI event signal " \
-					     "when the SPAN bit is set and " \
-					     "HCR_EL2.{E2H, TGE} != {1, 1}\n" \
-					     "Expected PAN: 0x%lx, " \
-					     "Actual PAN: 0x%lx\n",
-					     expected_pan, pan);
-			ret = -1;
-			goto err1;
 		}
 
 		/*
-		 * Check that when the HCR_EL2.{E2H, TGE} = {1, 1}
-		 * PAN bit is forced to 1
+		 * Check that when the HCR_EL2.TGE = 1 and SPAN bit is unset,
+		 * PAN bit is forced to 1.
+		 * Set the TGE bit
 		 */
-		/* Set E2H Bit */
-		u_register_t old_hcr_el2 = read_hcr_el2();
 
-		write_hcr_el2(old_hcr_el2 | HCR_E2H_BIT);
+		write_hcr_el2(old_hcr_el2 | HCR_TGE_BIT);
 
 		ret = sdei_event_signal(read_mpidr_el1());
 		if (ret < 0) {
@@ -215,9 +185,9 @@ static test_result_t sdei_event_check_pstate(void)
 		sdei_handler_done();
 		if (pan != PAN_BIT) {
 			tftf_testcase_printf("PAN PSTATE bit was not forced " \
-					     "to 1 during SDEI event signal " \
-					     "when the SPAN bit is set and " \
-					     "HCR_EL2.{E2H, TGE} = {1, 1}\n");
+					"to 1 during SDEI event signal " \
+					"when the SPAN bit is unset and " \
+					"HCR_EL2.TGE = 1 \n");
 			ret = -1;
 			goto err1;
 		}

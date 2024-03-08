@@ -8,6 +8,7 @@ Platform Ports
 
    xilinx-versal_net
    xilinx-versal
+   xilinx-zynqmp
 
 This section provides a list of supported upstream *platform ports* and the
 documentation associated with them.

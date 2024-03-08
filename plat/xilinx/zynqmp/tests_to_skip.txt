@@ -1,0 +1,65 @@
+#
+# Copyright (c) 2022-2024, Advanced Micro Devices, Inc. All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+#
+
+################################################################################
+# Disable the listed tests for zynqmp platform
+################################################################################
+#TESTS: tftf-validation
+Framework Validation/IRQ handling
+Framework Validation/Events API
+
+#TESTS: Timer framework Validation
+Timer framework Validation/Target timer to a power down cpu
+Timer framework Validation/Test scenario where multiple CPUs call same timeout
+Timer framework Validation/Stress test the timer framework
+
+#TESTS: Boot requirement tests
+Boot requirement tests
+
+#TESTS: CPU Hotplug/
+CPU Hotplug
+
+#TESTS: PSCI System Suspend Validation
+PSCI System Suspend Validation
+
+#TESTS: psci
+PSCI Affinity Info/Affinity info level0 powerdown
+PSCI CPU Suspend/CPU suspend to powerdown at level 0
+PSCI CPU Suspend/CPU suspend to powerdown at level 1
+PSCI CPU Suspend/CPU suspend to powerdown at level 2
+PSCI CPU Suspend/CPU suspend to standby at level 0
+PSCI CPU Suspend/CPU suspend to standby at level 1
+PSCI CPU Suspend/CPU suspend to standby at level 2
+PSCI CPU Suspend in OSI mode/CPU suspend to powerdown at level 0 in OSI mode
+PSCI CPU Suspend in OSI mode/CPU suspend to powerdown at level 1 in OSI mode
+PSCI CPU Suspend in OSI mode/CPU suspend to powerdown at level 2 in OSI mode
+PSCI CPU Suspend in OSI mode/CPU suspend to powerdown at level 3 in OSI mode
+PSCI CPU Suspend in OSI mode/CPU suspend to standby at level 0 in OSI mode
+PSCI CPU Suspend in OSI mode/CPU suspend to standby at level 1 in OSI mode
+PSCI CPU Suspend in OSI mode/CPU suspend to standby at level 2 in OSI mode
+PSCI System Suspend Validation/System suspend multiple times
+PSCI System Suspend Validation/system suspend from all cores
+PSCI System Suspend Validation/Validate suspend to RAM functionality
+
+#TESTS: psci stat
+PSCI STAT/Stats test cases for CPU OFF
+PSCI STAT/Stats test cases after system suspend
+
+#TESTS: el3-power-state
+EL3 power state parser validation
+
+#TESTS: SIMD
+SIMD,SVE Registers context/Check that SIMD registers context is preserved
+
+#TESTS: psci-extensive
+PSCI CPU ON OFF Stress Tests/Repeated shutdown of all cores to stress test CPU_ON, CPU_SUSPEND and CPU_OFF
+PSCI CPU ON OFF Stress Tests/PSCI CPU ON OFF stress test
+PSCI CPU ON OFF Stress Tests/Repeated hotplug of all cores to stress test CPU_ON and CPU_OFF
+PSCI CPU ON OFF Stress Tests/Random hotplug cores in a large iteration to stress boot path code
+
+#TESTS: SDEI
+SDEI

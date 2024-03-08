@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2021-2024, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -91,7 +91,7 @@ void sme_config_svq(uint32_t svq)
 {
 	u_register_t smcr_el2_val;
 
-	/* cap svq to arch supported max value */
+	/* Cap svq to arch supported max value. */
 	if (svq > SME_SVQ_ARCH_MAX) {
 		svq = SME_SVQ_ARCH_MAX;
 	}
@@ -144,4 +144,26 @@ bool sme_smstat_sm(void)
 bool sme_feat_fa64_enabled(void)
 {
 	return ((read_smcr_el2() & SMCR_ELX_FA64_BIT) != 0U);
+}
+
+uint32_t sme_probe_svl(uint8_t sme_max_svq)
+{
+	uint32_t svl_bitmap = 0;
+	uint8_t svq, rdsvl_vq;
+
+	/* Cap svq to arch supported max value. */
+	if (sme_max_svq > SME_SVQ_ARCH_MAX) {
+		sme_max_svq = SME_SVQ_ARCH_MAX;
+	}
+
+	for (svq = 0; svq <= sme_max_svq; svq++) {
+		sme_config_svq(svq);
+		rdsvl_vq = SME_SVL_TO_SVQ(sme_rdsvl_1());
+		if (svl_bitmap & BIT_32(rdsvl_vq)) {
+			continue;
+		}
+		svl_bitmap |= BIT_32(rdsvl_vq);
+	}
+
+	return svl_bitmap;
 }

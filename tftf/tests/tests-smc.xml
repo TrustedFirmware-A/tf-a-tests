@@ -19,6 +19,7 @@
   <testsuite name="Query runtime services" description="Generic queries as defined by the SMCCC">
      <testcase name="Unknown SMC" function="test_unknown_smc" />
      <testcase name="Query Standard Service" function="test_query_std_svc" />
+     <testcase name="Query Vendor-Specific Service" function="test_query_ven_el3_svc" />
   </testsuite>
 
 </testsuites>

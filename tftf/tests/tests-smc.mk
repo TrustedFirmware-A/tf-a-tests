@@ -9,5 +9,6 @@ TESTS_SOURCES	+=						\
 		generic/generic_smc.c				\
 		standard_service/query_std_svc.c		\
 		standard_service/unknown_smc.c 			\
+		el3/query_ven_el3_svc.c				\
 	)
 

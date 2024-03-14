@@ -1,14 +1,8 @@
 #
-# Copyright (c) 2018, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
-
-TESTS_SOURCES	+=								\
-	$(addprefix tftf/tests/runtime_services/standard_service/,		\
-		query_std_svc.c 						\
-		unknown_smc.c 							\
-	)
 
 TESTS_SOURCES	+=						\
 	$(addprefix tftf/tests/runtime_services/standard_service/psci/api_tests/, \

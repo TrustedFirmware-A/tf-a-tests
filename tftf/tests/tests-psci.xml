@@ -1,24 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2018, Arm Limited. All rights reserved.
+  Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
 
 <testsuites>
 
-  <!--
-      Strictly speaking, this testsuite is not testing PSCI but we put it here
-      nonetheless to avoid having it alone in a separate XML file.
-  -->
-  <testsuite name="Query runtime services" description="Generic queries as defined by the SMCCC">
-    <testcase name="Unknown SMC" function="test_unknown_smc" />
-    <testcase name="Query Standard Service" function="test_query_std_svc" />
-  </testsuite>
-
   <testsuite name="PSCI Version" description="Check the version of PSCI implemented">
-    <testcase name="PSCI Version" function="test_psci_version" />
+     <testcase name="PSCI Version" function="test_psci_version" />
   </testsuite>
 
   <testsuite name="PSCI Affinity Info" description="Test PSCI AFFINITY_INFO support">

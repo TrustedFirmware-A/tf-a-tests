@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2018, Arm Limited. All rights reserved.
+  Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -14,6 +14,11 @@
      <testcase name="Fast SMC64"	function="smc64_fast" />
      <testcase name="Yielding SMC32"	function="smc32_yielding" />
      <testcase name="Yielding SMC64"	function="smc64_yielding" />
+  </testsuite>
+
+  <testsuite name="Query runtime services" description="Generic queries as defined by the SMCCC">
+     <testcase name="Unknown SMC" function="test_unknown_smc" />
+     <testcase name="Query Standard Service" function="test_query_std_svc" />
   </testsuite>
 
 </testsuites>

@@ -1,11 +1,8 @@
 /*
- * Copyright (c) 2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-
-
-
 
 /dts-v1/;
 
@@ -40,6 +37,10 @@
 		sdei_shared_reset {
 			bias = <30>;
 			functionname = "sdei_shared_reset_funcid";
+		};
+		sdei_interrupt_bind {
+			bias = <30>;
+			functionname = "sdei_interrupt_bind_funcid";
 		};
 	};
 

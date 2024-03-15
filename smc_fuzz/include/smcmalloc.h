@@ -52,12 +52,12 @@ struct peret {
 };
 
 void initmem(void);
-struct peret priorityencoder(unsigned int);
-void *smcmalloc(unsigned int, struct memmod*);
-int smcfree(void*, struct memmod *);
+struct peret priorityencoder(unsigned int ennum);
+void *smcmalloc(unsigned int req, struct memmod *mmod);
+int smcfree(void *vin, struct memmod *mmod);
 #ifdef DEBUG_SMC_MALLOC
-void displayblocks(struct memmod *);
-void displaymalloctable(struct memmod *);
+void displayblocks(struct memmod *mmod);
+void displaymalloctable(struct memmod *mmod);
 #endif
 
 #endif /* SMCMALLOC_H */

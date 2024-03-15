@@ -4,20 +4,22 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include "fifo3d.h"
+#include "nfifo.h"
+
 #include <arch_helpers.h>
 #include <debug.h>
 #include <drivers/arm/private_timer.h>
 #include <events.h>
-#include "fifo3d.h"
-#include "nfifo.h"
 #include <libfdt.h>
-
 #include <plat_topology.h>
 #include <power_management.h>
 #include <tftf_lib.h>
 
+
 extern char _binary___dtb_start[];
-extern void runtestfunction(int funcid);
+extern void runtestfunction(int funcid, struct memmod *mmod);
+extern void init_input_arg_struct(void);
 
 struct memmod tmod __aligned(65536) __section("smcfuzz");
 static int cntndarray;
@@ -233,9 +235,9 @@ struct rand_smc_node *createsmctree(int *casz,
 				     (fdt32_to_cpu(fhd.off_dt_strings) +
 				      fdt32_to_cpu(pv.nameoff)), cset);
 			if (strcmp(cset, "bias") == 0) {
-				rval = *((unsigned int *)dtb);
+				unsigned int bval = *((unsigned int *)dtb);
 				dtb += sizeof(unsigned int);
-				push_3dfifo_bias(&f3d, fdt32_to_cpu(rval));
+				push_3dfifo_bias(&f3d, fdt32_to_cpu(bval));
 				bias_count++;
 				if (bintnode == 1U) {
 					fnode = 0U;
@@ -494,7 +496,10 @@ test_result_t smc_fuzzing_instance(uint32_t seed)
 			int selent = tlnode->biasarray[nch];
 
 			if (tlnode->norcall[selent] == 0) {
-				runtestfunction(tlnode->snameid[selent]);
+			#ifdef SMC_FUZZER_DEBUG
+				printf("the name of the SMC call is %s\n", tlnode->snames[selent]);
+			#endif
+				runtestfunction(tlnode->snameid[selent], mmod);
 				nd = 1;
 			} else {
 				tlnode = &tlnode->treenodes[selent];

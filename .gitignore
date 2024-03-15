@@ -12,3 +12,8 @@ tags
 # Ignore build directory and binary files
 build/
 *.bin
+
+# Ignore the generated fuzzing files
+arg_struct_def.h
+field_specification.h
+fuzz_names.h

@@ -5,6 +5,8 @@
  */
 
 #include <fuzz_helper.h>
+#include "smcmalloc.h"
+
 #include <power_management.h>
 #include <sdei.h>
 #include <test_helpers.h>
@@ -36,4 +38,4 @@
 
 void tftf_test_sdei_noarg(int64_t (*sdei_func)(void), char *funcstr);
 void tftf_test_sdei_singlearg(int64_t (*sdei_func)(uint64_t), char *funcstr);
-void run_sdei_fuzz(int funcid);
+void run_sdei_fuzz(int funcid, struct memmod *mmod);

@@ -9,8 +9,7 @@
 <testsuites>
   <testsuite name="EM-ABI" description="Errata ABI Feature Implementation">
      <testcase name="Version" function="test_em_version" />
-     <testcase name="Features" function="test_em_features" />
-     <testcase name="EM_cpu_features" function="test_em_cpu_features" />
+   <testcase name="EM_cpu_features" function="test_errata_abi_features" />
   </testsuite>
 
 </testsuites>

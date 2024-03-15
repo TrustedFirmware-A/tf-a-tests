@@ -7,14 +7,20 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <events.h>
+#include <platform.h>
+#include <power_management.h>
+#include <psci.h>
+#include <smccc.h>
+#include <test_helpers.h>
+#include <tftf_lib.h>
+#include <platform_def.h>
 #include <string.h>
 #include <arch_helpers.h>
 #include <debug.h>
 #include <errata_abi.h>
-#include <platform.h>
-#include <psci.h>
-#include <smccc.h>
-#include <tftf_lib.h>
+
+static event_t cpu_has_entered_test[PLATFORM_CORE_COUNT];
 
 /* Forward flag */
 #define FORWARD_FLAG_EL1	0x00
@@ -361,6 +367,14 @@ em_cpu_t cortex_A510_errata_list = {
 	},
 };
 
+em_cpu_t cortex_X4_errata_list = {
+	.cpu_pn = 0xD82,
+	.cpu_errata = {
+		{2701112, 0x00, 0x00},
+		{-1}
+	},
+};
+
 em_cpu_t cortex_A715_errata_list = {
 	.cpu_pn = 0xD4D,
 	.cpu_errata = {
@@ -376,7 +390,6 @@ em_cpu_t neoverse_V2_errata_list = {
 		{-1}
 	},
 };
-
 
 /*
  * Test function checks for the em_version implemented
@@ -424,21 +437,13 @@ test_result_t test_em_cpu_features(void)
 {
 	test_result_t return_val = TEST_RESULT_FAIL;
 	smc_ret_values ret_val;
-	int32_t version_return = tftf_em_abi_version();
-
-	if (version_return == EM_NOT_SUPPORTED)
-		return TEST_RESULT_SKIPPED;
-
-	if (!(tftf_em_abi_feature_implemented(EM_CPU_ERRATUM_FEATURES)))
-		return TEST_RESULT_FAIL;
 
 	uint32_t midr_val = read_midr();
-
-	INFO("MIDR value = %x\n", midr_val);
-
 	uint16_t rxpx_val_extracted = EXTRACT_REV_VAR(midr_val);
-
 	midr_val = EXTRACT_PARTNO(midr_val);
+
+	u_register_t mpid = read_mpidr_el1() & MPID_MASK;
+	unsigned int core_pos = platform_get_core_pos(mpid);
 
 	INFO("Partnum extracted = %x and rxpx extracted val = %x\n\n", midr_val, \
 							rxpx_val_extracted);
@@ -569,6 +574,12 @@ test_result_t test_em_cpu_features(void)
 		cpu_ptr = &cortex_A78_AE_errata_list;
 		break;
 	}
+	case 0xD82:
+	{
+		VERBOSE("MIDR matches Cortex-X4 -> %x\n", midr_val);
+		cpu_ptr =  &cortex_X4_errata_list;
+		break;
+	}
 	default:
 	{
 		ERROR("MIDR did not match any cpu\n");
@@ -582,6 +593,7 @@ test_result_t test_em_cpu_features(void)
 		ret_val = tftf_em_abi_cpu_feature_implemented \
 				(cpu_ptr->cpu_errata[i].em_errata_id, \
 				FORWARD_FLAG_EL1);
+
 		switch (ret_val.ret0) {
 
 		case EM_NOT_AFFECTED:
@@ -618,6 +630,47 @@ test_result_t test_em_cpu_features(void)
 		INFO("errata_id = %d and test_em_cpu_erratum_features = %ld\n",\
 			cpu_ptr->cpu_errata[i].em_errata_id, ret_val.ret0);
 	}
-
+	/* Signal to the lead CPU that the calling CPU has entered the test */
+	tftf_send_event(&cpu_has_entered_test[core_pos]);
 	return return_val;
+}
+
+test_result_t test_errata_abi_features(void)
+{
+	unsigned int lead_mpid;
+	unsigned int cpu_mpid, cpu_node, core_pos;
+	int psci_ret;
+
+	int32_t version_return = tftf_em_abi_version();
+
+	SKIP_TEST_IF_LESS_THAN_N_CPUS(1);
+
+	if (version_return == EM_NOT_SUPPORTED) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	if (!(tftf_em_abi_feature_implemented(EM_CPU_ERRATUM_FEATURES))) {
+		return TEST_RESULT_FAIL;
+	}
+
+	lead_mpid = read_mpidr_el1() & MPID_MASK;
+	/* Power on all CPUs */
+	for_each_cpu(cpu_node) {
+		cpu_mpid = tftf_get_mpidr_from_node(cpu_node);
+
+		/* Skip lead CPU as it is already powered on */
+		if (cpu_mpid == lead_mpid)
+			continue;
+
+		psci_ret = tftf_cpu_on(cpu_mpid, (uintptr_t)test_em_cpu_features, 0);
+		if (psci_ret != PSCI_E_SUCCESS) {
+			tftf_testcase_printf("Failed to power on CPU 0x%x (%d)\n", \
+			cpu_mpid, psci_ret);
+			return TEST_RESULT_FAIL;
+		}
+
+		core_pos = platform_get_core_pos(cpu_mpid);
+		tftf_wait_for_event(&cpu_has_entered_test[core_pos]);
+	}
+	return TEST_RESULT_SUCCESS;
 }

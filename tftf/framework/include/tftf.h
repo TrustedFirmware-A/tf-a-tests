@@ -15,7 +15,7 @@
 #define TFTF_WELCOME_STR	"Booting trusted firmware test framework"
 
 /* Maximum size of test output (in bytes) */
-#define TESTCASE_OUTPUT_MAX_SIZE	512
+#define TESTCASE_OUTPUT_MAX_SIZE	1024
 
 /* Size of build message used to differentiate different TFTF binaries */
 #define BUILD_MESSAGE_SIZE 		0x20

@@ -1,10 +1,9 @@
 #
-# Copyright (c) 2023, Arm Limited. All rights reserved.
+# Copyright (c) 2023-2024, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
 Realm payload at EL1
-SIMD,SVE Registers context
 Invalid memory access with RME extension
 FF-A Setup and Discovery
 SP exceptions
@@ -12,7 +11,7 @@ FF-A Direct messaging
 FF-A Group0 interrupts
 FF-A Power management
 FF-A Memory Sharing
-SIMD,SVE Registers context
+SIMD context switch tests
 FF-A Interrupt
 SMMUv3 tests
 FF-A Notifications

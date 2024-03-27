@@ -53,7 +53,7 @@ PSCI STAT/Stats test cases after system suspend
 EL3 power state parser validation
 
 #TESTS: SIMD
-SIMD,SVE Registers context/Check that SIMD registers context is preserved
+SIMD context switch tests
 
 #TESTS: psci-extensive
 PSCI CPU ON OFF Stress Tests/Repeated shutdown of all cores to stress test CPU_ON, CPU_SUSPEND and CPU_OFF

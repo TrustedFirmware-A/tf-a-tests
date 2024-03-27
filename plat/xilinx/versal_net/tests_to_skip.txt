@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (c) 2023-2024, Advanced Micro Devices, Inc. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -38,7 +38,7 @@ Performance tests/Test cluster power up latency
 FF-A Setup and Discovery/FF-A RXTX unmap SP rxtx buffer
 FF-A Setup and Discovery/Test FFA_PARTITION_INFO_GET v1.0
 FF-A Memory Sharing/Lend memory, clear flag set
-SIMD,SVE Registers context/Check that SIMD registers context is preserved
+SIMD context switch tests
 FF-A Interrupt
 FF-A Notifications
 

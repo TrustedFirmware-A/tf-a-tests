@@ -1166,3 +1166,89 @@ test_result_t test_ffa_mem_lend_sp_realm_memory_separate_constituent(void)
 
 	return ret;
 }
+
+/**
+ * Map the NS RXTX buffers to the SPM, change RX buffer PAS to realm,
+ * invoke the FFA_MEM_SHARE interface, such that SPM does NS access
+ * to realm region and triggers GPF.
+ */
+test_result_t test_ffa_mem_share_tx_realm_expect_fail(void)
+{
+	struct ffa_value ret;
+	uint32_t total_length;
+	uint32_t fragment_length;
+	struct mailbox_buffers mb;
+	u_register_t ret_rmm;
+	struct ffa_memory_access receiver =
+		ffa_memory_access_init_permissions_from_mem_func(SP_ID(1),
+								 FFA_MEM_SHARE_SMC64);
+	size_t remaining_constituent_count;
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)share_page, 1, 0}
+	};
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/***********************************************************************
+	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
+	 **********************************************************************/
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	GET_TFTF_MAILBOX(mb);
+
+	remaining_constituent_count = ffa_memory_region_init(
+		(struct ffa_memory_region *)mb.send, PAGE_SIZE, HYP_ID,
+		&receiver, 1, constituents, 1, 0, 0,
+		FFA_MEMORY_NOT_SPECIFIED_MEM, FFA_MEMORY_CACHE_WRITE_BACK,
+		FFA_MEMORY_INNER_SHAREABLE,
+		&total_length, &fragment_length);
+
+	if (remaining_constituent_count != 0) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/*
+	 * Delegate TX buffer to realm.
+	 */
+	ret_rmm = host_rmi_granule_delegate((u_register_t)mb.send);
+
+	if (ret_rmm != 0UL) {
+		INFO("Delegate operation returns  %#lx for address %p\n",
+		     ret_rmm, mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = ffa_mem_share(total_length, fragment_length);
+
+	/* Access to Realm region from SPMC should return FFA_ERROR_ABORTED. */
+	if (!is_expected_ffa_error(ret, FFA_ERROR_ABORTED)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Undelegate to reestablish the same security state for PAS. */
+	ret_rmm = host_rmi_granule_undelegate((u_register_t)mb.send);
+
+	if (ret_rmm != 0UL) {
+		INFO("Undelegate operation returns 0x%lx for address %p\n",
+		     ret_rmm, mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Retry but expect test to pass. */
+	ret = ffa_mem_share(total_length, fragment_length);
+
+	if (is_ffa_call_error(ret)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Reclaim to clean-up. */
+	ret = ffa_mem_reclaim(ffa_mem_success_handle(ret), 0);
+
+	if (is_ffa_call_error(ret)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}

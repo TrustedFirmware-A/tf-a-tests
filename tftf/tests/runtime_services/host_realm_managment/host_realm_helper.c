@@ -149,6 +149,35 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 		return false;
 	}
 
+	/* Fail if IPA bits > implemented size */
+	if (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feature_flag) >
+			EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, realm_ptr->rmm_feat_reg0)) {
+		ERROR("%s() failed\n", "Invalid s2sz");
+		return false;
+	}
+
+	/*
+	 * Overwrite s2sz in feature flag if host passed a value
+	 * if host passes default 0 use default RMI_FEATURES instead
+	 */
+	if (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feature_flag) != 0U) {
+		realm_ptr->rmm_feat_reg0 &= ~MASK(RMI_FEATURE_REGISTER_0_S2SZ);
+		realm_ptr->rmm_feat_reg0 |= INPLACE(RMI_FEATURE_REGISTER_0_S2SZ,
+				EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feature_flag));
+	}
+
+	/*
+	 * At the moment, TFTF does not have support for FEAT_LPA2, so if
+	 * S2SZ is larger than 48 bits, truncate it to ensure we don't surpass
+	 * the maximum IPA size for a realm with no LPA2 support.
+	 */
+	if (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, realm_ptr->rmm_feat_reg0) > 48U) {
+		realm_ptr->rmm_feat_reg0 &=
+				~MASK(RMI_FEATURE_REGISTER_0_S2SZ);
+		realm_ptr->rmm_feat_reg0 |=
+				INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48U);
+	}
+
 	/* Disable PMU if not required */
 	if ((feature_flag & RMI_FEATURE_REGISTER_0_PMU_EN) == 0UL) {
 		realm_ptr->rmm_feat_reg0 &= ~RMI_FEATURE_REGISTER_0_PMU_EN;
@@ -213,18 +242,6 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 			ERROR("Invalid Rec Flag\n");
 			return false;
 		}
-	}
-
-	/*
-	 * At the moment, TFTF does not have support for FEAT_LPA2, so if
-	 * S2SZ is larger than 48 bits, truncate it to ensure we don't surpass
-	 * the maximum IPA size for a realm with no LPA2 support.
-	 */
-	if (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, realm_ptr->rmm_feat_reg0) > 48U) {
-		realm_ptr->rmm_feat_reg0 &=
-				~MASK(RMI_FEATURE_REGISTER_0_S2SZ);
-		realm_ptr->rmm_feat_reg0 |=
-				INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48U);
 	}
 
 	/* Create Realm */

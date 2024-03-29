@@ -9,6 +9,7 @@
 #define REALM_TESTS_H
 
 bool test_pmuv3_cycle_works_realm(void);
+bool test_pmuv3_counter(void);
 bool test_pmuv3_event_works_realm(void);
 bool test_pmuv3_rmm_preserves(void);
 bool test_pmuv3_overflow_interrupt(void);

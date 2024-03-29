@@ -20,7 +20,7 @@
 #define PMU_CLEAR_ALL	0x1FFFFFFFF
 
 /* Number of event counters implemented */
-#define GET_CNT_NUM	\
+#define GET_PMU_CNT	\
 	((read_pmcr_el0() >> PMCR_EL0_N_SHIFT) & PMCR_EL0_N_MASK)
 
 void host_set_pmu_state(void);

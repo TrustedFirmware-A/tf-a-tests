@@ -252,6 +252,9 @@ void realm_payload_main(void)
 		case REALM_PMU_CYCLE:
 			test_succeed = test_pmuv3_cycle_works_realm();
 			break;
+		case REALM_PMU_COUNTER:
+			test_succeed = test_pmuv3_counter();
+			break;
 		case REALM_PMU_EVENT:
 			test_succeed = test_pmuv3_event_works_realm();
 			break;

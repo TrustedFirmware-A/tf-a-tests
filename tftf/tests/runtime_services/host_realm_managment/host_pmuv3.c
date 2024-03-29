@@ -106,7 +106,7 @@ void host_set_pmu_state(void)
 {
 	unsigned int core_pos = platform_get_core_pos(read_mpidr_el1());
 	struct pmu_registers *pmu_ptr = &pmu_state[core_pos];
-	unsigned int num_cnts = GET_CNT_NUM;
+	unsigned int num_cnts = GET_PMU_CNT;
 	unsigned long val;
 
 	val = read_pmcr_el0() | PMCR_EL0_DP_BIT;
@@ -185,7 +185,7 @@ bool host_check_pmu_state(void)
 {
 	unsigned int core_pos = platform_get_core_pos(read_mpidr_el1());
 	struct pmu_registers *pmu_ptr = &pmu_state[core_pos];
-	unsigned int num_cnts = GET_CNT_NUM;
+	unsigned int num_cnts = GET_PMU_CNT;
 	unsigned long val, read_val;
 
 	CHECK_PMREG(pmcr_el0);

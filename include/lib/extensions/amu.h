@@ -71,7 +71,11 @@ void amu_group0_voffset_write(unsigned int idx, uint64_t val);
 
 #if AMU_GROUP1_NR_COUNTERS
 uint64_t amu_group1_cnt_read(unsigned int idx);
+uint64_t amu_group1_num_counters(void);
+uint64_t amu_group1_evtype_read(unsigned int idx);
+void amu_group1_evtype_write(unsigned int idx, uint64_t val);
 #if __aarch64__
+uint64_t amu_group1_is_counter_implemented(unsigned int idx);
 uint64_t amu_group1_voffset_read(unsigned int idx);
 void amu_group1_voffset_write(unsigned int idx, uint64_t val);
 #endif

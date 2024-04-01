@@ -17,6 +17,8 @@ $(eval $(call add_define,TFTF_DEFINES,TC_MAX_PE_PER_CPU))
 $(eval $(call add_define,NS_BL1U_DEFINES,TC_MAX_PE_PER_CPU))
 $(eval $(call add_define,NS_BL2U_DEFINES,TC_MAX_PE_PER_CPU))
 
+$(eval $(call add_define,TFTF_DEFINES,TARGET_PLATFORM))
+
 PLAT_INCLUDES	+=	-Iplat/arm/tc/include/
 
 PLAT_SOURCES	:=	drivers/arm/gic/arm_gic_v2v3.c		\

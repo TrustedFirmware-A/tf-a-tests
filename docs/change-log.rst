@@ -7,6 +7,17 @@ Firmware-A version for simplicity. At any point in time, TF-A Tests version
 Tests are not guaranteed to be compatible. This also means that a version
 upgrade on the TF-A-Tests side might not necessarily introduce any new feature.
 
+Version 2.10.3
+--------------
+
+Code Refactoring
+^^^^^^^^^^^^^^^^
+
+- ERRATA ABI
+
+   - add the Cortex-X4 cpu struct
+   - update the cpu structs for errata ABI
+
 Version 2.10
 ------------
 
@@ -1693,7 +1704,7 @@ All test images
 
 --------------
 
-*Copyright (c) 2018-2022, Arm Limited. All rights reserved.*
+*Copyright (c) 2018-2024, Arm Limited. All rights reserved.*
 
 .. _Arm Neoverse Reference Design N1 Edge (RD-N1-Edge): https://developer.arm.com/products/system-design/reference-design/neoverse-reference-design
 .. _Arm SGI-575: https://developer.arm.com/products/system-design/fixed-virtual-platforms

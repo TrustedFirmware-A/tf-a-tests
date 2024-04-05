@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -7,6 +7,7 @@
 # TFTF Version
 VERSION_MAJOR		:= 2
 VERSION_MINOR		:= 10
+VERSION_PATCH		:= 3
 
 MAKE_HELPERS_DIRECTORY := make_helpers/
 include ${MAKE_HELPERS_DIRECTORY}build_macros.mk

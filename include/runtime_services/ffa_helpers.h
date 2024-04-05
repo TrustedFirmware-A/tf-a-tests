@@ -11,6 +11,8 @@
 #include <tftf_lib.h>
 #include <utils_def.h>
 
+#include <xlat_tables_defs.h>
+
 /* This error code must be different to the ones used by FFA */
 #define FFA_TFTF_ERROR		-42
 
@@ -293,6 +295,48 @@ static inline uint16_t ffa_partition_info_regs_entry_size(
 }
 
 typedef uint64_t ffa_notification_bitmap_t;
+
+/**
+ * Partition message header as specified by table 6.2 from FF-A v1.1 EAC0
+ * specification.
+ */
+struct ffa_partition_rxtx_header {
+	uint32_t flags;
+	/* MBZ */
+	uint32_t reserved;
+	/* Offset from the beginning of the buffer to the message payload. */
+	uint32_t offset;
+	/* Sender(Bits[31:16]) and Receiver(Bits[15:0]) endpoint IDs. */
+	ffa_id_t receiver;
+	ffa_id_t sender;
+	/* Size of message in buffer. */
+	uint32_t size;
+};
+
+#define FFA_RXTX_HEADER_SIZE sizeof(struct ffa_partition_rxtx_header)
+
+static inline void ffa_rxtx_header_init(
+	ffa_id_t sender, ffa_id_t receiver, uint32_t size,
+	struct ffa_partition_rxtx_header *header)
+{
+	header->flags = 0;
+	header->reserved = 0;
+	header->offset = FFA_RXTX_HEADER_SIZE;
+	header->sender = sender;
+	header->receiver = receiver;
+	header->size = size;
+}
+
+/* The maximum length possible for a single message. */
+#define FFA_PARTITION_MSG_PAYLOAD_MAX (PAGE_SIZE - FFA_RXTX_HEADER_SIZE)
+
+struct ffa_partition_msg {
+	struct ffa_partition_rxtx_header header;
+	char payload[FFA_PARTITION_MSG_PAYLOAD_MAX];
+};
+
+/* The maximum length possible for a single message. */
+#define FFA_MSG_PAYLOAD_MAX PAGE_SIZE
 
 #define FFA_NOTIFICATION(ID)		(UINT64_C(1) << ID)
 
@@ -794,6 +838,7 @@ struct ffa_value ffa_rx_release(void);
 struct ffa_value ffa_rxtx_map(uintptr_t send, uintptr_t recv, uint32_t pages);
 struct ffa_value ffa_rxtx_unmap_with_id(uint32_t id);
 struct ffa_value ffa_rxtx_unmap(void);
+struct ffa_value ffa_msg_send2(uint32_t flags);
 struct ffa_value ffa_mem_donate(uint32_t descriptor_length,
 				uint32_t fragment_length);
 struct ffa_value ffa_mem_lend(uint32_t descriptor_length,

@@ -521,6 +521,34 @@ struct ffa_value ffa_rxtx_unmap_with_id(uint32_t id)
 	return ffa_service_call(&args);
 }
 
+/**
+ * Copies data from the sender's send buffer to the recipient's receive buffer
+ * and notifies the receiver.
+ *
+ * `flags` may include a 'Delay Schedule Receiver interrupt'.
+ *
+ * Returns FFA_SUCCESS if the message is sent, or an error code otherwise:
+ *  - INVALID_PARAMETERS: one or more of the parameters do not conform.
+ *  - BUSY: receiver's mailbox was full.
+ *  - DENIED: receiver is not in a state to handle the request or doesn't
+ *    support indirect messages.
+ */
+struct ffa_value ffa_msg_send2(uint32_t flags)
+{
+	struct ffa_value args = {
+		.fid = FFA_MSG_SEND2,
+		.arg1 = 0,
+		.arg2 = flags,
+		.arg3 = FFA_PARAM_MBZ,
+		.arg4 = FFA_PARAM_MBZ,
+		.arg5 = FFA_PARAM_MBZ,
+		.arg6 = FFA_PARAM_MBZ,
+		.arg7 = FFA_PARAM_MBZ
+	};
+
+	return ffa_service_call(&args);
+}
+
 /* Donate memory to another partition */
 struct ffa_value ffa_mem_donate(uint32_t descriptor_length,
 				uint32_t fragment_length)

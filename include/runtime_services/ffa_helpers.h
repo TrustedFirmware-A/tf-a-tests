@@ -354,29 +354,63 @@ struct ffa_partition_msg {
 #define FFA_NOTIFICATIONS_FLAG_BITMAP_SPM	UINT32_C(0x1 << 2)
 #define FFA_NOTIFICATIONS_FLAG_BITMAP_HYP	UINT32_C(0x1 << 3)
 
+#define FFA_NOTIFICATION_SPM_BUFFER_FULL_MASK FFA_NOTIFICATION(0)
+#define FFA_NOTIFICATION_HYP_BUFFER_FULL_MASK FFA_NOTIFICATION(32)
+
 /**
  * The following is an SGI ID, that the SPMC configures as non-secure, as
  * suggested by the FF-A v1.1 specification, in section 9.4.1.
  */
 #define FFA_SCHEDULE_RECEIVER_INTERRUPT_ID 8
 
-#define FFA_NOTIFICATIONS_BITMAP(lo, hi)	\
-	(ffa_notification_bitmap_t)(lo) | 	\
-	(((ffa_notification_bitmap_t)hi << 32) & 0xFFFFFFFF00000000ULL)
-
-#define FFA_NOTIFICATIONS_FLAGS_VCPU_ID(id) UINT32_C((id & 0xFFFF) << 16)
-
-static inline ffa_notification_bitmap_t ffa_notifications_get_from_sp(
-       struct ffa_value val)
+/**
+ * Helper function to assemble a 64-bit sized bitmap, from the 32-bit sized lo
+ * and hi.
+ * Helpful as FF-A specification defines that the notifications interfaces
+ * arguments are 32-bit registers.
+ */
+static inline ffa_notification_bitmap_t ffa_notification_bitmap(uint32_t lo,
+								uint32_t hi)
 {
-	return FFA_NOTIFICATIONS_BITMAP(val.arg2, val.arg3);
+	return (ffa_notification_bitmap_t)hi << 32U | lo;
 }
 
-static inline ffa_notification_bitmap_t ffa_notifications_get_from_vm(
+static inline ffa_notification_bitmap_t ffa_notification_get_from_sp(
        struct ffa_value val)
 {
-	return FFA_NOTIFICATIONS_BITMAP(val.arg4, val.arg5);
+	return ffa_notification_bitmap((uint32_t)val.arg2,
+				       (uint32_t)val.arg3);
 }
+
+static inline ffa_notification_bitmap_t ffa_notification_get_from_vm(
+       struct ffa_value val)
+{
+	return ffa_notification_bitmap((uint32_t)val.arg4,
+				       (uint32_t)val.arg5);
+}
+
+static inline ffa_notification_bitmap_t ffa_notification_get_from_framework(
+	struct ffa_value val)
+{
+	return ffa_notification_bitmap((uint32_t)val.arg6,
+				       (uint32_t)val.arg7);
+}
+
+ /**
+ * Helper functions to check for buffer full notification.
+ */
+static inline bool is_ffa_hyp_buffer_full_notification(
+	ffa_notification_bitmap_t framework)
+{
+	return (framework & FFA_NOTIFICATION_HYP_BUFFER_FULL_MASK) != 0U;
+}
+
+static inline bool is_ffa_spm_buffer_full_notification(
+	ffa_notification_bitmap_t framework)
+{
+	return (framework & FFA_NOTIFICATION_SPM_BUFFER_FULL_MASK) != 0U;
+}
+
 
 /*
  * FFA_NOTIFICATION_INFO_GET is a SMC64 interface.
@@ -391,21 +425,21 @@ static inline ffa_notification_bitmap_t ffa_notifications_get_from_vm(
 #define FFA_NOTIFICATIONS_LIST_SHIFT(l) 		(2 * (l - 1) + 12)
 #define FFA_NOTIFICATIONS_LIST_SIZE_MASK 		0x3U
 
-static inline uint32_t ffa_notifications_info_get_lists_count(
+static inline uint32_t ffa_notification_info_get_lists_count(
 	struct ffa_value ret)
 {
 	return (uint32_t)(ret.arg2 >> FFA_NOTIFICATIONS_LISTS_COUNT_SHIFT)
 	       & FFA_NOTIFICATIONS_LISTS_COUNT_MASK;
 }
 
-static inline uint32_t ffa_notifications_info_get_list_size(
+static inline uint32_t ffa_notification_info_get_list_size(
 	struct ffa_value ret, uint32_t list)
 {
 	return (uint32_t)(ret.arg2 >> FFA_NOTIFICATIONS_LIST_SHIFT(list)) &
 	       FFA_NOTIFICATIONS_LIST_SIZE_MASK;
 }
 
-static inline bool ffa_notifications_info_get_more_pending(struct ffa_value ret)
+static inline bool ffa_notification_info_get_more_pending(struct ffa_value ret)
 {
 	return (ret.arg2 & FFA_NOTIFICATIONS_INFO_GET_FLAG_MORE_PENDING) != 0U;
 }

@@ -548,8 +548,8 @@ static bool is_notifications_get_as_expected(
 		 * ffa_notification_get.
 		 */
 		success_ret = (ffa_func_id(*ret) == FFA_SUCCESS_SMC32);
-		from_sp = ffa_notifications_get_from_sp(*ret);
-		from_vm = ffa_notifications_get_from_vm(*ret);
+		from_sp = ffa_notification_get_from_sp(*ret);
+		from_vm = ffa_notification_get_from_vm(*ret);
 	}
 
 	if (success_ret != true ||
@@ -569,19 +569,19 @@ static bool is_notifications_info_get_as_expected(
 	struct ffa_value *ret, uint16_t *ids, uint32_t *lists_sizes,
 	const uint32_t max_ids_count, uint32_t lists_count, bool more_pending)
 {
-	if (lists_count != ffa_notifications_info_get_lists_count(*ret) ||
-	    more_pending != ffa_notifications_info_get_more_pending(*ret)) {
+	if (lists_count != ffa_notification_info_get_lists_count(*ret) ||
+	    more_pending != ffa_notification_info_get_more_pending(*ret)) {
 		ERROR("Notification info get not as expected.\n"
 		      "    Lists counts: %u; more pending %u\n",
-		      ffa_notifications_info_get_lists_count(*ret),
-		      ffa_notifications_info_get_more_pending(*ret));
+		      ffa_notification_info_get_lists_count(*ret),
+		      ffa_notification_info_get_more_pending(*ret));
 		dump_ffa_value(*ret);
 		return false;
 	}
 
 	for (uint32_t i = 0; i < lists_count; i++) {
 		uint32_t cur_size =
-				ffa_notifications_info_get_list_size(*ret,
+				ffa_notification_info_get_list_size(*ret,
 								     i + 1);
 
 		if (lists_sizes[i] != cur_size) {

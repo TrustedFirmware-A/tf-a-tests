@@ -129,7 +129,9 @@ em_cpu_t cortex_A72_errata_list = {
 	.cpu_pn = 0xD08,
 	.cpu_errata = {
 		{859971, 0x00, 0x03},
+		{1234567, 0x00, 0xFF},
 		{1319367, 0x00, 0xFF},
+		{9876543, 0x00, 0xFF},
 		{-1}
 	},
 };
@@ -163,9 +165,11 @@ em_cpu_t cortex_A76_errata_list = {
 		{1262606, 0x00, 0x30},
 		{1262888, 0x00, 0x30},
 		{1275112, 0x00, 0x30},
+		{1286807, 0x00, 0x30},
 		{1791580, 0x00, 0x40},
 		{1868343, 0x00, 0x40},
 		{1946160, 0x30, 0x41},
+		{2743102, 0x00, 0x41},
 		{-1}
 	},
 };
@@ -188,10 +192,10 @@ em_cpu_t cortex_A78_AE_errata_list = {
 	.cpu_pn = 0xD42,
 	.cpu_errata = {
 		{1941500, 0x00, 0x01},
+		{1951502, 0x00, 0x01},
 		{2376748, 0x00, 0x01},
 		{2712574, 0x00, 0x02},
-		{2376748, 0x00, 0x01},
-		{1951502, 0x00, 0x01},
+		{2395408, 0x00, 0x01},
 		{-1}
 	},
 };
@@ -219,11 +223,15 @@ em_cpu_t cortex_A78_errata_list = {
 em_cpu_t cortex_A78C_errata_list = {
 	.cpu_pn = 0xD4B,
 	.cpu_errata = {
+		{1827430, 0x00, 0x00},
+		{1827440, 0x00, 0x00},
 		{2132064, 0x01, 0x02},
 		{2242638, 0x01, 0x02},
 		{2376749, 0x01, 0x02},
 		{2395411, 0x01, 0x02},
+		{2683027, 0x01, 0x02},
 		{2712575, 0x01, 0x02},
+		{2743232, 0x01, 0x02},
 		{2772121, 0x00, 0x02},
 		{2779484, 0x01, 0x02},
 		{-1}
@@ -245,6 +253,7 @@ em_cpu_t cortex_X1_errata_list = {
 em_cpu_t neoverse_N1_errata_list = {
 	.cpu_pn = 0xD0C,
 	.cpu_errata = {
+		{1043202, 0x00, 0x10},
 		{1073348, 0x00, 0x10},
 		{1130799, 0x00, 0x20},
 		{1165347, 0x00, 0x20},
@@ -277,9 +286,11 @@ em_cpu_t neoverse_V1_errata_list = {
 		{2139242, 0x00, 0x11},
 		{2216392, 0x10, 0x11},
 		{2294912, 0x00, 0x11},
+		{2348377, 0x00, 0x11},
 		{2372203, 0x00, 0x11},
 		{2701953, 0x00, 0x11},
 		{2743093, 0x00, 0x12},
+		{2743233, 0x00, 0x12},
 		{2779461, 0x00, 0x12},
 		{-1}
 	},
@@ -303,7 +314,9 @@ em_cpu_t cortex_A710_errata_list = {
 		{2291219, 0x00, 0x20},
 		{2371105, 0x00, 0x20},
 		{2701952, 0x00, 0x21},
+		{2742423, 0x00, 0x21},
 		{2768515, 0x00, 0x21},
+		{2778471, 0x00, 0x21},
 		{-1}
 	},
 };
@@ -326,6 +339,7 @@ em_cpu_t neoverse_N2_errata_list = {
 		{2388450, 0x00, 0x00},
 		{2728475, 0x00, 0x02},
 		{2743089, 0x00, 0x02},
+		{2779511, 0x00, 0x02},
 		{-1}
 	},
 };
@@ -343,7 +357,9 @@ em_cpu_t cortex_X2_errata_list = {
 		{2282622, 0x00, 0x21},
 		{2371105, 0x00, 0x21},
 		{2701952, 0x00, 0x21},
+		{2742423, 0x00, 0x21},
 		{2768515, 0x00, 0x21},
+		{2778471, 0x00, 0x21},
 		{-1}
 	},
 };
@@ -354,6 +370,7 @@ em_cpu_t cortex_A510_errata_list = {
 		{1922240, 0x00, 0x00},
 		{2041909, 0x02, 0x02},
 		{2042739, 0x00, 0x02},
+		{2080326, 0x02, 0x02},
 		{2172148, 0x00, 0x10},
 		{2218950, 0x00, 0x10},
 		{2250311, 0x00, 0x10},
@@ -378,7 +395,7 @@ em_cpu_t cortex_X4_errata_list = {
 em_cpu_t cortex_A715_errata_list = {
 	.cpu_pn = 0xD4D,
 	.cpu_errata = {
-		{2701951, 0x00, 0x11},
+		{2561034, 0x10, 0x10},
 		{-1}
 	},
 };
@@ -386,10 +403,19 @@ em_cpu_t cortex_A715_errata_list = {
 em_cpu_t neoverse_V2_errata_list = {
 	.cpu_pn = 0xD4F,
 	.cpu_errata = {
+		{2331132, 0x00, 0x02},
+		{2618597, 0x00, 0x01},
+		{2662553, 0x00, 0x01},
 		{2719103, 0x00, 0x01},
+		{2719103, 0x00, 0x01},
+		{2719105, 0x00, 0x01},
+		{2743011, 0x00, 0x01},
+		{2779510, 0x00, 0x01},
+		{2801372, 0x00, 0x01},
 		{-1}
 	},
 };
+
 
 /*
  * Test function checks for the em_version implemented
@@ -552,25 +578,25 @@ test_result_t test_em_cpu_features(void)
 	}
 	case 0xD44:
 	{
-		VERBOSE("MIDR matches X1 > %x\n", midr_val);
+		VERBOSE("MIDR matches X1 -> %x\n", midr_val);
 		cpu_ptr = &cortex_X1_errata_list;
 		break;
 	}
 	case 0xD0A:
 	{
-		VERBOSE("MIDR matches A75 > %x\n", midr_val);
+		VERBOSE("MIDR matches A75 -> %x\n", midr_val);
 		cpu_ptr = &cortex_A75_errata_list;
 		break;
 	}
 	case 0xD05:
 	{
-		VERBOSE("MIDR matches A55 > %x\n", midr_val);
+		VERBOSE("MIDR matches A55 -> %x\n", midr_val);
 		cpu_ptr = &cortex_A55_errata_list;
 		break;
 	}
 	case 0xD42:
 	{
-		VERBOSE("MIDR matches A78_AE > %x\n", midr_val);
+		VERBOSE("MIDR matches A78_AE -> %x\n", midr_val);
 		cpu_ptr = &cortex_A78_AE_errata_list;
 		break;
 	}

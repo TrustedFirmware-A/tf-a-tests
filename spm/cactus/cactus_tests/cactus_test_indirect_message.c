@@ -31,7 +31,7 @@ CACTUS_CMD_HANDLER(req_msg_send, CACTUS_REQ_MSG_SEND_CMD)
 		ERROR("Failed to send indirect message.\n");
 		return cactus_error_resp(vm_id,
 					 source,
-					 CACTUS_ERROR_TEST);
+					 ffa_error_code(ret));
 	}
 
 	return cactus_success_resp(vm_id, source, 0);

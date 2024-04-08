@@ -65,6 +65,8 @@
                 function="test_ffa_mem_lend_sp_realm_memory_separate_constituent" />
       <testcase name="FF-A partition info get after NWd RX is in realm PAS"
                 function="test_ffa_rxtx_to_realm_pas" />
+      <testcase name="FF-A Indirect message fails if VM RX is realm"
+                function="test_ffa_indirect_message_sp_to_vm_rx_realm_fail" />
   </testsuite>
 
 </testsuites>

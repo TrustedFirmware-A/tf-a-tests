@@ -465,14 +465,21 @@ struct ffa_value ffa_partition_info_get(const struct ffa_uuid uuid)
 	return ffa_service_call(&args);
 }
 
-/* Query SPMD that the rx buffer of the partition can be released */
-struct ffa_value ffa_rx_release(void)
+/* Querying the SPMC to release the rx buffers of the VM ID. */
+struct ffa_value ffa_rx_release_with_id(ffa_id_t vm_id)
 {
 	struct ffa_value args = {
-		.fid = FFA_RX_RELEASE
+		.fid = FFA_RX_RELEASE,
+		.arg1 = (uint64_t)vm_id,
 	};
 
 	return ffa_service_call(&args);
+}
+
+/* Query SPMC that the rx buffer of the partition can be released */
+struct ffa_value ffa_rx_release(void)
+{
+	return ffa_rx_release_with_id(0);
 }
 
 /* Map the RXTX buffer */

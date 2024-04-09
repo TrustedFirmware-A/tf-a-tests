@@ -67,6 +67,8 @@
                 function="test_ffa_rxtx_to_realm_pas" />
       <testcase name="FF-A Indirect message fails if VM RX is realm"
                 function="test_ffa_indirect_message_sp_to_vm_rx_realm_fail" />
+      <testcase name="FF-A Indirect message fails if VM TX is realm"
+                function="test_ffa_indirect_message_vm_to_sp_tx_realm_fail" />
   </testsuite>
 
 </testsuites>

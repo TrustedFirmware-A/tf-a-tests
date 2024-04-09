@@ -872,6 +872,7 @@ struct ffa_value ffa_rx_release(void);
 struct ffa_value ffa_rxtx_map(uintptr_t send, uintptr_t recv, uint32_t pages);
 struct ffa_value ffa_rxtx_unmap_with_id(uint32_t id);
 struct ffa_value ffa_rxtx_unmap(void);
+struct ffa_value ffa_msg_send2_with_id(uint32_t flags, ffa_id_t sender);
 struct ffa_value ffa_msg_send2(uint32_t flags);
 struct ffa_value ffa_mem_donate(uint32_t descriptor_length,
 				uint32_t fragment_length);

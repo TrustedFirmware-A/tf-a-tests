@@ -533,11 +533,11 @@ struct ffa_value ffa_rxtx_unmap_with_id(uint32_t id)
  *  - DENIED: receiver is not in a state to handle the request or doesn't
  *    support indirect messages.
  */
-struct ffa_value ffa_msg_send2(uint32_t flags)
+struct ffa_value ffa_msg_send2_with_id(uint32_t flags, ffa_id_t sender)
 {
 	struct ffa_value args = {
 		.fid = FFA_MSG_SEND2,
-		.arg1 = 0,
+		.arg1 = sender << 16,
 		.arg2 = flags,
 		.arg3 = FFA_PARAM_MBZ,
 		.arg4 = FFA_PARAM_MBZ,
@@ -547,6 +547,11 @@ struct ffa_value ffa_msg_send2(uint32_t flags)
 	};
 
 	return ffa_service_call(&args);
+}
+
+struct ffa_value ffa_msg_send2(uint32_t flags)
+{
+	return ffa_msg_send2_with_id(flags, 0);
 }
 
 /* Donate memory to another partition */

@@ -40,6 +40,7 @@ TESTS_SOURCES	+=							\
 	$(addprefix tftf/tests/runtime_services/secure_service/,	\
 		test_ffa_smccc.c					\
 		test_ffa_smccc_asm.S					\
+		test_spm_context_mgmt.c					\
 	)
 
 TESTS_SOURCES   += lib/extensions/fpu/fpu.c

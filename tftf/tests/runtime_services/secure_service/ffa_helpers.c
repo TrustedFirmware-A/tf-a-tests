@@ -495,15 +495,20 @@ struct ffa_value ffa_rxtx_map(uintptr_t send, uintptr_t recv, uint32_t pages)
 /* Unmap the RXTX buffer allocated by the given FF-A component */
 struct ffa_value ffa_rxtx_unmap(void)
 {
+	return ffa_rxtx_unmap_with_id(0);
+}
+
+struct ffa_value ffa_rxtx_unmap_with_id(uint32_t id)
+{
 	struct ffa_value args = {
 		.fid = FFA_RXTX_UNMAP,
-		.arg1 = FFA_PARAM_MBZ,
+		.arg1 = id << 16,
 		.arg2 = FFA_PARAM_MBZ,
 		.arg3 = FFA_PARAM_MBZ,
 		.arg4 = FFA_PARAM_MBZ,
 		.arg5 = FFA_PARAM_MBZ,
 		.arg6 = FFA_PARAM_MBZ,
-		.arg7 = FFA_PARAM_MBZ
+		.arg7 = FFA_PARAM_MBZ,
 	};
 
 	return ffa_service_call(&args);
@@ -805,4 +810,77 @@ struct ffa_memory_access ffa_memory_access_init(
 		(struct ffa_memory_access_impdef){{0, 0}};
 
 	return access;
+}
+
+/**
+ * Initialises the given `ffa_composite_memory_region` to be used for an
+ * `FFA_RXTX_MAP` forwarding in the case when Hypervisor needs the SPMC to map a
+ * VM's RXTX pair.
+ */
+static void
+ffa_composite_memory_region_init(struct ffa_composite_memory_region *composite,
+				 void *address, uint32_t page_count)
+{
+	composite->page_count = page_count;
+	composite->constituent_count = 1;
+	composite->reserved_0 = 0;
+
+	composite->constituents[0].page_count = page_count;
+	composite->constituents[0].address = (void *)address;
+	composite->constituents[0].reserved = 0;
+}
+
+/**
+ * Initialises the given `ffa_endpoint_rx_tx_descriptor` to be used for an
+ * `FFA_RXTX_MAP` forwarding in the case when Hypervisor needs the SPMC to map a
+ * VM's RXTX pair.
+ *
+ * Each buffer is described by an `ffa_composite_memory_region` containing
+ * one `ffa_memory_region_constituent`.
+ */
+void ffa_endpoint_rxtx_descriptor_init(
+	struct ffa_endpoint_rxtx_descriptor *desc, ffa_id_t endpoint_id,
+	void *rx_address, void *tx_address)
+{
+	desc->endpoint_id = endpoint_id;
+	desc->reserved = 0;
+	desc->pad = 0;
+
+	/*
+	 * RX's composite descriptor is allocated after the enpoint descriptor.
+	 * `sizeof(struct ffa_endpoint_rx_tx_descriptor)` is guaranteed to be
+	 * 16-byte aligned.
+	 */
+	desc->rx_offset = sizeof(struct ffa_endpoint_rxtx_descriptor);
+
+	ffa_composite_memory_region_init(
+		(struct ffa_composite_memory_region *)((uintptr_t)desc +
+						       desc->rx_offset),
+		rx_address, 1);
+
+	/*
+	 * TX's composite descriptor is allocated after the RX descriptor.
+	 * `sizeof(struct ffa_composite_memory_region)`  and
+	 * `sizeof(struct ffa_memory_region_constituent)` are guaranteed to be
+	 * 16-byte aligned in ffa_memory.c.
+	 */
+	desc->tx_offset = desc->rx_offset +
+			  sizeof(struct ffa_composite_memory_region) +
+			  sizeof(struct ffa_memory_region_constituent);
+
+	ffa_composite_memory_region_init(
+		(struct ffa_composite_memory_region *)((uintptr_t)desc +
+						       desc->tx_offset),
+		tx_address, 1);
+}
+
+/**
+ * Mimics a forwarded FFA_RXTX_MAP call from a hypervisor.
+ */
+struct ffa_value ffa_rxtx_map_forward(struct ffa_endpoint_rxtx_descriptor *desc,
+				ffa_id_t endpoint_id,
+				void *rx_address, void *tx_address)
+{
+	ffa_endpoint_rxtx_descriptor_init(desc, endpoint_id, rx_address, tx_address);
+	return ffa_rxtx_map(0, 0, 0);
 }

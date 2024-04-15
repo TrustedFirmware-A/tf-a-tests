@@ -21,24 +21,34 @@
 bool is_ffa_call_error(struct ffa_value ret)
 {
 	if (ffa_func_id(ret) == FFA_ERROR) {
-		VERBOSE("FF-A call returned error (%x): %d\n",
-		      ffa_func_id(ret), ffa_error_code(ret));
+		VERBOSE("FF-A call returned error: %s\n",
+			ffa_error_name(ffa_error_code(ret)));
 		return true;
 	}
 	return false;
 }
 
-bool is_expected_ffa_error(struct ffa_value ret, int32_t error_code)
+bool is_expected_ffa_error(struct ffa_value ret, int32_t expected_error)
 {
-	if (ffa_func_id(ret) == FFA_ERROR &&
-	    ffa_error_code(ret) == error_code) {
-		return true;
+	uint32_t received_func;
+	int32_t received_error;
+
+	received_func = ffa_func_id(ret);
+	if (received_func != FFA_ERROR) {
+		ERROR("Expected FFA_ERROR, got %s instead\n",
+		      ffa_func_name(received_func));
+		return false;
 	}
 
-	ERROR("Expected FFA_ERROR(%x), code: %d, got %x %d\n",
-	      FFA_ERROR, error_code, ffa_func_id(ret), ffa_error_code(ret));
+	received_error = ffa_error_code(ret);
+	if (received_error != expected_error) {
+		ERROR("Expected %s, got %s instead\n",
+		      ffa_error_name(expected_error),
+		      ffa_error_name(received_error));
+		return false;
+	}
 
-	return false;
+	return true;
 }
 
 /**
@@ -53,7 +63,7 @@ bool is_ffa_direct_response(struct ffa_value ret)
 		return true;
 	}
 
-	VERBOSE("%x is not FF-A response.\n", ffa_func_id(ret));
+	VERBOSE("%s is not FF-A response.\n", ffa_func_name(ffa_func_id(ret)));
 	/* To log error in case it is FFA_ERROR*/
 	is_ffa_call_error(ret);
 
@@ -69,7 +79,8 @@ bool is_expected_ffa_return(struct ffa_value ret, uint32_t func_id)
 		return true;
 	}
 
-	VERBOSE("Expecting %x, FF-A return was %x\n", func_id, ffa_func_id(ret));
+	VERBOSE("Expecting %s, FF-A return was %s\n", ffa_func_name(func_id),
+		ffa_func_name(ffa_func_id(ret)));
 
 	return false;
 }
@@ -231,8 +242,8 @@ bool memory_retrieve(struct mailbox_buffers *mb,
 	ret = ffa_mem_retrieve_req(descriptor_size, descriptor_size);
 
 	if (ffa_func_id(ret) != FFA_MEM_RETRIEVE_RESP) {
-		ERROR("%s: couldn't retrieve the memory page. Error: %d\n",
-		      __func__, ffa_error_code(ret));
+		ERROR("%s: couldn't retrieve the memory page. Error: %s\n",
+		      __func__, ffa_error_name(ffa_error_code(ret)));
 		return false;
 	}
 
@@ -417,8 +428,8 @@ bool memory_relinquish(struct ffa_mem_relinquish *m, uint64_t handle,
 	ffa_mem_relinquish_init(m, handle, 0, id);
 	ret = ffa_mem_relinquish();
 	if (ffa_func_id(ret) != FFA_SUCCESS_SMC32) {
-		ERROR("%s failed to relinquish memory! error: %x\n",
-		      __func__, ffa_error_code(ret));
+		ERROR("%s failed to relinquish memory! error: %s\n", __func__,
+		      ffa_error_name(ffa_error_code(ret)));
 		return false;
 	}
 

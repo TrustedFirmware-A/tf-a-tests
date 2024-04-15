@@ -11,7 +11,10 @@
 #include <smccc.h>
 #include <uuid.h>
 
-/* FFA error codes. */
+/**
+ * FFA error codes.
+ * Don't forget to update `ffa_error_name` if you add a new one.
+ */
 #define FFA_ERROR_NOT_SUPPORTED		-1
 #define FFA_ERROR_INVALID_PARAMETER	-2
 #define FFA_ERROR_NO_MEMORY		-3
@@ -21,6 +24,33 @@
 #define FFA_ERROR_RETRY			-7
 #define FFA_ERROR_ABORTED		-8
 #define FFA_ERROR_NO_DATA		-9
+
+/* Return the name of the error code. */
+static inline const char *ffa_error_name(int32_t error)
+{
+	switch (error) {
+	case FFA_ERROR_NOT_SUPPORTED:
+		return "FFA_ERROR_NOT_SUPPORTED";
+	case FFA_ERROR_INVALID_PARAMETER:
+		return "FFA_ERROR_INVALID_PARAMETER";
+	case FFA_ERROR_NO_MEMORY:
+		return "FFA_ERROR_NO_MEMORY";
+	case FFA_ERROR_BUSY:
+		return "FFA_ERROR_BUSY";
+	case FFA_ERROR_INTERRUPTED:
+		return "FFA_ERROR_INTERRUPTED";
+	case FFA_ERROR_DENIED:
+		return "FFA_ERROR_DENIED";
+	case FFA_ERROR_RETRY:
+		return "FFA_ERROR_RETRY";
+	case FFA_ERROR_ABORTED:
+		return "FFA_ERROR_ABORTED";
+	case FFA_ERROR_NO_DATA:
+		return "FFA_ERROR_NO_DATA";
+	default:
+		return "UNKNOWN";
+	}
+}
 
 /* The macros below are used to identify FFA calls from the SMC function ID */
 #define FFA_FNUM_MIN_VALUE	U(0x60)
@@ -61,7 +91,10 @@
 		 (OEN_STD_START << FUNCID_OEN_SHIFT) |	\
 		 ((func_num) << FUNCID_NUM_SHIFT))
 
-/* FFA function numbers */
+/**
+ * FFA function numbers.
+ * Don't forget to update `ffa_func_name` if you add a new one.
+ */
 #define FFA_FNUM_ERROR				U(0x60)
 #define FFA_FNUM_SUCCESS			U(0x61)
 #define FFA_FNUM_INTERRUPT			U(0x62)
@@ -176,6 +209,103 @@
 
 /* Implementation defined SMC64 FIDs */
 #define FFA_CONSOLE_LOG_SMC64	FFA_FID(SMC_64, FFA_FNUM_CONSOLE_LOG)
+
+static inline const char *ffa_func_name(uint32_t func)
+{
+	switch (func) {
+	case FFA_ERROR:
+		return "FFA_ERROR";
+	case FFA_SUCCESS_SMC32:
+		return "FFA_SUCCESS_SMC32";
+	case FFA_INTERRUPT:
+		return "FFA_INTERRUPT";
+	case FFA_VERSION:
+		return "FFA_VERSION";
+	case FFA_FEATURES:
+		return "FFA_FEATURES";
+	case FFA_RX_RELEASE:
+		return "FFA_RX_RELEASE";
+	case FFA_RXTX_MAP_SMC32:
+		return "FFA_RXTX_MAP_SMC32";
+	case FFA_RXTX_UNMAP:
+		return "FFA_RXTX_UNMAP";
+	case FFA_PARTITION_INFO_GET:
+		return "FFA_PARTITION_INFO_GET";
+	case FFA_ID_GET:
+		return "FFA_ID_GET";
+	case FFA_MSG_POLL:
+		return "FFA_MSG_POLL";
+	case FFA_MSG_WAIT:
+		return "FFA_MSG_WAIT";
+	case FFA_MSG_YIELD:
+		return "FFA_MSG_YIELD";
+	case FFA_RUN:
+		return "FFA_RUN";
+	case FFA_MSG_SEND:
+		return "FFA_MSG_SEND";
+	case FFA_MSG_SEND_DIRECT_RESP_SMC32:
+		return "FFA_MSG_SEND_DIRECT_RESP_SMC32";
+	case FFA_MEM_DONATE_SMC32:
+		return "FFA_MEM_DONATE_SMC32";
+	case FFA_MEM_LEND_SMC32:
+		return "FFA_MEM_LEND_SMC32";
+	case FFA_MEM_SHARE_SMC32:
+		return "FFA_MEM_SHARE_SMC32";
+	case FFA_MEM_RETRIEVE_REQ_SMC32:
+		return "FFA_MEM_RETRIEVE_REQ_SMC32";
+	case FFA_MEM_RETRIEVE_RESP:
+		return "FFA_MEM_RETRIEVE_RESP";
+	case FFA_MEM_RELINQUISH:
+		return "FFA_MEM_RELINQUISH";
+	case FFA_MEM_RECLAIM:
+		return "FFA_MEM_RECLAIM";
+	case FFA_NOTIFICATION_BITMAP_CREATE:
+		return "FFA_NOTIFICATION_BITMAP_CREATE";
+	case FFA_NOTIFICATION_BITMAP_DESTROY:
+		return "FFA_NOTIFICATION_BITMAP_DESTROY";
+	case FFA_NOTIFICATION_BIND:
+		return "FFA_NOTIFICATION_BIND";
+	case FFA_NOTIFICATION_UNBIND:
+		return "FFA_NOTIFICATION_UNBIND";
+	case FFA_NOTIFICATION_SET:
+		return "FFA_NOTIFICATION_SET";
+	case FFA_NOTIFICATION_GET:
+		return "FFA_NOTIFICATION_GET";
+	case FFA_NOTIFICATION_INFO_GET:
+		return "FFA_NOTIFICATION_INFO_GET";
+	case FFA_SPM_ID_GET:
+		return "FFA_SPM_ID_GET";
+	case FFA_SUCCESS_SMC64:
+		return "FFA_SUCCESS_SMC64";
+	case FFA_RXTX_MAP_SMC64:
+		return "FFA_RXTX_MAP_SMC64";
+	case FFA_MSG_SEND_DIRECT_REQ_SMC64:
+		return "FFA_MSG_SEND_DIRECT_REQ_SMC64";
+	case FFA_MSG_SEND_DIRECT_RESP_SMC64:
+		return "FFA_MSG_SEND_DIRECT_RESP_SMC64";
+	case FFA_MEM_DONATE_SMC64:
+		return "FFA_MEM_DONATE_SMC64";
+	case FFA_MEM_LEND_SMC64:
+		return "FFA_MEM_LEND_SMC64";
+	case FFA_MEM_SHARE_SMC64:
+		return "FFA_MEM_SHARE_SMC64";
+	case FFA_MEM_RETRIEVE_REQ_SMC64:
+		return "FFA_MEM_RETRIEVE_REQ_SMC64";
+	case FFA_SECONDARY_EP_REGISTER_SMC64:
+		return "FFA_SECONDARY_EP_REGISTER_SMC64";
+	case FFA_NOTIFICATION_INFO_GET_SMC64:
+		return "FFA_NOTIFICATION_INFO_GET_SMC64";
+	case FFA_FEATURES_MEM_RETRIEVE_REQ_NS_SUPPORT:
+		return "FFA_FEATURES_MEM_RETRIEVE_REQ_NS_SUPPORT";
+	case FFA_PARTITION_INFO_GET_REGS_SMC64:
+		return "FFA_PARTITION_INFO_GET_REGS_SMC64";
+	case FFA_CONSOLE_LOG_SMC64:
+		return "FFA_CONSOLE_LOG_SMC64";
+	default:
+		return "UNKNOWN";
+	}
+}
+
 /*
  * Reserve a special value for traffic targeted to the Hypervisor or SPM.
  */

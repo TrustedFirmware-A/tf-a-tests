@@ -318,10 +318,10 @@ void __dead2 cactus_main(bool primary_cold_boot,
 
 	/* FFA_SECONDARY_EP_REGISTER interface is not supported for UP SP. */
 	if (ffa_id == (SPM_VM_ID_FIRST + 2)) {
-		expect(ffa_func_id(ret), FFA_ERROR);
-		expect(ffa_error_code(ret), FFA_ERROR_NOT_SUPPORTED);
+		EXPECT(ffa_func_id(ret), FFA_ERROR);
+		EXPECT(ffa_error_code(ret), FFA_ERROR_NOT_SUPPORTED);
 	} else {
-		expect(ffa_func_id(ret), FFA_SUCCESS_SMC32);
+		EXPECT(ffa_func_id(ret), FFA_SUCCESS_SMC32);
 	}
 
 	discover_managed_exit_interrupt_id();

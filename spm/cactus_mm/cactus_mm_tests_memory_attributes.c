@@ -105,12 +105,12 @@ static void mem_attr_changes_unittest(uintptr_t addr, int pages_count)
 	new_attr = mem_access_perm(SP_MEMORY_ATTRIBUTES_NON_EXEC, SP_MEMORY_ATTRIBUTES_ACCESS_RW);
 
 	ret = request_mem_attr_changes(addr, pages_count, new_attr);
-	expect(ret, SPM_SUCCESS);
+	EXPECT(ret, SPM_SUCCESS);
 	printf("Successfully changed memory attributes\n");
 
 	/* The attributes should be the ones we have just written. */
 	ret = request_get_mem_attr(addr);
-	expect(ret, new_attr);
+	EXPECT(ret, new_attr);
 
 	/* If it worked, we should be able to write to this memory now! */
 	for (unsigned char *data = (unsigned char *) addr;
@@ -122,12 +122,12 @@ static void mem_attr_changes_unittest(uintptr_t addr, int pages_count)
 
 	/* Let's revert back to the original attributes for the next test */
 	ret = request_mem_attr_changes(addr, pages_count, old_attr);
-	expect(ret, SPM_SUCCESS);
+	EXPECT(ret, SPM_SUCCESS);
 	printf("Successfully restored the old attributes\n");
 
 	/* The attributes should be the original ones again. */
 	ret = request_get_mem_attr(addr);
-	expect(ret, old_attr);
+	EXPECT(ret, old_attr);
 
 	announce_test_end(test_desc);
 }
@@ -157,7 +157,7 @@ void mem_attr_changes_tests(const secure_partition_boot_info_t *boot_info)
 	announce_test_start(test_desc1);
 	attributes = mem_access_perm(SP_MEMORY_ATTRIBUTES_EXEC, SP_MEMORY_ATTRIBUTES_ACCESS_RW);
 	ret = request_mem_attr_changes(CACTUS_RWDATA_START, 1, attributes);
-	expect(ret, SPM_INVALID_PARAMETER);
+	EXPECT(ret, SPM_INVALID_PARAMETER);
 	announce_test_end(test_desc1);
 
 	const char *test_desc2 = "Size == 0";
@@ -165,7 +165,7 @@ void mem_attr_changes_tests(const secure_partition_boot_info_t *boot_info)
 	announce_test_start(test_desc2);
 	attributes = mem_access_perm(SP_MEMORY_ATTRIBUTES_NON_EXEC, SP_MEMORY_ATTRIBUTES_ACCESS_RW);
 	ret = request_mem_attr_changes(CACTUS_RWDATA_START, 0, attributes);
-	expect(ret, SPM_INVALID_PARAMETER);
+	EXPECT(ret, SPM_INVALID_PARAMETER);
 	announce_test_end(test_desc2);
 
 	const char *test_desc3 = "Unaligned address";
@@ -175,7 +175,7 @@ void mem_attr_changes_tests(const secure_partition_boot_info_t *boot_info)
 	/* Choose an address not aligned to a page boundary. */
 	addr = cactus_tests_start + 5;
 	ret = request_mem_attr_changes(addr, 1, attributes);
-	expect(ret, SPM_INVALID_PARAMETER);
+	EXPECT(ret, SPM_INVALID_PARAMETER);
 	announce_test_end(test_desc3);
 
 	const char *test_desc4 = "Unmapped memory region";
@@ -184,7 +184,7 @@ void mem_attr_changes_tests(const secure_partition_boot_info_t *boot_info)
 	addr = boot_info->sp_mem_limit + 2 * PAGE_SIZE;
 	attributes = mem_access_perm(SP_MEMORY_ATTRIBUTES_NON_EXEC, SP_MEMORY_ATTRIBUTES_ACCESS_RW);
 	ret = request_mem_attr_changes(addr, 3, attributes);
-	expect(ret, SPM_INVALID_PARAMETER);
+	EXPECT(ret, SPM_INVALID_PARAMETER);
 	announce_test_end(test_desc4);
 
 	const char *test_desc5 = "Partially unmapped memory region";
@@ -193,7 +193,7 @@ void mem_attr_changes_tests(const secure_partition_boot_info_t *boot_info)
 	addr = boot_info->sp_mem_base - 2 * PAGE_SIZE;
 	attributes = mem_access_perm(SP_MEMORY_ATTRIBUTES_NON_EXEC, SP_MEMORY_ATTRIBUTES_ACCESS_RW);
 	ret = request_mem_attr_changes(addr, 6, attributes);
-	expect(ret, SPM_INVALID_PARAMETER);
+	EXPECT(ret, SPM_INVALID_PARAMETER);
 	announce_test_end(test_desc5);
 
 	const char *test_desc6 = "Memory region mapped with the wrong granularity";
@@ -208,7 +208,7 @@ void mem_attr_changes_tests(const secure_partition_boot_info_t *boot_info)
 	addr = ((uintptr_t)PLAT_ARM_UART_BASE + 0x200000ULL) & ~(0x200000ULL - 1ULL);
 	attributes = mem_access_perm(SP_MEMORY_ATTRIBUTES_NON_EXEC, SP_MEMORY_ATTRIBUTES_ACCESS_RW);
 	ret = request_mem_attr_changes(addr, 1, attributes);
-	expect(ret, SPM_INVALID_PARAMETER);
+	EXPECT(ret, SPM_INVALID_PARAMETER);
 	announce_test_end(test_desc6);
 
 	const char *test_desc7 = "Try some valid memory change requests";

@@ -15,25 +15,25 @@
 #define SKIP_TEST_IF_FFA_VERSION_LESS_THAN(major, minor)			\
 	do {									\
 		struct ffa_value ret = ffa_version(				\
-					MAKE_FFA_VERSION(major, minor));	\
-		uint32_t version = ret.fid;					\
+					make_ffa_version(major, minor));	\
+		enum ffa_version version = ret.fid;				\
 										\
 		if (version == FFA_ERROR_NOT_SUPPORTED) {			\
 			tftf_testcase_printf("FFA_VERSION not supported.\n");	\
 			return TEST_RESULT_SKIPPED;				\
 		}								\
 										\
-		if ((version & FFA_VERSION_BIT31_MASK) != 0U) {			\
+		if (!ffa_version_is_valid(version)) {			\
 			tftf_testcase_printf("FFA_VERSION bad response: %x\n",	\
 					version);				\
 			return TEST_RESULT_FAIL;				\
 		}								\
 										\
-		if (version < MAKE_FFA_VERSION(major, minor)) {			\
+		if (version < make_ffa_version(major, minor)) {			\
 			tftf_testcase_printf("FFA_VERSION returned %u.%u\n"	\
 					"The required version is %u.%u\n",	\
-					version >> FFA_VERSION_MAJOR_SHIFT,	\
-					version & FFA_VERSION_MINOR_MASK,	\
+					ffa_version_get_major(version), 	\
+					ffa_version_get_minor(version), 	\
 					major, minor);				\
 			return TEST_RESULT_SKIPPED;				\
 		}								\

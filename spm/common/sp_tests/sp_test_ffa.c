@@ -86,11 +86,11 @@ static void ffa_features_test(void)
 		get_ffa_feature_test_target(&func_id_targets);
 	const struct ffa_features_test feature_id_targets[] = {
 		{"FFA_FEATURE_MEI", FFA_FEATURE_MEI, FFA_SUCCESS_SMC32, 0,
-			MAKE_FFA_VERSION(1, 1)},
+			FFA_VERSION_1_1},
 		{"FFA_FEATURE_SRI", FFA_FEATURE_SRI, FFA_ERROR, 0,
-			MAKE_FFA_VERSION(1, 1)},
+			FFA_VERSION_1_1},
 		{"FFA_FEATURE_NPI", FFA_FEATURE_NPI, FFA_SUCCESS_SMC32, 0,
-			MAKE_FFA_VERSION(1, 1)},
+			FFA_VERSION_1_1},
 	};
 
 	INFO("Test FFA_FEATURES.\n");
@@ -117,7 +117,7 @@ static void ffa_partition_info_get_regs_test(void)
 	struct ffa_value ret = { 0 };
 
 	VERBOSE("FF-A Partition Info regs interface tests\n");
-	ret = ffa_version(MAKE_FFA_VERSION(1, 2));
+	ret = ffa_version(FFA_VERSION_1_2);
 	uint32_t version = ret.fid;
 
 	if (version == FFA_ERROR_NOT_SUPPORTED) {
@@ -197,26 +197,24 @@ static void ffa_partition_info_get_test(struct mailbox_buffers *mb)
 
 void ffa_version_test(void)
 {
-	struct ffa_value ret = ffa_version(MAKE_FFA_VERSION(FFA_MAJOR,
-							    FFA_MINOR));
+	struct ffa_value ret = ffa_version(FFA_VERSION_COMPILED);
 
 	spm_version = (uint32_t)ret.fid;
+	EXPECT(spm_version, FFA_VERSION_COMPILED);
 
-	bool ffa_version_compatible =
-		((spm_version >> FFA_VERSION_MAJOR_SHIFT) == FFA_MAJOR &&
-		 (spm_version & FFA_VERSION_MINOR_MASK) >= FFA_MINOR);
+	bool compatible = ffa_versions_are_compatible(spm_version, FFA_VERSION_COMPILED);
 
 	INFO("Test FFA_VERSION. Return %u.%u; Compatible: %i\n",
-		spm_version >> FFA_VERSION_MAJOR_SHIFT,
-		spm_version & FFA_VERSION_MINOR_MASK,
-		(int)ffa_version_compatible);
+		ffa_version_get_major(spm_version),
+		ffa_version_get_minor(spm_version),
+		(int)compatible);
 
-	EXPECT((int)ffa_version_compatible, (int)true);
+	EXPECT((int)compatible, (int)true);
 }
 
 void ffa_spm_id_get_test(void)
 {
-	if (spm_version >= MAKE_FFA_VERSION(1, 1)) {
+	if (spm_version >= FFA_VERSION_1_1) {
 		struct ffa_value ret = ffa_spm_id_get();
 
 		EXPECT(ffa_func_id(ret), FFA_SUCCESS_SMC32);

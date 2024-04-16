@@ -79,7 +79,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 /*
  * Using FFA version expected for SPM.
  */
-#define SPM_VERSION MAKE_FFA_VERSION(FFA_VERSION_MAJOR, FFA_VERSION_MINOR)
+#define SPM_VERSION FFA_VERSION_COMPILED
 
 /******************************************************************************
  * FF-A Features ABI Tests
@@ -90,11 +90,11 @@ test_result_t test_ffa_features(void)
 	const struct ffa_features_test *func_ids_target;
 	const struct ffa_features_test feature_ids_target[] = {
 		{"FFA_FEATURE_MEI", FFA_FEATURE_MEI, FFA_ERROR, 0,
-			MAKE_FFA_VERSION(1, 1)},
+			FFA_VERSION_1_1},
 		{"FFA_FEATURE_SRI", FFA_FEATURE_SRI, FFA_SUCCESS_SMC32, 0,
-			MAKE_FFA_VERSION(1, 1)},
+			FFA_VERSION_1_1},
 		{"FFA_FEATURE_NPI", FFA_FEATURE_NPI, FFA_ERROR, 0,
-			MAKE_FFA_VERSION(1, 1)},
+			FFA_VERSION_1_1},
 	};
 	unsigned int test_target_size =
 		get_ffa_feature_test_target(&func_ids_target);
@@ -214,7 +214,7 @@ test_result_t test_ffa_version_equal(void)
  */
 test_result_t test_ffa_version_bit31(void)
 {
-	return test_ffa_version(FFA_VERSION_BIT31_MASK | SPM_VERSION,
+	return test_ffa_version(FFA_VERSION_MBZ_BIT | SPM_VERSION,
 				FFA_ERROR_NOT_SUPPORTED);
 }
 
@@ -223,7 +223,7 @@ test_result_t test_ffa_version_bit31(void)
  */
 test_result_t test_ffa_version_bigger(void)
 {
-	return test_ffa_version(MAKE_FFA_VERSION(FFA_VERSION_MAJOR + 1, 0),
+	return test_ffa_version(make_ffa_version(2, 0),
 				FFA_ERROR_NOT_SUPPORTED);
 }
 
@@ -232,7 +232,7 @@ test_result_t test_ffa_version_bigger(void)
  */
 test_result_t test_ffa_version_smaller(void)
 {
-	return test_ffa_version(MAKE_FFA_VERSION(0, 9),
+	return test_ffa_version(make_ffa_version(0, 9),
 				FFA_ERROR_NOT_SUPPORTED);
 }
 

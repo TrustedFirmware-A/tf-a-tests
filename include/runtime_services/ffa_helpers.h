@@ -13,6 +13,61 @@
 
 #include <xlat_tables_defs.h>
 
+/* FFA_VERSION helpers */
+/**
+ * The version number of a Firmware Framework implementation is a 31-bit
+ * unsigned integer, with the upper 15 bits denoting the major revision,
+ * and the lower 16 bits denoting the minor revision.
+ */
+enum ffa_version {
+	FFA_VERSION_1_0 = 0x10000,
+	FFA_VERSION_1_1 = 0x10001,
+	FFA_VERSION_1_2 = 0x10002,
+	FFA_VERSION_COMPILED = FFA_VERSION_1_2,
+};
+
+#define FFA_VERSION_MBZ_BIT (1U << 31U)
+#define FFA_VERSION_MAJOR_SHIFT (16U)
+#define FFA_VERSION_MAJOR_MASK (0x7FFFU)
+#define FFA_VERSION_MINOR_SHIFT (0U)
+#define FFA_VERSION_MINOR_MASK (0xFFFFU)
+
+/** Return true if the version is valid (i.e. bit 31 is 0). */
+static inline bool ffa_version_is_valid(uint32_t version)
+{
+	return (version & FFA_VERSION_MBZ_BIT) == 0;
+}
+
+/** Construct a version from a pair of major and minor components. */
+static inline enum ffa_version make_ffa_version(uint16_t major, uint16_t minor)
+{
+	return (enum ffa_version)((major << FFA_VERSION_MAJOR_SHIFT) |
+				  (minor << FFA_VERSION_MINOR_SHIFT));
+}
+
+/** Get the major component of the version. */
+static inline uint16_t ffa_version_get_major(enum ffa_version version)
+{
+	return (version >> FFA_VERSION_MAJOR_SHIFT) & FFA_VERSION_MAJOR_MASK;
+}
+
+/** Get the minor component of the version. */
+static inline uint16_t ffa_version_get_minor(enum ffa_version version)
+{
+	return (version >> FFA_VERSION_MINOR_SHIFT) & FFA_VERSION_MINOR_MASK;
+}
+
+/**
+ * Check major versions are equal and the minor version of the caller is
+ * less than or equal to the minor version of the callee.
+ */
+static inline bool ffa_versions_are_compatible(enum ffa_version caller,
+					       enum ffa_version callee)
+{
+	return ffa_version_get_major(caller) == ffa_version_get_major(callee) &&
+	       ffa_version_get_minor(caller) <= ffa_version_get_minor(callee);
+}
+
 /* This error code must be different to the ones used by FFA */
 #define FFA_TFTF_ERROR		-42
 

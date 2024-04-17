@@ -65,14 +65,8 @@ test_result_t test_notifications_retrieve_int_ids(void)
 	}
 
 	ret = ffa_features(FFA_FEATURE_NPI);
-	if (is_ffa_call_error(ret) ||
-	    ffa_feature_intid(ret) != NOTIFICATION_PENDING_INTERRUPT_INTID) {
-		ERROR("Failed to retrieved NPI (exp: %u, got: %u)\n",
-		      NOTIFICATION_PENDING_INTERRUPT_INTID,
-		      ffa_feature_intid(ret));
-
+	if (!is_expected_ffa_error(ret, FFA_ERROR_NOT_SUPPORTED))
 		return TEST_RESULT_FAIL;
-	}
 
 	ret = ffa_features(FFA_FEATURE_SRI);
 	if (is_ffa_call_error(ret) ||
@@ -85,14 +79,8 @@ test_result_t test_notifications_retrieve_int_ids(void)
 	}
 
 	ret = ffa_features(FFA_FEATURE_MEI);
-	if (is_ffa_call_error(ret) ||
-	    ffa_feature_intid(ret) != MANAGED_EXIT_INTERRUPT_ID) {
-		ERROR("Failed to retrieved MEI (exp: %u, got: %u)\n",
-		      MANAGED_EXIT_INTERRUPT_ID,
-		      ffa_feature_intid(ret));
-
+	if (!is_expected_ffa_error(ret, FFA_ERROR_NOT_SUPPORTED))
 		return TEST_RESULT_FAIL;
-	}
 
 	return TEST_RESULT_SUCCESS;
 }

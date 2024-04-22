@@ -235,4 +235,10 @@
                function="test_ffa_notifications_sp_signals_vm_per_vcpu" />
   </testsuite>
 
+  <testsuite name="FF-A Indirect Messaging"
+             description="Test FF-A Indirect messaging" >
+  <testcase name="FF-A Indirect Message from SP to VM"
+               function="test_ffa_indirect_message_sp_to_vm" />
+  </testsuite>
+
 </testsuites>

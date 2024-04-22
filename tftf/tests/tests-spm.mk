@@ -14,6 +14,7 @@ TESTS_SOURCES	+=							\
 		spm_common.c						\
 		spm_test_helpers.c					\
 		test_ffa_direct_messaging.c				\
+		test_ffa_indirect_messaging.c				\
 		test_ffa_interrupts.c					\
 		test_ffa_secure_interrupts.c				\
 		test_ffa_memory_sharing.c				\

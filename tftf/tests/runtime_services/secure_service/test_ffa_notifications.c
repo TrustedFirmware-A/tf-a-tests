@@ -1280,6 +1280,10 @@ test_result_t test_ffa_notifications_sp_signals_vm_per_vcpu(void)
 		result = TEST_RESULT_FAIL;
 	}
 
+	if (!notifications_bitmap_destroy(per_vcpu_receiver)) {
+		result = TEST_RESULT_FAIL;
+	}
+
 	return result;
 }
 

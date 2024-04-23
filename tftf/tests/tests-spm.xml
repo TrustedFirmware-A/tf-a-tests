@@ -11,6 +11,8 @@
              description="Test FF-A Setup and Discovery interfaces" >
      <testcase name="Test FFA_FEATURES"
                function="test_ffa_features" />
+     <testcase name="Test FFA_FEATURES (FFA_RXTX_MAP)"
+               function="test_ffa_features_rxtx_map" />
 
      <testcase name="Same FFA version as SPM"
                function="test_ffa_version_equal" />

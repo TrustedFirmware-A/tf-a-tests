@@ -1252,3 +1252,85 @@ test_result_t test_ffa_mem_share_tx_realm_expect_fail(void)
 
 	return TEST_RESULT_SUCCESS;
 }
+
+/**
+ * Base helper to prepare for tests that need to retrieve memory from the SPMC
+ * from a VM endpoint.
+ */
+static ffa_memory_handle_t base_memory_send_for_nwd_retrieve(struct mailbox_buffers *mb,
+							     struct ffa_memory_access receivers[],
+							     size_t receivers_count)
+{
+	ffa_memory_handle_t handle;
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)four_share_pages, 4, 0},
+		{(void *)share_page, 1, 0}
+	};
+	const uint32_t constituents_count = ARRAY_SIZE(constituents);
+	struct ffa_value ret;
+
+	/* Prepare the composite offset for the comparison. */
+	for (uint32_t i = 0; i < receivers_count; i++) {
+		receivers[i].composite_memory_region_offset =
+			sizeof(struct ffa_memory_region) +
+			receivers_count *
+				sizeof(struct ffa_memory_access);
+	}
+
+	handle = memory_init_and_send(mb->send, MAILBOX_SIZE, SENDER, receivers,
+				      receivers_count, constituents,
+				      constituents_count, FFA_MEM_SHARE_SMC64, &ret);
+	return handle;
+}
+
+/**
+ * Test FF-A memory retrieve request from a VM into the SPMC.
+ * TFTF invokes all the FF-A calls expected from an hypervisor into the
+ * SPMC, even those that would be initiated by a VM, and then forwarded
+ * to the SPMC by the Hypervisor.
+ */
+test_result_t test_ffa_memory_retrieve_request_from_vm(void)
+{
+	struct mailbox_buffers mb;
+	struct ffa_memory_region *m;
+	struct ffa_memory_access receivers[2] = {
+		ffa_memory_access_init_permissions_from_mem_func(VM_ID(1),
+								 FFA_MEM_SHARE_SMC64),
+		ffa_memory_access_init_permissions_from_mem_func(SP_ID(2),
+								 FFA_MEM_SHARE_SMC64),
+	};
+	ffa_memory_handle_t handle;
+
+	GET_TFTF_MAILBOX(mb);
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	handle = base_memory_send_for_nwd_retrieve(&mb, receivers, ARRAY_SIZE(receivers));
+
+	if (handle == FFA_MEMORY_HANDLE_INVALID) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!memory_retrieve(&mb, &m, handle, 0, receivers, ARRAY_SIZE(receivers), 0)) {
+		ERROR("Failed to retrieve the memory.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	ffa_rx_release();
+
+	if (!memory_relinquish(mb.send, handle, VM_ID(1))) {
+		ERROR("%s: Failed to relinquish.\n", __func__);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_ffa_call_error(ffa_mem_reclaim(handle, 0))) {
+		ERROR("%s: Failed to reclaim memory.\n", __func__);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}

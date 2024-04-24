@@ -43,6 +43,12 @@
                 function="s_memory_cannot_be_accessed_in_ns" />
   </testsuite>
 
+  <testsuite name="SP exceptions"
+             description="SP exceptions" >
+     <testcase name="Access from a SP to a Realm region"
+               function="rl_memory_cannot_be_accessed_in_s" />
+  </testsuite>
+
   <testsuite name="Invalid memory access with RME extension"
     description="Invalid memory access with RME extension">
       <testcase name="Access Realm memory from NS world"

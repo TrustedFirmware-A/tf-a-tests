@@ -70,14 +70,6 @@
                function="test_smccc_ext_callee_preserved" />
   </testsuite>
 
-  <testsuite name="SP exceptions"
-             description="SP exceptions" >
-
-     <testcase name="Access from a SP to a Realm region"
-               function="rl_memory_cannot_be_accessed_in_s" />
-
-  </testsuite>
-
   <testsuite name="FF-A Direct messaging"
              description="Test FF-A Direct messaging" >
 

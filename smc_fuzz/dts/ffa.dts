@@ -1,0 +1,67 @@
+/*
+ * Copyright (c) 2025, Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/dts-v1/;
+
+/ {
+
+	ffa {
+		bias = <30>;
+		ffa_id_get {
+			bias = <30>;
+			functionname = "ffa_id_get_funcid";
+		};
+		ffa_partition_info_get_regs {
+			bias = <30>;
+			functionname = "ffa_partition_info_get_regs_funcid";
+		};
+		ffa_version {
+			bias = <30>;
+			functionname = "ffa_version_funcid";
+		};
+		ffa_msg_send_direct_req_64 {
+			bias = <30>;
+			functionname = "ffa_msg_send_direct_req_64_funcid";
+		};
+		ffa_msg_send_direct_resp_64 {
+			bias = <30>;
+			functionname = "ffa_msg_send_direct_resp_64_funcid";
+		};
+		ffa_msg_send_direct_req_32 {
+			bias = <30>;
+			functionname = "ffa_msg_send_direct_req_32_funcid";
+		};
+		ffa_msg_send_direct_resp_32 {
+			bias = <30>;
+			functionname = "ffa_msg_send_direct_resp_32_funcid";
+		};
+		ffa_features_feat_id {
+			bias = <15>;
+			functionname = "ffa_features_feat_id_funcid";
+		};
+		ffa_features_func_id {
+			bias = <15>;
+			functionname = "ffa_features_func_id_funcid";
+		};
+		ffa_run {
+			bias = <30>;
+			functionname = "ffa_run_funcid";
+		};
+		ffa_notification_bitmap_create {
+			bias = <30>;
+			functionname = "ffa_notification_bitmap_create_funcid";
+		};
+		ffa_notification_bind {
+			bias = <30>;
+			functionname = "ffa_notification_bind_funcid";
+		};
+		ffa_notification_bitmap_destroy {
+			bias = <30>;
+			functionname = "ffa_notification_bitmap_destroy_funcid";
+		};
+	};
+
+};

@@ -80,12 +80,19 @@ TESTS_SOURCES	+=								\
 	)
 
 TESTS_SOURCES	+=							\
+	$(addprefix tftf/tests/runtime_services/secure_service/,	\
+		${ARCH}/ffa_arch_helpers.S				\
+		ffa_helpers.c			\
+		spm_common.c			\
+	)
+TESTS_SOURCES	+=							\
 	$(addprefix smc_fuzz/src/,					\
 		randsmcmod.c						\
 		smcmalloc.c						\
 		fifo3d.c						\
 		runtestfunction_helpers.c				\
 		sdei_fuzz_helper.c					\
+		ffa_fuzz_helper.c					\
 		tsp_fuzz_helper.c					\
 		nfifo.c							\
 		constraint.c						\

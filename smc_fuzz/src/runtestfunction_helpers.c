@@ -5,12 +5,12 @@
  */
 
 #include <arg_struct_def.h>
+#include <ffa_fuzz_helper.h>
 #include <sdei_fuzz_helper.h>
 #include "smcmalloc.h"
 #include <tsp_fuzz_helper.h>
 
 int cntid = 0;
-
 #include <vendor_fuzz_helper.h>
 
 /*
@@ -22,6 +22,9 @@ void runtestfunction(int funcid, struct memmod *mmod)
 	inrange = inrange && (funcid != EXCLUDE_FUNCID);
 #ifdef SDEI_INCLUDE
 	run_sdei_fuzz(funcid, mmod, inrange, cntid);
+#endif
+#ifdef FFA_INCLUDE
+	run_ffa_fuzz(funcid, mmod);
 #endif
 	run_tsp_fuzz(funcid);
 #ifdef VEN_INCLUDE

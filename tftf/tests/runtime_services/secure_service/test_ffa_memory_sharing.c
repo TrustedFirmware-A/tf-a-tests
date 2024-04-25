@@ -1334,3 +1334,89 @@ test_result_t test_ffa_memory_retrieve_request_from_vm(void)
 
 	return TEST_RESULT_SUCCESS;
 }
+
+/**
+ * Test that a retrieve request from the hypervisor would fail if the TX buffer
+ * was in realm state. This is recreating the situation in which the Hyp doesn't
+ * track the state of the operation, and it is forwarding the retrieve request
+ * to the SPMC.
+ */
+test_result_t test_ffa_memory_retrieve_request_fail_tx_realm(void)
+{
+	struct mailbox_buffers mb;
+	struct ffa_memory_access receivers[2] = {
+		ffa_memory_access_init_permissions_from_mem_func(VM_ID(1),
+								 FFA_MEM_SHARE_SMC64),
+		ffa_memory_access_init_permissions_from_mem_func(SP_ID(2),
+								 FFA_MEM_SHARE_SMC64),
+	};
+	ffa_memory_handle_t handle;
+	u_register_t ret_rmm;
+	struct ffa_value ret;
+	size_t descriptor_size;
+
+	GET_TFTF_MAILBOX(mb);
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	handle = base_memory_send_for_nwd_retrieve(&mb, receivers, ARRAY_SIZE(receivers));
+
+	if (handle == FFA_MEMORY_HANDLE_INVALID) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Prepare the descriptor before delegating the TX buffer. */
+	descriptor_size = ffa_memory_retrieve_request_init(
+		mb.send, handle, SENDER, receivers, ARRAY_SIZE(receivers), 0, 0,
+		FFA_MEMORY_NORMAL_MEM, FFA_MEMORY_CACHE_WRITE_BACK,
+		FFA_MEMORY_INNER_SHAREABLE);
+
+	/* Delegate TX buffer to realm. */
+	ret_rmm = host_rmi_granule_delegate((u_register_t)mb.send);
+
+	if (ret_rmm != 0UL) {
+		ERROR("Delegate operation returns %#lx for address %p\n",
+		      ret_rmm, mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = ffa_mem_retrieve_req(descriptor_size, descriptor_size);
+
+	if (!is_expected_ffa_error(ret, FFA_ERROR_ABORTED)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Undelegate to reestablish the same security state for PAS. */
+	ret_rmm = host_rmi_granule_undelegate((u_register_t)mb.send);
+
+	if (ret_rmm != 0UL) {
+		ERROR("Undelegate operation returns %#lx for address %p\n",
+		      ret_rmm, mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Retry the memory retrieve request, but this time expect success. */
+	ret = ffa_mem_retrieve_req(descriptor_size, descriptor_size);
+
+	if (is_ffa_call_error(ret)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	ffa_rx_release();
+
+	if (!memory_relinquish(mb.send, handle, VM_ID(1))) {
+		ERROR("%s: Failed to relinquish.\n", __func__);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_ffa_call_error(ffa_mem_reclaim(handle, 0))) {
+		ERROR("%s: Failed to reclaim memory.\n", __func__);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}

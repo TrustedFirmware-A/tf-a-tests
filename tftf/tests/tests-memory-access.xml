@@ -75,6 +75,10 @@
                 function="test_ffa_memory_retrieve_request_fail_rx_realm" />
       <testcase name="FF-A Memory Retrieve, NWd TX buffer is in realm PAS"
                 function="test_ffa_memory_retrieve_request_fail_tx_realm" />
+      <testcase name="FF-A Hypervisor Retrieve, NWd RX buffer is in realm PAS"
+                function="test_ffa_hypervisor_retrieve_request_fail_rx_realm" />
+      <testcase name="FF-A Hypervisor Retrieve, NWd TX buffer is in realm PAS"
+                function="test_ffa_hypervisor_retrieve_request_fail_tx_realm" />
       <testcase name="FF-A Memory Relinquish, NWd TX buffer is in realm PAS"
                 function="test_ffa_memory_relinquish_fail_tx_realm" />
   </testsuite>

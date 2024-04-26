@@ -1442,3 +1442,86 @@ test_result_t test_ffa_memory_retrieve_request_fail_rx_realm(void)
 {
 	return base_ffa_memory_retrieve_request_fail_buffer_realm(true);
 }
+
+/**
+ * Test that a memory relinquish call fails smoothly if the TX buffer of the
+ * Hypervisor is on realm PAS.
+ */
+test_result_t test_ffa_memory_relinquish_fail_tx_realm(void)
+{
+	struct mailbox_buffers mb;
+	struct ffa_memory_region *m;
+	const ffa_id_t vm_id = VM_ID(1);
+	struct ffa_memory_access receivers[2] = {
+		ffa_memory_access_init_permissions_from_mem_func(vm_id,
+								 FFA_MEM_SHARE_SMC64),
+		ffa_memory_access_init_permissions_from_mem_func(SP_ID(2),
+								 FFA_MEM_SHARE_SMC64),
+	};
+	struct ffa_value ret;
+	ffa_memory_handle_t handle;
+	u_register_t ret_rmm;
+
+	GET_TFTF_MAILBOX(mb);
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	handle = base_memory_send_for_nwd_retrieve(&mb, receivers, ARRAY_SIZE(receivers));
+
+	if (handle == FFA_MEMORY_HANDLE_INVALID) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!memory_retrieve(&mb, &m, handle, 0, receivers, ARRAY_SIZE(receivers), 0)) {
+		ERROR("Failed to retrieve the memory.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Prepare relinquish descriptor before calling ffa_mem_relinquish. */
+	ffa_mem_relinquish_init(mb.send, handle, 0, vm_id);
+
+	/*
+	 * Delegate page to a realm. This should make memory sharing operation
+	 * fail.
+	 */
+	ret_rmm = host_rmi_granule_delegate((u_register_t)mb.send);
+	if (ret_rmm != 0UL) {
+		ERROR("Delegate operation returns 0x%lx for address %llx\n",
+		      ret_rmm, (uint64_t)mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Access to Realm region from SPMC should return FFA_ERROR_ABORTED. */
+	ret = ffa_mem_relinquish();
+	if (!is_expected_ffa_error(ret, FFA_ERROR_ABORTED)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Undelegate to reestablish the same security state for PAS. */
+	ret_rmm = host_rmi_granule_undelegate((u_register_t)mb.send);
+	if (ret_rmm != 0UL) {
+		ERROR("Undelegate operation returns 0x%lx for address %llx\n",
+		      ret_rmm, (uint64_t)mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* After undelegate the relinquish is expected to succeed. */
+	ret = ffa_mem_relinquish();
+
+	if (is_ffa_call_error(ret)) {
+		ERROR("Expected relinquish to succeed\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = ffa_mem_reclaim(handle, 0);
+	if (is_ffa_call_error(ret)) {
+		ERROR("Memory reclaim failed!\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}

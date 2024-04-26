@@ -71,10 +71,12 @@
                 function="test_ffa_indirect_message_vm_to_sp_tx_realm_fail" />
       <testcase name="FF-A Memory Sharing, NWd TX buffer is in realm PAS"
                 function="test_ffa_mem_share_tx_realm_expect_fail" />
-      <testcase name="FF-A Memory Retrieve, NWd TX buffer is in realm PAS"
-                function="test_ffa_memory_retrieve_request_fail_tx_realm" />
       <testcase name="FF-A Memory Retrieve, NWd RX buffer is in realm PAS"
                 function="test_ffa_memory_retrieve_request_fail_rx_realm" />
+      <testcase name="FF-A Memory Retrieve, NWd TX buffer is in realm PAS"
+                function="test_ffa_memory_retrieve_request_fail_tx_realm" />
+      <testcase name="FF-A Memory Relinquish, NWd TX buffer is in realm PAS"
+                function="test_ffa_memory_relinquish_fail_tx_realm" />
   </testsuite>
 
 </testsuites>

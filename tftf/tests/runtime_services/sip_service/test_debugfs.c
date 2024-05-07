@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Arm Limited. All rights reserved.
+ * Copyright (c) 2019-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,8 +13,14 @@
 #define SMC_OK			(0)
 
 #define DEBUGFS_VERSION		(0x00000001)
-#define DEBUGFS_SMC_64		(0xC2000030)
 #define MAX_PATH_LEN		(256)
+
+#ifndef __aarch64__
+#define DEBUGFS_SMC   0x87000010
+#else
+#define DEBUGFS_SMC   0xC7000010
+#endif
+
 
 /* DebugFS shared buffer area */
 #ifndef PLAT_ARM_DEBUGFS_BASE
@@ -64,7 +70,7 @@ static int init(unsigned long long phys_addr)
 	smc_ret_values ret;
 	smc_args args;
 
-	args.fid  = DEBUGFS_SMC_64;
+	args.fid  = DEBUGFS_SMC;
 	args.arg1 = INIT;
 	args.arg2 = phys_addr;
 	ret = tftf_smc(&args);
@@ -77,7 +83,7 @@ static int version(void)
 	smc_ret_values ret;
 	smc_args args;
 
-	args.fid  = DEBUGFS_SMC_64;
+	args.fid  = DEBUGFS_SMC;
 	args.arg1 = VERSION;
 	ret = tftf_smc(&args);
 
@@ -92,7 +98,7 @@ static int open(const char *name, int flags)
 
 	strlcpy(parms->open.fname, name, MAX_PATH_LEN);
 
-	args.fid  = DEBUGFS_SMC_64;
+	args.fid  = DEBUGFS_SMC;
 	args.arg1 = OPEN;
 	args.arg2 = (u_register_t) flags;
 	ret = tftf_smc(&args);
@@ -105,7 +111,7 @@ static int read(int fd, void *buf, size_t size)
 	smc_ret_values ret;
 	smc_args args;
 
-	args.fid  = DEBUGFS_SMC_64;
+	args.fid  = DEBUGFS_SMC;
 	args.arg1 = READ;
 	args.arg2 = (u_register_t) fd;
 	args.arg3 = (u_register_t) size;
@@ -125,7 +131,7 @@ static int close(int fd)
 	smc_ret_values ret;
 	smc_args args;
 
-	args.fid  = DEBUGFS_SMC_64;
+	args.fid  = DEBUGFS_SMC;
 	args.arg1 = CLOSE;
 	args.arg2 = (u_register_t) fd;
 
@@ -144,7 +150,7 @@ static int mount(char *srv, char *where, char *spec)
 	strlcpy(parms->mount.where, where, MAX_PATH_LEN);
 	strlcpy(parms->mount.spec, spec, MAX_PATH_LEN);
 
-	args.fid  = DEBUGFS_SMC_64;
+	args.fid  = DEBUGFS_SMC;
 	args.arg1 = MOUNT;
 
 	ret = tftf_smc(&args);
@@ -160,7 +166,7 @@ static int stat(const char *name, dir_t *dir)
 
 	strlcpy(parms->stat.path, name, MAX_PATH_LEN);
 
-	args.fid  = DEBUGFS_SMC_64;
+	args.fid  = DEBUGFS_SMC;
 	args.arg1 = STAT;
 
 	ret = tftf_smc(&args);
@@ -178,7 +184,7 @@ static int seek(int fd, long offset, int whence)
 	smc_ret_values ret;
 	smc_args args;
 
-	args.fid  = DEBUGFS_SMC_64;
+	args.fid  = DEBUGFS_SMC;
 	args.arg1 = SEEK;
 	args.arg2 = (u_register_t) fd;
 	args.arg3 = (u_register_t) offset;

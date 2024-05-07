@@ -296,7 +296,7 @@ test_result_t rt_memory_cannot_be_accessed_in_s(void)
 
 	struct ffa_memory_access receiver =
 		ffa_memory_access_init_permissions_from_mem_func(
-			RECEIVER, FFA_MEM_SHARE_SMC32);
+			RECEIVER, FFA_MEM_SHARE_SMC64);
 
 	if (get_armv9_2_feat_rme_support() == 0U) {
 		return TEST_RESULT_SKIPPED;
@@ -308,7 +308,7 @@ test_result_t rt_memory_cannot_be_accessed_in_s(void)
 
 	handle = memory_init_and_send(mb.send, PAGE_SIZE, SENDER, &receiver, 1,
 				      constituents, constituents_count,
-				      FFA_MEM_SHARE_SMC32, &ret);
+				      FFA_MEM_SHARE_SMC64, &ret);
 
 	if (handle == FFA_MEMORY_HANDLE_INVALID) {
 		return TEST_RESULT_SUCCESS;

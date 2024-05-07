@@ -559,7 +559,7 @@ struct ffa_value ffa_mem_donate(uint32_t descriptor_length,
 				uint32_t fragment_length)
 {
 	struct ffa_value args = {
-		.fid = FFA_MEM_DONATE_SMC32,
+		.fid = FFA_MEM_DONATE_SMC64,
 		.arg1 = descriptor_length,
 		.arg2 = fragment_length,
 		.arg3 = FFA_PARAM_MBZ,
@@ -574,7 +574,7 @@ struct ffa_value ffa_mem_lend(uint32_t descriptor_length,
 			      uint32_t fragment_length)
 {
 	struct ffa_value args = {
-		.fid = FFA_MEM_LEND_SMC32,
+		.fid = FFA_MEM_LEND_SMC64,
 		.arg1 = descriptor_length,
 		.arg2 = fragment_length,
 		.arg3 = FFA_PARAM_MBZ,
@@ -589,7 +589,7 @@ struct ffa_value ffa_mem_share(uint32_t descriptor_length,
 			       uint32_t fragment_length)
 {
 	struct ffa_value args = {
-		.fid = FFA_MEM_SHARE_SMC32,
+		.fid = FFA_MEM_SHARE_SMC64,
 		.arg1 = descriptor_length,
 		.arg2 = fragment_length,
 		.arg3 = FFA_PARAM_MBZ,
@@ -604,7 +604,7 @@ struct ffa_value ffa_mem_retrieve_req(uint32_t descriptor_length,
 				      uint32_t fragment_length)
 {
 	struct ffa_value args = {
-		.fid = FFA_MEM_RETRIEVE_REQ_SMC32,
+		.fid = FFA_MEM_RETRIEVE_REQ_SMC64,
 		.arg1 = descriptor_length,
 		.arg2 = fragment_length,
 		.arg3 = FFA_PARAM_MBZ,

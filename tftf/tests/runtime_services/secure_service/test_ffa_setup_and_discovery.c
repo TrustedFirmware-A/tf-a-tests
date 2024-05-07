@@ -344,9 +344,9 @@ test_result_t test_ffa_rxtx_map_memory_share_fail(void)
 		.reserved = 0,
 	};
 	uint32_t mem_funcs[] = {
-		FFA_MEM_LEND_SMC32,
-		FFA_MEM_SHARE_SMC32,
-		FFA_MEM_DONATE_SMC32,
+		FFA_MEM_LEND_SMC64,
+		FFA_MEM_SHARE_SMC64,
+		FFA_MEM_DONATE_SMC64,
 	};
 	struct ffa_value ret;
 
@@ -532,9 +532,9 @@ test_result_t test_ffa_rxtx_map_forward_memory_share_fail(void)
 		.address = vm1_tx_buffer,
 	};
 	uint32_t mem_funcs[] = {
-		FFA_MEM_LEND_SMC32,
-		FFA_MEM_SHARE_SMC32,
-		FFA_MEM_DONATE_SMC32,
+		FFA_MEM_LEND_SMC64,
+		FFA_MEM_SHARE_SMC64,
+		FFA_MEM_DONATE_SMC64,
 	};
 	struct ffa_value ret;
 

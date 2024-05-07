@@ -581,13 +581,13 @@ ffa_memory_handle_t memory_send(
 	}
 
 	switch (mem_func) {
-	case FFA_MEM_SHARE_SMC32:
+	case FFA_MEM_SHARE_SMC64:
 		*ret = ffa_mem_share(total_length, fragment_length);
 		break;
-	case FFA_MEM_LEND_SMC32:
+	case FFA_MEM_LEND_SMC64:
 		*ret = ffa_mem_lend(total_length, fragment_length);
 		break;
-	case FFA_MEM_DONATE_SMC32:
+	case FFA_MEM_DONATE_SMC64:
 		*ret = ffa_mem_donate(total_length, fragment_length);
 		break;
 	default:
@@ -627,7 +627,7 @@ ffa_memory_handle_t memory_init_and_send(
 	uint32_t fragment_length;
 
 	enum ffa_memory_type type =
-		(receiver_count == 1 && mem_func != FFA_MEM_SHARE_SMC32)
+		(receiver_count == 1 && mem_func != FFA_MEM_SHARE_SMC64)
 			? FFA_MEMORY_NOT_SPECIFIED_MEM
 			: FFA_MEMORY_NORMAL_MEM;
 
@@ -877,7 +877,7 @@ struct ffa_memory_access ffa_memory_access_init_permissions_from_mem_func(
 	enum ffa_instruction_access instruction_access =
 		FFA_INSTRUCTION_ACCESS_NOT_SPECIFIED;
 	enum ffa_data_access data_access =
-		(mem_func == FFA_MEM_DONATE_SMC32)
+		(mem_func == FFA_MEM_DONATE_SMC64)
 			? FFA_DATA_ACCESS_NOT_SPECIFIED
 			: FFA_DATA_ACCESS_RW;
 

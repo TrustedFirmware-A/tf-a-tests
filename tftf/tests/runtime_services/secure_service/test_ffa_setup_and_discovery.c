@@ -419,16 +419,20 @@ test_result_t test_ffa_rxtx_map_forward_success(void)
 
 	ret = ffa_rxtx_map_forward(mb.send, VM_ID(1), vm1_rx_buffer,
 				   vm1_tx_buffer);
-	if (!is_expected_ffa_return(ret, FFA_SUCCESS_SMC32))
+
+	if (!is_expected_ffa_return(ret, FFA_SUCCESS_SMC32)) {
 		return TEST_RESULT_FAIL;
+	}
 
 	ret = ffa_rxtx_unmap_with_id(VM_ID(1));
-	if (!is_expected_ffa_return(ret, FFA_SUCCESS_SMC32))
+	if (!is_expected_ffa_return(ret, FFA_SUCCESS_SMC32)) {
 		return TEST_RESULT_FAIL;
+	}
 
 	ret = ffa_rxtx_unmap();
-	if (!is_expected_ffa_return(ret, FFA_SUCCESS_SMC32))
+	if (!is_expected_ffa_return(ret, FFA_SUCCESS_SMC32)) {
 		return TEST_RESULT_FAIL;
+	}
 
 	return TEST_RESULT_SUCCESS;
 }

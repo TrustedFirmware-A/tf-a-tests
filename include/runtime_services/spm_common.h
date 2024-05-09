@@ -150,4 +150,10 @@ struct ffa_memory_access ffa_memory_access_init_permissions_from_mem_func(
 	ffa_id_t receiver_id,
 	uint32_t mem_func);
 
+bool receive_indirect_message(void *buffer, size_t buffer_size, void *recv,
+			      ffa_id_t *sender, ffa_id_t receiver,
+			      ffa_id_t own_id);
+struct ffa_value send_indirect_message(
+		ffa_id_t from, ffa_id_t to, void *send, const void *payload,
+		size_t payload_size, uint32_t send_flags);
 #endif /* SPM_COMMON_H */

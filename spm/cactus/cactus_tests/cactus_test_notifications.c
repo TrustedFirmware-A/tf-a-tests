@@ -109,8 +109,8 @@ CACTUS_CMD_HANDLER(notifications_get, CACTUS_NOTIFICATION_GET_CMD)
 	VERBOSE("Notifications returned:\n"
 			"   from sp: %llx\n"
 			"   from vm: %llx\n",
-		ffa_notifications_get_from_sp(ret),
-		ffa_notifications_get_from_vm(ret));
+		ffa_notification_get_from_sp(ret),
+		ffa_notification_get_from_vm(ret));
 
 	/* If requested to check the status of NPI, for the respective CPU. */
 	if (cactus_notifications_check_npi_handled(*args)) {
@@ -126,8 +126,8 @@ CACTUS_CMD_HANDLER(notifications_get, CACTUS_NOTIFICATION_GET_CMD)
 	}
 
 	return cactus_notifications_get_success_resp(
-		vm_id, source, ffa_notifications_get_from_sp(ret),
-		ffa_notifications_get_from_vm(ret));
+		vm_id, source, ffa_notification_get_from_sp(ret),
+		ffa_notification_get_from_vm(ret));
 }
 
 CACTUS_CMD_HANDLER(notifications_set, CACTUS_NOTIFICATIONS_SET_CMD)

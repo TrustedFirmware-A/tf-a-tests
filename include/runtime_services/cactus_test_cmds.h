@@ -654,4 +654,34 @@ static inline uint64_t cactus_ras_get_event_id(struct ffa_value ret)
 	return (uint64_t)ret.arg4;
 }
 
+/**
+ * Request SP to send indirect message to FF-A endpoint.
+ *
+ * Command ID is string: MSGREQ.
+ */
+#define CACTUS_REQ_MSG_SEND_CMD U(0x4d5347524551a)
+
+static inline struct ffa_value cactus_req_ind_msg_send_cmd(
+	ffa_id_t source, ffa_id_t dest, ffa_id_t receiver,
+	ffa_id_t sender, uint32_t flags)
+{
+	return cactus_send_cmd(source, dest, CACTUS_REQ_MSG_SEND_CMD,
+			       flags, receiver, sender, 0);
+}
+
+static inline ffa_id_t cactus_msg_send_receiver(struct ffa_value ret)
+{
+	return (ffa_id_t)ret.arg5;
+}
+
+static inline ffa_id_t cactus_msg_send_sender(struct ffa_value ret)
+{
+	return (ffa_id_t)ret.arg6;
+}
+
+static inline uint64_t cactus_msg_send_flags(struct ffa_value ret)
+{
+	return (uint64_t)ret.arg4;
+}
+
 #endif

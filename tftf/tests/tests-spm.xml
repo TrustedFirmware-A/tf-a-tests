@@ -70,14 +70,6 @@
                function="test_smccc_ext_callee_preserved" />
   </testsuite>
 
-  <testsuite name="SP exceptions"
-             description="SP exceptions" >
-
-     <testcase name="Access from a SP to a Realm region"
-               function="rl_memory_cannot_be_accessed_in_s" />
-
-  </testsuite>
-
   <testsuite name="FF-A Direct messaging"
              description="Test FF-A Direct messaging" >
 
@@ -241,6 +233,12 @@
                function="test_ffa_notifications_sp_signals_sp_per_vcpu" />
      <testcase name="Notifications SP signals VM per-vCPU"
                function="test_ffa_notifications_sp_signals_vm_per_vcpu" />
+  </testsuite>
+
+  <testsuite name="FF-A Indirect Messaging"
+             description="Test FF-A Indirect messaging" >
+  <testcase name="FF-A Indirect Message from SP to VM"
+               function="test_ffa_indirect_message_sp_to_vm" />
   </testsuite>
 
 </testsuites>

@@ -11,6 +11,8 @@
 #include <tftf_lib.h>
 #include <utils_def.h>
 
+#include <xlat_tables_defs.h>
+
 /* This error code must be different to the ones used by FFA */
 #define FFA_TFTF_ERROR		-42
 
@@ -294,6 +296,48 @@ static inline uint16_t ffa_partition_info_regs_entry_size(
 
 typedef uint64_t ffa_notification_bitmap_t;
 
+/**
+ * Partition message header as specified by table 6.2 from FF-A v1.1 EAC0
+ * specification.
+ */
+struct ffa_partition_rxtx_header {
+	uint32_t flags;
+	/* MBZ */
+	uint32_t reserved;
+	/* Offset from the beginning of the buffer to the message payload. */
+	uint32_t offset;
+	/* Sender(Bits[31:16]) and Receiver(Bits[15:0]) endpoint IDs. */
+	ffa_id_t receiver;
+	ffa_id_t sender;
+	/* Size of message in buffer. */
+	uint32_t size;
+};
+
+#define FFA_RXTX_HEADER_SIZE sizeof(struct ffa_partition_rxtx_header)
+
+static inline void ffa_rxtx_header_init(
+	ffa_id_t sender, ffa_id_t receiver, uint32_t size,
+	struct ffa_partition_rxtx_header *header)
+{
+	header->flags = 0;
+	header->reserved = 0;
+	header->offset = FFA_RXTX_HEADER_SIZE;
+	header->sender = sender;
+	header->receiver = receiver;
+	header->size = size;
+}
+
+/* The maximum length possible for a single message. */
+#define FFA_PARTITION_MSG_PAYLOAD_MAX (PAGE_SIZE - FFA_RXTX_HEADER_SIZE)
+
+struct ffa_partition_msg {
+	struct ffa_partition_rxtx_header header;
+	char payload[FFA_PARTITION_MSG_PAYLOAD_MAX];
+};
+
+/* The maximum length possible for a single message. */
+#define FFA_MSG_PAYLOAD_MAX PAGE_SIZE
+
 #define FFA_NOTIFICATION(ID)		(UINT64_C(1) << ID)
 
 #define MAX_FFA_NOTIFICATIONS		UINT32_C(64)
@@ -310,29 +354,63 @@ typedef uint64_t ffa_notification_bitmap_t;
 #define FFA_NOTIFICATIONS_FLAG_BITMAP_SPM	UINT32_C(0x1 << 2)
 #define FFA_NOTIFICATIONS_FLAG_BITMAP_HYP	UINT32_C(0x1 << 3)
 
+#define FFA_NOTIFICATION_SPM_BUFFER_FULL_MASK FFA_NOTIFICATION(0)
+#define FFA_NOTIFICATION_HYP_BUFFER_FULL_MASK FFA_NOTIFICATION(32)
+
 /**
  * The following is an SGI ID, that the SPMC configures as non-secure, as
  * suggested by the FF-A v1.1 specification, in section 9.4.1.
  */
 #define FFA_SCHEDULE_RECEIVER_INTERRUPT_ID 8
 
-#define FFA_NOTIFICATIONS_BITMAP(lo, hi)	\
-	(ffa_notification_bitmap_t)(lo) | 	\
-	(((ffa_notification_bitmap_t)hi << 32) & 0xFFFFFFFF00000000ULL)
-
-#define FFA_NOTIFICATIONS_FLAGS_VCPU_ID(id) UINT32_C((id & 0xFFFF) << 16)
-
-static inline ffa_notification_bitmap_t ffa_notifications_get_from_sp(
-       struct ffa_value val)
+/**
+ * Helper function to assemble a 64-bit sized bitmap, from the 32-bit sized lo
+ * and hi.
+ * Helpful as FF-A specification defines that the notifications interfaces
+ * arguments are 32-bit registers.
+ */
+static inline ffa_notification_bitmap_t ffa_notification_bitmap(uint32_t lo,
+								uint32_t hi)
 {
-	return FFA_NOTIFICATIONS_BITMAP(val.arg2, val.arg3);
+	return (ffa_notification_bitmap_t)hi << 32U | lo;
 }
 
-static inline ffa_notification_bitmap_t ffa_notifications_get_from_vm(
+static inline ffa_notification_bitmap_t ffa_notification_get_from_sp(
        struct ffa_value val)
 {
-	return FFA_NOTIFICATIONS_BITMAP(val.arg4, val.arg5);
+	return ffa_notification_bitmap((uint32_t)val.arg2,
+				       (uint32_t)val.arg3);
 }
+
+static inline ffa_notification_bitmap_t ffa_notification_get_from_vm(
+       struct ffa_value val)
+{
+	return ffa_notification_bitmap((uint32_t)val.arg4,
+				       (uint32_t)val.arg5);
+}
+
+static inline ffa_notification_bitmap_t ffa_notification_get_from_framework(
+	struct ffa_value val)
+{
+	return ffa_notification_bitmap((uint32_t)val.arg6,
+				       (uint32_t)val.arg7);
+}
+
+ /**
+ * Helper functions to check for buffer full notification.
+ */
+static inline bool is_ffa_hyp_buffer_full_notification(
+	ffa_notification_bitmap_t framework)
+{
+	return (framework & FFA_NOTIFICATION_HYP_BUFFER_FULL_MASK) != 0U;
+}
+
+static inline bool is_ffa_spm_buffer_full_notification(
+	ffa_notification_bitmap_t framework)
+{
+	return (framework & FFA_NOTIFICATION_SPM_BUFFER_FULL_MASK) != 0U;
+}
+
 
 /*
  * FFA_NOTIFICATION_INFO_GET is a SMC64 interface.
@@ -347,21 +425,21 @@ static inline ffa_notification_bitmap_t ffa_notifications_get_from_vm(
 #define FFA_NOTIFICATIONS_LIST_SHIFT(l) 		(2 * (l - 1) + 12)
 #define FFA_NOTIFICATIONS_LIST_SIZE_MASK 		0x3U
 
-static inline uint32_t ffa_notifications_info_get_lists_count(
+static inline uint32_t ffa_notification_info_get_lists_count(
 	struct ffa_value ret)
 {
 	return (uint32_t)(ret.arg2 >> FFA_NOTIFICATIONS_LISTS_COUNT_SHIFT)
 	       & FFA_NOTIFICATIONS_LISTS_COUNT_MASK;
 }
 
-static inline uint32_t ffa_notifications_info_get_list_size(
+static inline uint32_t ffa_notification_info_get_list_size(
 	struct ffa_value ret, uint32_t list)
 {
 	return (uint32_t)(ret.arg2 >> FFA_NOTIFICATIONS_LIST_SHIFT(list)) &
 	       FFA_NOTIFICATIONS_LIST_SIZE_MASK;
 }
 
-static inline bool ffa_notifications_info_get_more_pending(struct ffa_value ret)
+static inline bool ffa_notification_info_get_more_pending(struct ffa_value ret)
 {
 	return (ret.arg2 & FFA_NOTIFICATIONS_INFO_GET_FLAG_MORE_PENDING) != 0U;
 }
@@ -789,10 +867,13 @@ struct ffa_value ffa_features(uint32_t feature);
 struct ffa_value ffa_features_with_input_property(uint32_t feature,
                                                   uint32_t param);
 struct ffa_value ffa_partition_info_get(const struct ffa_uuid uuid);
+struct ffa_value ffa_rx_release_with_id(ffa_id_t vm_id);
 struct ffa_value ffa_rx_release(void);
 struct ffa_value ffa_rxtx_map(uintptr_t send, uintptr_t recv, uint32_t pages);
 struct ffa_value ffa_rxtx_unmap_with_id(uint32_t id);
 struct ffa_value ffa_rxtx_unmap(void);
+struct ffa_value ffa_msg_send2_with_id(uint32_t flags, ffa_id_t sender);
+struct ffa_value ffa_msg_send2(uint32_t flags);
 struct ffa_value ffa_mem_donate(uint32_t descriptor_length,
 				uint32_t fragment_length);
 struct ffa_value ffa_mem_lend(uint32_t descriptor_length,

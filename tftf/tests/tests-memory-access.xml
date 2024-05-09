@@ -43,6 +43,12 @@
                 function="s_memory_cannot_be_accessed_in_ns" />
   </testsuite>
 
+  <testsuite name="SP exceptions"
+             description="SP exceptions" >
+     <testcase name="Access from a SP to a Realm region"
+               function="rl_memory_cannot_be_accessed_in_s" />
+  </testsuite>
+
   <testsuite name="Invalid memory access with RME extension"
     description="Invalid memory access with RME extension">
       <testcase name="Access Realm memory from NS world"
@@ -57,6 +63,12 @@
                 function="test_ffa_mem_send_sp_realm_memory" />
       <testcase name="FF-A memory share fail realm memory other constituent"
                 function="test_ffa_mem_lend_sp_realm_memory_separate_constituent" />
+      <testcase name="FF-A partition info get after NWd RX is in realm PAS"
+                function="test_ffa_rxtx_to_realm_pas" />
+      <testcase name="FF-A Indirect message fails if VM RX is realm"
+                function="test_ffa_indirect_message_sp_to_vm_rx_realm_fail" />
+      <testcase name="FF-A Indirect message fails if VM TX is realm"
+                function="test_ffa_indirect_message_vm_to_sp_tx_realm_fail" />
   </testsuite>
 
 </testsuites>

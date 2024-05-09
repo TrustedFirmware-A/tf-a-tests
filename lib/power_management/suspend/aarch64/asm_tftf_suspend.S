@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -81,7 +81,17 @@ func __tftf_save_arch_context
 	stp	x3, x4, [x0, #SUSPEND_CTX_TTBR0_OFFSET]
 	stp	x5, x6, [x0, #SUSPEND_CTX_VBAR_OFFSET]
 	mrs	x1, hcr_el2
+	/*
+	 * Check if the processor supports SME
+	 */
+	mrs	x2, id_aa64pfr1_el1
+	tst	x2, #(1 << 25)
+	bne	3f
 	str	x1, [x0, #SUSPEND_CTX_HCR_OFFSET]
+	ret
+
+3:	mrs	x2, SMCR_EL2
+	stp	x1, x2, [x0, #SUSPEND_CTX_HCR_OFFSET]
 	ret
 endfunc __tftf_save_arch_context
 
@@ -120,13 +130,24 @@ func __tftf_cpu_resume_ep
 	msr	ttbr0_el2, x3
 	msr	tcr_el2, x4
 	msr	vbar_el2, x5
+        /*
+	 * Check if the processor supports SME
+	 */
+	mrs	x2, id_aa64pfr1_el1
+	tst	x2, #(1 << 25)
+	bne	3f
 	ldr	x1, [x0, #SUSPEND_CTX_HCR_OFFSET]
 	msr	hcr_el2, x1
+	b	4f
+
+3:	ldp	x1, x2, [x0, #SUSPEND_CTX_HCR_OFFSET]
+	msr     hcr_el2, x1
+	msr	SMCR_EL2, x2
 
 	/*
 	 * TLB invalidations need to be completed before enabling MMU
 	 */
-	dsb	nsh
+4:	dsb	nsh
 	msr	sctlr_el2, x6
 	/* Ensure the MMU enable takes effect immediately */
 	isb

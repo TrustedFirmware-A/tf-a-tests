@@ -24,13 +24,16 @@
 #define PMF_CACHE_MAINT		(1 << 0)
 #define PMF_NO_CACHE_MAINT	0
 
+#define PMF_SMC_VERSION		U(0x00000001)
 /*
  * Defines for PMF SMC function ids.
  */
 #ifndef __aarch64__
 #define PMF_SMC_GET_TIMESTAMP	0x87000020
+#define PMF_SMC_GET_VERSION	0x87000021
 #else
 #define PMF_SMC_GET_TIMESTAMP	0xC7000020
+#define PMF_SMC_GET_VERSION	0xC7000021
 #endif
 
 /* Following are the supported PMF service IDs */

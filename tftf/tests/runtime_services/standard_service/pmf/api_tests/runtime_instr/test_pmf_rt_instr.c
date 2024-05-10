@@ -63,6 +63,26 @@ static u_register_t pmf_get_ts(u_register_t tid, u_register_t *v)
 	return ret.ret0;
 }
 
+/*
+ * Simple check to see if we are able to probe
+ * pmf versioning under vendor specific el3.
+ */
+test_result_t test_check_pmf_version(void)
+{
+	smc_args args = { 0 };
+	smc_ret_values ret;
+
+	args.fid = PMF_SMC_GET_VERSION;
+	ret = tftf_smc(&args);
+
+	if (ret.ret1 != PMF_SMC_VERSION)
+	{
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
 static int cycles_to_ns(uint64_t cycles, uint64_t freq, uint64_t *ns)
 {
 	if (cycles > UINT64_MAX / 1000000000 || freq == 0)

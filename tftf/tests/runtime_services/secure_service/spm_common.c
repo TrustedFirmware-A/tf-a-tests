@@ -197,13 +197,7 @@ static const struct ffa_features_test ffa_feature_test_target[] = {
 		FFA_SUCCESS_SMC32},
 	{"FFA_NOTIFICATION_INFO_GET_64", FFA_NOTIFICATION_INFO_GET_SMC64,
 		FFA_SUCCESS_SMC32},
-	/* Indirect messaging is only supported in Nwd */
 	{"FFA_YIELD_32", FFA_MSG_YIELD, FFA_ERROR},
-	{"FFA_MSG_SEND_32", FFA_MSG_SEND, FFA_ERROR},
-	{"FFA_MSG_POLL_32", FFA_MSG_POLL, FFA_ERROR},
-	{"FFA_FEATURE_MEI", FFA_FEATURE_MEI, FFA_ERROR, 0, MAKE_FFA_VERSION(1, 1)},
-	{"FFA_FEATURE_SRI", FFA_FEATURE_SRI, FFA_SUCCESS_SMC32, 0, MAKE_FFA_VERSION(1, 1)},
-	{"FFA_FEATURE_NPI", FFA_FEATURE_NPI, FFA_ERROR, 0, MAKE_FFA_VERSION(1, 1)},
 	{"Check non-existent command", 0xFFFF, FFA_ERROR},
 };
 
@@ -221,6 +215,51 @@ unsigned int get_ffa_feature_test_target(
 
 	return sizeof(ffa_feature_test_target) /
 	       sizeof(struct ffa_features_test);
+}
+
+/**
+ * Leverages the struct ffa_feature_test and validates the result of
+ * FFA_FEATURES calls.
+ */
+bool ffa_features_test_targets(const struct ffa_features_test *targets,
+			       uint32_t test_target_size)
+{
+	bool ret = true;
+
+	for (size_t i = 0U; i < test_target_size; i++) {
+		struct ffa_value ffa_ret;
+		uint32_t expected_ret;
+		const struct ffa_features_test *test_target = &targets[i];
+
+		ffa_ret = ffa_features_with_input_property(test_target->feature,
+							   test_target->param);
+		expected_ret = FFA_VERSION_COMPILED
+				>= test_target->version_added ?
+				test_target->expected_ret : FFA_ERROR;
+
+		if (ffa_func_id(ffa_ret) != expected_ret) {
+			ERROR("Unexpected return: %s (expected %s)."
+			      " FFA_FEATURES test: %s.\n",
+			      ffa_func_name(ffa_func_id(ffa_ret)),
+			      ffa_func_name(expected_ret),
+			      test_target->test_name);
+			ret = false;
+		}
+
+		if (expected_ret == FFA_ERROR) {
+			if (ffa_error_code(ffa_ret) !=
+			    FFA_ERROR_NOT_SUPPORTED) {
+				ERROR("Unexpected error code: %s (expected %s)."
+				      " FFA_FEATURES test: %s.\n",
+				      ffa_error_name(ffa_error_code(ffa_ret)),
+				      ffa_error_name(expected_ret),
+				      test_target->test_name);
+				ret = false;
+			}
+		}
+	}
+
+	return ret;
 }
 
 bool memory_retrieve(struct mailbox_buffers *mb,

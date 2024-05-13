@@ -135,6 +135,11 @@ test_result_t test_ffa_rxtx_to_realm_pas(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
+	/***********************************************************************
+	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
+	 **********************************************************************/
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
 	/* Delegate the shared page to Realm. */
 	retmm = host_rmi_granule_delegate((u_register_t)mb.recv);
 	if (retmm != 0UL) {

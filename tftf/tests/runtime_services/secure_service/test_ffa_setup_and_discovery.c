@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include "utils_def.h"
 #include <debug.h>
 
 #include <ffa_endpoints.h>
@@ -86,44 +87,33 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 
 test_result_t test_ffa_features(void)
 {
+	const struct ffa_features_test *func_ids_target;
+	const struct ffa_features_test feature_ids_target[] = {
+		{"FFA_FEATURE_MEI", FFA_FEATURE_MEI, FFA_ERROR, 0,
+			MAKE_FFA_VERSION(1, 1)},
+		{"FFA_FEATURE_SRI", FFA_FEATURE_SRI, FFA_SUCCESS_SMC32, 0,
+			MAKE_FFA_VERSION(1, 1)},
+		{"FFA_FEATURE_NPI", FFA_FEATURE_NPI, FFA_ERROR, 0,
+			MAKE_FFA_VERSION(1, 1)},
+	};
+	unsigned int test_target_size =
+		get_ffa_feature_test_target(&func_ids_target);
+
 	SKIP_TEST_IF_FFA_VERSION_LESS_THAN(1, 0);
 
 	/* Check if SPMC is OP-TEE at S-EL1 */
 	if (check_spmc_execution_level()) {
 		/* FFA_FEATURES is not yet supported in OP-TEE */
-		return TEST_RESULT_SUCCESS;
+		return TEST_RESULT_SKIPPED;
 	}
 
-	struct ffa_value ffa_ret;
-	unsigned int expected_ret;
-	const struct ffa_features_test *ffa_feature_test_target;
-	unsigned int i, test_target_size =
-		get_ffa_feature_test_target(&ffa_feature_test_target);
-	struct ffa_features_test test_target;
+	if (!ffa_features_test_targets(func_ids_target, test_target_size)) {
+		return TEST_RESULT_FAIL;
+	}
 
-	for (i = 0U; i < test_target_size; i++) {
-		test_target = ffa_feature_test_target[i];
-		ffa_ret = ffa_features_with_input_property(test_target.feature, test_target.param);
-		expected_ret = FFA_VERSION_COMPILED
-			>= test_target.version_added ?
-			test_target.expected_ret : FFA_ERROR;
-		if (ffa_func_id(ffa_ret) != expected_ret) {
-			tftf_testcase_printf(
-				"%s returned %s, expected %s\n",
-				test_target.test_name,
-				ffa_func_name(ffa_func_id(ffa_ret)),
-				ffa_func_name(expected_ret));
-			return TEST_RESULT_FAIL;
-		}
-		if ((expected_ret == FFA_ERROR) &&
-				(ffa_error_code(ffa_ret) != FFA_ERROR_NOT_SUPPORTED)) {
-			tftf_testcase_printf(
-				"%s failed for the wrong reason: returned %s, expected %s\n",
-				test_target.test_name,
-				ffa_error_name(ffa_error_code(ffa_ret)),
-				ffa_error_name(FFA_ERROR_NOT_SUPPORTED));
-			return TEST_RESULT_FAIL;
-		}
+	if (!ffa_features_test_targets(feature_ids_target,
+				ARRAY_SIZE(feature_ids_target))) {
+		return TEST_RESULT_FAIL;
 	}
 
 	return TEST_RESULT_SUCCESS;

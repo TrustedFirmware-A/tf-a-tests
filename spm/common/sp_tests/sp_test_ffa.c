@@ -80,43 +80,25 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
  */
 static void ffa_features_test(void)
 {
-	struct ffa_value ffa_ret;
-	unsigned int expected_ret;
-	const struct ffa_features_test *ffa_feature_test_target;
-	unsigned int i, test_target_size =
-		get_ffa_feature_test_target(&ffa_feature_test_target);
-	struct ffa_features_test test_target;
+	const struct ffa_features_test *func_id_targets;
+	/* Get common features between tftf and cactus. */
+	unsigned int test_target_size =
+		get_ffa_feature_test_target(&func_id_targets);
+	const struct ffa_features_test feature_id_targets[] = {
+		{"FFA_FEATURE_MEI", FFA_FEATURE_MEI, FFA_SUCCESS_SMC32, 0,
+			MAKE_FFA_VERSION(1, 1)},
+		{"FFA_FEATURE_SRI", FFA_FEATURE_SRI, FFA_ERROR, 0,
+			MAKE_FFA_VERSION(1, 1)},
+		{"FFA_FEATURE_NPI", FFA_FEATURE_NPI, FFA_SUCCESS_SMC32, 0,
+			MAKE_FFA_VERSION(1, 1)},
+	};
 
 	INFO("Test FFA_FEATURES.\n");
+	ffa_features_test_targets(func_id_targets, test_target_size);
 
-	for (i = 0U; i < test_target_size; i++) {
-		test_target = ffa_feature_test_target[i];
-
-		ffa_ret = ffa_features_with_input_property(test_target.feature,
-							   test_target.param);
-		expected_ret = FFA_VERSION_COMPILED
-				>= test_target.version_added ?
-				test_target.expected_ret : FFA_ERROR;
-
-		if (ffa_func_id(ffa_ret) != expected_ret) {
-			ERROR("Unexpected return: %s (expected %s)."
-			      " FFA_FEATURES test: %s.\n",
-			      ffa_func_name(ffa_func_id(ffa_ret)),
-			      ffa_func_name(expected_ret),
-			      test_target.test_name);
-		}
-
-		if (expected_ret == FFA_ERROR) {
-			if (ffa_error_code(ffa_ret) !=
-			    FFA_ERROR_NOT_SUPPORTED) {
-				ERROR("Unexpected error code: %s (expected %s)."
-				      " FFA_FEATURES test: %s.\n",
-				      ffa_error_name(ffa_error_code(ffa_ret)),
-				      ffa_error_name(expected_ret),
-				      test_target.test_name);
-			}
-		}
-	}
+	/* Features are expected to be different to tftf. */
+	ffa_features_test_targets(feature_id_targets,
+			ARRAY_SIZE(feature_id_targets));
 }
 
 static void ffa_partition_info_wrong_test(void)

@@ -1106,6 +1106,11 @@ test_result_t test_ffa_mem_send_sp_realm_memory(void)
 	const uint32_t constituents_count = sizeof(constituents) /
 				sizeof(struct ffa_memory_region_constituent);
 
+	/***********************************************************************
+	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
+	 **********************************************************************/
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
 	for (unsigned j = 0; j < ARRAY_SIZE(mem_func); j++) {
 		for (unsigned int i = 0; i < 4; i++) {
 			/* Address to be delegated to Realm PAS. */

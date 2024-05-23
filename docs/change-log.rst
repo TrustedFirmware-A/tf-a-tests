@@ -7,6 +7,176 @@ Firmware-A version for simplicity. At any point in time, TF-A Tests version
 Tests are not guaranteed to be compatible. This also means that a version
 upgrade on the TF-A-Tests side might not necessarily introduce any new feature.
 
+Version 2.11
+------------
+
+New features
+^^^^^^^^^^^^
+
+-  More tests are made available in this release to help validate the
+   functionalities in the following areas:
+
+   - FF-A
+   - Realm Management Extension
+   - EL3 Runtime
+   - New Platform ports
+   - Negative Boot-Test Framework
+
+TFTF
+~~~~
+
+-  SPM/FF-A testing:
+
+   - Added test to ensure MTE registers are restored upon context switch.
+   - Indirect message: Added framework code and tests (messaging VMs to SPs;
+     aborted FFA_MSG_SEND2 call from both SPs and TFTF).
+   - Added framework notification helpers.
+   - Added test to check that NWd can't lend/donate realm memory.
+   - Added test that accesses all constituents descriptors of memory share.
+   - Test to validate of GPC with memory sharing.
+   - Test FFA_FEATURES to obtain interrupt IDs for: Notification Pending
+     Interrupt, Schedule Receiver Interrupt and Managed Exit.
+   - Increase test coverage for FFA_RXTX_MAP/FFA_RXTX_UNMAP.
+   - Test to check that FFA_FEATURES returns max RX/TX buffer size.
+   - Added helper functions for getting string representations of function.
+     identifiers and error codes.
+   - Added impdef field to ffa_memory_access structures.
+   - Updated FF-A version for sp_test_ffa.c and memory sharing tests to v1.2.
+   - Refactored helpers that use bitfields for memory access bitmaps.
+   - Refactored ffa_memory_access constructors.
+   - Renamed SPM cpu_features to SIMD.
+   - In FFA_MSG_SEND_DIRECT_REQ/FFA_MSG_DRIECT_REQ2 calls return
+     FFA_ERROR(FFA_BUSY), with establishing cycling dependencies.
+   - Added validation to detect if FFA_SECONDARY_EP_REGISTER is supported.
+   - Tests for Hypervisor retrieve request: contents checks, fragmented request,
+     verify receivers.
+   - Test to verify FFA_MEM_LEND/FFA_MEM_DONATE in a RME enabled platform.
+   - Fixed a few arguments used in the hypervisor retrieve request tests.
+   - Fixed notifications test to clean-up after itself (destroy bitmap for
+     receiver VM in SPMC).
+     allocated for the VM in the SPMC.
+   - Exercise DMA isolation for secure access to Non-Secure memory.
+
+-  New tests:
+
+   - Introduced UNDEF injection test.
+   - Added test for SMC vendor-specific service.
+   - Added test for PMF version check via SMC.
+   - Refactored to group all SMC tests.
+   - Tested trusted key certificate corruption.
+
+-  Platforms:
+
+   - SGI:
+
+      - Replaced references to "SGI"/"sgi" for neoverse_rd.
+      - Renamed "CSS_SGI" macro prefixes to "NRD".
+      - Moved APIs and types to "nrd" prefix.
+      - Replaced build-option prefix to "NRD".
+      - Regrouped "sgi" and "rdinfra" to "neoverse_rd".
+      - Increased the number of XLAT tables.
+
+   - Versal:
+
+      - Skip hanging TSP test cases.
+      - Updated test skip list.
+
+   - Versal NET:
+
+      - Removed TSP tests from skip list.
+      - Updated test skip list.
+      - Temporarily disabled the hanging TSP test cases.
+      - Corrected core position function.
+
+   - TC:
+
+      - Updated UART base for TFTF.
+      - Made TC0 TFTF code generic to TC.
+
+   - Xilinx:
+
+      - Moved TTC_CLK_SEL_OFFSET to platform_def.h.
+      - Added Xilinx platforms to docs.
+      - Updated test skip list.
+
+   - ZynqMP:
+
+      - Introduced platform support.
+      - Added documentation.
+
+-  Miscellaneous:
+
+   - Refactored DebugFS and PMF as vendor-specific el3 services.
+   - Added Cortex-A520, Cortex-X3 and Cortex-X4 cpu structures for errata ABI.
+   - Added SMCCCv1.3 SVE hint bit support in TFTF framework.
+   - Added TSP testing, multi-CPU capability, new test function and enhanced.
+     performance for SMC fuzzing.
+   - Added MPAM system registers access test.
+   - Updated register signature for Firmware Handoff.
+   - Updated toolchain requirements in docs.
+   - Updated links to TF-A Tests issues tracker.
+   - Refactored SDEI test to align with new SPSR config.
+   - Removed some tests from extensive test list.
+   - Moved test suite "SP exceptions" from 'tests-spm.xml' into.
+     'tests-memory-access.xml'.
+   - Disabled RWX segment warnings for the EL3 payload.
+
+Realm Management Extension (RME)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   - Added test for enabling pmu with multiple rec.
+   - Added testcase for access outside realm IPA space.
+   - Added ability to overwrite s2sz for creating realm.
+   - Added tests for PAS transitions.
+   - Added test for FEAT_DIT.
+   - Test realm PAuth state is preserved.
+   - Added testcase for Synchronous external aborts.
+   - Added testcase for REC exit due to Data/Instr abort.
+   - Removed unwanted arg from realm API.
+   - Fixed realm_printf string.
+   - New API to create and activate realm.
+   - Testcase for multiple realms.
+   - Added support for multiple realm.
+   - Removed pack_realm build target.
+   - Test to use SVE hint bit feature.
+   - Removed unwanted host_rmi_rtt_init_ripas.
+   - Testcase for multiple REC validations.
+   - Changed Realm create and execute API.
+   - Testcase for RMI_RTT_SET_RIPAS reject.
+   - Added testcase for multiple REC on multiple CPUs.
+   - Added support for RSI_IPA_STATE_GET/SET.
+   - Added realm_print_exception for Realm payload.
+   - Force max IPA size on Realms to 48 bits.
+   - Fixed Realm destroy API.
+   - Fixed Realm vbar_el1 load address.
+   - Fixed return value of host_enter_realm_execute call.
+   - Fixed host_call structure should be per rec.
+   - Fixed issue in RTT teardown.
+   - Fixed initialization of RIPAS is incorrectly done on TFTF.
+   - Fixed host_realm_init_ipa_state() is called with wrong args.
+
+Cactus (Secure-EL1 FF-A test partition)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   - Added SMMU test engine header file.
+   - Added MEMCPY and RAND48 to the SMMU test engine.
+   - Added ability to send indirect messages.
+   - Added support for fake RAS handler command.
+   - Replaced tftf_smc with ffa_service_call.
+   - Refactored cactus to handle expect exception.
+   - Refactored first cactus SP to use FFA_CONSOLE_LOG instead of UART.
+   - Replaced platform_get_core_pos with macro that retrieves vCPU index.
+
+Issues resolved since last release
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   - Check for null before calling I/O policy callback.
+   - Mapped NS buffer only if needed for SMMU tests.
+   - Fixed comments referencing "SGI platform".
+   - Specified properties to corresponding memory region nodes.
+   - Increased TESTCASE_OUTPUT_MAX_SIZE for printf.
+   - Save and restore SMCR_EL2 upon CPU suspend and resume.
+
 Version 2.10
 ------------
 

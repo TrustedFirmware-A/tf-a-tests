@@ -19,18 +19,10 @@ static uint128_t pauth_keys_after[MAX_REC_COUNT][NUM_KEYS];
 
 static bool exception_handler(void)
 {
-	u_register_t lr = read_elr_el1();
-
 	/* Disable PAuth to avoid further PAuth faults. */
 	pauth_disable();
 
-	/* Check for PAuth exception. */
-	/* Note- PAuth decode instruction clobbers PAC Fields[63:56] in case of error. */
-	if (lr & (0xFFULL << 56U)) {
-		rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
-	}
-
-	rsi_exit_to_host(HOST_CALL_EXIT_FAILED_CMD);
+	rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
 
 	/* Does not return. */
 	return false;

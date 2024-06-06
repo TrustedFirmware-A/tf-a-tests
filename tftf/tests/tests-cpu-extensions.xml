@@ -12,6 +12,7 @@
     <testcase name="AMUv1 valid counter values" function="test_amu_valid_ctr" />
     <testcase name="AMUv1 suspend/resume" function="test_amu_suspend_resume" />
     <testcase name="SVE support" function="test_sve_support" />
+    <testcase name="Debugv8p9 support" function="test_debugv8p9_enabled" />
     <testcase name="Access Pointer Authentication Registers" function="test_pauth_reg_access" />
     <testcase name="Use Pointer Authentication Instructions" function="test_pauth_instructions" />
     <testcase name="Check for Pointer Authentication key leakage from EL3" function="test_pauth_leakage" />

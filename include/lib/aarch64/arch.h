@@ -303,6 +303,7 @@
 #define ID_AA64MMFR0_EL1_FGT_MASK		ULL(0xf)
 #define ID_AA64MMFR0_EL1_FGT_NOT_SUPPORTED	ULL(0x0)
 #define ID_AA64MMFR0_EL1_FGT_SUPPORTED		ULL(0x1)
+#define ID_AA64MMFR0_EL1_FGT2_SUPPORTED		ULL(0x2)
 
 #define ID_AA64MMFR0_EL1_TGRAN4_SHIFT		U(28)
 #define ID_AA64MMFR0_EL1_TGRAN4_WIDTH		U(4)
@@ -1284,6 +1285,15 @@
 #define HFGITR_EL2		S3_4_C1_C1_6
 #define HDFGRTR_EL2		S3_4_C3_C1_4
 #define HDFGWTR_EL2		S3_4_C3_C1_5
+
+/*******************************************************************************
+ * Armv8.9 - Fine Grained Virtualization Traps 2 Registers
+ ******************************************************************************/
+#define HFGRTR2_EL2            S3_4_C3_C1_2
+#define HFGWTR2_EL2            S3_4_C3_C1_3
+#define HFGITR2_EL2            S3_4_C3_C1_7
+#define HDFGRTR2_EL2           S3_4_C3_C1_0
+#define HDFGWTR2_EL2           S3_4_C3_C1_1
 
 /*******************************************************************************
  * Armv8.6 - Enhanced Counter Virtualization Registers

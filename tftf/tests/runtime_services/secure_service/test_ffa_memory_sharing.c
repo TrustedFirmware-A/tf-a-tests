@@ -148,7 +148,7 @@ test_result_t test_share_forbidden_ranges(void)
 
 	for (unsigned i = 0; i < 3; i++) {
 		if (!test_memory_send_expect_denied(
-			FFA_MEM_SHARE_SMC32, (void *)forbidden_address[i],
+			FFA_MEM_SHARE_SMC64, (void *)forbidden_address[i],
 			RECEIVER)) {
 			return TEST_RESULT_FAIL;
 		}
@@ -185,7 +185,7 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	struct mailbox_buffers mb;
 	unsigned int rme_supported = get_armv9_2_feat_rme_support();
 	const bool check_gpc_fault =
-		mem_func != FFA_MEM_SHARE_SMC32 &&
+		mem_func != FFA_MEM_SHARE_SMC64 &&
 		rme_supported != 0U;
 
 	/* Arbitrarily write 5 words after using memory. */
@@ -249,7 +249,7 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 		*ptr = 0xBEEF;
 	}
 
-	if (mem_func != FFA_MEM_DONATE_SMC32) {
+	if (mem_func != FFA_MEM_DONATE_SMC64) {
 
 		/* Reclaim memory entirely before checking its state. */
 		if (is_ffa_call_error(ffa_mem_reclaim(handle, 0))) {
@@ -264,7 +264,7 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 			 * Check that borrower used the memory as expected
 			 * for FFA_MEM_SHARE test.
 			 */
-			if (mem_func == FFA_MEM_SHARE_SMC32 &&
+			if (mem_func == FFA_MEM_SHARE_SMC64 &&
 			    !check_written_words(ptr,
 						 mem_func + 0xFFAU,
 						 nr_words_to_write)) {
@@ -294,7 +294,7 @@ test_result_t test_mem_share_sp(void)
 	const uint32_t constituents_count = sizeof(constituents) /
 				sizeof(struct ffa_memory_region_constituent);
 
-	return test_memory_send_sp(FFA_MEM_SHARE_SMC32, RECEIVER, constituents,
+	return test_memory_send_sp(FFA_MEM_SHARE_SMC64, RECEIVER, constituents,
 				   constituents_count);
 }
 
@@ -308,7 +308,7 @@ test_result_t test_mem_lend_sp(void)
 	const uint32_t constituents_count = sizeof(constituents) /
 				sizeof(struct ffa_memory_region_constituent);
 
-	return test_memory_send_sp(FFA_MEM_LEND_SMC32, RECEIVER, constituents,
+	return test_memory_send_sp(FFA_MEM_LEND_SMC64, RECEIVER, constituents,
 				   constituents_count);
 }
 
@@ -319,7 +319,7 @@ test_result_t test_mem_donate_sp(void)
 	};
 	const uint32_t constituents_count = sizeof(constituents) /
 				sizeof(struct ffa_memory_region_constituent);
-	return test_memory_send_sp(FFA_MEM_DONATE_SMC32, RECEIVER, constituents,
+	return test_memory_send_sp(FFA_MEM_DONATE_SMC64, RECEIVER, constituents,
 				   constituents_count);
 }
 
@@ -333,7 +333,7 @@ test_result_t test_consecutive_donate(void)
 
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
-	test_result_t ret = test_memory_send_sp(FFA_MEM_DONATE_SMC32, SP_ID(1),
+	test_result_t ret = test_memory_send_sp(FFA_MEM_DONATE_SMC64, SP_ID(1),
 						constituents,
 						constituents_count);
 
@@ -342,7 +342,7 @@ test_result_t test_consecutive_donate(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	if (!test_memory_send_expect_denied(FFA_MEM_DONATE_SMC32,
+	if (!test_memory_send_expect_denied(FFA_MEM_DONATE_SMC64,
 					    consecutive_donate_page,
 					    SP_ID(1))) {
 		ERROR("Memory was successfully donated again from the NWd, to "
@@ -350,7 +350,7 @@ test_result_t test_consecutive_donate(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	if (!test_memory_send_expect_denied(FFA_MEM_DONATE_SMC32,
+	if (!test_memory_send_expect_denied(FFA_MEM_DONATE_SMC64,
 					    consecutive_donate_page,
 					    SP_ID(2))) {
 		ERROR("Memory was successfully donated again from the NWd, to "
@@ -429,7 +429,7 @@ static test_result_t test_req_mem_send_sp_to_vm(uint32_t mem_func,
 
 test_result_t test_req_mem_share_sp_to_sp(void)
 {
-	return test_req_mem_send_sp_to_sp(FFA_MEM_SHARE_SMC32, SP_ID(3),
+	return test_req_mem_send_sp_to_sp(FFA_MEM_SHARE_SMC64, SP_ID(3),
 					  SP_ID(2), false);
 }
 
@@ -448,31 +448,31 @@ test_result_t test_req_ns_mem_share_sp_to_sp(void)
 	/* This test requires 48b physical address size capability. */
 	SKIP_TEST_IF_PA_SIZE_LESS_THAN(48);
 
-	return test_req_mem_send_sp_to_sp(FFA_MEM_SHARE_SMC32, SP_ID(3),
+	return test_req_mem_send_sp_to_sp(FFA_MEM_SHARE_SMC64, SP_ID(3),
 					  SP_ID(2), true);
 }
 
 test_result_t test_req_mem_lend_sp_to_sp(void)
 {
-	return test_req_mem_send_sp_to_sp(FFA_MEM_LEND_SMC32, SP_ID(3),
+	return test_req_mem_send_sp_to_sp(FFA_MEM_LEND_SMC64, SP_ID(3),
 					  SP_ID(2), false);
 }
 
 test_result_t test_req_mem_donate_sp_to_sp(void)
 {
-	return test_req_mem_send_sp_to_sp(FFA_MEM_DONATE_SMC32, SP_ID(1),
+	return test_req_mem_send_sp_to_sp(FFA_MEM_DONATE_SMC64, SP_ID(1),
 					  SP_ID(3), false);
 }
 
 test_result_t test_req_mem_share_sp_to_vm(void)
 {
-	return test_req_mem_send_sp_to_vm(FFA_MEM_SHARE_SMC32, SP_ID(1),
+	return test_req_mem_send_sp_to_vm(FFA_MEM_SHARE_SMC64, SP_ID(1),
 					  HYP_ID);
 }
 
 test_result_t test_req_mem_lend_sp_to_vm(void)
 {
-	return test_req_mem_send_sp_to_vm(FFA_MEM_LEND_SMC32, SP_ID(2),
+	return test_req_mem_send_sp_to_vm(FFA_MEM_LEND_SMC64, SP_ID(2),
 					  HYP_ID);
 }
 
@@ -496,7 +496,7 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 
 	struct ffa_memory_access receiver =
 		ffa_memory_access_init_permissions_from_mem_func(
-			RECEIVER, FFA_MEM_LEND_SMC32);
+			RECEIVER, FFA_MEM_LEND_SMC64);
 
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
@@ -514,7 +514,7 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	handle = memory_send(mb.send, FFA_MEM_LEND_SMC32, constituents,
+	handle = memory_send(mb.send, FFA_MEM_LEND_SMC64, constituents,
 			     constituents_count, remaining_constituent_count,
 			     fragment_length, total_length, &ret);
 
@@ -525,7 +525,7 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 
 	VERBOSE("Memory has been shared!\n");
 
-	ret = cactus_mem_send_cmd(SENDER, RECEIVER, FFA_MEM_LEND_SMC32, handle,
+	ret = cactus_mem_send_cmd(SENDER, RECEIVER, FFA_MEM_LEND_SMC64, handle,
 				  FFA_MEMORY_REGION_FLAG_CLEAR,
 				  nr_words_to_write, false);
 
@@ -818,7 +818,7 @@ static test_result_t hypervisor_retrieve_request_test_helper(
 		.cacheability = FFA_MEMORY_CACHE_WRITE_BACK,
 		.shareability = FFA_MEMORY_INNER_SHAREABLE,
 		.security = FFA_MEMORY_SECURITY_NON_SECURE,
-		.type = (!multiple_receivers && mem_func != FFA_MEM_SHARE_SMC32)
+		.type = (!multiple_receivers && mem_func != FFA_MEM_SHARE_SMC64)
 				? FFA_MEMORY_NOT_SPECIFIED_MEM
 				: FFA_MEMORY_NORMAL_MEM,
 	};
@@ -863,13 +863,13 @@ static test_result_t hypervisor_retrieve_request_test_helper(
 	GET_TFTF_MAILBOX(mb);
 
 	switch (mem_func) {
-	case FFA_MEM_SHARE_SMC32:
+	case FFA_MEM_SHARE_SMC64:
 		expected_flags = FFA_MEMORY_REGION_TRANSACTION_TYPE_SHARE;
 		break;
-	case FFA_MEM_LEND_SMC32:
+	case FFA_MEM_LEND_SMC64:
 		expected_flags = FFA_MEMORY_REGION_TRANSACTION_TYPE_LEND;
 		break;
-	case FFA_MEM_DONATE_SMC32:
+	case FFA_MEM_DONATE_SMC64:
 		expected_flags = FFA_MEMORY_REGION_TRANSACTION_TYPE_DONATE;
 		break;
 	default:
@@ -946,37 +946,37 @@ static test_result_t hypervisor_retrieve_request_test_helper(
 
 test_result_t test_hypervisor_share_retrieve(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC32, false, false);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC64, false, false);
 }
 
 test_result_t test_hypervisor_lend_retrieve(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC32, false, false);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC64, false, false);
 }
 
 test_result_t test_hypervisor_donate_retrieve(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_DONATE_SMC32, false, false);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_DONATE_SMC64, false, false);
 }
 
 test_result_t test_hypervisor_share_retrieve_multiple_receivers(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC32, true, false);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC64, true, false);
 }
 
 test_result_t test_hypervisor_lend_retrieve_multiple_receivers(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC32, true, false);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC64, true, false);
 }
 
 test_result_t test_hypervisor_share_retrieve_fragmented(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC32, false, true);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_SHARE_SMC64, false, true);
 }
 
 test_result_t test_hypervisor_lend_retrieve_fragmented(void)
 {
-	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC32, false, true);
+	return hypervisor_retrieve_request_test_helper(FFA_MEM_LEND_SMC64, false, true);
 }
 
 /**
@@ -1041,10 +1041,10 @@ static test_result_t test_ffa_mem_send_realm_expect_fail(
 	}
 
 	switch (mem_func) {
-	case FFA_MEM_LEND_SMC32:
+	case FFA_MEM_LEND_SMC64:
 		ret = ffa_mem_lend(total_length, fragment_length);
 		break;
-	case FFA_MEM_DONATE_SMC32:
+	case FFA_MEM_DONATE_SMC64:
 		ret = ffa_mem_donate(total_length, fragment_length);
 		break;
 	default:
@@ -1097,7 +1097,7 @@ out:
 test_result_t test_ffa_mem_send_sp_realm_memory(void)
 {
 	test_result_t ret;
-	uint32_t mem_func[] = {FFA_MEM_LEND_SMC32, FFA_MEM_DONATE_SMC32};
+	uint32_t mem_func[] = {FFA_MEM_LEND_SMC64, FFA_MEM_DONATE_SMC64};
 	struct ffa_memory_region_constituent constituents[] = {
 		{(void *)four_share_pages, 4, 0},
 		{(void *)share_page, 1, 0}
@@ -1118,7 +1118,7 @@ test_result_t test_ffa_mem_send_sp_realm_memory(void)
 				(uint64_t)&four_share_pages[i * PAGE_SIZE];
 
 			INFO("%s memory with realm addr: %llx\n",
-			     mem_func[j] == FFA_MEM_LEND_SMC32
+			     mem_func[j] == FFA_MEM_LEND_SMC64
 				? "Lend"
 				: "Donate",
 			     realm_addr);
@@ -1161,7 +1161,7 @@ test_result_t test_ffa_mem_lend_sp_realm_memory_separate_constituent(void)
 	INFO("Sharing memory with realm addr: %llx\n", realm_addr);
 
 	ret = test_ffa_mem_send_realm_expect_fail(
-		FFA_MEM_LEND_SMC32, SP_ID(1), constituents,
+		FFA_MEM_LEND_SMC64, SP_ID(1), constituents,
 		constituents_count, realm_addr);
 
 	return ret;

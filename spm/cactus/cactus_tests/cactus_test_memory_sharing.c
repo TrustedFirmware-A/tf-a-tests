@@ -117,7 +117,7 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 
 	struct ffa_memory_access receiver = ffa_memory_access_init(
 		vm_id, FFA_DATA_ACCESS_RW,
-		(mem_func == FFA_MEM_SHARE_SMC32)
+		(mem_func == FFA_MEM_SHARE_SMC64)
 			? FFA_INSTRUCTION_ACCESS_NOT_SPECIFIED
 			: FFA_INSTRUCTION_ACCESS_NX,
 		0, NULL);
@@ -203,7 +203,7 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 				 * - Operation between SPs.
 				 * - Memory sharing from NWd to SP.
 				 */
-				if ((mem_func != FFA_MEM_SHARE_SMC32 &&
+				if ((mem_func != FFA_MEM_SHARE_SMC64 &&
 				    !IS_SP_ID(m->sender)) ||
 				    expect_exception) {
 					continue;
@@ -245,7 +245,7 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 	 * A FFA_MEM_DONATE changes the ownership of the page, as such no
 	 * relinquish is needed.
 	 */
-	if (mem_func != FFA_MEM_DONATE_SMC32 &&
+	if (mem_func != FFA_MEM_DONATE_SMC64 &&
 	    !cactus_mem_unmap_and_relinquish(composite, mb->send, handle,
 					     vm_id)) {
 		return cactus_error_resp(vm_id, source,
@@ -349,7 +349,7 @@ CACTUS_CMD_HANDLER(req_mem_send_cmd, CACTUS_REQ_MEM_SEND_CMD)
 		return cactus_error_resp(vm_id, source, CACTUS_ERROR_TEST);
 	}
 
-	if (mem_func != FFA_MEM_DONATE_SMC32) {
+	if (mem_func != FFA_MEM_DONATE_SMC64) {
 		/*
 		 * Do a memory reclaim only if the mem_func regards to memory
 		 * share or lend operations, as with a donate the owner is

@@ -32,13 +32,20 @@ test_result_t host_realm_multi_rec_single_cpu(void)
 	bool ret1, ret2;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
 	RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
+	u_register_t feature_flag = 0U;
+	long sl = RTT_MIN_LEVEL;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			0UL, rec_flag, MAX_REC_COUNT)) {
+			feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
 		return TEST_RESULT_FAIL;
 	}
 	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
@@ -86,15 +93,22 @@ test_result_t host_realm_multi_rec_psci_denied(void)
 	u_register_t exit_reason;
 	unsigned int rec_num;
 	struct rmi_rec_run *run;
+	u_register_t feature_flag = 0U;
+	long sl = RTT_MIN_LEVEL;
 	/* Create 3 rec Rec 0 and 2 are runnable, Rec 1 in not runnable */
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_NOT_RUNNABLE, RMI_RUNNABLE};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			0UL, rec_flag, 3U)) {
+			feature_flag, sl, rec_flag, 3U)) {
 		return TEST_RESULT_FAIL;
 	}
 	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
@@ -225,6 +239,8 @@ test_result_t host_realm_multi_rec_exit_irq(void)
 	unsigned int rec_count = MAX_REC_COUNT;
 	u_register_t other_mpidr, my_mpidr, ret;
 	int cpu_node;
+	u_register_t feature_flag = 0U;
+	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
 		RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
 		RMI_RUNNABLE};
@@ -232,10 +248,15 @@ test_result_t host_realm_multi_rec_exit_irq(void)
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 	SKIP_TEST_IF_LESS_THAN_N_CPUS(rec_count);
 
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			0UL, rec_flag, rec_count)) {
+			feature_flag, sl, rec_flag, rec_count)) {
 		return TEST_RESULT_FAIL;
 	}
 	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
@@ -327,14 +348,21 @@ test_result_t host_realm_multi_rec_multiple_cpu(void)
 		RMI_NOT_RUNNABLE};
 	u_register_t exit_reason;
 	int cpu_node;
+	u_register_t feature_flag = 0U;
+	long sl = RTT_MIN_LEVEL;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 	SKIP_TEST_IF_LESS_THAN_N_CPUS(MAX_REC_COUNT);
 
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			0UL, rec_flag, MAX_REC_COUNT)) {
+			feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
 		return TEST_RESULT_FAIL;
 	}
 	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
@@ -457,6 +485,8 @@ test_result_t host_realm_multi_rec_multiple_cpu2(void)
 	struct rmi_rec_run *run;
 	unsigned int host_call_result;
 	struct realm realm2;
+	u_register_t feature_flag = 0U;
+	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE,
 		RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE,
 		RMI_NOT_RUNNABLE};
@@ -464,17 +494,22 @@ test_result_t host_realm_multi_rec_multiple_cpu2(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			0UL, rec_flag, MAX_REC_COUNT)) {
+			feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
 		return TEST_RESULT_FAIL;
 	}
 
 	if (!host_create_activate_realm_payload(&realm2, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE + PAGE_POOL_MAX_SIZE,
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			0UL, rec_flag, 1U)) {
+			feature_flag, sl, rec_flag, 1U)) {
 		ret2 = host_destroy_realm(&realm);
 		return TEST_RESULT_FAIL;
 	}
@@ -590,7 +625,7 @@ static test_result_t cpu_on_handler_pmu(void)
  */
 test_result_t host_realm_pmuv3_mul_rec(void)
 {
-	u_register_t feature_flag;
+	u_register_t feature_flag = 0U;
 	u_register_t rmm_feat_reg0;
 	u_register_t rec_flag[8U] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
 		RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
@@ -598,8 +633,14 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 	unsigned int num_cnts, i = 0U;
 	u_register_t other_mpidr, my_mpidr, ret;
 	int cpu_node;
+	long sl = RTT_MIN_LEVEL;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
 
 	/* Get Max PMU counter implemented through RMI_FEATURES */
 	if (host_rmi_features(0UL, &rmm_feat_reg0) != REALM_SUCCESS) {
@@ -617,15 +658,14 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	feature_flag = RMI_FEATURE_REGISTER_0_PMU_EN |
+	feature_flag |= RMI_FEATURE_REGISTER_0_PMU_EN |
 			INPLACE(FEATURE_PMU_NUM_CTRS, num_cnts + 1U);
-
 
 	/* Request more PMU counter than total, expect failure */
 	if (host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			feature_flag, rec_flag, 1U)) {
+			feature_flag, sl, rec_flag, 1U)) {
 		ERROR("Realm create should have failed\n");
 		host_destroy_realm(&realm);
 		return TEST_RESULT_FAIL;
@@ -635,10 +675,14 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 	feature_flag = RMI_FEATURE_REGISTER_0_PMU_EN |
 			INPLACE(FEATURE_PMU_NUM_CTRS, 0U);
 
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag |= RMI_FEATURE_REGISTER_0_LPA2;
+	}
+
 	ret1 = host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 				(u_register_t)PAGE_POOL_BASE,
 				(u_register_t)PAGE_POOL_MAX_SIZE,
-				feature_flag, rec_flag, 1U);
+				feature_flag, sl, rec_flag, 1U);
 
 	if (!get_feat_hpmn0_supported()) {
 		if (ret1) {
@@ -658,11 +702,15 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 	feature_flag = RMI_FEATURE_REGISTER_0_PMU_EN |
 			INPLACE(FEATURE_PMU_NUM_CTRS, num_cnts);
 
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag |= RMI_FEATURE_REGISTER_0_LPA2;
+	}
+
 	/* Prepare realm0, create recs for realm0 later */
 	if (!host_prepare_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE,
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			feature_flag, rec_flag, MAX_REC_COUNT)) {
+			feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
 		goto test_exit;
 		return TEST_RESULT_FAIL;
 	}
@@ -675,10 +723,14 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 	feature_flag = RMI_FEATURE_REGISTER_0_PMU_EN |
 			INPLACE(FEATURE_PMU_NUM_CTRS, num_cnts - 1U);
 
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag |= RMI_FEATURE_REGISTER_0_LPA2;
+	}
+
 	if (!host_create_activate_realm_payload(&realm1, (u_register_t)REALM_IMAGE_BASE,
 			(u_register_t)PAGE_POOL_BASE + PAGE_POOL_MAX_SIZE,
 			(u_register_t)PAGE_POOL_MAX_SIZE,
-			feature_flag, rec_flag, MAX_REC_COUNT)) {
+			feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
 		goto test_exit2;
 	}
 	if (!host_create_shared_mem(&realm1, NS_REALM_SHARED_MEM_BASE + NS_REALM_SHARED_MEM_SIZE,
@@ -692,7 +744,7 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 		goto test_exit2;
 	}
 
-	if (host_realm_init_ipa_state(&realm, 0U, 0U, 1ULL << 32)
+	if (host_realm_init_ipa_state(&realm, sl, 0U, 1ULL << 32)
 		!= RMI_SUCCESS) {
 		ERROR("%s() failed\n", "host_realm_init_ipa_state");
 		goto test_exit2;

@@ -1,0 +1,83 @@
+#
+# Copyright (c) 2024 Arm Limited. All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+
+smc: SDEI_EVENT_STATUS_CALL
+        arg1:bev
+                field:bev:[0,31] = 0
+smc: SDEI_INTERRUPT_BIND_CALL
+        arg1:interruptnum
+                field:inum:[0,31] = 1
+smc: SDEI_VERSION_CALL
+        arg1-arg17 = 0
+smc: SDEI_EVENT_REGISTER_CALL
+        arg1:eventnum
+                field:enum:[0,31] = 0
+        arg2:entryaddr
+                field:addr:[0,63] = 0
+        arg3:eparg
+                field:arg:[0,63] = 0
+        arg4:flags
+                field:routing:[0,0] = 0
+                field:relative:[1,1] = 0
+                field:reserved:[2,63] = 0
+        arg5:affinity
+                field:aff:[0,63] = 0
+smc: SDEI_EVENT_ENABLE_CALL
+        arg1:eventnum
+                field:enum:[0,31] = 0
+smc: SDEI_FEATURES_CALL
+        arg1:feature
+                field:feat:[0,31] = 0
+smc: SDEI_EVENT_DISABLE_CALL
+        arg1:eventnum
+                field:enum:[0,31] = 0
+smc: SDEI_EVENT_CONTEXT_CALL
+        arg1:paramid
+                field:param:[0,31] = 0
+smc: SDEI_EVENT_COMPLETE_CALL
+        arg1:status
+                field:stat:[0,31] = 0
+smc: SDEI_EVENT_COMPLETE_AND_RESUME_CALL
+        arg1:resumeaddr
+                field:addr:[0,63] = 0
+smc: SDEI_EVENT_UNREGISTER_CALL
+        arg1:event
+                field:enum:[0,31] = 0
+smc: SDEI_EVENT_GET_INFO_CALL
+        arg1:event
+                field:enum:[0,31] = 0
+        arg2:info
+                field:info:[0,31] = 0
+smc: SDEI_EVENT_ROUTING_SET_CALL
+        arg1:event
+                field:enum:[0,31] = 0
+        arg2:routingmode
+                field:routing:[0,0] = 0
+                field:constant:[1,63] = 0
+        arg3:affinity
+                field:aff:[0,63] = 0
+smc: SDEI_PE_MASK_CALL
+        arg1 = 0
+smc: SDEI_PE_UNMASK_CALL
+        arg1 = 0
+smc:  SDEI_INTERRUPT_RELEASE_CALL
+        arg1:event
+                field:enum:[0,31] = 0
+smc: SDEI_EVENT_SIGNAL_CALL
+        arg1:event
+                field:enum:[0,31] = 0
+        arg2:targetpe
+                field:pe:[0,31] = 0
+smc: SDEI_PRIVATE_RESET_CALL
+        arg1 = 0
+smc: SDEI_SHARED_RESET_CALL
+        arg1 = 0
+smc: VEN_EL3_SVC_UUID_CALL
+        arg1=0
+smc: VEN_EL3_SVC_COUNT_CALL
+        arg1=0
+smc: VEN_EL3_SVC_VERSION_CALL
+        arg1=0

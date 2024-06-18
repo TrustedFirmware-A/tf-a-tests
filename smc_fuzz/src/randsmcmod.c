@@ -462,6 +462,7 @@ test_result_t init_smc_fuzzing(void)
 test_result_t smc_fuzzing_instance(uint32_t seed)
 {
 	struct rand_smc_node *tlnode;
+
 	/*
 	 * Initialize pseudo random number generator with supplied seed.
 	 */

@@ -103,10 +103,10 @@ void dump_ffa_value(struct ffa_value ret);
 
 bool check_spmc_execution_level(void);
 
-unsigned int get_ffa_feature_test_target(
-		const struct ffa_features_test **test_target);
+size_t get_ffa_feature_test_target(
+	const struct ffa_features_test **test_target);
 bool ffa_features_test_targets(const struct ffa_features_test *targets,
-			       uint32_t test_target_size);
+			       size_t test_target_size);
 
 /**
  * Helper to conduct a memory retrieve. This is to be called by the receiver

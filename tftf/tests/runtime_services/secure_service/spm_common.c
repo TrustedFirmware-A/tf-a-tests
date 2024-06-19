@@ -210,15 +210,11 @@ static const struct ffa_features_test ffa_feature_test_target[] = {
  *
  * Returns number of elements in the *test_target.
  */
-unsigned int get_ffa_feature_test_target(
-	const struct ffa_features_test **test_target)
+size_t get_ffa_feature_test_target(const struct ffa_features_test **test_target)
 {
-	if (test_target != NULL) {
-		*test_target = ffa_feature_test_target;
-	}
-
-	return sizeof(ffa_feature_test_target) /
-	       sizeof(struct ffa_features_test);
+	assert(test_target != NULL);
+	*test_target = ffa_feature_test_target;
+	return ARRAY_SIZE(ffa_feature_test_target);
 }
 
 /**
@@ -226,7 +222,7 @@ unsigned int get_ffa_feature_test_target(
  * FFA_FEATURES calls.
  */
 bool ffa_features_test_targets(const struct ffa_features_test *targets,
-			       uint32_t test_target_size)
+			       size_t test_target_size)
 {
 	bool ret = true;
 

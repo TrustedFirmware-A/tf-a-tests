@@ -15,14 +15,16 @@
 #define SKIP_TEST_IF_FFA_VERSION_LESS_THAN(major, minor)			\
 	do {									\
 		struct ffa_value ret = ffa_version(FFA_VERSION_COMPILED);	\
-		enum ffa_version version = ret.fid;				\
+		enum ffa_version version;					\
 										\
-		if (version == FFA_ERROR_NOT_SUPPORTED) {			\
+		if (ret.fid == FFA_ERROR_NOT_SUPPORTED) {			\
 			tftf_testcase_printf("FFA_VERSION not supported.\n");	\
 			return TEST_RESULT_SKIPPED;				\
 		}								\
 										\
-		if (!ffa_version_is_valid(version)) {			\
+		version = ret.fid;						\
+										\
+		if (!ffa_version_is_valid(version)) {				\
 			tftf_testcase_printf("FFA_VERSION bad response: %x\n",	\
 					version);				\
 			return TEST_RESULT_FAIL;				\

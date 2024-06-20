@@ -493,9 +493,8 @@ bool send_fragmented_memory_region(
 	const struct ffa_memory_region_constituent constituents[],
 	uint32_t constituent_count, uint32_t remaining_constituent_count,
 	uint32_t sent_length, uint32_t total_length, bool allocator_is_spmc,
-	struct ffa_value ret)
+	struct ffa_value *ret)
 {
-
 	uint64_t handle;
 	uint64_t handle_mask;
 	uint64_t expected_handle_mask =
@@ -508,25 +507,24 @@ bool send_fragmented_memory_region(
 	while (remaining_constituent_count != 0) {
 		VERBOSE("%s: %d constituents left to send.\n", __func__,
 			remaining_constituent_count);
-		if (ret.fid != FFA_MEM_FRAG_RX) {
+		if (ret->fid != FFA_MEM_FRAG_RX) {
 			ERROR("ffa_mem_frax_tx() failed: %d\n",
-			      ffa_error_code(ret));
+			      ffa_error_code(*ret));
 			return false;
 		}
 
 		if (fragment_handle == FFA_MEMORY_HANDLE_INVALID) {
-			fragment_handle = ffa_frag_handle(ret);
-		} else if (ffa_frag_handle(ret) != fragment_handle) {
-			ERROR("%s: fragment handle mismatch: expected %llu, "
-			      "got %llu\n",
-			      __func__, fragment_handle, ffa_frag_handle(ret));
+			fragment_handle = ffa_frag_handle(*ret);
+		} else if (ffa_frag_handle(*ret) != fragment_handle) {
+			ERROR("%s: fragment handle mismatch: expected %llu, got %llu\n",
+			      __func__, fragment_handle, ffa_frag_handle(*ret));
 			return false;
 		}
 
-		if (ret.arg3 != sent_length) {
+		if (ret->arg3 != sent_length) {
 			ERROR("%s: fragment length mismatch: expected %u, got "
 			      "%lu\n",
-			      __func__, sent_length, ret.arg3);
+			      __func__, sent_length, ret->arg3);
 			return false;
 		}
 
@@ -536,7 +534,7 @@ bool send_fragmented_memory_region(
 				remaining_constituent_count,
 			remaining_constituent_count, &fragment_length);
 
-		ret = ffa_mem_frag_tx(fragment_handle, fragment_length);
+		*ret = ffa_mem_frag_tx(fragment_handle, fragment_length);
 		sent_length += fragment_length;
 	}
 
@@ -546,13 +544,13 @@ bool send_fragmented_memory_region(
 		return false;
 	}
 
-	if (ret.fid != FFA_SUCCESS_SMC32) {
+	if (ret->fid != FFA_SUCCESS_SMC32) {
 		ERROR("%s: ffa_mem_frax_tx() failed: %d\n", __func__,
-		      ffa_error_code(ret));
+		      ffa_error_code(*ret));
 		return false;
 	}
 
-	handle = ffa_mem_success_handle(ret);
+	handle = ffa_mem_success_handle(*ret);
 	handle_mask = (handle >> FFA_MEMORY_HANDLE_ALLOCATOR_SHIFT) &
 		      FFA_MEMORY_HANDLE_ALLOCATOR_MASK;
 
@@ -612,7 +610,7 @@ ffa_memory_handle_t memory_send(
 	if (!send_fragmented_memory_region(
 		    send_buffer, constituents, constituent_count,
 		    remaining_constituent_count, fragment_length, total_length,
-		    true, *ret)) {
+		    true, ret)) {
 		return FFA_MEMORY_HANDLE_INVALID;
 	}
 
@@ -967,7 +965,6 @@ bool receive_indirect_message(void *buffer, size_t buffer_size, void *recv,
 		      header.receiver, receiver);
 		return false;
 	}
-
 
 	if (sender != NULL) {
 		*sender = source_vm_id;

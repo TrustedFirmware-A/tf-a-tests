@@ -96,6 +96,14 @@ int tftf_initialise_timer(void)
 	return 0;
 }
 
+void tftf_initialise_timer_secondary_core(void)
+{
+	if (!IS_SPI(TIMER_IRQ)) {
+		arm_gic_set_intr_priority(TIMER_IRQ, GIC_HIGHEST_NS_PRIORITY);
+		arm_gic_intr_enable(TIMER_IRQ);
+	}
+}
+
 /*
  * It returns the core number of next timer request to be serviced or
  * -1 if there is no request from any core. The next service request
@@ -179,7 +187,9 @@ int tftf_program_timer(unsigned long time_out_ms)
 	if ((!get_current_prog_time()) || (interrupt_req_time[core_pos] <
 				(get_current_prog_time() - TIMER_STEP_VALUE))) {
 
-		arm_gic_set_intr_target(TIMER_IRQ, core_pos);
+		if (IS_SPI(TIMER_IRQ)) {
+			arm_gic_set_intr_target(TIMER_IRQ, core_pos);
+		}
 
 		rc = PROGRAM_TIMER(time_out_ms);
 		/* We don't expect timer programming to fail */

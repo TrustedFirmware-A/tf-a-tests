@@ -32,6 +32,8 @@ typedef struct plat_timer {
  */
 int tftf_initialise_timer(void);
 
+void tftf_initialise_timer_secondary_core(void);
+
 /*
  * Requests the timer framework to send an interrupt after milli_secs.
  * The interrupt is sent to the calling core of this api. The actual

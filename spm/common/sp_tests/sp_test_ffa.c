@@ -86,11 +86,11 @@ static void ffa_features_test(void)
 		get_ffa_feature_test_target(&func_id_targets);
 	const struct ffa_features_test feature_id_targets[] = {
 		{"FFA_FEATURE_MEI", FFA_FEATURE_MEI, FFA_SUCCESS_SMC32, 0,
-			MAKE_FFA_VERSION(1, 1)},
+			FFA_VERSION_1_1},
 		{"FFA_FEATURE_SRI", FFA_FEATURE_SRI, FFA_ERROR, 0,
-			MAKE_FFA_VERSION(1, 1)},
+			FFA_VERSION_1_1},
 		{"FFA_FEATURE_NPI", FFA_FEATURE_NPI, FFA_SUCCESS_SMC32, 0,
-			MAKE_FFA_VERSION(1, 1)},
+			FFA_VERSION_1_1},
 	};
 
 	INFO("Test FFA_FEATURES.\n");
@@ -108,8 +108,8 @@ static void ffa_partition_info_wrong_test(void)
 
 	VERBOSE("%s: test request wrong UUID.\n", __func__);
 
-	expect(ffa_func_id(ret), FFA_ERROR);
-	expect(ffa_error_code(ret), FFA_ERROR_INVALID_PARAMETER);
+	EXPECT(ffa_func_id(ret), FFA_ERROR);
+	EXPECT(ffa_error_code(ret), FFA_ERROR_INVALID_PARAMETER);
 }
 
 static void ffa_partition_info_get_regs_test(void)
@@ -117,7 +117,7 @@ static void ffa_partition_info_get_regs_test(void)
 	struct ffa_value ret = { 0 };
 
 	VERBOSE("FF-A Partition Info regs interface tests\n");
-	ret = ffa_version(MAKE_FFA_VERSION(1, 2));
+	ret = ffa_version(FFA_VERSION_1_2);
 	uint32_t version = ret.fid;
 
 	if (version == FFA_ERROR_NOT_SUPPORTED) {
@@ -132,13 +132,13 @@ static void ffa_partition_info_get_regs_test(void)
 		return;
 	}
 
-	expect(ffa_partition_info_regs_helper(sp_uuids[3],
+	EXPECT(ffa_partition_info_regs_helper(sp_uuids[3],
 		&ffa_expected_partition_info[3], 1), true);
-	expect(ffa_partition_info_regs_helper(sp_uuids[2],
+	EXPECT(ffa_partition_info_regs_helper(sp_uuids[2],
 		&ffa_expected_partition_info[2], 1), true);
-	expect(ffa_partition_info_regs_helper(sp_uuids[1],
+	EXPECT(ffa_partition_info_regs_helper(sp_uuids[1],
 		&ffa_expected_partition_info[1], 1), true);
-	expect(ffa_partition_info_regs_helper(sp_uuids[0],
+	EXPECT(ffa_partition_info_regs_helper(sp_uuids[0],
 		&ffa_expected_partition_info[0], 1), true);
 
 	/*
@@ -156,13 +156,13 @@ static void ffa_partition_info_get_regs_test(void)
 	    (ffa_error_code(ret) == FFA_ERROR_INVALID_PARAMETER))) {
 		INFO("Skipping register based EL3 SPMD Logical partition"
 				" discovery\n");
-		expect(ffa_partition_info_regs_helper(NULL_UUID,
+		EXPECT(ffa_partition_info_regs_helper(NULL_UUID,
 			ffa_expected_partition_info,
 			(ARRAY_SIZE(ffa_expected_partition_info) - 1)), true);
 	} else {
-		expect(ffa_partition_info_regs_helper(sp_uuids[4],
+		EXPECT(ffa_partition_info_regs_helper(sp_uuids[4],
 			&ffa_expected_partition_info[4], 1), true);
-		expect(ffa_partition_info_regs_helper(NULL_UUID,
+		EXPECT(ffa_partition_info_regs_helper(NULL_UUID,
 			ffa_expected_partition_info,
 			ARRAY_SIZE(ffa_expected_partition_info)), true);
 	}
@@ -172,13 +172,13 @@ static void ffa_partition_info_get_test(struct mailbox_buffers *mb)
 {
 	INFO("Test FFA_PARTITION_INFO_GET.\n");
 
-	expect(ffa_partition_info_helper(mb, sp_uuids[2],
+	EXPECT(ffa_partition_info_helper(mb, sp_uuids[2],
 		&ffa_expected_partition_info[2], 1), true);
 
-	expect(ffa_partition_info_helper(mb, sp_uuids[1],
+	EXPECT(ffa_partition_info_helper(mb, sp_uuids[1],
 		&ffa_expected_partition_info[1], 1), true);
 
-	expect(ffa_partition_info_helper(mb, sp_uuids[0],
+	EXPECT(ffa_partition_info_helper(mb, sp_uuids[0],
 		&ffa_expected_partition_info[0], 1), true);
 
 	/*
@@ -188,7 +188,7 @@ static void ffa_partition_info_get_test(struct mailbox_buffers *mb)
 	 * uses the rx/tx buffer and the SPMD does not support the use of
 	 * rx/tx buffer to return SPMD logical partition information.
 	 */
-	expect(ffa_partition_info_helper(mb, NULL_UUID,
+	EXPECT(ffa_partition_info_helper(mb, NULL_UUID,
 		ffa_expected_partition_info,
 		(ARRAY_SIZE(ffa_expected_partition_info) - 1)), true);
 
@@ -197,29 +197,27 @@ static void ffa_partition_info_get_test(struct mailbox_buffers *mb)
 
 void ffa_version_test(void)
 {
-	struct ffa_value ret = ffa_version(MAKE_FFA_VERSION(FFA_MAJOR,
-							    FFA_MINOR));
+	struct ffa_value ret = ffa_version(FFA_VERSION_COMPILED);
 
 	spm_version = (uint32_t)ret.fid;
+	EXPECT(spm_version, FFA_VERSION_COMPILED);
 
-	bool ffa_version_compatible =
-		((spm_version >> FFA_VERSION_MAJOR_SHIFT) == FFA_MAJOR &&
-		 (spm_version & FFA_VERSION_MINOR_MASK) >= FFA_MINOR);
+	bool compatible = ffa_versions_are_compatible(spm_version, FFA_VERSION_COMPILED);
 
 	INFO("Test FFA_VERSION. Return %u.%u; Compatible: %i\n",
-		spm_version >> FFA_VERSION_MAJOR_SHIFT,
-		spm_version & FFA_VERSION_MINOR_MASK,
-		(int)ffa_version_compatible);
+		ffa_version_get_major(spm_version),
+		ffa_version_get_minor(spm_version),
+		(int)compatible);
 
-	expect((int)ffa_version_compatible, (int)true);
+	EXPECT((int)compatible, (int)true);
 }
 
 void ffa_spm_id_get_test(void)
 {
-	if (spm_version >= MAKE_FFA_VERSION(1, 1)) {
+	if (spm_version >= FFA_VERSION_1_1) {
 		struct ffa_value ret = ffa_spm_id_get();
 
-		expect(ffa_func_id(ret), FFA_SUCCESS_SMC32);
+		EXPECT(ffa_func_id(ret), FFA_SUCCESS_SMC32);
 
 		ffa_id_t spm_id = ffa_endpoint_id(ret);
 
@@ -229,7 +227,7 @@ void ffa_spm_id_get_test(void)
 		 * Check the SPMC value given in the fvp_spmc_manifest
 		 * is returned.
 		 */
-		expect(spm_id, SPMC_ID);
+		EXPECT(spm_id, SPMC_ID);
 	} else {
 		INFO("FFA_SPM_ID_GET not supported in this version of FF-A."
 			" Test skipped.\n");

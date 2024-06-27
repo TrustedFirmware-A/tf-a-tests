@@ -32,7 +32,7 @@ void misc_tests(void)
 	ret = sp_svc(&svc_values);
 	INFO("Version = 0x%x (%u.%u)\n", ret,
 	     (ret >> 16) & 0x7FFF, ret & 0xFFFF);
-	expect(ret, SPM_VERSION_COMPILED);
+	EXPECT(ret, SPM_VERSION_COMPILED);
 	announce_test_end(test_version);
 
 	announce_test_section_end(test_sect_desc);

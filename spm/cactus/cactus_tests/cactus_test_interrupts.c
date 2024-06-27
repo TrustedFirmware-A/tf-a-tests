@@ -36,7 +36,7 @@ static void handle_sec_wdog_interrupt(void)
 static void check_sec_wdog_interrupt_triggered(void)
 {
 	handle_sec_wdog_interrupt();
-	expect(flag_set, 0);
+	EXPECT(flag_set, 0);
 	flag_set = 1;
 }
 
@@ -233,7 +233,7 @@ CACTUS_CMD_HANDLER(interrupt_serviced_cmd, CACTUS_LAST_INTERRUPT_SERVICED_CMD)
 
 static void sec_interrupt_test_espi_handled(void)
 {
-	expect(test_espi_handled, false);
+	EXPECT(test_espi_handled, false);
 	test_espi_handled = true;
 	NOTICE("Interrupt handler for test espi interrupt called\n");
 

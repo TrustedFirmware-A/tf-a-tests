@@ -60,21 +60,6 @@ static inline const char *ffa_error_name(int32_t error)
 	((GET_SMC_NUM(_fid) >= FFA_FNUM_MIN_VALUE) &&	\
 	 (GET_SMC_NUM(_fid) <= FFA_FNUM_MAX_VALUE)); })
 
-/* FFA_VERSION helpers */
-#define FFA_VERSION_MAJOR		U(1)
-#define FFA_VERSION_MAJOR_SHIFT	16
-#define FFA_VERSION_MAJOR_MASK		U(0x7FFF)
-#define FFA_VERSION_MINOR		U(2)
-#define FFA_VERSION_MINOR_SHIFT	0
-#define FFA_VERSION_MINOR_MASK		U(0xFFFF)
-#define FFA_VERSION_BIT31_MASK		U(1 << 31)
-
-#define MAKE_FFA_VERSION(major, minor) \
-	((((major) & FFA_VERSION_MAJOR_MASK) <<  FFA_VERSION_MAJOR_SHIFT) | \
-	 (((minor) & FFA_VERSION_MINOR_MASK) << FFA_VERSION_MINOR_SHIFT))
-#define FFA_VERSION_COMPILED		MAKE_FFA_VERSION(FFA_VERSION_MAJOR, \
-							  FFA_VERSION_MINOR)
-
 /* FFA_MSG_SEND helpers */
 #define FFA_MSG_SEND_ATTRS_BLK_SHIFT	U(0)
 #define FFA_MSG_SEND_ATTRS_BLK_MASK	U(0x1)

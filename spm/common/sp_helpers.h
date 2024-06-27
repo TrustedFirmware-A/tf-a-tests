@@ -51,7 +51,20 @@ uintptr_t bound_rand(uintptr_t min, uintptr_t max);
  * Check that expr == expected.
  * If not, loop forever.
  */
-void expect(int expr, int expected);
+#define EXPECT(lhs, rhs)                                                  \
+	do {                                                              \
+		int lhs_value = (lhs);                                    \
+		int rhs_value = (rhs);                                    \
+		if (lhs_value != rhs_value) {                             \
+			ERROR("%s:%d: Assertion failed: `%s == %s`\n",    \
+			      __FILE__, __LINE__, #lhs, #rhs);            \
+			ERROR("lhs = %d (0x%x)\n", lhs_value, lhs_value); \
+			ERROR("rhs = %d (0x%x)\n", rhs_value, rhs_value); \
+			while (1) {                                       \
+				continue;                                 \
+			}                                                 \
+		}                                                         \
+	} while (0)
 
 /*
  * Test framework functions

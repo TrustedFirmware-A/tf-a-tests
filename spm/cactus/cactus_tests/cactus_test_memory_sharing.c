@@ -122,7 +122,7 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 			: FFA_INSTRUCTION_ACCESS_NX,
 		0, NULL);
 
-	expect(memory_retrieve(mb, &m, handle, source, &receiver, 1,
+	EXPECT(memory_retrieve(mb, &m, handle, source, &receiver, 1,
 			       retrv_flags),
 	       true);
 

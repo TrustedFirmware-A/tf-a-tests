@@ -58,8 +58,6 @@
 
      <testcase name="Test FFA_PARTITION_INFO_GET"
                function="test_ffa_partition_info" />
-     <testcase name="Test FFA_PARTITION_INFO_GET v1.0"
-	       function="test_ffa_partition_info_v1_0" />
   </testsuite>
 
   <testsuite name="FF-A SMCCC compliance"

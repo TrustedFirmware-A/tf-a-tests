@@ -14,8 +14,7 @@
 
 #define SKIP_TEST_IF_FFA_VERSION_LESS_THAN(major, minor)			\
 	do {									\
-		struct ffa_value ret = ffa_version(				\
-					make_ffa_version(major, minor));	\
+		struct ffa_value ret = ffa_version(FFA_VERSION_COMPILED);	\
 		enum ffa_version version = ret.fid;				\
 										\
 		if (version == FFA_ERROR_NOT_SUPPORTED) {			\

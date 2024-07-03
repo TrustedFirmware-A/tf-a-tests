@@ -64,7 +64,7 @@ test_result_t test_smccc_callee_preserved(void)
 
 	memset(&args, 0, sizeof(struct ffa_value8));
 	args.fid  = FFA_VERSION;
-	args.arg1 = 0x10001;
+	args.arg1 = FFA_VERSION_COMPILED;
 	expect_eq(test_ffa_smc(&args), 0);
 	expect_eq(args.fid, FFA_VERSION_COMPILED);
 	expect_eq(args.arg1, 0);

@@ -149,6 +149,12 @@ TFTF-specific Build Options
    (RAM) or 1 (non-volatile memory like flash) as test results storage. Default
    value is 0, as writing to the flash significantly slows tests down.
 
+Cactus SP Build Options
+-----------------------
+
+- ``SPMC_AT_EL3``: This flag is required to match the feature set of Cactus SP that
+   are implemented in TF-A EL3 SPMC. Default value is 0.
+
 Realm payload specific Build Options
 ------------------------------------
 

@@ -324,12 +324,14 @@ void __dead2 cactus_main(bool primary_cold_boot,
 		EXPECT(ffa_func_id(ret), FFA_SUCCESS_SMC32);
 	}
 
+#if !SPMC_AT_EL3
 	discover_managed_exit_interrupt_id();
 	register_maintenance_interrupt_handlers();
 
 	/* Invoking self tests */
 	ffa_tests(&mb, true);
 	cpu_feature_tests();
+#endif
 
 msg_loop:
 	/* End up to message loop */

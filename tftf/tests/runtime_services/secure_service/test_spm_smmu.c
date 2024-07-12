@@ -7,7 +7,7 @@
 #include <cactus_test_cmds.h>
 #include <debug.h>
 #include <ffa_endpoints.h>
-#include <runtime_services/host_realm_managment/host_realm_rmi.h>
+#include <host_realm_rmi.h>
 #include <smccc.h>
 #include <spm_test_helpers.h>
 #include <test_helpers.h>

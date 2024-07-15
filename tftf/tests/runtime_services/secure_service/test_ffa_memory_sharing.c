@@ -1166,3 +1166,394 @@ test_result_t test_ffa_mem_lend_sp_realm_memory_separate_constituent(void)
 
 	return ret;
 }
+
+/**
+ * Map the NS RXTX buffers to the SPM, change RX buffer PAS to realm,
+ * invoke the FFA_MEM_SHARE interface, such that SPM does NS access
+ * to realm region and triggers GPF.
+ */
+test_result_t test_ffa_mem_share_tx_realm_expect_fail(void)
+{
+	struct ffa_value ret;
+	uint32_t total_length;
+	uint32_t fragment_length;
+	struct mailbox_buffers mb;
+	u_register_t ret_rmm;
+	struct ffa_memory_access receiver =
+		ffa_memory_access_init_permissions_from_mem_func(SP_ID(1),
+								 FFA_MEM_SHARE_SMC64);
+	size_t remaining_constituent_count;
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)share_page, 1, 0}
+	};
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/***********************************************************************
+	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
+	 **********************************************************************/
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	GET_TFTF_MAILBOX(mb);
+
+	remaining_constituent_count = ffa_memory_region_init(
+		(struct ffa_memory_region *)mb.send, PAGE_SIZE, HYP_ID,
+		&receiver, 1, constituents, 1, 0, 0,
+		FFA_MEMORY_NOT_SPECIFIED_MEM, FFA_MEMORY_CACHE_WRITE_BACK,
+		FFA_MEMORY_INNER_SHAREABLE,
+		&total_length, &fragment_length);
+
+	if (remaining_constituent_count != 0) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/*
+	 * Delegate TX buffer to realm.
+	 */
+	ret_rmm = host_rmi_granule_delegate((u_register_t)mb.send);
+
+	if (ret_rmm != 0UL) {
+		INFO("Delegate operation returns  %#lx for address %p\n",
+		     ret_rmm, mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = ffa_mem_share(total_length, fragment_length);
+
+	/* Access to Realm region from SPMC should return FFA_ERROR_ABORTED. */
+	if (!is_expected_ffa_error(ret, FFA_ERROR_ABORTED)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Undelegate to reestablish the same security state for PAS. */
+	ret_rmm = host_rmi_granule_undelegate((u_register_t)mb.send);
+
+	if (ret_rmm != 0UL) {
+		INFO("Undelegate operation returns 0x%lx for address %p\n",
+		     ret_rmm, mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Retry but expect test to pass. */
+	ret = ffa_mem_share(total_length, fragment_length);
+
+	if (is_ffa_call_error(ret)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Reclaim to clean-up. */
+	ret = ffa_mem_reclaim(ffa_mem_success_handle(ret), 0);
+
+	if (is_ffa_call_error(ret)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/**
+ * Base helper to prepare for tests that need to retrieve memory from the SPMC
+ * from a VM endpoint.
+ */
+static ffa_memory_handle_t base_memory_send_for_nwd_retrieve(struct mailbox_buffers *mb,
+							     struct ffa_memory_access receivers[],
+							     size_t receivers_count)
+{
+	ffa_memory_handle_t handle;
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)four_share_pages, 4, 0},
+		{(void *)share_page, 1, 0}
+	};
+	const uint32_t constituents_count = ARRAY_SIZE(constituents);
+	struct ffa_value ret;
+
+	/* Prepare the composite offset for the comparison. */
+	for (uint32_t i = 0; i < receivers_count; i++) {
+		receivers[i].composite_memory_region_offset =
+			sizeof(struct ffa_memory_region) +
+			receivers_count *
+				sizeof(struct ffa_memory_access);
+	}
+
+	handle = memory_init_and_send(mb->send, MAILBOX_SIZE, SENDER, receivers,
+				      receivers_count, constituents,
+				      constituents_count, FFA_MEM_SHARE_SMC64, &ret);
+	return handle;
+}
+
+/**
+ * Test FF-A memory retrieve request from a VM into the SPMC.
+ * TFTF invokes all the FF-A calls expected from an hypervisor into the
+ * SPMC, even those that would be initiated by a VM, and then forwarded
+ * to the SPMC by the Hypervisor.
+ */
+test_result_t test_ffa_memory_retrieve_request_from_vm(void)
+{
+	struct mailbox_buffers mb;
+	struct ffa_memory_region *m;
+	struct ffa_memory_access receivers[2] = {
+		ffa_memory_access_init_permissions_from_mem_func(VM_ID(1),
+								 FFA_MEM_SHARE_SMC64),
+		ffa_memory_access_init_permissions_from_mem_func(SP_ID(2),
+								 FFA_MEM_SHARE_SMC64),
+	};
+	ffa_memory_handle_t handle;
+
+	GET_TFTF_MAILBOX(mb);
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	handle = base_memory_send_for_nwd_retrieve(&mb, receivers, ARRAY_SIZE(receivers));
+
+	if (handle == FFA_MEMORY_HANDLE_INVALID) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!memory_retrieve(&mb, &m, handle, 0, receivers, ARRAY_SIZE(receivers), 0)) {
+		ERROR("Failed to retrieve the memory.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	ffa_rx_release();
+
+	if (!memory_relinquish(mb.send, handle, VM_ID(1))) {
+		ERROR("%s: Failed to relinquish.\n", __func__);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_ffa_call_error(ffa_mem_reclaim(handle, 0))) {
+		ERROR("%s: Failed to reclaim memory.\n", __func__);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+test_result_t base_ffa_memory_retrieve_request_fail_buffer_realm(bool delegate_rx,
+								 bool is_hypervisor_retrieve_req)
+{
+	struct mailbox_buffers mb;
+	struct ffa_memory_access receivers[2] = {
+		ffa_memory_access_init_permissions_from_mem_func(VM_ID(1),
+								 FFA_MEM_SHARE_SMC64),
+		ffa_memory_access_init_permissions_from_mem_func(SP_ID(2),
+								 FFA_MEM_SHARE_SMC64),
+	};
+	ffa_memory_handle_t handle;
+	u_register_t ret_rmm;
+	struct ffa_value ret;
+	size_t descriptor_size;
+	void *to_delegate;
+
+	GET_TFTF_MAILBOX(mb);
+
+	to_delegate = delegate_rx ? mb.recv : mb.send;
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	handle = base_memory_send_for_nwd_retrieve(&mb, receivers, ARRAY_SIZE(receivers));
+
+	if (handle == FFA_MEMORY_HANDLE_INVALID) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_hypervisor_retrieve_req) {
+		/* Prepare the hypervisor retrieve request. */
+		ffa_hypervisor_retrieve_request_init(mb.send, handle);
+		descriptor_size = sizeof(struct ffa_memory_region);
+	} else {
+		/* Prepare the descriptor before delegating the buffer. */
+		descriptor_size = ffa_memory_retrieve_request_init(
+			mb.send, handle, SENDER, receivers, ARRAY_SIZE(receivers),
+			0, 0, FFA_MEMORY_NORMAL_MEM, FFA_MEMORY_CACHE_WRITE_BACK,
+			FFA_MEMORY_INNER_SHAREABLE);
+	}
+
+	/* Delegate buffer to realm. */
+	ret_rmm = host_rmi_granule_delegate((u_register_t)to_delegate);
+
+	if (ret_rmm != 0UL) {
+		ERROR("Delegate operation returns %#lx for address %p\n",
+		      ret_rmm, mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = ffa_mem_retrieve_req(descriptor_size, descriptor_size);
+
+	if (!is_expected_ffa_error(ret, FFA_ERROR_ABORTED)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Undelegate to reestablish the same security state for PAS. */
+	ret_rmm = host_rmi_granule_undelegate((u_register_t)to_delegate);
+
+	if (ret_rmm != 0UL) {
+		ERROR("Undelegate operation returns %#lx for address %p\n",
+		      ret_rmm, mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Retry the memory retrieve request, but this time expect success. */
+	ret = ffa_mem_retrieve_req(descriptor_size, descriptor_size);
+
+	if (is_ffa_call_error(ret)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	ffa_rx_release();
+
+	if (!is_hypervisor_retrieve_req &&
+	    !memory_relinquish(mb.send, handle, VM_ID(1))) {
+		ERROR("%s: Failed to relinquish.\n", __func__);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_ffa_call_error(ffa_mem_reclaim(handle, 0))) {
+		ERROR("%s: Failed to reclaim memory.\n", __func__);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/**
+ * Test that a retrieve request from the hypervisor would fail if the TX buffer
+ * was in realm state. This is recreating the situation in which the Hyp doesn't
+ * track the state of the operation, and it is forwarding the retrieve request
+ * to the SPMC.
+ */
+test_result_t test_ffa_memory_retrieve_request_fail_tx_realm(void)
+{
+	return base_ffa_memory_retrieve_request_fail_buffer_realm(false, false);
+}
+
+/**
+ * Test that a retrieve request from the hypervisor would fail if the RX buffer
+ * was in realm state. This is recreating the situation in which the Hyp doesn't
+ * track the state of the operation, and it is forwarding the retrieve request
+ * to the SPMC. The operation shall fail at the point at which the SPMC is
+ * providing retrieve response. The SPMC should have reverted the change to any
+ * of its share state tracking structures, such that the final reclaim would be
+ * possible.
+ */
+test_result_t test_ffa_memory_retrieve_request_fail_rx_realm(void)
+{
+	return base_ffa_memory_retrieve_request_fail_buffer_realm(true, false);
+}
+
+/**
+ * Test that a memory relinquish call fails smoothly if the TX buffer of the
+ * Hypervisor is on realm PAS.
+ */
+test_result_t test_ffa_memory_relinquish_fail_tx_realm(void)
+{
+	struct mailbox_buffers mb;
+	struct ffa_memory_region *m;
+	const ffa_id_t vm_id = VM_ID(1);
+	struct ffa_memory_access receivers[2] = {
+		ffa_memory_access_init_permissions_from_mem_func(vm_id,
+								 FFA_MEM_SHARE_SMC64),
+		ffa_memory_access_init_permissions_from_mem_func(SP_ID(2),
+								 FFA_MEM_SHARE_SMC64),
+	};
+	struct ffa_value ret;
+	ffa_memory_handle_t handle;
+	u_register_t ret_rmm;
+
+	GET_TFTF_MAILBOX(mb);
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	handle = base_memory_send_for_nwd_retrieve(&mb, receivers, ARRAY_SIZE(receivers));
+
+	if (handle == FFA_MEMORY_HANDLE_INVALID) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!memory_retrieve(&mb, &m, handle, 0, receivers, ARRAY_SIZE(receivers), 0)) {
+		ERROR("Failed to retrieve the memory.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Prepare relinquish descriptor before calling ffa_mem_relinquish. */
+	ffa_mem_relinquish_init(mb.send, handle, 0, vm_id);
+
+	/*
+	 * Delegate page to a realm. This should make memory sharing operation
+	 * fail.
+	 */
+	ret_rmm = host_rmi_granule_delegate((u_register_t)mb.send);
+	if (ret_rmm != 0UL) {
+		ERROR("Delegate operation returns 0x%lx for address %llx\n",
+		      ret_rmm, (uint64_t)mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Access to Realm region from SPMC should return FFA_ERROR_ABORTED. */
+	ret = ffa_mem_relinquish();
+	if (!is_expected_ffa_error(ret, FFA_ERROR_ABORTED)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Undelegate to reestablish the same security state for PAS. */
+	ret_rmm = host_rmi_granule_undelegate((u_register_t)mb.send);
+	if (ret_rmm != 0UL) {
+		ERROR("Undelegate operation returns 0x%lx for address %llx\n",
+		      ret_rmm, (uint64_t)mb.send);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* After undelegate the relinquish is expected to succeed. */
+	ret = ffa_mem_relinquish();
+
+	if (is_ffa_call_error(ret)) {
+		ERROR("Expected relinquish to succeed\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = ffa_mem_reclaim(handle, 0);
+	if (is_ffa_call_error(ret)) {
+		ERROR("Memory reclaim failed!\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/**
+ * Test that a hypervisor retrieve request would fail if the TX buffer
+ * was in realm PAS.
+ * The hypervisor retrieve request normally happens during an FFA_MEM_RECLAIM.
+ * This validates that the SPMC is able to recover from a GPF from accessing the
+ * TX buffer when reading the hypervisor retrieve request message.
+ */
+test_result_t test_ffa_hypervisor_retrieve_request_fail_tx_realm(void)
+{
+	return base_ffa_memory_retrieve_request_fail_buffer_realm(false, true);
+}
+
+/**
+ * Test that a hypervisor retrieve request would fail if the RX buffer
+ * was in realm PAS.
+ * The hypervisor retrieve request normally happens during an FFA_MEM_RECLAIM.
+ * This validates the SPMC is able to recover from a GPF from accessing the RX
+ * buffer when preparing the retrieve response.
+ */
+test_result_t test_ffa_hypervisor_retrieve_request_fail_rx_realm(void)
+{
+	return base_ffa_memory_retrieve_request_fail_buffer_realm(true, true);
+}

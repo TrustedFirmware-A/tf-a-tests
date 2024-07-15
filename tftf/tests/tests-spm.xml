@@ -139,6 +139,8 @@
                function="test_share_forbidden_ranges" />
      <testcase name="Donate consecutively"
                function="test_consecutive_donate" />
+     <testcase name="Normal World VM retrieve request into SPMC"
+               function="test_ffa_memory_retrieve_request_from_vm" />
   </testsuite>
 
   <testsuite name="SIMD,SVE Registers context"

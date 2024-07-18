@@ -1236,6 +1236,13 @@ test_result_t test_ffa_mem_share_tx_realm_expect_fail(void)
 		return TEST_RESULT_FAIL;
 	}
 
+	remaining_constituent_count = ffa_memory_region_init(
+		(struct ffa_memory_region *)mb.send, PAGE_SIZE, HYP_ID,
+		&receiver, 1, constituents, 1, 0, 0,
+		FFA_MEMORY_NOT_SPECIFIED_MEM, FFA_MEMORY_CACHE_WRITE_BACK,
+		FFA_MEMORY_INNER_SHAREABLE,
+		&total_length, &fragment_length);
+
 	/* Retry but expect test to pass. */
 	ret = ffa_mem_share(total_length, fragment_length);
 
@@ -1403,6 +1410,18 @@ test_result_t base_ffa_memory_retrieve_request_fail_buffer_realm(bool delegate_r
 		return TEST_RESULT_FAIL;
 	}
 
+	if (is_hypervisor_retrieve_req) {
+		/* Prepare the hypervisor retrieve request. */
+		ffa_hypervisor_retrieve_request_init(mb.send, handle);
+		descriptor_size = sizeof(struct ffa_memory_region);
+	} else {
+		/* Prepare the descriptor before delegating the buffer. */
+		descriptor_size = ffa_memory_retrieve_request_init(
+			mb.send, handle, SENDER, receivers, ARRAY_SIZE(receivers),
+			0, 0, FFA_MEMORY_NORMAL_MEM, FFA_MEMORY_CACHE_WRITE_BACK,
+			FFA_MEMORY_INNER_SHAREABLE);
+	}
+
 	/* Retry the memory retrieve request, but this time expect success. */
 	ret = ffa_mem_retrieve_req(descriptor_size, descriptor_size);
 
@@ -1516,6 +1535,9 @@ test_result_t test_ffa_memory_relinquish_fail_tx_realm(void)
 		      ret_rmm, (uint64_t)mb.send);
 		return TEST_RESULT_FAIL;
 	}
+
+	/* Prepare the descriptor. */
+	ffa_mem_relinquish_init(mb.send, handle, 0, vm_id);
 
 	/* After undelegate the relinquish is expected to succeed. */
 	ret = ffa_mem_relinquish();

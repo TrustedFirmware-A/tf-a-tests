@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -44,7 +44,14 @@
  * RMM
  */
 /* RMI SMC64 FIDs handled by the RMMD */
-/* no parameters */
+
+/*
+ * arg0: Requested interface version
+ *
+ * ret0: Command return status
+ * ret1: Lower implemented interface revision
+ * ret2: Higher implemented interface revision
+ */
 #define RMI_VERSION			SMC64_RMI_FID(U(0x0))
 
 /*
@@ -62,7 +69,8 @@
  * arg1 == data address
  * arg2 == map address
  * arg3 == SRC address
- */
+ * arg4 == flags
+*/
 #define RMI_DATA_CREATE			SMC64_RMI_FID(U(0x3))
 
 /*
@@ -149,10 +157,12 @@
  * arg0 == RD address
  * arg1 == map address
  * arg2 == level
+ *
  * ret1 == level
  * ret2 == s2tte type
  * ret3 == s2tte
  * ret4 == ripas
+ * if ret0 == RMI_SUCCESS, otherwise, undefined.
  */
 #define RMI_RTT_READ_ENTRY		SMC64_RMI_FID(U(0x11))
 
@@ -190,17 +200,22 @@
 
 /*
  * arg0 == RD address
- * arg1 == map address
- * arg2 == level
+ * arg1 == start address
+ * arg2 == end address
+ *
+ * ret1 == Top of the address range where the RIPAS was updated,
+ * if ret0 == RMI_SUCCESS
  */
 #define RMI_RTT_INIT_RIPAS		SMC64_RMI_FID(U(0x18))
 
 /*
  * arg0 == RD address
  * arg1 == REC address
- * arg2 == map address
- * arg3 == level
- * arg4 == ripas
+ * arg2 == start address
+ * arg3 == end address
+ *
+ * ret1 == Top of the address range where the RIPAS was updated,
+ *	   if ret0 == RMI_SUCCESS
  */
 #define RMI_RTT_SET_RIPAS		SMC64_RMI_FID(U(0x19))
 

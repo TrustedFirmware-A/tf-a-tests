@@ -115,6 +115,16 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}								\
 	} while (0)
 
+#define SKIP_TEST_IF_DEBUGV8P9_NOT_SUPPORTED()					\
+	do {									\
+		if (arch_get_debug_version() != 				\
+				ID_AA64DFR0_V8_9_DEBUG_ARCH_SUPPORTED) {	\
+			tftf_testcase_printf(					\
+				"Debugv8p9 not supported\n");			\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (0)
+
 #define SKIP_TEST_IF_SVE_NOT_SUPPORTED()					\
 	do {									\
 		if (!is_armv8_2_sve_present()) {				\

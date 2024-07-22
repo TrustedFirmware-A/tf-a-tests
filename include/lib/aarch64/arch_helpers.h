@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2023, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2024, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -610,6 +610,8 @@ DEFINE_RENAME_SYSREG_RW_FUNCS(trcextinselr3, TRCEXTINSELR3)
 DEFINE_RENAME_SYSREG_RW_FUNCS(trcclaimset, TRCCLAIMSET)
 DEFINE_RENAME_SYSREG_RW_FUNCS(trcclaimclr, TRCCLAIMCLR)
 DEFINE_RENAME_SYSREG_READ_FUNC(trcdevarch, TRCDEVARCH)
+
+DEFINE_RENAME_SYSREG_READ_FUNC(mdselr_el1, MDSELR_EL1)
 
 /* FEAT_HCX HCRX_EL2 */
 DEFINE_RENAME_SYSREG_RW_FUNCS(hcrx_el2, HCRX_EL2)

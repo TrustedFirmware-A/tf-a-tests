@@ -194,6 +194,7 @@
 #define ID_AA64DFR0_V8_DEBUG_ARCH_VHE_SUPPORTED	U(7)
 #define ID_AA64DFR0_V8_2_DEBUG_ARCH_SUPPORTED	U(8)
 #define ID_AA64DFR0_V8_4_DEBUG_ARCH_SUPPORTED	U(9)
+#define ID_AA64DFR0_V8_9_DEBUG_ARCH_SUPPORTED   U(0xb)
 
 /* ID_AA64DFR0_EL1.HPMN0 definitions */
 #define ID_AA64DFR0_HPMN0_SHIFT			U(60)
@@ -1288,6 +1289,11 @@
  * Armv8.6 - Enhanced Counter Virtualization Registers
  ******************************************************************************/
 #define CNTPOFF_EL2  S3_4_C14_C0_6
+
+/******************************************************************************
+ * Armv8.9 - Breakpoint and Watchpoint Selection Register
+ ******************************************************************************/
+#define MDSELR_EL1		S2_0_C0_C4_2
 
 /*******************************************************************************
  * Armv9.0 - Trace Buffer Extension System Registers

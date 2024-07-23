@@ -113,7 +113,8 @@ bool ffa_features_test_targets(const struct ffa_features_test *targets,
 bool memory_retrieve(struct mailbox_buffers *mb,
 		     struct ffa_memory_region **retrieved, uint64_t handle,
 		     ffa_id_t sender, struct ffa_memory_access receivers[],
-		     uint32_t receiver_count, ffa_memory_region_flags_t flags);
+		     uint32_t receiver_count, ffa_memory_region_flags_t flags,
+		     bool is_normal_memory);
 
 bool hypervisor_retrieve_request(struct mailbox_buffers *mb, uint64_t handle,
 				 void *out, uint32_t out_size);

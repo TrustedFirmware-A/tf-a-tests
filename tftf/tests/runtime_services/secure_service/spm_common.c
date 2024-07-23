@@ -270,12 +270,17 @@ bool ffa_features_test_targets(const struct ffa_features_test *targets,
 bool memory_retrieve(struct mailbox_buffers *mb,
 		     struct ffa_memory_region **retrieved, uint64_t handle,
 		     ffa_id_t sender, struct ffa_memory_access receivers[],
-		     uint32_t receiver_count, ffa_memory_region_flags_t flags)
+		     uint32_t receiver_count, ffa_memory_region_flags_t flags,
+		     bool is_normal_memory)
 {
 	struct ffa_value ret;
 	uint32_t fragment_size;
 	uint32_t total_size;
 	uint32_t descriptor_size;
+	enum ffa_memory_type memory_type = is_normal_memory ?
+		FFA_MEMORY_NORMAL_MEM : FFA_MEMORY_DEVICE_MEM;
+	enum ffa_memory_cacheability memory_cacheability = is_normal_memory ?
+		FFA_MEMORY_CACHE_WRITE_BACK : FFA_MEMORY_DEV_NGNRNE;
 
 	if (retrieved == NULL || mb == NULL) {
 		ERROR("Invalid parameters!\n");
@@ -284,8 +289,7 @@ bool memory_retrieve(struct mailbox_buffers *mb,
 
 	descriptor_size = ffa_memory_retrieve_request_init(
 		mb->send, handle, sender, receivers, receiver_count, 0, flags,
-		FFA_MEMORY_NORMAL_MEM, FFA_MEMORY_CACHE_WRITE_BACK,
-		FFA_MEMORY_INNER_SHAREABLE);
+		memory_type, memory_cacheability, FFA_MEMORY_INNER_SHAREABLE);
 
 	ret = ffa_mem_retrieve_req(descriptor_size, descriptor_size);
 

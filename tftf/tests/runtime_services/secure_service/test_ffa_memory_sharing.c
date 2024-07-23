@@ -177,7 +177,7 @@ test_result_t test_share_forbidden_ranges(void)
  */
 static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 					 struct ffa_memory_region_constituent *constituents,
-					 size_t constituents_count)
+					 size_t constituents_count, bool is_normal_memory)
 {
 	struct ffa_value ret;
 	ffa_memory_handle_t handle;
@@ -186,10 +186,13 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	unsigned int rme_supported = get_armv9_2_feat_rme_support();
 	const bool check_gpc_fault =
 		mem_func != FFA_MEM_SHARE_SMC64 &&
-		rme_supported != 0U;
+		rme_supported != 0U && is_normal_memory;
 
-	/* Arbitrarily write 5 words after using memory. */
-	const uint32_t nr_words_to_write = 5;
+	/*
+	 * For normal memory arbitrarilty write 5 words after using memory.
+	 * For device just write 1 so we only write in the data register of the device.
+	 */
+	const uint32_t nr_words_to_write = is_normal_memory ? 5 : 1;
 
 	struct ffa_memory_access receiver =
 		ffa_memory_access_init_permissions_from_mem_func(borrower,
@@ -232,7 +235,7 @@ static test_result_t test_memory_send_sp(uint32_t mem_func, ffa_id_t borrower,
 	ptr = (uint32_t *)constituents[0].address;
 
 	ret = cactus_mem_send_cmd(SENDER, borrower, mem_func, handle, 0,
-				  nr_words_to_write, false);
+				  nr_words_to_write, false, is_normal_memory);
 
 	if (!is_ffa_direct_response(ret) ||
 	    cactus_get_response(ret) != CACTUS_SUCCESS) {
@@ -295,7 +298,7 @@ test_result_t test_mem_share_sp(void)
 				sizeof(struct ffa_memory_region_constituent);
 
 	return test_memory_send_sp(FFA_MEM_SHARE_SMC64, RECEIVER, constituents,
-				   constituents_count);
+				   constituents_count, true);
 }
 
 test_result_t test_mem_lend_sp(void)
@@ -309,7 +312,7 @@ test_result_t test_mem_lend_sp(void)
 				sizeof(struct ffa_memory_region_constituent);
 
 	return test_memory_send_sp(FFA_MEM_LEND_SMC64, RECEIVER, constituents,
-				   constituents_count);
+				   constituents_count, true);
 }
 
 test_result_t test_mem_donate_sp(void)
@@ -320,7 +323,7 @@ test_result_t test_mem_donate_sp(void)
 	const uint32_t constituents_count = sizeof(constituents) /
 				sizeof(struct ffa_memory_region_constituent);
 	return test_memory_send_sp(FFA_MEM_DONATE_SMC64, RECEIVER, constituents,
-				   constituents_count);
+				   constituents_count, true);
 }
 
 test_result_t test_consecutive_donate(void)
@@ -335,7 +338,7 @@ test_result_t test_consecutive_donate(void)
 
 	test_result_t ret = test_memory_send_sp(FFA_MEM_DONATE_SMC64, SP_ID(1),
 						constituents,
-						constituents_count);
+						constituents_count, true);
 
 	if (ret != TEST_RESULT_SUCCESS) {
 		ERROR("Failed at first attempting of sharing.\n");
@@ -360,6 +363,24 @@ test_result_t test_consecutive_donate(void)
 
 	return TEST_RESULT_SUCCESS;
 }
+
+/*
+ * Lend device memory to the Secure Partition.
+ */
+test_result_t test_ffa_mem_lend_device_memory_sp(void)
+{
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)0x1c090000, 1, 0},
+	};
+
+	const uint32_t constituents_count = sizeof(constituents) /
+				sizeof(struct ffa_memory_region_constituent);
+
+	return test_memory_send_sp(FFA_MEM_LEND_SMC64, RECEIVER, constituents,
+				   constituents_count, false);
+
+}
+
 
 /*
  * Test requests a memory send operation between cactus SPs.
@@ -527,7 +548,7 @@ test_result_t test_mem_share_to_sp_clear_memory(void)
 
 	ret = cactus_mem_send_cmd(SENDER, RECEIVER, FFA_MEM_LEND_SMC64, handle,
 				  FFA_MEMORY_REGION_FLAG_CLEAR,
-				  nr_words_to_write, false);
+				  nr_words_to_write, false, true);
 
 	if (!is_ffa_direct_response(ret)) {
 		return TEST_RESULT_FAIL;
@@ -1322,7 +1343,8 @@ test_result_t test_ffa_memory_retrieve_request_from_vm(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	if (!memory_retrieve(&mb, &m, handle, 0, receivers, ARRAY_SIZE(receivers), 0)) {
+	if (!memory_retrieve(&mb, &m, handle, 0, receivers, ARRAY_SIZE(receivers),
+			     0, true)) {
 		ERROR("Failed to retrieve the memory.\n");
 		return TEST_RESULT_FAIL;
 	}
@@ -1503,7 +1525,8 @@ test_result_t test_ffa_memory_relinquish_fail_tx_realm(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	if (!memory_retrieve(&mb, &m, handle, 0, receivers, ARRAY_SIZE(receivers), 0)) {
+	if (!memory_retrieve(&mb, &m, handle, 0, receivers, ARRAY_SIZE(receivers),
+			     0, true)) {
 		ERROR("Failed to retrieve the memory.\n");
 		return TEST_RESULT_FAIL;
 	}

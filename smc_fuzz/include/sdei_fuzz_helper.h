@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <stdlib.h>
+#include <time.h>
+
 #include <fuzz_helper.h>
 #include "smcmalloc.h"
 

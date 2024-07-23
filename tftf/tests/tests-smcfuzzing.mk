@@ -16,7 +16,7 @@ SMC_FUZZ_CALL_START ?= 0
 SMC_FUZZ_CALL_END ?= $(SMC_FUZZ_CALLS_PER_INSTANCE)
 # ADDED: define whether events should specifically be constrained
 EXCLUDE_FUNCID ?= 0
-CONSTRAIN_EVENTS ?= 1
+CONSTRAIN_EVENTS ?= 0
 INTR_ASSERT ?= 0
 
 # Validate SMC fuzzer parameters
@@ -89,4 +89,5 @@ TESTS_SOURCES	+=							\
 		tsp_fuzz_helper.c					\
 		nfifo.c							\
 		constraint.c						\
+		vendor_fuzz_helper.c \
 	)

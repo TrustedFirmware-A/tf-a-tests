@@ -580,8 +580,8 @@ void run_sdei_fuzz(int funcid, struct memmod *mmod, bool inrange, int cntid)
 	} else if (funcid == sdei_event_routing_set_funcid) {
 		uint64_t routing_modes[2] = {SDEI_REGF_RM_ANY, SDEI_REGF_RM_PE};
 
-		setconstraint(FUZZER_CONSTRAINT_RANGE, routing_modes, 2, SDEI_EVENT_ROUTING_SET_CALL_ARG4_ROUTING, mmod, FUZZER_CONSTRAINT_ACCMODE);
-		setconstraint(FUZZER_CONSTRAINT_SVALUE, PE_SVALUE, 1, SDEI_EVENT_ROUTING_SET_CALL_ARG5_AFF, mmod, FUZZER_CONSTRAINT_ACCMODE);
+		setconstraint(FUZZER_CONSTRAINT_RANGE, routing_modes, 2, SDEI_EVENT_ROUTING_SET_CALL_ARG2_ROUTING, mmod, FUZZER_CONSTRAINT_ACCMODE);
+		setconstraint(FUZZER_CONSTRAINT_SVALUE, PE_SVALUE, 1, SDEI_EVENT_ROUTING_SET_CALL_ARG3_AFF, mmod, FUZZER_CONSTRAINT_ACCMODE);
 		struct inputparameters inp;
 
 		if (CONSTRAIN_EVENTS) {
@@ -674,8 +674,8 @@ void run_sdei_fuzz(int funcid, struct memmod *mmod, bool inrange, int cntid)
 
 
 		setconstraint(FUZZER_CONSTRAINT_SVALUE, evnum, 1, SDEI_EVENT_ROUTING_SET_CALL_ARG1_ENUM, mmod, FUZZER_CONSTRAINT_EXCMODE);
-		setconstraint(FUZZER_CONSTRAINT_SVALUE, ANY_ROUTING, 1, SDEI_EVENT_ROUTING_SET_CALL_ARG4_ROUTING, mmod, FUZZER_CONSTRAINT_ACCMODE);
-		setconstraint(FUZZER_CONSTRAINT_SVALUE, PE_SVALUE, 1, SDEI_EVENT_ROUTING_SET_CALL_ARG5_AFF, mmod, FUZZER_CONSTRAINT_ACCMODE);
+		setconstraint(FUZZER_CONSTRAINT_SVALUE, ANY_ROUTING, 1, SDEI_EVENT_ROUTING_SET_CALL_ARG2_ROUTING, mmod, FUZZER_CONSTRAINT_ACCMODE);
+		setconstraint(FUZZER_CONSTRAINT_SVALUE, PE_SVALUE, 1, SDEI_EVENT_ROUTING_SET_CALL_ARG3_AFF, mmod, FUZZER_CONSTRAINT_ACCMODE);
 		inp = generate_args(SDEI_EVENT_ROUTING_SET_CALL, SMC_FUZZ_SANITY_LEVEL);
 		ret = sdei_event_routing_set(inp.x1, inp.x2);
 		print_return("routing_set", ret);

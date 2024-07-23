@@ -54,10 +54,10 @@ smc: SDEI_EVENT_GET_INFO_CALL
 smc: SDEI_EVENT_ROUTING_SET_CALL
         arg1:event
                 field:enum:[0,31] = 0
-        arg4:routingmode
+        arg2:routingmode
                 field:routing:[0,0] = 0
                 field:constant:[1,63] = 0
-        arg5:affinity
+        arg3:affinity
                 field:aff:[0,63] = 0
 smc: SDEI_PE_MASK_CALL
         arg1 = 0

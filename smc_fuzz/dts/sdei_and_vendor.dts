@@ -1,0 +1,106 @@
+/*
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/dts-v1/;
+
+/ {
+
+	vendor_el3 {
+		bias = <1>;
+		uid {
+			bias = <30>;
+			functionname = "ven_el3_svc_uuid_funcid";
+		};
+		count {
+			bias = <30>;
+			functionname = "ven_el3_svc_count_funcid";
+		};
+		version {
+			bias = <30>;
+			functionname = "ven_el3_svc_version_funcid";
+		};
+	};
+
+	sdei {
+		bias = <0>;
+		sdei_version {
+			bias = <30>;
+			functionname = "sdei_version_funcid";
+		};
+		sdei_pe_unmask {
+			bias = <30>;
+			functionname = "sdei_pe_unmask_funcid";
+		};
+		sdei_pe_mask {
+			bias = <30>;
+			functionname = "sdei_pe_mask_funcid";
+		};
+		sdei_event_status {
+			bias = <30>;
+			functionname = "sdei_event_status_funcid";
+		};
+		sdei_event_signal {
+			bias = <0>;
+			functionname = "sdei_event_signal_funcid";
+		};
+		sdei_private_reset {
+			bias = <30>;
+			functionname = "sdei_private_reset_funcid";
+		};
+		sdei_shared_reset {
+			bias = <30>;
+			functionname = "sdei_shared_reset_funcid";
+		};
+		sdei_interrupt_bind {
+			bias = <150>;
+			functionname = "sdei_interrupt_bind_funcid";
+		};
+		sdei_event_register {
+			bias = <30>;
+			functionname = "sdei_event_register_funcid";
+		};
+		sdei_event_enable {
+			bias = <30>;
+			functionname = "sdei_event_enable_funcid";
+		};
+		sdei_features {
+			bias = <30>;
+			functionname = "sdei_features_funcid";
+		};
+		sdei_event_disable {
+			bias = <30>;
+			functionname = "sdei_event_disable_funcid";
+		};
+		sdei_event_context {
+			bias = <30>;
+			functionname = "sdei_event_context_funcid";
+		};
+		sdei_event_complete {
+			bias = <30>;
+			functionname = "sdei_event_complete_funcid";
+		};
+		sdei_event_complete_and_resume {
+			bias = <30>;
+			functionname = "sdei_event_complete_and_resume_funcid";
+		};
+		sdei_event_unregister {
+			bias = <30>;
+			functionname = "sdei_event_unregister_funcid";
+		};
+		sdei_event_get_info {
+			bias = <30>;
+			functionname = "sdei_event_get_info_funcid";
+		};
+		sdei_event_routing_set {
+			bias = <30>;
+			functionname = "sdei_event_routing_set_funcid";
+		};
+		sdei_interrupt_release {
+			bias = <30>;
+			functionname = "sdei_interrupt_release_funcid";
+		};
+	};
+};

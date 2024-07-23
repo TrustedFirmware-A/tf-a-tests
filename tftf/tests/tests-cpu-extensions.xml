@@ -35,6 +35,7 @@
     <testcase name="PMUv3 cycle counter functional in NS" function="test_pmuv3_cycle_works_ns" />
     <testcase name="PMUv3 event counter functional in NS" function="test_pmuv3_event_works_ns" />
     <testcase name="PMUv3 SMC counter preservation" function="test_pmuv3_el3_preserves" />
+    <testcase name="LS64 support" function="test_ls64_instructions" />
   </testsuite>
 
   <testsuite name="ARM_ARCH_SVC" description="Arm Architecture Service tests">

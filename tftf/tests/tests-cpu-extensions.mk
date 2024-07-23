@@ -11,10 +11,12 @@ TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	extensions/debugv8p9/test_debugv8p9.c				\
 	extensions/ecv/test_ecv.c					\
 	extensions/fgt/test_fgt.c					\
-	extensions/pmuv3/test_pmuv3.c					\
+	extensions/ls64/test_ls64.c 					\
+	extensions/ls64/ls64_operations.S				\
 	extensions/mpam/test_mpam.c					\
 	extensions/mte/test_mte.c					\
 	extensions/pauth/test_pauth.c					\
+	extensions/pmuv3/test_pmuv3.c					\
 	extensions/sme/test_sme.c					\
 	extensions/sme/test_sme2.c					\
 	extensions/spe/test_spe.c					\

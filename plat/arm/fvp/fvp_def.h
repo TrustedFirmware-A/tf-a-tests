@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -28,11 +28,19 @@
  * FVP memory map related constants
  ******************************************************************************/
 
-#define DEVICE0_BASE		0x1a000000
-#define DEVICE0_SIZE		0x12200000
+#define DEVICE0_BASE			0x1a000000
+#define DEVICE0_SIZE			0x12200000
 
-#define DEVICE1_BASE		0x2f000000
-#define DEVICE1_SIZE		0x400000
+#define DEVICE1_BASE			0x2f000000
+#define DEVICE1_SIZE			0x400000
+
+/**
+ * NOTE: LS64_ATOMIC_DEVICE Memory Region (0x1d000000 - 0x1d00ffff) has been
+ * configured within the FVP to support only st64b/ld64b instructions.
+ * ldr/str instructions cannot be used to access this memory.
+ */
+#define LS64_ATOMIC_DEVICE_BASE		0x1d000000
+#define LS64_ATOMIC_DEVICE_SIZE		0x10000
 
 /*******************************************************************************
  * GIC-400 & interrupt handling related constants

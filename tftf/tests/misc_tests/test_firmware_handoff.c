@@ -20,8 +20,8 @@ test_result_t test_handoff_header(void)
 {
 	struct transfer_list_header *tl = (struct transfer_list_header *)ns_tl;
 
-	assert((uint32_t)tl_signature ==
-	       (REGISTER_CONVENTION_VERSION_MASK | TRANSFER_LIST_SIGNATURE));
+	assert(tl_signature ==
+		TRANSFER_LIST_HANDOFF_X1_VALUE(TRANSFER_LIST_VERSION));
 
 	if (transfer_list_check_header(tl) == TL_OPS_NON) {
 		return TEST_RESULT_FAIL;

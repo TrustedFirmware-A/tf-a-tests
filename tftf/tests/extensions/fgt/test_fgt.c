@@ -132,3 +132,25 @@ test_result_t test_fgt_enabled(void)
 	return TEST_RESULT_SUCCESS;
 #endif	/* __aarch64__ */
 }
+
+test_result_t test_fgt2_enabled(void)
+{
+	SKIP_TEST_IF_AARCH32();
+
+
+#ifdef __aarch64__
+	SKIP_TEST_IF_FGT2_NOT_SUPPORTED();
+
+	/* The following registers are read to test their presence when
+	 * FEAT_FGT2 is supported
+	 */
+
+	read_hfgitr2_el2();
+	read_hfgrtr2_el2();
+	read_hfgwtr2_el2();
+	read_hdfgrtr2_el2();
+	read_hdfgwtr2_el2();
+
+	return TEST_RESULT_SUCCESS;
+#endif /* __aarch64__ */
+}

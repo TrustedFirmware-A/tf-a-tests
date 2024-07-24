@@ -125,6 +125,15 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}								\
 	} while (0)
 
+#define SKIP_TEST_IF_FGT2_NOT_SUPPORTED()					\
+	do {									\
+		if (!is_armv8_9_fgt2_present()) {				\
+			tftf_testcase_printf(					\
+				"Fine Grained Traps 2 not supported\n");	\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (0)
+
 #define SKIP_TEST_IF_SVE_NOT_SUPPORTED()					\
 	do {									\
 		if (!is_armv8_2_sve_present()) {				\

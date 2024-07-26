@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+  Copyright (c) 2018-2025, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -47,7 +47,7 @@
     <testcase name="CPU suspend to powerdown at level 1 in OSI mode" function="test_psci_suspend_powerdown_level1_osi" />
     <testcase name="CPU suspend to powerdown at level 2 in OSI mode" function="test_psci_suspend_powerdown_level2_osi" />
     <testcase name="CPU suspend to powerdown at level 3 in OSI mode" function="test_psci_suspend_powerdown_level3_osi" />
-
+    <testcase name="CPU suspend to powerdown at level 2 in OSI mode in an invalid state" function="test_psci_suspend_invalid" />
     <testcase name="CPU suspend to standby at level 0 in OSI mode" function="test_psci_suspend_standby_level0_osi" />
     <testcase name="CPU suspend to standby at level 1 in OSI mode" function="test_psci_suspend_standby_level1_osi" />
     <testcase name="CPU suspend to standby at level 2 in OSI mode" function="test_psci_suspend_standby_level2_osi" />

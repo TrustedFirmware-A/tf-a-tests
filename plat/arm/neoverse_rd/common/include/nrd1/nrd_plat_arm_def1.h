@@ -112,15 +112,15 @@
  ******************************************************************************/
 
 /* TF-A reserves DRAM space 0xFF000000- 0xFFFFFFFF for TZC */
-#define DRAM_BASE			PLAT_ARM_DRAM1_BASE
-#define DRAM_SIZE			(PLAT_ARM_DRAM1_SIZE - 0x1000000UL)
+#define DRAM_BASE			NRD_CSS_DRAM1_BASE
+#define DRAM_SIZE			(NRD_CSS_DRAM1_SIZE - 0x1000000)
 
 /*******************************************************************************
  * Cache related config
  ******************************************************************************/
 
 #define CACHE_WRITEBACK_SHIFT		U(6)
-#define CACHE_WRITEBACK_GRANULE		(1U << CACHE_WRITEBACK_SHIFT)
+#define CACHE_WRITEBACK_GRANULE		(1 << CACHE_WRITEBACK_SHIFT)
 
 /*******************************************************************************
  * Run-time address of the TFTF image.

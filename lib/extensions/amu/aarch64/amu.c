@@ -75,9 +75,56 @@ void amu_group0_voffset_write(unsigned int idx, uint64_t val)
 uint64_t amu_group1_cnt_read(unsigned int idx)
 {
 	assert(amu_get_version() != ID_AA64PFR0_AMU_NOT_SUPPORTED);
-	assert(idx < AMU_GROUP1_NR_COUNTERS);
+	assert(amu_group1_supported());
+	assert(idx < amu_group1_num_counters());
 
 	return amu_group1_cnt_read_internal(idx);
+}
+
+/* Return the number of counters available for group 1 */
+uint64_t amu_group1_num_counters(void)
+{
+	assert(amu_get_version() != ID_AA64PFR0_AMU_NOT_SUPPORTED);
+	assert(amu_group1_supported());
+
+	uint64_t num_counters = amu_group1_num_counters_internal();
+	if (num_counters < AMU_GROUP1_NR_COUNTERS) {
+		return num_counters;
+	}
+	return AMU_GROUP1_NR_COUNTERS;
+}
+
+/* Return the type for group 1  counter with index `idx`. */
+uint64_t amu_group1_evtype_read(unsigned int idx)
+{
+	assert(amu_get_version() != ID_AA64PFR0_AMU_NOT_SUPPORTED);
+	assert(amu_group1_supported());
+	assert(idx < amu_group1_num_counters());
+
+	return amu_group1_evtype_read_internal(idx);
+}
+
+/* Set the type for group 1 counter with index `idx`. */
+void amu_group1_evtype_write(unsigned int idx, uint64_t val)
+{
+	assert(amu_get_version() != ID_AA64PFR0_AMU_NOT_SUPPORTED);
+	assert(amu_group1_supported());
+	assert(idx < amu_group1_num_counters());
+
+	amu_group1_evtype_write_internal(idx, val);
+}
+
+/*
+ * Return whether group 1 counter at index `idx` is implemented.
+ *
+ * Using this function requires v8.6 FEAT_AMUv1p1 support.
+ */
+uint64_t amu_group1_is_counter_implemented(unsigned int idx)
+{
+	assert(amu_get_version() >= ID_AA64PFR0_AMU_V1P1);
+	assert(amu_group1_supported());
+
+	return amu_group1_is_cnt_impl_internal(idx);
 }
 
 /*

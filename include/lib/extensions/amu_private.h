@@ -11,6 +11,10 @@
 
 uint64_t amu_group0_cnt_read_internal(unsigned int idx);
 uint64_t amu_group1_cnt_read_internal(unsigned int idx);
+uint64_t amu_group1_num_counters_internal(void);
+uint64_t amu_group1_is_cnt_impl_internal(unsigned int idx);
+void amu_group1_evtype_write_internal(unsigned int idx, uint64_t val);
+uint64_t amu_group1_evtype_read_internal(unsigned int idx);
 
 #if __aarch64__
 uint64_t amu_group0_voffset_read_internal(unsigned int idx);

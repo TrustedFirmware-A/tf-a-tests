@@ -7,7 +7,7 @@
 #ifndef PLATFORM_DEF_H
 #define PLATFORM_DEF_H
 
-#include <nrd_soc_platform_def_v2.h>
+#include <nrd2/nrd_plat_arm_def2.h>
 
 /*
  * The RD-N2 Cfg1 platform is a variant of the RD-N2 platform with a

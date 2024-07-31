@@ -29,4 +29,13 @@
 /* AP Non-Secure UART related constants */
 #define NRD_CSS_NSEC_UART_BASE		UL(0x2A400000)
 
+/* Base address of trusted watchdog */
+#define NRD_CSS_TWDOG_BASE		UL(0x2A480000)
+
+/* Base address of non-trusted watchdog */
+#define NRD_CSS_WDOG_BASE		UL(0x0C0F0000)
+
+/* Memory mapped Generic timer interfaces */
+#define NRD_CSS_NSEC_CNT_BASE1			UL(0x2A830000)
+
 #endif /* NRD_CSS_DEF2_H */

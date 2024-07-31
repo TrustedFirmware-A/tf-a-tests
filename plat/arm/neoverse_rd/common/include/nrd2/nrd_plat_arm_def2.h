@@ -94,7 +94,7 @@
 #define IRQ_PCPU_HP_TIMER		U(26)
 
 /* Memory mapped Generic timer interfaces */
-#define SYS_CNT_BASE1			UL(0x2A830000)
+#define SYS_CNT_BASE1			NRD_CSS_NSEC_CNT_BASE1
 
 /* AP_REFCLK Generic Timer, Non-secure. */
 #define IRQ_CNTPSIRQ1			U(109)
@@ -144,10 +144,10 @@
  ******************************************************************************/
 
 /* Base address of trusted watchdog (SP805) */
-#define SP805_TWDOG_BASE		UL(0x2A480000)
+#define SP805_TWDOG_BASE		NRD_CSS_TWDOG_BASE
 
 /* Base address of non-trusted watchdog (SP805) */
-#define SP805_WDOG_BASE		UL(0x0C0F0000)
+#define SP805_WDOG_BASE		NRD_CSS_WDOG_BASE
 
 /* Trusted watchdog (SP805) Interrupt ID */
 #define IRQ_TWDOG_INTID			U(107)

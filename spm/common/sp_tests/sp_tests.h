@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2017-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -10,9 +10,10 @@
 #include <spm_common.h>
 
 /*
- * Test functions
+ * Self test functions
  */
 
 void ffa_tests(struct mailbox_buffers *mb);
+void cpu_feature_tests(void);
 
 #endif /* CACTUS_TESTS_H */

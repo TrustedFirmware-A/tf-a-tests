@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -46,6 +46,7 @@ CACTUS_SOURCES	:=					\
 	)						\
 	$(addprefix spm/common/sp_tests/,		\
 		sp_test_ffa.c				\
+		sp_test_cpu.c				\
 	)						\
 	$(addprefix spm/cactus/cactus_tests/,		\
 		cactus_message_loop.c			\

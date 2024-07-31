@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+  Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -143,14 +143,20 @@
                function="test_ffa_memory_retrieve_request_from_vm" />
   </testsuite>
 
-  <testsuite name="SIMD,SVE Registers context"
+  <testsuite name="SIMD context switch tests"
              description="Validate context switch between NWd and SWd" >
-     <testcase name="Check that SIMD registers context is preserved"
+     <testcase name="Check that Adv. SIMD registers context is preserved"
                function="test_simd_vectors_preserved" />
      <testcase name="Check that SVE registers context is preserved"
                function="test_sve_vectors_preserved" />
      <testcase name="Check that SVE operations in NWd are unaffected by SWd"
                function="test_sve_vectors_operations" />
+     <testcase name="Enter SPMC with SME SSVE enabled"
+               function="test_sme_streaming_sve" />
+     <testcase name="Enter SPMC with SME ZA enabled"
+               function="test_sme_za" />
+     <testcase name="Enter SPMC with SME SM+ZA enabled"
+               function="test_sme_streaming_sve_za" />
   </testsuite>
 
    <testsuite name="FF-A Interrupt"

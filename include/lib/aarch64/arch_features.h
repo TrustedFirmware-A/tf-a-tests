@@ -42,6 +42,20 @@ static inline bool is_armv8_2_sve_present(void)
 		ID_AA64PFR0_SVE_MASK) == 1U;
 }
 
+static inline bool is_feat_advsimd_present(void)
+{
+	u_register_t id_aa64pfr0_advsimd =
+		EXTRACT(ID_AA64PFR0_ADVSIMD, read_id_aa64pfr0_el1());
+	return (id_aa64pfr0_advsimd == 0 || id_aa64pfr0_advsimd == 1);
+}
+
+static inline bool is_feat_fp_present(void)
+{
+	u_register_t id_aa64pfr0_fp =
+		EXTRACT(ID_AA64PFR0_FP, read_id_aa64pfr0_el1());
+	return (id_aa64pfr0_fp == 0 || id_aa64pfr0_fp == 1);
+}
+
 static inline bool is_armv8_2_ttcnp_present(void)
 {
 	return ((read_id_aa64mmfr2_el1() >> ID_AA64MMFR2_EL1_CNP_SHIFT) &

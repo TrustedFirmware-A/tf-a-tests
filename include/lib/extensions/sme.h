@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -12,6 +12,9 @@
 #define MAX_VL			(512)
 #define MAX_VL_B		(MAX_VL / 8)
 #define SME_SVQ_ARCH_MAX	(MASK(SMCR_ELX_LEN) >> SMCR_ELX_LEN_SHIFT)
+
+/* convert SME SVL in bytes to SVQ */
+#define SME_SVL_TO_SVQ(svl_bytes)		(((svl_bytes) >> 4U) - 1U)
 
 /* get a random Streaming SVE VQ b/w 0 to SME_SVQ_ARCH_MAX */
 #define SME_GET_RANDOM_SVQ	(rand() % (SME_SVQ_ARCH_MAX + 1))
@@ -31,6 +34,7 @@ typedef enum {
 /* SME feature related prototypes. */
 void sme_smstart(smestart_instruction_type_t smstart_type);
 void sme_smstop(smestop_instruction_type_t smstop_type);
+uint32_t sme_probe_svl(uint8_t sme_max_svq);
 
 /* Assembly function prototypes. */
 uint64_t sme_rdsvl_1(void);

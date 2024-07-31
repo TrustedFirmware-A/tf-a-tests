@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -327,8 +327,9 @@ void __dead2 cactus_main(bool primary_cold_boot,
 	discover_managed_exit_interrupt_id();
 	register_maintenance_interrupt_handlers();
 
-	/* Invoking Tests */
+	/* Invoking self tests */
 	ffa_tests(&mb);
+	cpu_feature_tests();
 
 msg_loop:
 	/* End up to message loop */

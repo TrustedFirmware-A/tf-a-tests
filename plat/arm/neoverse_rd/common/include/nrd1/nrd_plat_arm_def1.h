@@ -16,6 +16,7 @@
 
 #include <lib/utils_def.h>
 #include "nrd_css_fw_def1.h"
+#include "nrd_ros_def1.h"
 
 /*******************************************************************************
  * Linker related definitions
@@ -155,8 +156,8 @@
  ******************************************************************************/
 
 /* Base address and size of external NVM flash */
-#define FLASH_BASE			UL(0x08000000)
-#define FLASH_SIZE			UL(0x04000000)  /* 64MB */
+#define FLASH_BASE			NRD_ROS_FLASH_BASE
+#define FLASH_SIZE			NRD_ROS_FLASH_SIZE
 #define NOR_FLASH_BLOCK_SIZE		UL(0x40000)     /* 256KB */
 
 #endif /* NRD_PLAT_ARM_DEF1_H */

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2024, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+  <testsuite name="CPU Context Management" description="Validate CPU context switch between NWd and SWd">
+     <testcase name="Test EL1 regs preserved across context switch with TSP"
+               function="test_tsp_el1_regs_ctx_mgmt" />
+  </testsuite>
+</testsuites>

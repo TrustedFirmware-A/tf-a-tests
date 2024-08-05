@@ -95,6 +95,12 @@ FRAMEWORK_SOURCES	+=						\
 	lib/extensions/sve/aarch64/sve_helpers.S
 endif
 
+ifeq (${ARCH},aarch64)
+# Context Management Library support files
+FRAMEWORK_SOURCES	+=						\
+	lib/context_mgmt/aarch64/context_el1.c
+endif
+
 TFTF_LINKERFILE		:=	tftf/framework/tftf.ld.S
 
 

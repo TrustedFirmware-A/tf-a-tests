@@ -64,9 +64,16 @@ typedef enum {
 	RSI_ERROR_COUNT
 } rsi_status_t;
 
+/* Size of Realm Personalization Value */
+#define RSI_RPV_SIZE			64U
+
 struct rsi_realm_config {
 	/* IPA width in bits */
-	SET_MEMBER(unsigned long ipa_width, 0, 0x1000);	/* Offset 0 */
+	SET_MEMBER(unsigned long ipa_width, 0, 8);	/* Offset 0 */
+	/* Hash algorithm */
+	SET_MEMBER(unsigned long algorithm, 8, 0x200);	/* Offset 8 */
+	/* Realm Personalization Value */
+	SET_MEMBER(unsigned char rpv[RSI_RPV_SIZE], 0x200, 0x1000); /* Offset 0x200 */
 };
 
 /*
@@ -106,7 +113,8 @@ struct rsi_host_call {
 typedef enum {
 	RSI_EMPTY = 0U,
 	RSI_RAM,
-	RSI_DESTROYED
+	RSI_DESTROYED,
+	RSI_DEV
 } rsi_ripas_type;
 
 typedef enum {

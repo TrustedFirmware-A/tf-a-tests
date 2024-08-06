@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -63,70 +63,76 @@ static bool realm_get_rsi_version(void)
 
 bool test_realm_set_ripas(void)
 {
-	u_register_t ret, base, new_base, top;
+	u_register_t ret, base, new_base, top, new_top;
 	rsi_ripas_respose_type response;
 	rsi_ripas_type ripas;
 
 	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
 	top = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
-	realm_printf("base=0x%lx top =0x%lx\n", base, top);
-	ret = rsi_ipa_state_get(base, &ripas);
+	realm_printf("base=0x%lx top=0x%lx\n", base, top);
+	ret = rsi_ipa_state_get(base, top, &new_top, &ripas);
 	if (ripas != RSI_EMPTY) {
 		return false;
 	}
 
 	ret = rsi_ipa_state_set(base, top, RSI_RAM,
-		RSI_NO_CHANGE_DESTROYED, &new_base, &response);
-	if (ret != RSI_SUCCESS || response != RSI_ACCEPT) {
+				RSI_NO_CHANGE_DESTROYED, &new_base, &response);
+	if ((ret != RSI_SUCCESS) || (response != RSI_ACCEPT)) {
 		return false;
 	}
+
 	while (new_base < top) {
-		realm_printf("new_base=0x%lx top =0x%lx\n", new_base, top);
+		realm_printf("new_base=0x%lx top=0x%lx\n", new_base, top);
 		ret = rsi_ipa_state_set(new_base, top, RSI_RAM,
 				RSI_NO_CHANGE_DESTROYED, &new_base, &response);
-		if (ret != RSI_SUCCESS || response != RSI_ACCEPT) {
+		if ((ret != RSI_SUCCESS) || (response != RSI_ACCEPT)) {
 			realm_printf("rsi_ipa_state_set failed\n");
 			return false;
 		}
 	}
 
-	/* Verify that RIAS has changed for range base-top. */
-	for (unsigned int i = 0U; (base + (PAGE_SIZE * i) < top); i++) {
-		ret = rsi_ipa_state_get(base + (PAGE_SIZE * i), &ripas);
-		if (ret != RSI_SUCCESS || ripas != RSI_RAM) {
-			realm_printf("rsi_ipa_state_get failed base=0x%lx, ripas=0x%x\n",
-					base + (PAGE_SIZE * i), ripas);
-			return false;
-		}
+	/* Verify that RIAS has changed for range base-top */
+	ret = rsi_ipa_state_get(base, top, &new_top, &ripas);
+	if ((ret != RSI_SUCCESS) || (ripas != RSI_RAM) || (new_top != top)) {
+		realm_printf("rsi_ipa_state_get failed base=0x%lx top=0x%lx",
+				"new_top=0x%lx ripas=%u ret=0x%lx\n",
+				base, top, ripas);
+		return false;
 	}
+
 	return true;
 }
 
 bool test_realm_reject_set_ripas(void)
 {
-	u_register_t ret, base, new_base;
+	u_register_t ret, base, top, new_base, new_top;
 	rsi_ripas_respose_type response;
 	rsi_ripas_type ripas;
 
 	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
-	ret = rsi_ipa_state_get(base, &ripas);
-	if (ret != RSI_SUCCESS || ripas != RSI_EMPTY) {
-		realm_printf("Wrong initial ripas=0x%lx\n", ripas);
+	top = base + PAGE_SIZE;
+	ret = rsi_ipa_state_get(base, top, &new_top, &ripas);
+	if ((ret != RSI_SUCCESS) || (ripas != RSI_EMPTY)) {
+		realm_printf("Wrong initial ripas=%u\n", ripas);
 		return false;
 	}
-	ret = rsi_ipa_state_set(base, base + PAGE_SIZE, RSI_RAM,
-		RSI_NO_CHANGE_DESTROYED, &new_base, &response);
-	if (ret == RSI_SUCCESS && response == RSI_REJECT) {
-		realm_printf("rsi_ipa_state_set passed response = %d\n", response);
-		ret = rsi_ipa_state_get(base, &ripas);
-		if (ret == RSI_SUCCESS && ripas == RSI_EMPTY) {
+	ret = rsi_ipa_state_set(base, top, RSI_RAM,
+				RSI_NO_CHANGE_DESTROYED, &new_base, &response);
+	if ((ret == RSI_SUCCESS) && (response == RSI_REJECT)) {
+		realm_printf("rsi_ipa_state_set passed response=%u\n", response);
+		ret = rsi_ipa_state_get(base, top, &new_top, &ripas);
+		if ((ret == RSI_SUCCESS) && (ripas == RSI_EMPTY) &&
+						(new_top == top)) {
 			return true;
 		} else {
-			realm_printf("rsi_ipa_state_get failed ripas = %d\n", ripas);
+			realm_printf("rsi_ipa_state_get failed top=0x%lx",
+					"new_top=0x%lx ripas=%u ret=0x%lx\n",
+					ripas);
 			return false;
 		}
 	}
-	realm_printf("rsi_ipa_state_set failed ret=0x%lx, response = %d\n", ret, response);
+	realm_printf("rsi_ipa_state_set failed ret=0x%lx response=%u\n",
+			ret, response);
 	return false;
 }
 
@@ -143,36 +149,34 @@ bool test_realm_dit_check_cmd(void)
 	return false;
 }
 
-
 static bool test_realm_instr_fetch_cmd(void)
 {
-	u_register_t base;
+	u_register_t base, new_top;
 	void (*func_ptr)(void);
 	rsi_ripas_type ripas;
 
 	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
-	rsi_ipa_state_get(base, &ripas);
-	realm_printf("Initial ripas=0x%lx\n", ripas);
-	/* causes instruction abort */
+	rsi_ipa_state_get(base, base + PAGE_SIZE, &new_top, &ripas);
+	realm_printf("Initial ripas=%u\n", ripas);
+	/* Causes instruction abort */
 	realm_printf("Generate Instruction Abort\n");
 	func_ptr = (void (*)(void))base;
 	func_ptr();
-	/* should not return */
+	/* Should not return */
 	return false;
 }
 
 static bool test_realm_data_access_cmd(void)
 {
-	u_register_t base;
+	u_register_t base, new_top;
 	rsi_ripas_type ripas;
-
 	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
-	rsi_ipa_state_get(base, &ripas);
-	realm_printf("Initial ripas=0x%lx\n", ripas);
-	/* causes data abort */
+	rsi_ipa_state_get(base, base + PAGE_SIZE, &new_top, &ripas);
+	realm_printf("Initial ripas=%u\n", ripas);
+	/* Causes data abort */
 	realm_printf("Generate Data Abort\n");
 	*((volatile uint64_t *)base);
-	/* should not return */
+	/* Should not return */
 	return false;
 }
 
@@ -185,14 +189,14 @@ static bool realm_exception_handler(void)
 	esr = read_esr_el1();
 
 	if (far == base) {
-		/* return ESR to Host */
+		/* Return ESR to Host */
 		realm_shared_data_set_my_realm_val(HOST_ARG2_INDEX, esr);
 		rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
 	}
-	realm_printf("Realm Abort fail incorrect FAR=0x%lx ESR+0x%lx\n", far, esr);
+	realm_printf("Realm Abort fail incorrect FAR=0x%lx ESR=0x%lx\n", far, esr);
 	rsi_exit_to_host(HOST_CALL_EXIT_FAILED_CMD);
 
-	/* Should not return. */
+	/* Should not return */
 	return false;
 }
 

@@ -50,13 +50,7 @@ test_result_t host_test_realm_create_enter(void)
 
 	for (unsigned int i = 0U; i < 5U; i++) {
 		if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				(u_register_t)PAGE_POOL_BASE,
-				(u_register_t)PAGE_POOL_MAX_SIZE,
 				feature_flag, sl, rec_flag, 1U)) {
-			return TEST_RESULT_FAIL;
-		}
-		if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-				NS_REALM_SHARED_MEM_SIZE)) {
 			return TEST_RESULT_FAIL;
 		}
 
@@ -93,13 +87,7 @@ test_result_t host_test_realm_rsi_version(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
-		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -140,14 +128,7 @@ test_result_t host_realm_enable_pauth(void)
 
 	pauth_test_lib_fill_regs_and_template(pauth_keys_before);
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				(u_register_t)PAGE_POOL_BASE,
-				(u_register_t)PAGE_POOL_MAX_SIZE,
 				feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
-		return TEST_RESULT_FAIL;
-	}
-
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-				NS_REALM_SHARED_MEM_SIZE)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -207,14 +188,9 @@ test_result_t host_realm_pauth_fault(void)
 	}
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				(u_register_t)PAGE_POOL_BASE,
-				(u_register_t)PAGE_POOL_MAX_SIZE,
 				feature_flag, sl, rec_flag, 1U)) {
-		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-				NS_REALM_SHARED_MEM_SIZE)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -309,15 +285,8 @@ static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
-		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -421,31 +390,15 @@ test_result_t host_test_multiple_realm_create_enter(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm1, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
 		return TEST_RESULT_FAIL;
 	}
 
 
 	if (!host_create_activate_realm_payload(&realm2, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE + PAGE_POOL_MAX_SIZE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
 		ret2 = host_destroy_realm(&realm1);
 		return TEST_RESULT_FAIL;
-	}
-
-	if (!host_create_shared_mem(&realm1, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
-		ret1 = false;
-		goto destroy_realms;
-	}
-
-	if (!host_create_shared_mem(&realm2, NS_REALM_SHARED_MEM_BASE +
-				NS_REALM_SHARED_MEM_SIZE, NS_REALM_SHARED_MEM_SIZE)) {
-		ret1 = false;
-		goto destroy_realms;
 	}
 
 	host_shared_data_set_host_val(&realm1, 0U, HOST_ARG1_INDEX, SLEEP_TIME_MS);
@@ -503,13 +456,7 @@ test_result_t host_realm_set_ripas(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
-		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -608,13 +555,7 @@ test_result_t host_realm_reject_set_ripas(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
-		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -686,14 +627,8 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 2U)) {
 		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
-		goto destroy_realm;
 	}
 
 	base = (u_register_t)page_alloc(PAGE_SIZE);
@@ -818,14 +753,8 @@ test_result_t host_realm_abort_unassigned_ram(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 2U)) {
 		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
-		goto destroy_realm;
 	}
 
 	/* This is dummy allocation to get a base address */
@@ -933,14 +862,8 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 2U)) {
 		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
-		goto destroy_realm;
 	}
 
 	base = (u_register_t)page_alloc(PAGE_SIZE);
@@ -1074,14 +997,8 @@ test_result_t host_realm_sea_empty(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 4U)) {
 		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
-		goto destroy_realm;
 	}
 
 	base = (u_register_t)page_alloc(PAGE_SIZE);
@@ -1222,14 +1139,8 @@ test_result_t host_realm_sea_unprotected(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 2U)) {
 		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
-		goto destroy_realm;
 	}
 
 	/* Can choose any unprotected IPA adr, TFTF_BASE chosen for convenience */
@@ -1333,13 +1244,7 @@ test_result_t host_realm_enable_dit(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
-		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1508,6 +1413,7 @@ static test_result_t test_rtt_destroy_empty(struct realm *realm)
 		ERROR("Wrong state after host_rmi_rtt_destroy\n");
 		return TEST_RESULT_FAIL;
 	}
+
 	return TEST_RESULT_SUCCESS;
 }
 
@@ -1568,14 +1474,8 @@ test_result_t host_realm_pas_validation_new(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 2U)) {
 		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
-		goto destroy_realm;
 	}
 
 	INFO("Test 1\n");
@@ -1734,6 +1634,7 @@ destroy_realm:
 		__func__, ret1);
 		return TEST_RESULT_FAIL;
 	}
+
 	return test_result;
 }
 
@@ -1759,13 +1660,7 @@ test_result_t host_realm_pas_validation_active(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
-		goto destroy_realm;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		goto destroy_realm;
 	}
 
@@ -1809,15 +1704,10 @@ test_result_t host_realm_sea_adr_fault(void)
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	feature_flag = INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 0x2CU);
+
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, RTT_MIN_LEVEL, rec_flag, 4U)) {
 		return TEST_RESULT_FAIL;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
-		goto destroy_realm;
 	}
 
 	/* Any Adr */
@@ -1963,14 +1853,8 @@ test_result_t host_test_rtt_fold_unfold_unassigned_empty(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
 		ERROR("Realm creation failed\n");
-		goto destroy_realm;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		goto destroy_realm;
 	}
 
@@ -2126,14 +2010,8 @@ test_result_t host_test_rtt_fold_unfold_unassigned_ram(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
 		ERROR("Realm creation failed\n");
-		goto destroy_realm;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		goto destroy_realm;
 	}
 
@@ -2307,14 +2185,8 @@ test_result_t host_test_rtt_fold_unfold_assigned_ns(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
 		ERROR("Realm creation failed\n");
-		goto destroy_realm;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		goto destroy_realm;
 	}
 
@@ -2428,14 +2300,8 @@ test_result_t host_test_rtt_fold_unfold_assigned_empty(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
 		ERROR("Realm creation failed\n");
-		goto destroy_realm;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		goto destroy_realm;
 	}
 
@@ -2443,7 +2309,8 @@ test_result_t host_test_rtt_fold_unfold_assigned_empty(void)
 	 * Any 2 MB range not mapped in RTT and which can be delegated,
 	 * using heap for second realm here.
 	 */
-	base = ALIGN_DOWN(PAGE_POOL_BASE + PAGE_POOL_MAX_SIZE, RTT_L2_BLOCK_SIZE);
+	base = ALIGN_DOWN(PAGE_POOL_BASE + (PAGE_POOL_MAX_SIZE - RTT_L2_BLOCK_SIZE),
+			RTT_L2_BLOCK_SIZE);
 
 	for (unsigned int i = 0U; i < 512; i++) {
 		ret = host_realm_delegate_map_protected_data(true, &realm, base + (PAGE_SIZE * i),
@@ -2546,14 +2413,8 @@ test_result_t host_test_rtt_fold_unfold_assigned_ram(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			(u_register_t)PAGE_POOL_BASE,
-			(u_register_t)PAGE_POOL_MAX_SIZE,
 			feature_flag, sl, rec_flag, 1U)) {
 		ERROR("Realm creation failed\n");
-		goto destroy_realm;
-	}
-	if (!host_create_shared_mem(&realm, NS_REALM_SHARED_MEM_BASE,
-			NS_REALM_SHARED_MEM_SIZE)) {
 		goto destroy_realm;
 	}
 
@@ -2561,7 +2422,8 @@ test_result_t host_test_rtt_fold_unfold_assigned_ram(void)
 	 * Any 2 MB range not mapped in RTT and which can be delegated,
 	 * using heap for second realm here.
 	 */
-	base = ALIGN_DOWN(PAGE_POOL_BASE + (PAGE_POOL_MAX_SIZE), RTT_L2_BLOCK_SIZE);
+	base = ALIGN_DOWN(PAGE_POOL_BASE + (PAGE_POOL_MAX_SIZE - RTT_L2_BLOCK_SIZE),
+			RTT_L2_BLOCK_SIZE);
 
 	INFO("base=0x%lx\n", base);
 	for (unsigned int i = 0U; i < 512; i++) {
@@ -2579,7 +2441,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_ram(void)
 	if (ret != RMI_SUCCESS || rtt.state != RMI_ASSIGNED ||
 			(rtt.ripas != RMI_RAM)) {
 		ERROR("wrong state after INIT_RIPAS\n");
-		return TEST_RESULT_FAIL;
+		goto undelegate_destroy;
 	}
 	host_realm_activate(&realm);
 

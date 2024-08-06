@@ -105,10 +105,33 @@ static bool host_enter_realm(struct realm *realm_ptr,
 	return true;
 }
 
+static bool host_create_shared_mem(struct realm *realm_ptr)
+{
+	u_register_t ns_shared_mem_adr = (u_register_t)page_alloc(NS_REALM_SHARED_MEM_SIZE);
+
+	if (ns_shared_mem_adr == 0U) {
+		ERROR("Failed to alloc NS buffer\n");
+		return false;
+	}
+
+	/* RTT map NS shared region */
+	if (host_realm_map_ns_shared(realm_ptr, ns_shared_mem_adr,
+				NS_REALM_SHARED_MEM_SIZE) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_realm_map_ns_shared");
+		realm_ptr->shared_mem_created = false;
+		return false;
+	}
+
+	memset((void *)ns_shared_mem_adr, 0, (size_t)NS_REALM_SHARED_MEM_SIZE);
+	realm_ptr->host_shared_data = ns_shared_mem_adr;
+	realm_ptr->shared_mem_created = true;
+	host_init_realm_print_buffer(realm_ptr);
+
+	return true;
+}
+
 bool host_prepare_realm_payload(struct realm *realm_ptr,
 			       u_register_t realm_payload_adr,
-			       u_register_t plat_mem_pool_adr,
-			       u_register_t realm_pages_size,
 			       u_register_t feature_flag,
 			       long sl,
 			       const u_register_t *rec_flag,
@@ -121,27 +144,6 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 		return false;
 	}
 
-	if (plat_mem_pool_adr  == 0UL ||
-			realm_pages_size == 0UL) {
-		ERROR("plat_mem_pool_size or "
-			"realm_pages_size is NULL\n");
-		return false;
-	}
-
-	if (plat_mem_pool_adr < PAGE_POOL_BASE ||
-	    plat_mem_pool_adr + realm_pages_size > NS_REALM_SHARED_MEM_BASE) {
-		ERROR("Invalid pool range\n");
-		return false;
-	}
-
-	INFO("Realm start adr=0x%lx\n", plat_mem_pool_adr);
-
-	/* Initialize  Host NS heap memory to be used in Realm creation*/
-	if (page_pool_init(plat_mem_pool_adr, realm_pages_size)
-		!= HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return false;
-	}
 	memset((char *)realm_ptr, 0U, sizeof(struct realm));
 
 	/* Read Realm Feature Reg 0 */
@@ -257,6 +259,11 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 		goto destroy_realm;
 	}
 
+	if (!host_create_shared_mem(realm_ptr)) {
+		ERROR("%s() failed\n", "host_create_shared_mem");
+		goto destroy_realm;
+	}
+
 	realm_ptr->payload_created = true;
 
 	return true;
@@ -273,8 +280,6 @@ destroy_realm:
 
 bool host_create_realm_payload(struct realm *realm_ptr,
 			       u_register_t realm_payload_adr,
-			       u_register_t plat_mem_pool_adr,
-			       u_register_t realm_pages_size,
 			       u_register_t feature_flag,
 			       long sl,
 			       const u_register_t *rec_flag,
@@ -284,8 +289,6 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 
 	ret = host_prepare_realm_payload(realm_ptr,
 			realm_payload_adr,
-			plat_mem_pool_adr,
-			realm_pages_size,
 			feature_flag,
 			sl,
 			rec_flag,
@@ -317,8 +320,6 @@ destroy_realm:
 
 bool host_create_activate_realm_payload(struct realm *realm_ptr,
 			u_register_t realm_payload_adr,
-			u_register_t plat_mem_pool_adr,
-			u_register_t realm_pages_size,
 			u_register_t feature_flag,
 			long sl,
 			const u_register_t *rec_flag,
@@ -329,8 +330,6 @@ bool host_create_activate_realm_payload(struct realm *realm_ptr,
 
 	ret = host_create_realm_payload(realm_ptr,
 			realm_payload_adr,
-			plat_mem_pool_adr,
-			realm_pages_size,
 			feature_flag,
 			sl,
 			rec_flag,
@@ -354,47 +353,20 @@ destroy_realm:
 	return false;
 }
 
-bool host_create_shared_mem(struct realm *realm_ptr,
-			    u_register_t ns_shared_mem_adr,
-			    u_register_t ns_shared_mem_size)
-{
-	if (ns_shared_mem_adr < NS_REALM_SHARED_MEM_BASE  ||
-			ns_shared_mem_adr + ns_shared_mem_size > PAGE_POOL_END) {
-		ERROR("%s() Invalid adr range\n", "host_realm_map_ns_shared");
-		return false;
-	}
-
-	/* RTT map NS shared region */
-	if (host_realm_map_ns_shared(realm_ptr, ns_shared_mem_adr,
-				ns_shared_mem_size) != REALM_SUCCESS) {
-		ERROR("%s() failed\n", "host_realm_map_ns_shared");
-		realm_ptr->shared_mem_created = false;
-		return false;
-	}
-
-	memset((void *)ns_shared_mem_adr, 0, (size_t)ns_shared_mem_size);
-	realm_ptr->host_shared_data = ns_shared_mem_adr;
-	realm_ptr->shared_mem_created = true;
-	host_init_realm_print_buffer(realm_ptr);
-
-	return true;
-}
-
 bool host_destroy_realm(struct realm *realm_ptr)
 {
-	/* Free test resources */
-	page_pool_reset();
-
 	if (!realm_ptr->payload_created) {
 		ERROR("%s() failed\n", "payload_created");
 		return false;
 	}
 
 	realm_ptr->payload_created = false;
+
 	if (host_realm_destroy(realm_ptr) != REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_realm_destroy");
 		return false;
 	}
+
 	memset((char *)realm_ptr, 0U, sizeof(struct realm));
 
 	return true;

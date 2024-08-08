@@ -328,7 +328,7 @@ void __dead2 cactus_main(bool primary_cold_boot,
 	register_maintenance_interrupt_handlers();
 
 	/* Invoking self tests */
-	ffa_tests(&mb);
+	ffa_tests(&mb, true);
 	cpu_feature_tests();
 
 msg_loop:

@@ -13,7 +13,7 @@
  * Self test functions
  */
 
-void ffa_tests(struct mailbox_buffers *mb);
+void ffa_tests(struct mailbox_buffers *mb, bool el1_partition);
 void cpu_feature_tests(void);
 
 #endif /* CACTUS_TESTS_H */

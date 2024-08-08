@@ -78,13 +78,13 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 /*
  * Test FFA_FEATURES interface.
  */
-static void ffa_features_test(void)
+static void ffa_features_test(bool el1_partition)
 {
 	const struct ffa_features_test *func_id_targets;
 	/* Get common features between tftf and cactus. */
 	unsigned int test_target_size =
 		get_ffa_feature_test_target(&func_id_targets);
-	const struct ffa_features_test feature_id_targets[] = {
+	struct ffa_features_test feature_id_targets[3] = {
 		{"FFA_FEATURE_MEI", FFA_FEATURE_MEI, FFA_SUCCESS_SMC32, 0,
 			FFA_VERSION_1_1},
 		{"FFA_FEATURE_SRI", FFA_FEATURE_SRI, FFA_ERROR, 0,
@@ -97,6 +97,12 @@ static void ffa_features_test(void)
 	ffa_features_test_targets(func_id_targets, test_target_size);
 
 	/* Features are expected to be different to tftf. */
+
+	/* EL0 partitions don't support NPI. */
+	if (!el1_partition) {
+		feature_id_targets[2].expected_ret = FFA_ERROR;
+	}
+
 	ffa_features_test_targets(feature_id_targets,
 			ARRAY_SIZE(feature_id_targets));
 }
@@ -234,13 +240,13 @@ static void ffa_spm_id_get_test(void)
 	}
 }
 
-void ffa_tests(struct mailbox_buffers *mb)
+void ffa_tests(struct mailbox_buffers *mb, bool el1_partition)
 {
 	const char *test_ffa_str = "FF-A setup and discovery";
 
 	announce_test_section_start(test_ffa_str);
 
-	ffa_features_test();
+	ffa_features_test(el1_partition);
 	ffa_version_test();
 	ffa_spm_id_get_test();
 	ffa_partition_info_get_test(mb);

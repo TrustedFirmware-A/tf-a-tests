@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2024, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+  <testsuite name="Asymmetric Features" description="Asymmetric features support">
+      <testcase name="Asymmetric Features"
+                function="test_asymmetric_features" />
+  </testsuite>
+</testsuites>

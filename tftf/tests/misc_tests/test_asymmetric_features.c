@@ -23,7 +23,7 @@ static volatile bool undef_injection_triggered;
 
 static unsigned int test_result;
 
-static bool trbe_trap_exception_handler(void)
+static bool undef_injection_handler(void)
 {
 	uint64_t esr_el2 = read_esr_el2();
 	if (EC_BITS(esr_el2) == EC_UNKNOWN) {
@@ -32,6 +32,54 @@ static bool trbe_trap_exception_handler(void)
 	}
 
 	return false;
+}
+
+static test_result_t test_trbe(void)
+{
+	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
+	unsigned int core_pos = platform_get_core_pos(mpid);
+	bool check_if_affected = is_trbe_errata_affected_core();
+
+	read_trblimitr_el1();
+
+	if (undef_injection_triggered == true && check_if_affected == true) {
+		test_result = TEST_RESULT_SUCCESS;
+		undef_injection_triggered = false;
+		tftf_testcase_printf("Undef injection triggered for core = %d "
+				     "when accessing TRB_LIMTR\n", core_pos);
+	} else if (undef_injection_triggered == false && check_if_affected == false) {
+		test_result = TEST_RESULT_SUCCESS;
+		tftf_testcase_printf("TRB_LIMITR register accessible for core "
+				     "= %d\n", core_pos);
+	} else {
+		test_result = TEST_RESULT_FAIL;
+	}
+
+	return test_result;
+}
+
+static test_result_t test_spe(void)
+{
+	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
+	unsigned int core_pos = platform_get_core_pos(mpid);
+
+	read_pmscr_el1();
+
+	if (undef_injection_triggered == true && !is_feat_spe_supported()) {
+		test_result = TEST_RESULT_SUCCESS;
+		undef_injection_triggered = false;
+		tftf_testcase_printf("Undef injection triggered for core = %d "
+				     "when accessing PMSCR_EL1\n", core_pos);
+	} else if (undef_injection_triggered == false &&
+		   is_feat_spe_supported()) {
+		test_result = TEST_RESULT_SUCCESS;
+		tftf_testcase_printf("PMSCR_EL1 register accessible for core = "
+				     "%d\n", core_pos);
+	} else {
+		test_result = TEST_RESULT_FAIL;
+	}
+
+	return test_result;
 }
 
 /*
@@ -43,14 +91,26 @@ static test_result_t non_lead_cpu_fn(void)
 {
 	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
 	unsigned int core_pos = platform_get_core_pos(mpid);
-	bool check_if_affected = is_trbe_errata_affected_core();
+	test_result_t result;
 
 	test_result = TEST_RESULT_SUCCESS;
 
 	/* Signal to the lead CPU that the calling CPU has entered the test */
 	tftf_send_event(&cpu_has_entered_test[core_pos]);
 
-	read_trblimitr_el1();
+	result = test_trbe();
+	if (result != TEST_RESULT_SUCCESS) {
+		tftf_testcase_printf("test_trbe_enabled failed with result "
+				     "%d\n", result);
+		test_result = result;
+	}
+
+	result = test_spe();
+	if (result != TEST_RESULT_SUCCESS) {
+		tftf_testcase_printf("test_spe_support failed with result %d\n",
+				     result);
+		test_result = result;
+	}
 
 	/* Ensure that EL3 still functional */
 	smc_args args;
@@ -62,17 +122,6 @@ static test_result_t non_lead_cpu_fn(void)
 	tftf_testcase_printf("SMCCC Version = %d.%d\n",
 			(int)((smc_ret.ret0 >> SMCCC_VERSION_MAJOR_SHIFT) & SMCCC_VERSION_MAJOR_MASK),
 			(int)((smc_ret.ret0 >> SMCCC_VERSION_MINOR_SHIFT) & SMCCC_VERSION_MINOR_MASK));
-
-	if (undef_injection_triggered == true && check_if_affected == true) {
-		test_result = TEST_RESULT_SUCCESS;
-		undef_injection_triggered = false;
-		tftf_testcase_printf("Undef injection triggered for core = %d\n", core_pos);
-	} else if(undef_injection_triggered == false && check_if_affected == false) {
-		test_result = TEST_RESULT_SUCCESS;
-		tftf_testcase_printf("TRB_LIMITR register accessible for core = %d\n", core_pos);
-	} else {
-		test_result = TEST_RESULT_FAIL;
-	}
 
 	return test_result;
 }
@@ -87,11 +136,30 @@ test_result_t test_asymmetric_features(void)
 	unsigned int core_pos;
 	int psci_ret;
 
+	test_result_t result;
+
+	test_result = TEST_RESULT_SUCCESS;
+
 	undef_injection_triggered = false;
 
-	register_custom_sync_exception_handler(trbe_trap_exception_handler);
+	register_custom_sync_exception_handler(undef_injection_handler);
 
 	lead_mpid = read_mpidr_el1() & MPID_MASK;
+
+	/* Testing TRBE and SPE feature in Lead core */
+	result = test_trbe();
+	if (result != TEST_RESULT_SUCCESS) {
+		tftf_testcase_printf("test_trbe_enabled failed with result "
+				     "%d\n", result);
+		test_result = result;
+	}
+
+	result = test_spe();
+	if (result != TEST_RESULT_SUCCESS) {
+		tftf_testcase_printf("test_spe_support failed with result %d\n",
+				     result);
+		test_result = result;
+	}
 
 	SKIP_TEST_IF_LESS_THAN_N_CPUS(2);
 

@@ -90,7 +90,7 @@ test_result_t rl_memory_cannot_be_accessed_in_s(void)
 	 * Tell SP to expect an exception.
 	 */
 	ret = cactus_mem_send_cmd(SENDER, RECEIVER, FFA_MEM_SHARE_SMC64,
-				  handle, 0, 1, true);
+				  handle, 0, 1, true, true);
 
 	/* Undelegate the shared page. */
 	retmm = host_rmi_granule_undelegate((u_register_t)&share_page);

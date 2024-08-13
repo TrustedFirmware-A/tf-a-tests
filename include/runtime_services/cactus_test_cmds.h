@@ -201,10 +201,12 @@ static inline ffa_id_t cactus_deadlock_get_next_dest2(struct ffa_value ret)
 static inline struct ffa_value cactus_mem_send_cmd(
 	ffa_id_t source, ffa_id_t dest, uint32_t mem_func,
 	ffa_memory_handle_t handle, ffa_memory_region_flags_t retrieve_flags,
-	uint16_t word_to_write, bool expect_exception)
+	uint16_t word_to_write, bool expect_exception, bool is_normal_memory)
 {
 	uint64_t _expect_exception = expect_exception ? (1ULL << 32) : 0;
-	uint64_t packed = (uint64_t)word_to_write | _expect_exception;
+	uint64_t _is_normal_memory = is_normal_memory ? (1ULL << 33) : 0;
+	uint64_t packed = (uint64_t)word_to_write | _expect_exception |
+			  _is_normal_memory;
 
 	return cactus_send_cmd(source, dest, CACTUS_MEM_SEND_CMD, mem_func,
 			       handle, retrieve_flags, packed);
@@ -229,7 +231,12 @@ static inline uint16_t cactus_mem_send_words_to_write(struct ffa_value ret)
 
 static inline bool cactus_mem_send_expect_exception(struct ffa_value ret)
 {
-	return (bool)(ret.arg7 >> 32);
+	return (bool)((ret.arg7 >> 32) & 0x1);
+}
+
+static inline bool cactus_mem_send_is_normal_memory(struct ffa_value ret)
+{
+	return (bool)((ret.arg7 >> 33) & 0x1);
 }
 
 /**

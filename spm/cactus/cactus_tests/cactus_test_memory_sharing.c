@@ -114,6 +114,8 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 					 cactus_mem_send_get_retrv_flags(*args);
 	uint32_t words_to_write = cactus_mem_send_words_to_write(*args);
 	bool expect_exception = cactus_mem_send_expect_exception(*args);
+	bool is_normal_memory = cactus_mem_send_is_normal_memory(*args);
+
 
 	struct ffa_memory_access receiver = ffa_memory_access_init(
 		vm_id, FFA_DATA_ACCESS_RW,
@@ -123,7 +125,7 @@ CACTUS_CMD_HANDLER(mem_send_cmd, CACTUS_MEM_SEND_CMD)
 		0, NULL);
 
 	EXPECT(memory_retrieve(mb, &m, handle, source, &receiver, 1,
-			       retrv_flags),
+			       retrv_flags, is_normal_memory),
 	       true);
 
 	composite = ffa_memory_region_get_composite(m, 0);
@@ -337,7 +339,7 @@ CACTUS_CMD_HANDLER(req_mem_send_cmd, CACTUS_REQ_MEM_SEND_CMD)
 	}
 
 	ffa_ret = cactus_mem_send_cmd(vm_id, receiver_id, mem_func, handle,
-				      0, 10, false);
+				      0, 10, false, true);
 
 	if (!is_ffa_direct_response(ffa_ret)) {
 		return cactus_error_resp(vm_id, source, CACTUS_ERROR_FFA_CALL);

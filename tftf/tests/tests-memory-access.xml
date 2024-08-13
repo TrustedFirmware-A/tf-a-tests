@@ -18,6 +18,8 @@
                function="test_mem_share_sp" />
      <testcase name="Donate Memory to Secure World"
                function="test_mem_donate_sp"/>
+      <testcase name="Lend Device Memory to Secure World"
+	        function="test_ffa_mem_lend_device_memory_sp" />
      <testcase name="Request Share Memory SP-to-SP"
                function="test_req_mem_share_sp_to_sp" />
      <testcase name="Request Lend Memory SP-to-SP"

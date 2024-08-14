@@ -18,8 +18,8 @@
 #define PLAT_SP_RX_BASE			ULL(0xfe300000)
 #define PLAT_SP_CORE_COUNT		U(8)
 
-#define PLAT_ARM_DEVICE0_BASE		TC_DEVICE0_BASE
-#define PLAT_ARM_DEVICE0_SIZE		TC_DEVICE0_SIZE
+#define PLAT_CACTUS_DEVICE_BASE		TC_DEVICE0_BASE
+#define PLAT_CACTUS_DEVICE_SIZE		TC_DEVICE0_SIZE
 
 /* Scratch memory used for SMMUv3 driver testing purposes in Cactus SP */
 /* SMMUv3 tests are disabled for TC platform */

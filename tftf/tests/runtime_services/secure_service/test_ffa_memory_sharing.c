@@ -369,8 +369,9 @@ test_result_t test_consecutive_donate(void)
  */
 test_result_t test_ffa_mem_lend_device_memory_sp(void)
 {
+#if PLAT_fvp || PLAT_tc
 	struct ffa_memory_region_constituent constituents[] = {
-		{(void *)0x1c090000, 1, 0},
+		{(void *)PLAT_ARM_UART_BASE, 1, 0},
 	};
 
 	const uint32_t constituents_count = sizeof(constituents) /
@@ -378,6 +379,9 @@ test_result_t test_ffa_mem_lend_device_memory_sp(void)
 
 	return test_memory_send_sp(FFA_MEM_LEND_SMC64, RECEIVER, constituents,
 				   constituents_count, false);
+#else
+	return TEST_RESULT_SKIPPED;
+#endif
 
 }
 

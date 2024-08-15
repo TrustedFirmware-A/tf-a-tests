@@ -420,4 +420,9 @@ void wait_for_core_to_turn_off(unsigned int mpidr);
 /* Generate 64-bit random number */
 unsigned long long rand64(void);
 
+/* TRBE Errata */
+#define CORTEX_A520_MIDR        U(0x410FD800)
+#define CORTEX_X4_MIDR          U(0x410FD821)
+#define RXPX_RANGE(x, y, z)     (((x >= y) && (x <= z)) ? true : false)
+bool is_trbe_errata_affected_core(void);
 #endif /* __TEST_HELPERS_H__ */

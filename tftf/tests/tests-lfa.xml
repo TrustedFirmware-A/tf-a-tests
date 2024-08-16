@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2025, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+  <testsuite name="lfa" description="Live Firmware Activation">
+     <testcase name="Query version" function="test_lfa_version" />
+     <testcase name="Check features" function="test_lfa_features" />
+     <testcase name="Get Info" function="test_lfa_get_info" />
+     <testcase name="Get Inventory" function="test_lfa_get_inventory" />
+     <testcase name="Prime" function="test_lfa_prime" />
+     <testcase name="Activate" function="test_lfa_activate" />
+     <testcase name="Cancel" function="test_lfa_cancel" />
+  </testsuite>
+</testsuites>

@@ -90,10 +90,13 @@ __dead2 void secure_services_loop(void)
 			uint32_t ctx_size = svc_values.arg2;
 			uint64_t cookie = svc_values.arg3;
 
-			NOTICE("Cactus: Received MM_COMMUNICATE_AARCH64 call\n");
-			NOTICE("Cactus:   Context address: 0x%llx\n", ctx_addr);
-			NOTICE("Cactus:   Context size   : %u\n", ctx_size);
-			NOTICE("Cactus:   Cookie         : 0x%llx\n", cookie);
+			(void) cookie;
+			(void) ctx_size;
+
+			VERBOSE("Cactus: Received MM_COMMUNICATE_AARCH64 call\n");
+			VERBOSE("Cactus:   Context address: 0x%llx\n", ctx_addr);
+			VERBOSE("Cactus:   Context size   : %u\n", ctx_size);
+			VERBOSE("Cactus:   Cookie         : 0x%llx\n", cookie);
 
 			if (ctx_addr == 0) {
 				ERROR("Context address is invalid\n");
@@ -102,7 +105,7 @@ __dead2 void secure_services_loop(void)
 			}
 
 			secure_partition_request_info_t *sps = (void *)(uintptr_t) ctx_addr;
-			NOTICE("Received fast secure service request with ID #%u\n",
+			INFO("Received fast secure service request with ID #%u\n",
 			       sps->id);
 			event_status_code = cactus_handle_fast_request(64, sps);
 			break;
@@ -114,10 +117,13 @@ __dead2 void secure_services_loop(void)
 			uint32_t ctx_size = svc_values.arg2;
 			uint32_t cookie = svc_values.arg3;
 
-			NOTICE("Cactus: Received MM_COMMUNICATE_AARCH32 call\n");
-			NOTICE("Cactus:   Context address: 0x%x\n", ctx_addr);
-			NOTICE("Cactus:   Context size   : %u\n", ctx_size);
-			NOTICE("Cactus:   Cookie         : 0x%x\n", cookie);
+			(void) cookie;
+			(void) ctx_size;
+
+			VERBOSE("Cactus: Received MM_COMMUNICATE_AARCH32 call\n");
+			VERBOSE("Cactus:   Context address: 0x%x\n", ctx_addr);
+			VERBOSE("Cactus:   Context size   : %u\n", ctx_size);
+			VERBOSE("Cactus:   Cookie         : 0x%x\n", cookie);
 
 			if (ctx_addr == 0) {
 				ERROR("Context address is invalid\n");
@@ -126,8 +132,8 @@ __dead2 void secure_services_loop(void)
 			}
 
 			secure_partition_request_info_t *sps = (void *)(uintptr_t) ctx_addr;
-			NOTICE("Received fast secure service request with ID #%u\n",
-			       sps->id);
+			INFO("Received fast secure service request with ID #%u\n",
+			      sps->id);
 			event_status_code = cactus_handle_fast_request(32, sps);
 			break;
 		  }

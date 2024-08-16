@@ -21,6 +21,12 @@ test_result_t test_trbe_enabled(void)
 
 #ifdef __aarch64__
 	SKIP_TEST_IF_TRBE_NOT_SUPPORTED();
+
+	/* If TRBE errata applies, EL3 disables the feature, SKIP the test */
+	if (is_trbe_errata_affected_core()) {
+		return TEST_RESULT_SKIPPED;
+	}
+
 	read_trblimitr_el1();
 	read_trbptr_el1();
 	read_trbbaser_el1();

@@ -251,6 +251,11 @@ static inline unsigned int spe_get_version(void)
 		ID_AA64DFR0_PMS_MASK);
 }
 
+static inline bool is_feat_spe_supported(void)
+{
+	return spe_get_version() >= ID_AA64DFR0_SPE;
+}
+
 static inline bool get_feat_pmuv3_supported(void)
 {
 	return (((read_id_aa64dfr0_el1() >> ID_AA64DFR0_PMUVER_SHIFT) &

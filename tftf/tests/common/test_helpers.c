@@ -160,3 +160,22 @@ unsigned long long rand64(void)
 {
 	return ((unsigned long long)rand() << 32) | rand();
 }
+
+/* Check if TRBE erratums 2938996 and 2726228 applies */
+bool is_trbe_errata_affected_core(void)
+{
+        long midr_val = read_midr();
+        long rev_var = EXTRACT_REV_VAR(midr_val);
+
+        if(EXTRACT_PARTNUM(midr_val) == EXTRACT_PARTNUM(CORTEX_A520_MIDR)) {
+                if(RXPX_RANGE(rev_var, 0, 1)) {
+                        return true;
+                }
+        } else if (EXTRACT_PARTNUM(midr_val) == EXTRACT_PARTNUM(CORTEX_X4_MIDR)) {
+                if(RXPX_RANGE(rev_var, 0, 1)) {
+                        return true;
+                }
+        }
+
+        return false;
+}

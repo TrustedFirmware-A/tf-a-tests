@@ -23,6 +23,16 @@
 #define MIDR_VAR_MASK		U(0xf0)
 #define MIDR_REV_MASK		U(0xf)
 
+/******************************************************************************
+ * MIDR macros
+ *****************************************************************************/
+/* Extract the partnumber */
+#define EXTRACT_PARTNUM(x)     ((x >> MIDR_PN_SHIFT) & MIDR_PN_MASK)
+/* Extract revision and variant info */
+
+#define EXTRACT_REV_VAR(x)	(x & MIDR_REV_MASK) | ((x >> (MIDR_VAR_SHIFT - MIDR_REV_BITS)) \
+				& MIDR_VAR_MASK)
+
 /*******************************************************************************
  * MPIDR macros
  ******************************************************************************/

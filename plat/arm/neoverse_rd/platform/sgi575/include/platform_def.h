@@ -7,7 +7,7 @@
 #ifndef PLATFORM_DEF_H
 #define PLATFORM_DEF_H
 
-#include <nrd_soc_platform_def.h>
+#include <nrd1/nrd_plat_arm_def1.h>
 
 #define PLAT_ARM_CLUSTER_COUNT		U(2)
 #define NRD_MAX_CPUS_PER_CLUSTER	U(4)

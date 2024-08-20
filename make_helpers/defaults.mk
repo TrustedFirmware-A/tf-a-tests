@@ -55,3 +55,7 @@ ENABLE_REALM_PAYLOAD_TESTS	:= 0
 # Use the Firmware Handoff framework to receive configurations from preceding
 # bootloader.
 TRANSFER_LIST		:= 0
+
+# This flag is required to match the feature set of Cactus SP that are
+# implemented in TF-A EL3 SPMC.
+SPMC_AT_EL3		:= 0

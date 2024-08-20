@@ -170,6 +170,7 @@ $(eval $(call assert_boolean,USE_NVM))
 $(eval $(call assert_numeric,BRANCH_PROTECTION))
 $(eval $(call assert_boolean,ENABLE_REALM_PAYLOAD_TESTS))
 $(eval $(call assert_boolean,TRANSFER_LIST))
+$(eval $(call assert_boolean,SPMC_AT_EL3))
 
 ################################################################################
 # Process build options
@@ -197,6 +198,7 @@ $(eval $(call add_define,TFTF_DEFINES,USE_NVM))
 $(eval $(call add_define,TFTF_DEFINES,ENABLE_REALM_PAYLOAD_TESTS))
 $(eval $(call add_define,TFTF_DEFINES,TRANSFER_LIST))
 $(eval $(call add_define,TFTF_DEFINES,PLAT_AMU_GROUP1_COUNTERS_MASK))
+$(eval $(call add_define,TFTF_DEFINES,SPMC_AT_EL3))
 
 ################################################################################
 

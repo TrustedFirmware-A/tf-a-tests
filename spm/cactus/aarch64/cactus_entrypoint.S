@@ -35,7 +35,11 @@ secondary_cold_entry:
 	 */
 	mov	x20, x0
 
-	/* The SPMC passes the vCPU id in vMPIDR low bits. */
+#if !SPMC_AT_EL3
+	/*
+	 * An S-EL2 based SPMC virtualizes reads of MPIDR from EL1. It passes
+	 * the vCPU id in vMPIDR low bits. Mask the RES1 field i.e., bit[31].
+	 */
 	mrs	x0, mpidr_el1
 	bic	x0, x0, #0x80000000
 
@@ -45,6 +49,14 @@ secondary_cold_entry:
 	 */
 	cmp	x4, x0
 	bne	.
+#else
+	/*
+	 * On a non-SEL2 based SPMC, read of MPIDR from EL1 returns physical
+	 * MPIDR. Hence, rather than trying to compute linear id from MPIDR,
+	 * leverage the physical core id populated by SPMC in x4 register.
+	 */
+	mov	x0, x4
+#endif
 
 	/* Setup the stack pointer (from the linear id stored in x0). */
 	adr	x1, stacks_end

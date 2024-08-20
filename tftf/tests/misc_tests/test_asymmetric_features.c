@@ -40,11 +40,13 @@ static test_result_t test_trbe(void)
 	unsigned int core_pos = platform_get_core_pos(mpid);
 	bool check_if_affected = is_trbe_errata_affected_core();
 
+	register_custom_sync_exception_handler(undef_injection_handler);
+	undef_injection_triggered = false;
 	read_trblimitr_el1();
+	unregister_custom_sync_exception_handler();
 
 	if (undef_injection_triggered == true && check_if_affected == true) {
 		test_result = TEST_RESULT_SUCCESS;
-		undef_injection_triggered = false;
 		tftf_testcase_printf("Undef injection triggered for core = %d "
 				     "when accessing TRB_LIMTR\n", core_pos);
 	} else if (undef_injection_triggered == false && check_if_affected == false) {
@@ -63,11 +65,13 @@ static test_result_t test_spe(void)
 	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
 	unsigned int core_pos = platform_get_core_pos(mpid);
 
+	register_custom_sync_exception_handler(undef_injection_handler);
+	undef_injection_triggered = false;
 	read_pmscr_el1();
+	unregister_custom_sync_exception_handler();
 
 	if (undef_injection_triggered == true && !is_feat_spe_supported()) {
 		test_result = TEST_RESULT_SUCCESS;
-		undef_injection_triggered = false;
 		tftf_testcase_printf("Undef injection triggered for core = %d "
 				     "when accessing PMSCR_EL1\n", core_pos);
 	} else if (undef_injection_triggered == false &&
@@ -139,10 +143,6 @@ test_result_t test_asymmetric_features(void)
 	test_result_t result;
 
 	test_result = TEST_RESULT_SUCCESS;
-
-	undef_injection_triggered = false;
-
-	register_custom_sync_exception_handler(undef_injection_handler);
 
 	lead_mpid = read_mpidr_el1() & MPID_MASK;
 

@@ -130,7 +130,9 @@ void gicv2_probe_gic_cpu_id(void)
 	core_pos = platform_get_core_pos(read_mpidr_el1());
 	gicd_itargets_val = gicd_read_itargetsr(gicd_base_addr, 0);
 
-	assert(gicd_itargets_val);
+	/* In a uniprocessor implementation the GICD_ITARGETSRs are RAZ/WI. */
+	if (PLATFORM_CORE_COUNT > 1)
+		assert(gicd_itargets_val);
 
 	/* Convert the bit pos returned by read of ITARGETSR0 to GIC CPU ID */
 	gic_cpu_id[core_pos] = __builtin_ctz(gicd_itargets_val);

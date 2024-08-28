@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2021, Arm Limited. All rights reserved.
+# Copyright (c) 2020-2024, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -11,4 +11,5 @@ TESTS_SOURCES	+=								\
 		test_sdei_state.c 						\
 		test_sdei_rm_any.c 						\
 		test_sdei_pstate.c						\
+		test_sdei_bind_failure.c					\
 	)

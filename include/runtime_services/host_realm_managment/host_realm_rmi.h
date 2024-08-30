@@ -308,8 +308,8 @@
 
 /*
  * Format of feature_flag[63:32].
- * Value -1 indicates not set field, and parameter will be set
- * from the corresponding field of feature register 0.
+ * Value -1 (0 in case of NUM_BPS and NUM_WPS) indicates not set field,
+ * and parameter will be set from the corresponding field of feature register 0.
  */
 #define FEATURE_SVE_VL_SHIFT				32UL
 #define FEATURE_SVE_VL_WIDTH				8UL

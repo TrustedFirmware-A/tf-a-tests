@@ -194,7 +194,7 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 
 	/* Requested number of breakpoints */
 	value = EXTRACT(FEATURE_NUM_BPS, feature_flag);
-	if (value != -1) {
+	if (value != 0) {
 		realm_ptr->num_bps = (unsigned int)value;
 	} else {
 		realm_ptr->num_bps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_BPS,
@@ -203,7 +203,7 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 
 	/* Requested number of watchpoints */
 	value = EXTRACT(FEATURE_NUM_WPS, feature_flag);
-	if (value != -1) {
+	if (value != 0) {
 		realm_ptr->num_wps = (unsigned int)value;
 	} else {
 		realm_ptr->num_wps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_WPS,

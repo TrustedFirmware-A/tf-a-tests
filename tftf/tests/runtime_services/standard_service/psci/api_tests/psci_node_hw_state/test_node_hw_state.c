@@ -86,6 +86,14 @@ static test_result_t test_self_cpu(void)
  */
 static test_result_t test_self_cluster(void)
 {
+#if PLAT_fvp
+	/*
+	 * Skip this check for fvp plaform due to presence of a known bug
+	 * in 11.26-FVP
+	 */
+	return TEST_RESULT_SKIPPED;
+#endif
+
 	if (tftf_psci_node_hw_state(read_mpidr_el1(), 1) != PSCI_HW_STATE_ON) {
 		DBGMSG("%s: failed\n", __func__);
 		return TEST_RESULT_FAIL;

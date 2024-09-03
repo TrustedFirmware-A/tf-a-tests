@@ -12,5 +12,7 @@
                 function="test_trbe_errata_asymmetric" />
       <testcase name="Asymmetric SPE Test"
                 function="test_spe_asymmetric" />
+      <testcase name="Asymmetric TCR2 Test"
+                function="test_tcr2_asymmetric" />
   </testsuite>
 </testsuites>

@@ -112,6 +112,21 @@ static test_result_t test_spe(void)
 	return TEST_RESULT_SUCCESS;
 }
 
+static test_result_t test_tcr2(void)
+{
+	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
+	unsigned int core_pos = platform_get_core_pos(mpid);
+
+	if (!is_feat_tcr2_supported()) {
+		test_skipped[core_pos] = true;
+		return TEST_RESULT_SUCCESS;
+	}
+
+	read_tcr2_el1();
+
+	return TEST_RESULT_SUCCESS;
+}
+
 /*
  * Runs on one CPU, and runs asymmetric_test_function.
  */
@@ -250,4 +265,9 @@ test_result_t test_trbe_errata_asymmetric(void)
 test_result_t test_spe_asymmetric(void)
 {
 	return run_asymmetric_test(test_spe);
+}
+
+test_result_t test_tcr2_asymmetric(void)
+{
+	return run_asymmetric_test(test_tcr2);
 }

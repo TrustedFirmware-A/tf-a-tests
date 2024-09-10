@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -16,6 +16,7 @@ CACTUS_MM_INCLUDES :=					\
 	-Iinclude/lib/${ARCH}				\
 	-Iinclude/lib/utils				\
 	-Iinclude/lib/xlat_tables			\
+	-Iinclude/plat/common				\
 	-Iinclude/runtime_services			\
 	-Iinclude/runtime_services/secure_el0_payloads	\
 	-Ispm/cactus_mm					\

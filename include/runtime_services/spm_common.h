@@ -24,6 +24,8 @@
 /* ID for the first Secure Partition. */
 #define SPM_VM_ID_FIRST                 SP_ID(1)
 
+#define TIMER_VIRTUAL_INTID	U(3)
+
 /* INTID for the managed exit virtual interrupt. */
 #define MANAGED_EXIT_INTERRUPT_ID	U(4)
 

@@ -249,4 +249,10 @@
                function="test_ffa_indirect_message_sp_to_vm" />
   </testsuite>
 
+  <testsuite name="EL1 Physical arch timer tests"
+             description="Test the physical arch timer can be used from an SP" >
+     <testcase name="NWd physical timer deadline expires in secure world "
+               function="test_ffa_physical_arch_timer_nwd_set_swd_preempt" />
+  </testsuite>
+
 </testsuites>

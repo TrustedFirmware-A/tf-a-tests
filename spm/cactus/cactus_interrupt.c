@@ -89,18 +89,29 @@ void send_managed_exit_response(void)
 	VERBOSE("Resuming the suspended command\n");
 }
 
+static void timer_interrupt_handler(void)
+{
+	/* Disable the EL1 physical arch timer. */
+	write_cntp_ctl_el0(0);
+
+	spm_interrupt_deactivate(TIMER_VIRTUAL_INTID);
+	NOTICE("serviced el1 physical timer\n");
+}
+
 void register_maintenance_interrupt_handlers(void)
 {
 	sp_register_interrupt_handler(send_managed_exit_response,
 		managed_exit_interrupt_id);
 	sp_register_interrupt_handler(notification_pending_interrupt_handler,
 		NOTIFICATION_PENDING_INTERRUPT_INTID);
+	sp_register_interrupt_handler(timer_interrupt_handler,
+		TIMER_VIRTUAL_INTID);
 }
 
 void cactus_interrupt_handler_irq(void)
 {
 	uint32_t intid = spm_interrupt_get();
-	unsigned int core_pos = get_current_core_id();
+	unsigned int core_pos = spm_get_my_core_pos();
 
 	last_serviced_interrupt[core_pos] = intid;
 
@@ -118,7 +129,7 @@ void cactus_interrupt_handler_irq(void)
 void cactus_interrupt_handler_fiq(void)
 {
 	uint32_t intid = spm_interrupt_get();
-	unsigned int core_pos = get_current_core_id();
+	unsigned int core_pos = spm_get_my_core_pos();
 
 	last_serviced_interrupt[core_pos] = intid;
 

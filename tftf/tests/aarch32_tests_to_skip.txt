@@ -18,3 +18,4 @@ FF-A Notifications
 RMI and SPM tests
 FF-A SMCCC compliance
 FF-A Indirect Messaging
+EL1 Physical arch timer tests

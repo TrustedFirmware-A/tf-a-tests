@@ -19,8 +19,21 @@ func realm_entrypoint
 	/* Save x0 - context_id */
 	mov	x20, x0
 	mrs	x0, mpidr_el1
-	mov_imm	x1, MPID_MASK
-	and	x0, x0, x1
+
+	/*
+	 * Convert MPIDR_EL1 register type value
+	 * Aff3[39:32].Aff2[23:16].Aff1[15:8].RES0[7:4].Aff0[3:0]
+	 * to REC linear index
+	 * Aff3[27:20].Aff2[19:12].Aff1[11:4].Aff0[3:0].
+	 */
+	and	x1, x0, #(MPIDR_AFFLVL_MASK << MPIDR_AFF3_SHIFT)	/* 0xff00000000 */
+	and	x0, x0, #((MPIDR_AFFLVL_MASK << MPIDR_AFF0_SHIFT) | \
+			  (MPIDR_AFFLVL_MASK << MPIDR_AFF1_SHIFT) | \
+			  (MPIDR_AFFLVL_MASK << MPIDR_AFF2_SHIFT))	/* 0xffffff */
+	orr	x1, x0, x1, lsr #(MPIDR_AFF3_SHIFT - MPIDR_AFF2_SHIFT - \
+				  MPIDR_AFF1_SHIFT - MPIDR_AFF0_SHIFT)	/* 8 */
+	and	x0, x0, #MPIDR_AFFLVL_MASK				/* 0xff */
+	orr	x0, x0, x1, lsr #(MPIDR_AFF1_SHIFT - RMI_MPIDR_AFF0_WIDTH)	/* 4 */
 
 	/* Setup the stack pointer */
 	bl	realm_setup_my_stack

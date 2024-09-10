@@ -5,9 +5,10 @@
  */
 
 #include <assert.h>
+#include <stddef.h>
+
 #include <debug.h>
 #include <mmio.h>
-#include <stddef.h>
 #include <pcie.h>
 #include <pcie_spec.h>
 #include <tftf_lib.h>

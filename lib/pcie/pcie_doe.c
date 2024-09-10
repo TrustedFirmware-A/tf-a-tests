@@ -5,10 +5,11 @@
  *
  */
 
-#include <stdlib.h>
-#include <debug.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
+
+#include <debug.h>
 #include <pcie.h>
 #include <pcie_doe.h>
 #include <tftf_lib.h>

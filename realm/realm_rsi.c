@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -47,7 +47,7 @@ void rsi_exit_to_host(enum host_call_cmd exit_code)
 	struct rsi_host_call host_cal __aligned(sizeof(struct rsi_host_call));
 
 	host_cal.imm = exit_code;
-	host_cal.gprs[0] = read_mpidr_el1() & MPID_MASK;
+	host_cal.gprs[0] = read_mpidr_el1();
 	tftf_smc(&(smc_args) {RSI_HOST_CALL, (u_register_t)&host_cal,
 		0UL, 0UL, 0UL, 0UL, 0UL, 0UL});
 }

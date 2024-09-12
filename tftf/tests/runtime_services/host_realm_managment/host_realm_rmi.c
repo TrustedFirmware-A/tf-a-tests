@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -1039,9 +1039,10 @@ u_register_t host_realm_rec_create(struct realm *realm)
 		rec_params->pc = realm->par_base;
 		rec_params->flags = realm->rec_flag[i];
 
-		rec_params->mpidr = (u_register_t)i;
+		/* Convert REC index to RmiRecMpidr type */
+		rec_params->mpidr = RMI_REC_MPIDR((u_register_t)i);
 		rec_params->num_aux = realm->num_aux;
-		realm->mpidr[i] = (u_register_t)i;
+		realm->mpidr[i] = rec_params->mpidr;
 
 		/* Create REC  */
 		ret = host_rmi_rec_create(realm->rd, realm->rec[i],
@@ -1239,7 +1240,7 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 				re_enter_rec = true;
 				break;
 			case HOST_CALL_EXIT_PRINT_CMD:
-				realm_print_handler(realm, run->exit.gprs[0]);
+				realm_print_handler(realm, REC_IDX(run->exit.gprs[0]));
 				re_enter_rec = true;
 				break;
 			case HOST_CALL_EXIT_SUCCESS_CMD:

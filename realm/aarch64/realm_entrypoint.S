@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -19,16 +19,31 @@ func realm_entrypoint
 	/* Save x0 - context_id */
 	mov	x20, x0
 	mrs	x0, mpidr_el1
-	mov_imm	x1, MPID_MASK
-	and	x0, x0, x1
 
-	/* Setup the stack pointer. */
+	/*
+	 * Convert MPIDR_EL1 register type value
+	 * Aff3[39:32].Aff2[23:16].Aff1[15:8].RES0[7:4].Aff0[3:0]
+	 * to REC linear index
+	 * Aff3[27:20].Aff2[19:12].Aff1[11:4].Aff0[3:0].
+	 */
+	and	x1, x0, #(MPIDR_AFFLVL_MASK << MPIDR_AFF3_SHIFT)	/* 0xff00000000 */
+	and	x0, x0, #((MPIDR_AFFLVL_MASK << MPIDR_AFF0_SHIFT) | \
+			  (MPIDR_AFFLVL_MASK << MPIDR_AFF1_SHIFT) | \
+			  (MPIDR_AFFLVL_MASK << MPIDR_AFF2_SHIFT))	/* 0xffffff */
+	orr	x1, x0, x1, lsr #(MPIDR_AFF3_SHIFT - MPIDR_AFF2_SHIFT - \
+				  MPIDR_AFF1_SHIFT - MPIDR_AFF0_SHIFT)	/* 8 */
+	and	x0, x0, #MPIDR_AFFLVL_MASK				/* 0xff */
+	orr	x0, x0, x1, lsr #(MPIDR_AFF1_SHIFT - RMI_MPIDR_AFF0_WIDTH)	/* 4 */
+
+	/* Setup the stack pointer */
 	bl	realm_setup_my_stack
 
-	/* mpidr 0 is assumed to be primary CPU, jump to warmboot otherwise */
-	cbnz	x0, realm_warmboot_endpoint
+	/*
+	 * Check if cold boot is done
+	 */
+	ldr	x1, cold_boot_flag
+	cbz	x1, realm_warmboot_endpoint
 
-	/* Primary CPU Only */
 	/* Clear BSS */
 	ldr	x0, =__REALM_BSS_START__
 	adr	x1, realm_entrypoint
@@ -56,19 +71,23 @@ pie_fixup:
 	add	x1, x1, x0
 	bl	fixup_gdt_reloc
 
-	/* Initialize architectural state. */
+	/* Initialize architectural state */
 	bl	arch_init
 #if ENABLE_PAUTH
 	bl	pauth_init_enable
 #endif
-
+	/*
+	 * Update cold boot flag to indicate cold boot is done
+	 */
+	adr	x0, cold_boot_flag
+	str	xzr, [x0]
 loop:
-	/* And jump to the C entrypoint. */
+	/* And jump to the C entrypoint */
 	bl	realm_payload_main
 	b	loop
 
 realm_warmboot_endpoint:
-	/* Initialize architectural state. */
+	/* Initialize architectural state */
 	bl	arch_init
 #if ENABLE_PAUTH
 	bl	pauth_init_enable
@@ -90,9 +109,9 @@ func realm_setup_my_stack
 	ret
 endfunc	realm_setup_my_stack
 
-/* Initialize architectural state. */
+/* Initialize architectural state */
 func arch_init
-	/* Set the exception vectors. */
+	/* Set the exception vectors */
 	adrp	x0, realm_vector
 	add	x0, x0, :lo12:realm_vector
 	msr	vbar_el1, x0
@@ -118,3 +137,11 @@ func arch_init
 
 	ret
 endfunc arch_init
+
+	/*
+	 * Flag to mark if it is a cold boot.
+	 * 1: cold boot, 0: warmboot.
+	 */
+.align 3
+cold_boot_flag:
+	.dword		1

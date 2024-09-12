@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,6 +8,7 @@
 #include <arch_helpers.h>
 #include <assert.h>
 #include <host_shared_data.h>
+#include <realm_def.h>
 
 /**
  *   @brief    - Returns the base address of the shared region
@@ -30,7 +31,7 @@ void realm_set_shared_structure(host_shared_data_t *ptr)
  */
 host_shared_data_t *realm_get_my_shared_structure(void)
 {
-	return &guest_shared_data[read_mpidr_el1() & MPID_MASK];
+	return &guest_shared_data[REC_IDX(read_mpidr_el1())];
 }
 
 /*
@@ -39,7 +40,7 @@ host_shared_data_t *realm_get_my_shared_structure(void)
 u_register_t realm_shared_data_get_my_host_val(uint8_t index)
 {
 	assert(index < MAX_DATA_SIZE);
-	return guest_shared_data[read_mpidr_el1() & MPID_MASK].host_param_val[index];
+	return guest_shared_data[REC_IDX(read_mpidr_el1())].host_param_val[index];
 }
 
 /*
@@ -47,7 +48,7 @@ u_register_t realm_shared_data_get_my_host_val(uint8_t index)
  */
 uint8_t realm_shared_data_get_my_realm_cmd(void)
 {
-	return guest_shared_data[read_mpidr_el1() & MPID_MASK].realm_cmd;
+	return guest_shared_data[REC_IDX(read_mpidr_el1())].realm_cmd;
 }
 
 /*
@@ -56,6 +57,6 @@ uint8_t realm_shared_data_get_my_realm_cmd(void)
 void realm_shared_data_set_my_realm_val(uint8_t index, u_register_t val)
 {
 	assert(index < MAX_DATA_SIZE);
-	guest_shared_data[read_mpidr_el1() & MPID_MASK].realm_out_val[index] = val;
+	guest_shared_data[REC_IDX(read_mpidr_el1())].realm_out_val[index] = val;
 }
 

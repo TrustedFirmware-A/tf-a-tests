@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2022, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -89,6 +89,11 @@ $(eval $(call add_define,NS_BL1U_DEFINES,PA_SIZE))
 $(eval $(call add_define,NS_BL2U_DEFINES,PA_SIZE))
 $(eval $(call add_define,TFTF_DEFINES,PA_SIZE))
 $(eval $(call add_define,REALM_DEFINES,PA_SIZE))
+
+ifeq ($(TESTS),pcie-doe)
+USE_PCIE=1
+$(eval $(call add_define,TFTF_DEFINES,USE_PCIE))
+endif
 
 PLAT_INCLUDES	+=	-Iplat/arm/fvp/include/
 

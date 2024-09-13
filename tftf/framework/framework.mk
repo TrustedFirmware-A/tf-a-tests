@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2024, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -19,6 +19,8 @@ TFTF_INCLUDES	:= 					\
 	-Iinclude/lib					\
 	-Iinclude/lib/${ARCH}				\
 	-Iinclude/lib/extensions			\
+	-Iinclude/lib/pcie				\
+	-Iinclude/lib/spdm				\
 	-Iinclude/lib/utils				\
 	-Iinclude/lib/xlat_tables			\
 	-Iinclude/plat/common				\

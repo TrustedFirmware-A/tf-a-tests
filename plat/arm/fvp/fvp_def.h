@@ -11,6 +11,7 @@
 #ifndef __FVP_DEF_H__
 #define __FVP_DEF_H__
 
+#include <common_def.h>
 #include <platform_def.h>
 
 /*******************************************************************************
@@ -41,6 +42,22 @@
  */
 #define LS64_ATOMIC_DEVICE_BASE		0x1d000000
 #define LS64_ATOMIC_DEVICE_SIZE		0x10000
+
+/*
+ * Base Platform RevC only
+ *
+ * PCIe config region
+ */
+#define PCIE_CONFIG_BASE		0x40000000
+#define PCIE_CONFIG_SIZE		SZ_256M
+
+/* PCIe memory region #1 256MB */
+#define PCIE_MEM_1_BASE			0x50000000
+#define PCIE_MEM_1_SIZE			SZ_256M
+
+/* PCIe memory region #2 256GB */
+#define PCIE_MEM_2_BASE			0x4000000000
+#define PCIE_MEM_2_SIZE			(SZ_1G * 256)
 
 /*******************************************************************************
  * GIC-400 & interrupt handling related constants

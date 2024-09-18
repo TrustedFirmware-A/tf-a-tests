@@ -710,15 +710,9 @@ bool check_schedule_receiver_interrupt_handled(void)
  */
 static test_result_t base_test_global_notifications_signal_sp(
 	const ffa_id_t sender, const ffa_id_t receiver,
-	const ffa_notification_bitmap_t notifications, const uint32_t flags_get)
+	const ffa_notification_bitmap_t notifications, const uint32_t flags_get,
+	const uint32_t flags_set)
 {
-	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
-
-	if (!IS_SP_ID(receiver)) {
-		ERROR("Receiver is expected to be an SP ID!\n");
-		return TEST_RESULT_FAIL;
-	}
-
 	/* Variables to validate calls to FFA_NOTIFICATION_INFO_GET. */
 	uint16_t ids[FFA_NOTIFICATIONS_INFO_GET_MAX_IDS] = {0};
 	uint32_t lists_count;
@@ -726,10 +720,15 @@ static test_result_t base_test_global_notifications_signal_sp(
 
 	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
 
+	if (!IS_SP_ID(receiver)) {
+		ERROR("Receiver is expected to be an SP ID!\n");
+		return TEST_RESULT_FAIL;
+	}
+
 	schedule_receiver_interrupt_init();
 
 	if (!notification_bind_and_set(sender, receiver, notifications,
-				       FFA_NOTIFICATIONS_FLAG_DELAY_SRI)) {
+				       flags_set)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -772,7 +771,37 @@ test_result_t test_ffa_notifications_vm_signals_sp(void)
 {
 	return base_test_global_notifications_signal_sp(
 		1, SP_ID(1), FFA_NOTIFICATION(1) | FFA_NOTIFICATION(60),
-		FFA_NOTIFICATIONS_FLAG_BITMAP_VM);
+		FFA_NOTIFICATIONS_FLAG_BITMAP_VM, 0);
+}
+
+test_result_t test_ffa_notifications_vm_signals_sp_delay_sri_fail(void)
+{
+	const ffa_id_t sender = 1;
+	const ffa_id_t receiver = SP_ID(1);
+	const ffa_notification_bitmap_t notif = (1LU << 34);
+	struct ffa_value ret;
+
+	CHECK_SPMC_TESTING_SETUP(1, 1, expected_sp_uuids);
+
+	if (!request_notification_bind(receiver, receiver,
+				       sender, notif, 0,
+				       CACTUS_SUCCESS, 0)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = ffa_notification_set(sender, receiver,
+				   FFA_NOTIFICATIONS_FLAG_DELAY_SRI, notif);
+
+	if (!is_expected_ffa_error(ret, FFA_ERROR_INVALID_PARAMETER)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!request_notification_unbind(receiver, receiver, sender,
+					 notif, CACTUS_SUCCESS, 0)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }
 
 /**
@@ -782,7 +811,8 @@ test_result_t test_ffa_notifications_sp_signals_sp(void)
 {
 	return base_test_global_notifications_signal_sp(
 		SP_ID(1), SP_ID(2), g_notifications,
-		FFA_NOTIFICATIONS_FLAG_BITMAP_SP);
+		FFA_NOTIFICATIONS_FLAG_BITMAP_SP,
+		FFA_NOTIFICATIONS_FLAG_DELAY_SRI);
 }
 
 /**
@@ -1070,9 +1100,12 @@ static test_result_t base_test_per_vcpu_notifications(ffa_id_t sender,
 	for (unsigned int i = 0; i < PLATFORM_CORE_COUNT; i++) {
 		notifications_to_unbind |= FFA_NOTIFICATION(i);
 
-		uint32_t flags = FFA_NOTIFICATIONS_FLAG_DELAY_SRI |
-				 FFA_NOTIFICATIONS_FLAG_PER_VCPU  |
+		uint32_t flags = FFA_NOTIFICATIONS_FLAG_PER_VCPU  |
 				 FFA_NOTIFICATIONS_FLAGS_VCPU_ID((uint16_t)i);
+
+		flags |= (IS_SP_ID(sender))
+				? FFA_NOTIFICATIONS_FLAG_DELAY_SRI
+				: 0;
 
 		if (!notification_bind_and_set(sender,
 					       receiver,

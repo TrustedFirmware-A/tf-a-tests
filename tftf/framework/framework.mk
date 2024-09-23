@@ -98,7 +98,8 @@ endif
 ifeq (${ARCH},aarch64)
 # Context Management Library support files
 FRAMEWORK_SOURCES	+=						\
-	lib/context_mgmt/aarch64/context_el1.c
+	lib/context_mgmt/aarch64/context_el1.c				\
+	lib/context_mgmt/aarch64/context_el2.c
 endif
 
 TFTF_LINKERFILE		:=	tftf/framework/tftf.ld.S

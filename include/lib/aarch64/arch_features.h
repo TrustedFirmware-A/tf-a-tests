@@ -28,6 +28,12 @@ static inline bool is_armv8_1_pan_present(void)
 		(id_aa64mmfr1_pan <= ID_AA64MMFR1_EL1_PAN3_SUPPORTED);
 }
 
+static inline bool is_armv8_1_vhe_present(void)
+{
+	return ((read_id_aa64mmfr1_el1() >> ID_AA64MMFR1_EL1_VHE_SHIFT) &
+		ID_AA64MMFR1_EL1_VHE_MASK) == 1U;
+}
+
 static inline bool is_armv8_2_pan2_present(void)
 {
 	u_register_t id_aa64mmfr1_pan =
@@ -114,10 +120,22 @@ static inline bool is_armv8_3_pauth_gpa_gpi_gpa3_present(void)
 		(read_id_aa64isar2_el1() & mask_id_aa64isar2)) != 0U;
 }
 
+static inline bool is_armv8_4_amuv1_present(void)
+{
+	return ((read_id_aa64pfr0_el1() >> ID_AA64PFR0_AMU_SHIFT) &
+		ID_AA64PFR0_AMU_MASK) == 1U;
+}
+
 static inline bool is_armv8_4_dit_present(void)
 {
 	return ((read_id_aa64pfr0_el1() >> ID_AA64PFR0_DIT_SHIFT) &
 		ID_AA64PFR0_DIT_MASK) == 1U;
+}
+
+static inline bool is_armv8_4_nv2_present(void)
+{
+	return ((read_id_aa64mmfr2_el1() >> ID_AA64MMFR2_EL1_NV_SHIFT) &
+		ID_AA64MMFR2_EL1_NV_MASK) == NV2_IMPLEMENTED;
 }
 
 static inline bool is_armv8_4_ttst_present(void)
@@ -486,10 +504,25 @@ static inline bool is_feat_s1pie_present(void)
 		>= ID_AA64MMFR3_EL1_S1PIE_SUPPORTED;
 }
 
+static inline bool is_feat_s2pie_present(void)
+{
+	return EXTRACT(ID_AA64MMFR3_EL1_S2PIE, read_id_aa64mmfr3_el1())
+		>= ID_AA64MMFR3_EL1_S2PIE_SUPPORTED;
+}
+
+static inline bool is_feat_sxpoe_present(void)
+{
+	return is_feat_s1poe_present() || is_feat_s2poe_present();
+}
+
+static inline bool is_feat_sxpie_present(void)
+{
+	return is_feat_s1pie_present() || is_feat_s2pie_present();
+}
+
 static inline bool is_feat_mte2_present(void)
 {
 	return EXTRACT(ID_AA64PFR1_EL1_MTE, read_id_aa64pfr1_el1())
 		>= MTE_IMPLEMENTED_ELX;
 }
-
 #endif /* ARCH_FEATURES_H */

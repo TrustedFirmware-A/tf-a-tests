@@ -104,12 +104,34 @@
 #define ICC_EOIR0_EL1		S3_0_C12_C8_1
 #define ICC_EOIR1_EL1		S3_0_C12_C12_1
 #define ICC_SGI0R_EL1		S3_0_C12_C11_7
-
 #define ICV_CTRL_EL1		S3_0_C12_C12_4
 #define ICV_IAR1_EL1		S3_0_C12_C12_0
 #define ICV_IGRPEN1_EL1		S3_0_C12_C12_7
 #define ICV_EOIR1_EL1		S3_0_C12_C12_1
 #define ICV_PMR_EL1		S3_0_C4_C6_0
+
+/*******************************************************************************
+ * Definitions for EL2 system registers.
+ ******************************************************************************/
+#define CNTPOFF_EL2		S3_4_C14_C0_6
+#define HDFGRTR2_EL2		S3_4_C3_C1_0
+#define HDFGWTR2_EL2		S3_4_C3_C1_1
+#define HFGRTR2_EL2		S3_4_C3_C1_2
+#define HFGWTR2_EL2		S3_4_C3_C1_3
+#define HDFGRTR_EL2		S3_4_C3_C1_4
+#define HDFGWTR_EL2		S3_4_C3_C1_5
+#define HAFGRTR_EL2		S3_4_C3_C1_6
+#define HFGITR2_EL2		S3_4_C3_C1_7
+#define HFGITR_EL2		S3_4_C1_C1_6
+#define HFGRTR_EL2		S3_4_C1_C1_4
+#define HFGWTR_EL2		S3_4_C1_C1_5
+#define ICH_HCR_EL2		S3_4_C12_C11_0
+#define ICH_VMCR_EL2		S3_4_C12_C11_7
+#define VNCR_EL2		S3_4_C2_C2_0
+#define PMSCR_EL2		S3_4_C9_C9_0
+#define TFSR_EL2		S3_4_C5_C6_0
+#define CONTEXTIDR_EL2		S3_4_C13_C0_1
+#define TTBR1_EL2		S3_4_C2_C0_1
 
 /*******************************************************************************
  * Generic timer memory mapped registers & offsets
@@ -384,6 +406,8 @@
 #define ID_AA64MMFR1_EL1_LO_WIDTH		U(4)
 #define ID_AA64MMFR1_EL1_LOR_NOT_SUPPORTED	ULL(0x0)
 #define ID_AA64MMFR1_EL1_LOR_SUPPORTED		ULL(0x1)
+#define ID_AA64MMFR1_EL1_VHE_SHIFT		ULL(8)
+#define ID_AA64MMFR1_EL1_VHE_MASK		ULL(0xf)
 
 /* ID_AA64MMFR2_EL1 definitions */
 #define ID_AA64MMFR2_EL1		S3_0_C0_C7_2
@@ -393,6 +417,10 @@
 
 #define ID_AA64MMFR2_EL1_CNP_SHIFT	U(0)
 #define ID_AA64MMFR2_EL1_CNP_MASK	ULL(0xf)
+
+#define ID_AA64MMFR2_EL1_NV_SHIFT	U(24)
+#define ID_AA64MMFR2_EL1_NV_MASK	ULL(0xf)
+#define NV2_IMPLEMENTED			ULL(0x2)
 
 /* ID_AA64MMFR3_EL1 definitions */
 #define ID_AA64MMFR3_EL1			S3_0_C0_C7_3
@@ -1482,6 +1510,10 @@
 /*******************************************************************************
  * Permission indirection and overlay Registers
  ******************************************************************************/
+#define PIRE0_EL2		S3_4_C10_C2_2
+#define PIR_EL2			S3_4_C10_C2_3
+#define POR_EL2			S3_4_C10_C2_4
+#define S2PIR_EL2		S3_4_C10_C2_5
 #define PIRE0_EL1		S3_0_C10_C2_2
 #define PIR_EL1			S3_0_C10_C2_3
 #define POR_EL1			S3_0_C10_C2_4
@@ -1490,6 +1522,8 @@
 /*******************************************************************************
  * FEAT_GCS - Guarded Control Stack Registers
  ******************************************************************************/
+#define GCSCR_EL2		S3_4_C2_C5_0
+#define GCSPR_EL2		S3_4_C2_C5_1
 #define GCSCR_EL1		S3_0_C2_C5_0
 #define GCSCRE0_EL1		S3_0_C2_C5_2
 #define GCSPR_EL1		S3_0_C2_C5_1
@@ -1498,6 +1532,7 @@
 /*******************************************************************************
  * Realm management extension register definitions
  ******************************************************************************/
+#define SCXTNUM_EL2		S3_4_C13_C0_7
 #define SCXTNUM_EL1		S3_0_C13_C0_7
 #define SCXTNUM_EL0		S3_3_C13_C0_7
 

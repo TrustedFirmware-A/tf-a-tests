@@ -122,6 +122,8 @@
 	  function="host_test_realm_no_lpa2_invalid_s2sz" />
 	  <testcase name="Test Realm creation with LPA2 disabled but FEAT_LPA2 present on platform"
 	  function="host_test_non_lpa2_realm_on_lpa2plat" />
+	  <testcase name="Test Data bound with LPA2 disabled but FEAT_LPA2 present on platform"
+	  function="host_test_data_bound_non_lpa2_realm_on_lpa2plat" />
 	  <testcase name="Test Realm creation with LPA2 enabled but FEAT_LPA2 absent on platform"
 	  function="host_test_lpa2_realm_on_non_lpa2plat" />
   </testsuite>

@@ -496,10 +496,11 @@ u_register_t host_realm_map_unprotected(struct realm *realm,
 	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_LPA2) != 0L) {
 		desc = (phys & ~OA_50_51_MASK) |
 				INPLACE(TTE_OA_50_51, EXTRACT(OA_50_51, phys));
-		desc |= S2TTE_ATTR_FWB_WB_RW_LPA2;
 	} else {
-		desc = phys | S2TTE_ATTR_FWB_WB_RW;
+		desc = phys;
 	}
+
+	desc |= S2TTE_ATTR_FWB_WB_RW;
 
 	ret = host_rmi_rtt_mapunprotected(rd, map_addr, map_level, desc);
 

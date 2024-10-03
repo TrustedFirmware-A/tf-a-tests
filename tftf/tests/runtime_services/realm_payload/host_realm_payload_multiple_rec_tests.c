@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -30,8 +30,7 @@ static struct realm realm1;
 test_result_t host_realm_multi_rec_single_cpu(void)
 {
 	bool ret1, ret2;
-	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
-	RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
+	u_register_t rec_flag[MAX_REC_COUNT];
 	u_register_t feature_flag = 0U;
 	long sl = RTT_MIN_LEVEL;
 
@@ -40,6 +39,10 @@ test_result_t host_realm_multi_rec_single_cpu(void)
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
@@ -224,21 +227,24 @@ static test_result_t cpu_on_handler2(void)
 test_result_t host_realm_multi_rec_exit_irq(void)
 {
 	bool ret1, ret2;
-	unsigned int rec_count = MAX_REC_COUNT;
 	u_register_t other_mpidr, my_mpidr, ret;
-	int cpu_node;
+	unsigned int cpu_node, rec_count;
 	u_register_t feature_flag = 0U;
 	long sl = RTT_MIN_LEVEL;
-	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
-		RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
-		RMI_RUNNABLE};
+	u_register_t rec_flag[MAX_REC_COUNT];
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
-	SKIP_TEST_IF_LESS_THAN_N_CPUS(rec_count);
+
+	rec_count = tftf_get_total_cpus_count();
+	assert(rec_count <= MAX_REC_COUNT);
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	for (unsigned int i = 0U; i < rec_count; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
@@ -261,7 +267,7 @@ test_result_t host_realm_multi_rec_exit_irq(void)
 		}
 	}
 
-	INFO("Wait for all CPU to come up\n");
+	INFO("Wait for all CPUs to come up\n");
 	while (is_secondary_cpu_on != (rec_count - 1U)) {
 		waitms(100U);
 	}
@@ -269,7 +275,7 @@ test_result_t host_realm_multi_rec_exit_irq(void)
 destroy_realm:
 	tftf_irq_enable(IRQ_NS_SGI_7, GIC_HIGHEST_NS_PRIORITY);
 	for (unsigned int i = 1U; i < rec_count; i++) {
-		INFO("Raising NS IRQ for rec %d\n", i);
+		INFO("Raising NS IRQ for rec %u\n", i);
 		host_rec_send_sgi(&realm, IRQ_NS_SGI_7, i);
 	}
 	tftf_irq_disable(IRQ_NS_SGI_7);
@@ -325,31 +331,35 @@ test_result_t host_realm_multi_rec_multiple_cpu(void)
 	u_register_t other_mpidr, my_mpidr;
 	struct rmi_rec_run *run;
 	unsigned int host_call_result, i = 0U;
-	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE,
-		RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE,
-		RMI_NOT_RUNNABLE};
+	u_register_t rec_flag[MAX_REC_COUNT] = {RMI_RUNNABLE};
 	u_register_t exit_reason;
-	int cpu_node;
+	unsigned int cpu_node, rec_count;
 	u_register_t feature_flag = 0U;
 	long sl = RTT_MIN_LEVEL;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
-	SKIP_TEST_IF_LESS_THAN_N_CPUS(MAX_REC_COUNT);
+
+	rec_count = tftf_get_total_cpus_count();
+	assert(rec_count <= MAX_REC_COUNT);
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
+	for (unsigned int i = 1U; i < rec_count; i++) {
+		rec_flag[i] = RMI_NOT_RUNNABLE;
+	}
+
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
+			feature_flag, sl, rec_flag, rec_count)) {
 		return TEST_RESULT_FAIL;
 	}
 
 	is_secondary_cpu_on = 0U;
 	init_spinlock(&secondary_cpu_lock);
 	my_mpidr = read_mpidr_el1() & MPID_MASK;
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, MAX_REC_COUNT);
+	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, rec_count);
 	ret1 = host_enter_realm_execute(&realm, REALM_MULTIPLE_REC_MULTIPLE_CPU_CMD,
 			RMI_EXIT_PSCI, 0U);
 	if (!ret1) {
@@ -388,7 +398,7 @@ test_result_t host_realm_multi_rec_multiple_cpu(void)
 
 	/* Turn on all CPUs */
 	for_each_cpu(cpu_node) {
-		if (i == (MAX_REC_COUNT - 1U)) {
+		if (i == (rec_count - 1U)) {
 			break;
 		}
 		other_mpidr = tftf_get_mpidr_from_node(cpu_node);
@@ -416,7 +426,7 @@ test_result_t host_realm_multi_rec_multiple_cpu(void)
 			break;
 		}
 		rec_num = host_realm_find_rec_by_mpidr(run->exit.gprs[1], &realm);
-		if (rec_num >= MAX_REC_COUNT) {
+		if (rec_num >= rec_count) {
 			ERROR("Invalid mpidr requested\n");
 			goto destroy_realm;
 		}
@@ -463,9 +473,7 @@ test_result_t host_realm_multi_rec_multiple_cpu2(void)
 	struct realm realm2;
 	u_register_t feature_flag = 0U;
 	long sl = RTT_MIN_LEVEL;
-	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE,
-		RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE, RMI_NOT_RUNNABLE,
-		RMI_NOT_RUNNABLE};
+	u_register_t rec_flag[MAX_REC_COUNT] = {RMI_RUNNABLE};
 	u_register_t exit_reason;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
@@ -473,6 +481,10 @@ test_result_t host_realm_multi_rec_multiple_cpu2(void)
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	for (unsigned int i = 1U; i < MAX_REC_COUNT; i++) {
+		rec_flag[i] = RMI_NOT_RUNNABLE;
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
@@ -596,19 +608,25 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 {
 	u_register_t feature_flag = 0U;
 	u_register_t rmm_feat_reg0;
-	u_register_t rec_flag[8U] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
-		RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
-	bool ret1 = 0U, ret2;
-	unsigned int num_cnts, i = 0U;
+	u_register_t rec_flag[MAX_REC_COUNT];
+	bool ret1 = false, ret2;
+	unsigned int num_cnts, rec_count, i;
 	u_register_t other_mpidr, my_mpidr, ret;
 	int cpu_node;
 	long sl = RTT_MIN_LEVEL;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
+	rec_count = tftf_get_total_cpus_count();
+	assert(rec_count <= MAX_REC_COUNT);
+
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	for (i = 0U; i < rec_count; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
 	}
 
 	/* Get Max PMU counter implemented through RMI_FEATURES */
@@ -673,7 +691,7 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 
 	/* Prepare realm0, create recs for realm0 later */
 	if (!host_prepare_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
+			feature_flag, sl, rec_flag, rec_count)) {
 		goto test_exit;
 		return TEST_RESULT_FAIL;
 	}
@@ -687,7 +705,7 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm1, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
+			feature_flag, sl, rec_flag, rec_count)) {
 		goto test_exit2;
 	}
 
@@ -710,7 +728,7 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 	INFO("MAX PMU Counter=%u\n", num_cnts);
 
 	/* Pass num of PMU counters programmed to realm */
-	for (unsigned int j = 0U; j < MAX_REC_COUNT; j++) {
+	for (unsigned int j = 0U; j < rec_count; j++) {
 		host_shared_data_set_host_val(&realm, j, HOST_ARG1_INDEX, num_cnts);
 		host_shared_data_set_host_val(&realm1, j, HOST_ARG1_INDEX, num_cnts - 1U);
 	}
@@ -742,9 +760,11 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 		goto test_exit2;
 	}
 
+	i = 0U;
+
 	/* Turn on all CPUs */
 	for_each_cpu(cpu_node) {
-		if (i == (MAX_REC_COUNT - 1U)) {
+		if (i == (rec_count - 1U)) {
 			break;
 		}
 		other_mpidr = tftf_get_mpidr_from_node(cpu_node);
@@ -762,7 +782,7 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 	}
 
 	/* Wait for all CPU to power up */
-	while (is_secondary_cpu_on != MAX_REC_COUNT - 1U) {
+	while (is_secondary_cpu_on != (rec_count - 1U)) {
 		waitms(100);
 	}
 

@@ -38,7 +38,7 @@ static uint128_t pauth_keys_after[NUM_KEYS];
 test_result_t host_test_realm_create_enter(void)
 {
 	bool ret1, ret2;
-	u_register_t rec_flag[1] = {RMI_RUNNABLE};
+	u_register_t rec_flag[MAX_REC_COUNT];
 	struct realm realm;
 	u_register_t feature_flag = 0UL;
 	long sl = RTT_MIN_LEVEL;
@@ -50,14 +50,22 @@ test_result_t host_test_realm_create_enter(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
+	}
+
 	for (unsigned int i = 0U; i < 5U; i++) {
+		/* Run random Rec */
+		unsigned int run_num = (unsigned int)rand() % MAX_REC_COUNT;
+
 		if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag, sl, rec_flag, 1U)) {
+				feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
 			return TEST_RESULT_FAIL;
 		}
 
-		host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, SLEEP_TIME_MS);
-		ret1 = host_enter_realm_execute(&realm, REALM_SLEEP_CMD, RMI_EXIT_HOST_CALL, 0U);
+		host_shared_data_set_host_val(&realm, run_num, HOST_ARG1_INDEX, SLEEP_TIME_MS);
+		ret1 = host_enter_realm_execute(&realm, REALM_SLEEP_CMD, RMI_EXIT_HOST_CALL,
+						run_num);
 		ret2 = host_destroy_realm(&realm);
 
 		if (!ret1 || !ret2) {
@@ -375,7 +383,7 @@ test_result_t host_realm_pmuv3_overflow_interrupt(void)
 /*
  * Test aim to create, enter and destroy MAX_REALM_COUNT realms
  * Host created MAX_REALM_COUNT realms with MAX_REC_COUNT rec each
- * Host enters all recs sequentially
+ * Host enters all recs sequentially, starting from the random rec
  * Verifies all realms returned success
  * Destroys all realms
  */
@@ -385,7 +393,7 @@ test_result_t host_test_multiple_realm_create_enter(void)
 	u_register_t rec_flag[MAX_REC_COUNT];
 	u_register_t feature_flag = 0U;
 	long sl = RTT_MIN_LEVEL;
-	unsigned int num;
+	unsigned int run_rec[MAX_REALM_COUNT], num;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -399,18 +407,31 @@ test_result_t host_test_multiple_realm_create_enter(void)
 	}
 
 	for (num = 0U; num < MAX_REALM_COUNT; num++) {
+		/* Generate random REC start number */
+		run_rec[num] = (unsigned int)rand() % MAX_REC_COUNT;
+
 		ret = host_create_activate_realm_payload(&realm[num],
 							(u_register_t)REALM_IMAGE_BASE,
-							feature_flag, sl, rec_flag, 1U);
+							feature_flag, sl, rec_flag, MAX_REC_COUNT);
 		if (!ret) {
 			goto destroy_realms;
 		}
+	}
 
-		host_shared_data_set_host_val(&realm[num], 0U, HOST_ARG1_INDEX, SLEEP_TIME_MS);
-		ret = host_enter_realm_execute(&realm[num], REALM_SLEEP_CMD, RMI_EXIT_HOST_CALL,
-						0U);
-		if (!ret) {
-			goto destroy_realms;
+	for (unsigned int j = 0U; j < MAX_REC_COUNT; j++) {
+		for (unsigned int i = 0U; i < MAX_REALM_COUNT; i++) {
+			host_shared_data_set_host_val(&realm[i], run_rec[i], HOST_ARG1_INDEX,
+							SLEEP_TIME_MS);
+			ret = host_enter_realm_execute(&realm[i], REALM_SLEEP_CMD,
+							RMI_EXIT_HOST_CALL, run_rec[i]);
+			if (!ret) {
+				goto destroy_realms;
+			}
+
+			/* Increment REC number */
+			if (++run_rec[i] == MAX_REC_COUNT) {
+				run_rec[i] = 0U;
+			}
 		}
 	}
 

@@ -33,6 +33,7 @@ test_result_t host_realm_multi_rec_single_cpu(void)
 	u_register_t rec_flag[MAX_REC_COUNT];
 	u_register_t feature_flag = 0U;
 	long sl = RTT_MIN_LEVEL;
+	unsigned int rec_num;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -50,12 +51,20 @@ test_result_t host_realm_multi_rec_single_cpu(void)
 		return TEST_RESULT_FAIL;
 	}
 
+	/* Start random Rec */
+	rec_num = (unsigned int)rand() % MAX_REC_COUNT;
+
 	for (unsigned int i = 0; i < MAX_REC_COUNT; i++) {
-		host_shared_data_set_host_val(&realm, i, HOST_ARG1_INDEX, 10U);
+		host_shared_data_set_host_val(&realm, rec_num, HOST_ARG1_INDEX, 10U);
 		ret1 = host_enter_realm_execute(&realm, REALM_SLEEP_CMD,
-				RMI_EXIT_HOST_CALL, i);
+				RMI_EXIT_HOST_CALL, rec_num);
 		if (!ret1) {
 			break;
+		}
+
+		/* Increment Rec number */
+		if (++rec_num == MAX_REC_COUNT) {
+			rec_num = 0U;
 		}
 	}
 
@@ -319,7 +328,7 @@ static test_result_t cpu_on_handler(void)
  * Each of the secondary then enters Realm with a different REC
  * and executes the test REALM_MULTIPLE_REC_MULTIPLE_CPU_CMD in Realm payload.
  * It is expected that the REC will exit with PSCI_CPU_OFF as the exit reason.
- * REC00 checks if all other CPUs are off, via PSCI_AFFINITY_INFO.
+ * REC0 checks if all other CPUs are off, via PSCI_AFFINITY_INFO.
  * Host completes the PSCI requests.
  */
 test_result_t host_realm_multi_rec_multiple_cpu(void)
@@ -330,7 +339,7 @@ test_result_t host_realm_multi_rec_multiple_cpu(void)
 	u_register_t rec_num;
 	u_register_t other_mpidr, my_mpidr;
 	struct rmi_rec_run *run;
-	unsigned int host_call_result, i = 0U;
+	unsigned int host_call_result, i;
 	u_register_t rec_flag[MAX_REC_COUNT] = {RMI_RUNNABLE};
 	u_register_t exit_reason;
 	unsigned int cpu_node, rec_count;
@@ -347,7 +356,7 @@ test_result_t host_realm_multi_rec_multiple_cpu(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	for (unsigned int i = 1U; i < rec_count; i++) {
+	for (i = 1U; i < rec_count; i++) {
 		rec_flag[i] = RMI_NOT_RUNNABLE;
 	}
 
@@ -395,6 +404,8 @@ test_result_t host_realm_multi_rec_multiple_cpu(void)
 		ERROR("Realm failed\n");
 		goto destroy_realm;
 	}
+
+	i = 0U;
 
 	/* Turn on all CPUs */
 	for_each_cpu(cpu_node) {

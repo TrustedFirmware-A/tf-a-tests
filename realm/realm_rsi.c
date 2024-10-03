@@ -22,7 +22,7 @@ u_register_t rsi_get_version(u_register_t req_ver)
 	if (res.ret0 == SMC_UNKNOWN) {
 		return SMC_UNKNOWN;
 	}
-	/* Return lower version. */
+	/* Return lower version */
 	return res.ret1;
 }
 
@@ -71,15 +71,19 @@ u_register_t rsi_ipa_state_set(u_register_t base,
 	return res.ret0;
 }
 
-/* This function will return RIPAS of IPA */
-u_register_t rsi_ipa_state_get(u_register_t adr, rsi_ripas_type *ripas)
+/* This function will return RIPAS of IPA range */
+u_register_t rsi_ipa_state_get(u_register_t base,
+				u_register_t top,
+				u_register_t *out_top,
+				rsi_ripas_type *ripas)
 {
 	smc_ret_values res = {};
 
 	res = tftf_smc(&(smc_args)
-			{RSI_IPA_STATE_GET, adr});
+			{RSI_IPA_STATE_GET, base, top});
 	if (res.ret0 == RSI_SUCCESS) {
-		*ripas = res.ret1;
+		*out_top = res.ret1;
+		*ripas = res.ret2;
 	}
 	return res.ret0;
 }

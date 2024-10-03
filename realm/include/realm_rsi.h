@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -64,18 +64,17 @@ typedef enum {
 	RSI_ERROR_COUNT
 } rsi_status_t;
 
+/* Size of Realm Personalization Value */
+#define RSI_RPV_SIZE			64U
+
 struct rsi_realm_config {
 	/* IPA width in bits */
-	SET_MEMBER(unsigned long ipa_width, 0, 0x1000);	/* Offset 0 */
+	SET_MEMBER(unsigned long ipa_width, 0, 8);	/* Offset 0 */
+	/* Hash algorithm */
+	SET_MEMBER(unsigned long algorithm, 8, 0x200);	/* Offset 8 */
+	/* Realm Personalization Value */
+	SET_MEMBER(unsigned char rpv[RSI_RPV_SIZE], 0x200, 0x1000); /* Offset 0x200 */
 };
-
-/*
- * arg0 == IPA address of target region
- * arg1 == Size of target region in bytes
- * arg2 == RIPAS value
- * ret0 == Status / error
- * ret1 == Top of modified IPA range
- */
 
 #define RSI_HOST_CALL_NR_GPRS		31U
 
@@ -90,23 +89,49 @@ struct rsi_host_call {
 
 /*
  * arg0 == struct rsi_host_call address
+ * ret0 == Status / error
  */
 #define RSI_HOST_CALL		SMC_RSI_FID(9U)
 
-
+/*
+ * arg0: Requested interface version
+ * ret0: Status / error
+ * ret1: Lower implemented interface revision
+ * ret2: Higher implemented interface revision
+ */
 #define RSI_VERSION		SMC_RSI_FID(0U)
 
 /*
  * arg0 == struct rsi_realm_config address
+ * ret0 == Status / error
  */
 #define RSI_REALM_CONFIG	SMC_RSI_FID(6U)
+
+/*
+ * arg0 == Base IPA address of target region
+ * arg1 == Top address of target region
+ * arg2 == RIPAS value
+ * arg3 == flags
+ * ret0 == Status / error
+ * ret1 == Base of IPA region which was not modified by the command
+ * ret2 == RSI response
+ */
 #define RSI_IPA_STATE_SET	SMC_RSI_FID(7U)
+
+/*
+ * arg0 == Base of target IPA region
+ * arg1 == End of target IPA region
+ * ret0 == Status / error
+ * ret1 == Top of IPA region which has the reported RIPAS value
+ * ret2 == RIPAS value
+ */
 #define RSI_IPA_STATE_GET	SMC_RSI_FID(8U)
 
 typedef enum {
 	RSI_EMPTY = 0U,
 	RSI_RAM,
-	RSI_DESTROYED
+	RSI_DESTROYED,
+	RSI_DEV
 } rsi_ripas_type;
 
 typedef enum {
@@ -117,16 +142,19 @@ typedef enum {
 #define RSI_NO_CHANGE_DESTROYED	0UL
 #define RSI_CHANGE_DESTROYED	1UL
 
-/* Request RIPAS of a target IPA range to be changed to a specified value. */
+/* Request RIPAS of a target IPA range to be changed to a specified value */
 u_register_t rsi_ipa_state_set(u_register_t base,
-			   u_register_t top,
-			   rsi_ripas_type ripas,
-			   u_register_t flag,
-			   u_register_t *new_base,
-			   rsi_ripas_respose_type *response);
+				u_register_t top,
+				rsi_ripas_type ripas,
+				u_register_t flag,
+				u_register_t *new_base,
+				rsi_ripas_respose_type *response);
 
-/* Request RIPAS of a target IPA */
-u_register_t rsi_ipa_state_get(u_register_t adr, rsi_ripas_type *ripas);
+/* Request RIPAS of a target IPA range */
+u_register_t rsi_ipa_state_get(u_register_t base,
+				u_register_t top,
+				u_register_t *out_top,
+				rsi_ripas_type *ripas);
 
 /* This function return RSI_ABI_VERSION */
 u_register_t rsi_get_version(u_register_t req_ver);

@@ -1,0 +1,64 @@
+#
+# Copyright (c) 2023, Advanced Micro Devices, Inc. All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+#
+################################################################################
+# Disable the listed tests for Versal2 Platform.
+################################################################################
+#TESTS: tftf-validation
+Framework Validation/Events API
+Framework Validation/NVM serialisation
+
+#TESTS: Timer framework Validation
+Timer framework Validation
+
+#TESTS: Boot requirement tests
+Boot requirement tests
+
+ARM_ARCH_SVC
+PMU Leakage
+
+#TESTS: CPU extensions
+CPU extensions/PMUv3 SMC counter preservation
+
+#TESTS: Performance tests
+Performance tests/Test cluster power up latency
+
+#TESTS: FF-A
+FF-A Setup and Discovery/FF-A RXTX unmap SP rxtx buffer
+FF-A Setup and Discovery/Test FFA_PARTITION_INFO_GET v1.0
+FF-A Memory Sharing/Lend memory, clear flag set
+SIMD,SVE Registers context/Check that SIMD registers context is preserved
+FF-A Interrupt
+FF-A Notifications
+
+#TESTS: AMD-Xilinx tests
+AMD-Xilinx tests
+
+#TESTS: psci
+PSCI Affinity Info/Affinity info level0 powerdown
+PSCI CPU Suspend/CPU suspend to powerdown at level 0
+PSCI CPU Suspend/CPU suspend to powerdown at level 1
+PSCI CPU Suspend/CPU suspend to powerdown at level 2
+PSCI CPU Suspend/CPU suspend to standby at level 0
+PSCI CPU Suspend/CPU suspend to standby at level 1
+PSCI CPU Suspend/CPU suspend to standby at level 2
+PSCI CPU Suspend in OSI mode/CPU suspend to powerdown at level 0 in OSI mode
+PSCI CPU Suspend in OSI mode/CPU suspend to powerdown at level 1 in OSI mode
+PSCI System Suspend Validation/System suspend multiple times
+PSCI System Suspend Validation/system suspend from all cores
+PSCI System Suspend Validation/Validate suspend to RAM functionality
+PSCI System Suspend Validation/Validate PSCI System Suspend API
+
+#PSCI
+PSCI Features
+PSCI CPU Suspend in OSI mode
+
+#Query runtime services
+Query runtime services/Query Vendor-Specific Service
+Query runtime services/Probe PMF Version
+
+#TESTS: el3-power-state
+EL3 power state parser validation

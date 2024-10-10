@@ -25,18 +25,20 @@
 
 extern const char *rmi_exit[];
 
+static struct realm realm[MAX_REALM_COUNT];
+
 #if ENABLE_PAUTH
 static uint128_t pauth_keys_before[NUM_KEYS];
 static uint128_t pauth_keys_after[NUM_KEYS];
 #endif
 
 /*
- * @Test_Aim@ Test realm payload creation, execution and destruction  iteratively
+ * @Test_Aim@ Test realm payload creation, execution and destruction iteratively
  */
 test_result_t host_test_realm_create_enter(void)
 {
 	bool ret1, ret2;
-	u_register_t rec_flag[1] = {RMI_RUNNABLE};
+	u_register_t rec_flag[MAX_REC_COUNT];
 	struct realm realm;
 	u_register_t feature_flag = 0UL;
 	long sl = RTT_MIN_LEVEL;
@@ -48,14 +50,22 @@ test_result_t host_test_realm_create_enter(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
+	}
+
 	for (unsigned int i = 0U; i < 5U; i++) {
+		/* Run random Rec */
+		unsigned int run_num = (unsigned int)rand() % MAX_REC_COUNT;
+
 		if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag, sl, rec_flag, 1U)) {
+				feature_flag, sl, rec_flag, MAX_REC_COUNT)) {
 			return TEST_RESULT_FAIL;
 		}
 
-		host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, SLEEP_TIME_MS);
-		ret1 = host_enter_realm_execute(&realm, REALM_SLEEP_CMD, RMI_EXIT_HOST_CALL, 0U);
+		host_shared_data_set_host_val(&realm, run_num, HOST_ARG1_INDEX, SLEEP_TIME_MS);
+		ret1 = host_enter_realm_execute(&realm, REALM_SLEEP_CMD, RMI_EXIT_HOST_CALL,
+						run_num);
 		ret2 = host_destroy_realm(&realm);
 
 		if (!ret1 || !ret2) {
@@ -113,8 +123,7 @@ test_result_t host_realm_enable_pauth(void)
 	return TEST_RESULT_SKIPPED;
 #else
 	bool ret1, ret2;
-	u_register_t rec_flag[MAX_REC_COUNT] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
-		RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,};
+	u_register_t rec_flag[MAX_REC_COUNT];
 	struct realm realm;
 	u_register_t feature_flag = 0U;
 	long sl = RTT_MIN_LEVEL;
@@ -124,6 +133,10 @@ test_result_t host_realm_enable_pauth(void)
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
 	}
 
 	pauth_test_lib_fill_regs_and_template(pauth_keys_before);
@@ -368,19 +381,19 @@ test_result_t host_realm_pmuv3_overflow_interrupt(void)
 }
 
 /*
- * Test aim to create, enter and destroy 2 realms
- * Host created 2 realms with 1 rec each
- * Host enters both rec sequentially
- * Verifies both realm returned success
- * Destroys both realms
+ * Test aim to create, enter and destroy MAX_REALM_COUNT realms
+ * Host created MAX_REALM_COUNT realms with MAX_REC_COUNT rec each
+ * Host enters all recs sequentially, starting from the random rec
+ * Verifies all realms returned success
+ * Destroys all realms
  */
 test_result_t host_test_multiple_realm_create_enter(void)
 {
-	bool ret1, ret2, ret3;
-	u_register_t rec_flag[1] = {RMI_RUNNABLE};
-	struct realm realm1, realm2;
+	bool ret;
+	u_register_t rec_flag[MAX_REC_COUNT];
 	u_register_t feature_flag = 0U;
 	long sl = RTT_MIN_LEVEL;
+	unsigned int run_rec[MAX_REALM_COUNT], num;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -389,40 +402,47 @@ test_result_t host_test_multiple_realm_create_enter(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm1, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag, sl, rec_flag, 1U)) {
-		return TEST_RESULT_FAIL;
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
 	}
 
+	for (num = 0U; num < MAX_REALM_COUNT; num++) {
+		/* Generate random REC start number */
+		run_rec[num] = (unsigned int)rand() % MAX_REC_COUNT;
 
-	if (!host_create_activate_realm_payload(&realm2, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag, sl, rec_flag, 1U)) {
-		ret2 = host_destroy_realm(&realm1);
-		return TEST_RESULT_FAIL;
+		ret = host_create_activate_realm_payload(&realm[num],
+							(u_register_t)REALM_IMAGE_BASE,
+							feature_flag, sl, rec_flag, MAX_REC_COUNT);
+		if (!ret) {
+			goto destroy_realms;
+		}
 	}
 
-	host_shared_data_set_host_val(&realm1, 0U, HOST_ARG1_INDEX, SLEEP_TIME_MS);
-	ret1 = host_enter_realm_execute(&realm1, REALM_SLEEP_CMD, RMI_EXIT_HOST_CALL, 0U);
-	if (!ret1) {
-		goto destroy_realms;
+	for (unsigned int j = 0U; j < MAX_REC_COUNT; j++) {
+		for (unsigned int i = 0U; i < MAX_REALM_COUNT; i++) {
+			host_shared_data_set_host_val(&realm[i], run_rec[i], HOST_ARG1_INDEX,
+							SLEEP_TIME_MS);
+			ret = host_enter_realm_execute(&realm[i], REALM_SLEEP_CMD,
+							RMI_EXIT_HOST_CALL, run_rec[i]);
+			if (!ret) {
+				goto destroy_realms;
+			}
+
+			/* Increment REC number */
+			if (++run_rec[i] == MAX_REC_COUNT) {
+				run_rec[i] = 0U;
+			}
+		}
 	}
-	host_shared_data_set_host_val(&realm2, 0U, HOST_ARG1_INDEX, SLEEP_TIME_MS);
-	ret1 = host_enter_realm_execute(&realm2, REALM_SLEEP_CMD, RMI_EXIT_HOST_CALL, 0U);
 
 destroy_realms:
-	ret2 = host_destroy_realm(&realm1);
-	ret3 = host_destroy_realm(&realm2);
-
-	if (!ret3 || !ret2) {
-		ERROR("destroy failed\n");
-		return TEST_RESULT_FAIL;
+	for (unsigned int i = 0U; i < num; i++) {
+		if (!host_destroy_realm(&realm[i])) {
+			ERROR("Realm #%u destroy failed\n", i);
+			ret = false;
+		}
 	}
-
-	if (!ret1) {
-		return TEST_RESULT_FAIL;
-	}
-
-	return TEST_RESULT_SUCCESS;
+	return (ret ? TEST_RESULT_SUCCESS : TEST_RESULT_FAIL);
 }
 
 /*
@@ -1233,14 +1253,17 @@ test_result_t host_realm_enable_dit(void)
 	struct realm realm;
 	u_register_t feature_flag = 0UL;
 	long sl = RTT_MIN_LEVEL;
-	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
-	RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, dit;
+	u_register_t rec_flag[MAX_REC_COUNT], dit;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,

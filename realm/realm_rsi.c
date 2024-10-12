@@ -87,3 +87,57 @@ u_register_t rsi_ipa_state_get(u_register_t base,
 	}
 	return res.ret0;
 }
+
+/* This function will initialize the attestation context */
+u_register_t rsi_attest_token_init(u_register_t challenge_0,
+				   u_register_t challenge_1,
+				   u_register_t challenge_2,
+				   u_register_t challenge_3,
+				   u_register_t challenge_4,
+				   u_register_t challenge_5,
+				   u_register_t challenge_6,
+				   u_register_t challenge_7,
+				   u_register_t *out_token_upper_bound)
+{
+	smc_ret_values_ext res = {};
+
+	tftf_smc_no_retval_x8(&(smc_args_ext) {
+		RSI_ATTEST_TOKEN_INIT,
+		challenge_0,
+		challenge_1,
+		challenge_2,
+		challenge_3,
+		challenge_4,
+		challenge_5,
+		challenge_6,
+		challenge_7
+	},
+	&res);
+
+	if (res.ret0 == RSI_SUCCESS) {
+		*out_token_upper_bound = res.ret1;
+	}
+
+	return res.ret0;
+}
+
+/* This function will retrieve the (or part of) attestation token */
+u_register_t rsi_attest_token_continue(u_register_t buffer_addr,
+					u_register_t offset,
+					u_register_t buffer_size,
+					u_register_t *bytes_copied)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args) {
+		RSI_ATTEST_TOKEN_CONTINUE,
+		buffer_addr,
+		offset,
+		buffer_size
+	});
+
+	if ((res.ret0 == RSI_SUCCESS) || (res.ret0 == RSI_INCOMPLETE)) {
+		*bytes_copied = res.ret1;
+	}
+	return res.ret0;
+}

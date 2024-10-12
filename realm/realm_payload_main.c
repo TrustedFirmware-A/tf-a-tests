@@ -368,6 +368,12 @@ void realm_payload_main(void)
 		case REALM_SME_UNDEF_ABORT:
 			test_succeed = test_realm_sme_undef_abort();
 			break;
+		case REALM_ATTESTATION:
+			test_succeed = test_realm_attestation();
+			break;
+		case REALM_ATTESTATION_FAULT:
+			test_succeed = test_realm_attestation_fault();
+			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);
 			break;

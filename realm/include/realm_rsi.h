@@ -127,6 +127,21 @@ struct rsi_host_call {
  */
 #define RSI_IPA_STATE_GET	SMC_RSI_FID(8U)
 
+/*
+ * ret0 == Status / error
+ * ret1 == Token maximum length
+ */
+#define RSI_ATTEST_TOKEN_INIT	SMC_RSI_FID(4U)
+
+/*
+ * arg0 == Base of buffer to write the token to
+ * arg1 == Offset within the buffer
+ * arg2 == Size of the buffer
+ * ret0 == Status / error
+ * ret1 == Size of received token hunk
+ */
+#define RSI_ATTEST_TOKEN_CONTINUE	SMC_RSI_FID(5U)
+
 typedef enum {
 	RSI_EMPTY = 0U,
 	RSI_RAM,
@@ -161,6 +176,23 @@ u_register_t rsi_get_version(u_register_t req_ver);
 
 /* This function will call the Host to request IPA of the NS shared buffer */
 u_register_t rsi_get_ns_buffer(void);
+
+/* This function will initialize the attestation context */
+u_register_t rsi_attest_token_init(u_register_t challenge_0,
+				   u_register_t challenge_1,
+				   u_register_t challenge_2,
+				   u_register_t challenge_3,
+				   u_register_t challenge_4,
+				   u_register_t challenge_5,
+				   u_register_t challenge_6,
+				   u_register_t challenge_7,
+				   u_register_t *out_token_upper_bound);
+
+/* This function will retrieve the (or part of) attestation token */
+u_register_t rsi_attest_token_continue(u_register_t buffer_addr,
+					u_register_t offset,
+					u_register_t buffer_size,
+					u_register_t *bytes_copied);
 
 /* This function call Host and request to exit Realm with proper exit code */
 void rsi_exit_to_host(enum host_call_cmd exit_code);

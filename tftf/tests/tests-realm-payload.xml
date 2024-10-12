@@ -126,5 +126,9 @@
 	  function="host_test_non_lpa2_realm_on_lpa2plat" />
 	  <testcase name="Test Realm creation with LPA2 enabled but FEAT_LPA2 absent on platform"
 	  function="host_test_lpa2_realm_on_non_lpa2plat" />
+	  <!-- Test cases related to Attestation -->
+	  <testcase name="Test realm attestation" function="host_realm_test_attestation" />
+	  <testcase name="Test realm attestation fault"
+	  function="host_realm_test_attestation_fault" />
   </testsuite>
 </testsuites>

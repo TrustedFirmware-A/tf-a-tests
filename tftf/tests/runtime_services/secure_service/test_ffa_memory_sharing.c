@@ -1737,3 +1737,179 @@ exit:
 
 	return ret;
 }
+
+/**
+ * Do a memory sharing operation over two fragments.
+ * Before the 2nd fragment the RX buffer is set in the realm PAS.
+ * The SPMC should fault, recover from it and return
+ * ffa_error(FFA_ERROR_ABORTED).
+ *
+ * Test Sequence:
+ * - Share memory with SP(1), using a force fragmented approach.
+ * - Initiate an hypervisor retrieve request, and retrieve only
+ *   the first fragment.
+ * - Change the physical address space of NWd RX buffer.
+ * - Invoke the FFA_MEM_FRAG_RX interface, which should abort because
+ *   of previous step.
+ * - Reestablish the PAS of the NWd RX buffer.
+ * - Contiueing with hypervisor retrieve request, and obtain the 2nd
+ *   fragment.
+ * - Reclaim memory for clean-up of SPMC state.
+ */
+test_result_t test_ffa_memory_share_fragmented_rx_realm(void)
+{
+	struct mailbox_buffers mb;
+	uint32_t remaining_constituent_count = 0;
+	uint32_t total_size;
+	uint32_t fragment_size;
+	uint32_t fragment_offset;
+	struct ffa_memory_access receiver = ffa_memory_access_init_permissions_from_mem_func(
+						SP_ID(1), FFA_MEM_SHARE_SMC32);
+	struct ffa_memory_region_constituent constituents[] = {
+		{(void *)four_share_pages, 4, 0},
+		{(void *)share_page, 1, 0}
+	};
+	struct ffa_value ffa_ret;
+	u_register_t ret_rmm;
+	test_result_t ret;
+	uint64_t handle;
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	GET_TFTF_MAILBOX(mb);
+
+	register_custom_sync_exception_handler(data_abort_handler);
+
+	/* Only send one constituent to start with. */
+	remaining_constituent_count = ffa_memory_region_init(
+		(struct ffa_memory_region *)mb.send, MAILBOX_SIZE, SENDER,
+		&receiver, 1, constituents, ARRAY_SIZE(constituents), 0,
+		0, FFA_MEMORY_NOT_SPECIFIED_MEM,
+		FFA_MEMORY_CACHE_WRITE_BACK,
+		FFA_MEMORY_INNER_SHAREABLE,
+		&total_size, &fragment_size);
+
+	/* It should have copied them all. */
+	if (remaining_constituent_count > 0) {
+		ERROR("Transaction descriptor initialization failed!\n");
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	/*
+	 * Take the size of a constituent from the fragment to force the
+	 * operation to be fragmented.
+	 */
+	fragment_size -= sizeof(struct ffa_memory_region_constituent);
+
+	ffa_ret = ffa_mem_share(total_size, fragment_size);
+
+	if (!is_expected_ffa_return(ffa_ret, FFA_MEM_FRAG_RX)) {
+		ERROR("Expected %s after the memory share.\n",
+		      ffa_func_name(FFA_MEM_FRAG_RX));
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	handle = ffa_frag_handle(ffa_ret);
+
+	if (handle == FFA_MEMORY_HANDLE_INVALID) {
+		ERROR("SPMC returned an invalid handle for the operation.\n");
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	/* Prepare the next fragment for the operation. */
+	remaining_constituent_count = ffa_memory_fragment_init(
+		mb.send, PAGE_SIZE, &constituents[1], 1, &fragment_size);
+
+	ffa_ret = ffa_mem_frag_tx(handle, fragment_size);
+
+	if (is_ffa_call_error(ffa_ret)) {
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	/*
+	 * Request the hypervisor retrieve request.
+	 * Response should be fragmented.
+	 */
+	ffa_hypervisor_retrieve_request_init(mb.send, handle);
+	ffa_ret = ffa_mem_retrieve_req(sizeof(struct ffa_memory_region),
+				   sizeof(struct ffa_memory_region));
+
+	if (ffa_func_id(ffa_ret) != FFA_MEM_RETRIEVE_RESP) {
+		ERROR("%s: couldn't retrieve the memory page. Error: %d\n",
+		      __func__, ffa_error_code(ffa_ret));
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	total_size = ffa_mem_retrieve_res_total_size(ffa_ret);
+	fragment_size = ffa_mem_retrieve_res_frag_size(ffa_ret);
+	fragment_offset = fragment_size;
+
+	ret_rmm = host_rmi_granule_delegate((u_register_t)mb.recv);
+
+	if (ret_rmm != 0UL) {
+		INFO("Delegate operation returns 0x%lx for address %p\n",
+		     ret_rmm, mb.send);
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	ffa_ret = ffa_rx_release();
+	if (is_ffa_call_error(ffa_ret)) {
+		ERROR("ffa_rx_release() failed.\n");
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	/* Call FFA_MEM_FRAG_RX but expect it to abort. */
+	ffa_ret = ffa_mem_frag_rx(handle, fragment_offset);
+
+	if (!is_expected_ffa_error(ffa_ret, FFA_ERROR_ABORTED)) {
+		ERROR("Expected FFA_MEM_FRAG_RX to have failed with"
+		      "FFA_ERROR_ABORTED.\n");
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	/* Undelegate to reestablish the same security state for PAS. */
+	ret_rmm = host_rmi_granule_undelegate((u_register_t)mb.recv);
+	if (ret_rmm != 0UL) {
+		ERROR("Undelegate operation returns 0x%lx for address %llx\n",
+		      ret_rmm, (uint64_t)mb.send);
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	/* Continue the hypervisor retrieve request. */
+	if (!hypervisor_retrieve_request_continue(
+			&mb, handle, NULL, 0, total_size, fragment_offset, false)) {
+		ERROR("Failed to continue hypervisor retrieve request after"
+		      " restablishing PAS.\n");
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	/* Reclaim memory to be able to reuse it. */
+	ffa_ret = ffa_mem_reclaim(handle, 0);
+
+	if (is_ffa_call_error(ffa_ret)) {
+		ERROR("Failed to reclaim memory to be used in next test\n");
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
+
+	ret = TEST_RESULT_SUCCESS;
+
+exit:
+	unregister_custom_sync_exception_handler();
+
+	return ret;
+}

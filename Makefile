@@ -573,8 +573,8 @@ endif
 $(AUTOGEN_DIR):
 	$(Q)mkdir -p "$@"
 
-$(AUTOGEN_DIR)/tests_list.c $(AUTOGEN_DIR)/tests_list.h: $(AUTOGEN_DIR) ${TESTS_FILE} ${PLAT_TESTS_SKIP_LIST} $(ARCH_TESTS_SKIP_LIST)
-	@echo "  AUTOGEN $@"
+$(AUTOGEN_DIR)/tests_list.c $(AUTOGEN_DIR)/tests_list.h &: $(AUTOGEN_DIR) ${TESTS_FILE} ${PLAT_TESTS_SKIP_LIST} $(ARCH_TESTS_SKIP_LIST)
+	@echo "  AUTOGEN $(AUTOGEN_DIR)/tests_list.c $(AUTOGEN_DIR)/tests_list.h"
 	tools/generate_test_list/generate_test_list.py $(AUTOGEN_DIR)/tests_list.c \
 		$(AUTOGEN_DIR)/tests_list.h  ${TESTS_FILE} \
 		--plat-skip-file=$(PLAT_TESTS_SKIP_LIST) \

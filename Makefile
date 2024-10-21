@@ -509,6 +509,8 @@ define MAKE_OBJS
 	$(and $(REMAIN),$(error Unexpected source files present: $(REMAIN)))
 endef
 
+${BUILD_PLAT}:
+	$(Q)mkdir -p "$@"
 
 # NOTE: The line continuation '\' is required in the next define otherwise we
 # end up with a line-feed characer at the end of the last c filename.
@@ -537,7 +539,7 @@ define MAKE_IMG
 	$(eval $(call MAKE_OBJS,$(BUILD_DIR),$(SOURCES),${IMG_PREFIX}))
 	$(eval $(call MAKE_LD,$(LINKERFILE),$(${IMG_PREFIX}_LINKERFILE),${IMG_PREFIX}))
 
-$(BUILD_DIR) :
+$(BUILD_DIR) : ${BUILD_PLAT}
 	$$(Q)mkdir -p "$$@"
 
 $(ELF) : $(OBJS) $(LINKERFILE)
@@ -620,7 +622,7 @@ ifeq (${ARCH}-${PLAT},aarch64-tc)
   $(eval $(call MAKE_IMG,ivy))
 endif
 
-SP_LAYOUT:
+SP_LAYOUT: ${BUILD_PLAT}
 	${Q}tools/generate_json/generate_json.sh \
 		$(BUILD_PLAT) $(SECURE_PARTITIONS)
 

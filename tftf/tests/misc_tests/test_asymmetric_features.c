@@ -19,15 +19,39 @@
 
 static event_t cpu_has_entered_test[PLATFORM_CORE_COUNT];
 
-static volatile bool undef_injection_triggered;
+/* Used when catching synchronous exceptions. */
+static volatile bool exception_triggered[PLATFORM_CORE_COUNT];
 
-static unsigned int test_result;
+/*
+ * The whole test should only be skipped if the test was skipped on all CPUs.
+ * The test on each CPU can't return TEST_RESULT_SKIPPED, because the whole test
+ * is skipped if any of the CPUs return TEST_RESULT_SKIPPED. Instead, to skip a
+ * test, the test returns TEST_RESULT_SUCCESS, then sets a flag in the
+ * test_skipped array. This array is checked at the end by the
+ * run_asymmetric_test function.
+ */
+static volatile bool test_skipped[PLATFORM_CORE_COUNT];
 
-static bool undef_injection_handler(void)
+/*
+ * Test function which is run on each CPU. It is global so it is visible to all
+ * CPUS.
+ */
+static test_result_t (*asymmetric_test_function)(void);
+
+static bool exception_handler(void)
 {
+	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
+	unsigned int core_pos = platform_get_core_pos(mpid);
+
 	uint64_t esr_el2 = read_esr_el2();
+
 	if (EC_BITS(esr_el2) == EC_UNKNOWN) {
-		undef_injection_triggered = true;
+		/*
+		 * This may be an undef injection, or a trap to EL2 due to a
+		 * register not being present. Both cases have the same EC
+		 * value.
+		 */
+		exception_triggered[core_pos] = true;
 		return true;
 	}
 
@@ -38,24 +62,32 @@ static test_result_t test_trbe(void)
 {
 	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
 	unsigned int core_pos = platform_get_core_pos(mpid);
-	bool check_if_affected = is_trbe_errata_affected_core();
+	bool should_trigger_exception = is_trbe_errata_affected_core();
 
-	read_trblimitr_el1();
-
-	if (undef_injection_triggered == true && check_if_affected == true) {
-		test_result = TEST_RESULT_SUCCESS;
-		undef_injection_triggered = false;
-		tftf_testcase_printf("Undef injection triggered for core = %d "
-				     "when accessing TRB_LIMTR\n", core_pos);
-	} else if (undef_injection_triggered == false && check_if_affected == false) {
-		test_result = TEST_RESULT_SUCCESS;
-		tftf_testcase_printf("TRB_LIMITR register accessible for core "
-				     "= %d\n", core_pos);
-	} else {
-		test_result = TEST_RESULT_FAIL;
+	if (!is_feat_trbe_present()) {
+		test_skipped[core_pos] = true;
+		return TEST_RESULT_SUCCESS;
 	}
 
-	return test_result;
+	register_custom_sync_exception_handler(exception_handler);
+	exception_triggered[core_pos] = false;
+	read_trblimitr_el1();
+	unregister_custom_sync_exception_handler();
+
+	/**
+	 * NOTE: TRBE as an asymmetric feature is as exceptional one.
+	 * Even if the hardware supports the feature, TF-A deliberately disables
+	 * it at EL3. In this scenario, when the register "TRBLIMITR_EL1" is
+	 * accessed, the registered undef injection handler should kick in and
+	 * the exception will be handled synchronously at EL2.
+	 */
+	if (exception_triggered[core_pos] != should_trigger_exception) {
+		tftf_testcase_printf("Exception triggered for core = %d "
+				     "when accessing TRB_LIMTR\n", core_pos);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }
 
 static test_result_t test_spe(void)
@@ -63,54 +95,36 @@ static test_result_t test_spe(void)
 	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
 	unsigned int core_pos = platform_get_core_pos(mpid);
 
-	read_pmscr_el1();
-
-	if (undef_injection_triggered == true && !is_feat_spe_supported()) {
-		test_result = TEST_RESULT_SUCCESS;
-		undef_injection_triggered = false;
-		tftf_testcase_printf("Undef injection triggered for core = %d "
-				     "when accessing PMSCR_EL1\n", core_pos);
-	} else if (undef_injection_triggered == false &&
-		   is_feat_spe_supported()) {
-		test_result = TEST_RESULT_SUCCESS;
-		tftf_testcase_printf("PMSCR_EL1 register accessible for core = "
-				     "%d\n", core_pos);
-	} else {
-		test_result = TEST_RESULT_FAIL;
+	/**
+	 * NOTE: SPE as an asymmetric feature, we expect to access the
+	 * PMSCR_EL1 register, when supported in the hardware.
+	 * If the feature isn't supported, we skip the test.
+	 * So on each individual CPU, we verify whether the feature's presence
+	 * and based on it we access (if feature supported) or skip the test.
+	 */
+	if (!is_feat_spe_supported()) {
+		test_skipped[core_pos] = true;
+		return TEST_RESULT_SUCCESS;
 	}
 
-	return test_result;
+	read_pmscr_el1();
+
+	return TEST_RESULT_SUCCESS;
 }
 
 /*
- * Non-lead cpu function that checks if trblimitr_el1 is accessible,
- * on affected cores this causes a undef injection and passes.In cores that
- * are not affected test just passes. It fails in other cases.
+ * Runs on one CPU, and runs asymmetric_test_function.
  */
 static test_result_t non_lead_cpu_fn(void)
 {
 	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
 	unsigned int core_pos = platform_get_core_pos(mpid);
-	test_result_t result;
-
-	test_result = TEST_RESULT_SUCCESS;
+	test_result_t test_result;
 
 	/* Signal to the lead CPU that the calling CPU has entered the test */
 	tftf_send_event(&cpu_has_entered_test[core_pos]);
 
-	result = test_trbe();
-	if (result != TEST_RESULT_SUCCESS) {
-		tftf_testcase_printf("test_trbe_enabled failed with result "
-				     "%d\n", result);
-		test_result = result;
-	}
-
-	result = test_spe();
-	if (result != TEST_RESULT_SUCCESS) {
-		tftf_testcase_printf("test_spe_support failed with result %d\n",
-				     result);
-		test_result = result;
-	}
+	test_result = asymmetric_test_function();
 
 	/* Ensure that EL3 still functional */
 	smc_args args;
@@ -126,42 +140,45 @@ static test_result_t non_lead_cpu_fn(void)
 	return test_result;
 }
 
-/* This function kicks off non-lead cpus and the non-lead cpu function
- * checks if errata is applied or not using the test.
+/* Set some variables that are accessible to all CPUs. */
+void test_init(test_result_t (*test_function)(void))
+{
+	int i;
+
+	for (i = 0; i < PLATFORM_CORE_COUNT; i++) {
+		test_skipped[i] = false;
+		tftf_init_event(&cpu_has_entered_test[i]);
+	}
+
+	asymmetric_test_function = test_function;
+
+	/* Ensure the above writes are seen before any read */
+	dmbsy();
+}
+
+/*
+ * Run the given test function on all CPUs. If the test is skipped on all CPUs,
+ * the whole test is skipped. This is checked using the test_skipped array.
  */
-test_result_t test_asymmetric_features(void)
+test_result_t run_asymmetric_test(test_result_t (*test_function)(void))
 {
 	unsigned int lead_mpid;
 	unsigned int cpu_mpid, cpu_node;
 	unsigned int core_pos;
 	int psci_ret;
-
-	test_result_t result;
-
-	test_result = TEST_RESULT_SUCCESS;
-
-	undef_injection_triggered = false;
-
-	register_custom_sync_exception_handler(undef_injection_handler);
+	bool all_cpus_skipped;
+	int i;
+	uint32_t aff_info;
+	test_result_t test_result;
 
 	lead_mpid = read_mpidr_el1() & MPID_MASK;
 
-	/* Testing TRBE and SPE feature in Lead core */
-	result = test_trbe();
-	if (result != TEST_RESULT_SUCCESS) {
-		tftf_testcase_printf("test_trbe_enabled failed with result "
-				     "%d\n", result);
-		test_result = result;
-	}
-
-	result = test_spe();
-	if (result != TEST_RESULT_SUCCESS) {
-		tftf_testcase_printf("test_spe_support failed with result %d\n",
-				     result);
-		test_result = result;
-	}
-
 	SKIP_TEST_IF_LESS_THAN_N_CPUS(2);
+
+	test_init(test_function);
+
+	/* run test on lead CPU */
+	test_result = test_function();
 
 	/* Power on all CPUs */
 	for_each_cpu(cpu_node) {
@@ -188,11 +205,49 @@ test_result_t test_asymmetric_features(void)
 
 		core_pos = platform_get_core_pos(cpu_mpid);
 		tftf_wait_for_event(&cpu_has_entered_test[core_pos]);
-		if (test_result == TEST_RESULT_FAIL)
-			break;
 	}
 
-	unregister_custom_sync_exception_handler();
+	/* Wait for all non-lead CPUs to power down */
+	for_each_cpu(cpu_node) {
+		cpu_mpid = tftf_get_mpidr_from_node(cpu_node);
+		/* Skip lead CPU */
+		if (cpu_mpid == lead_mpid)
+			continue;
 
-	return test_result;
+		do {
+			aff_info = tftf_psci_affinity_info(cpu_mpid,
+							   MPIDR_AFFLVL0);
+		} while (aff_info != PSCI_STATE_OFF);
+	}
+
+	/*
+	 * If the test was skipped on all CPUs, the whole test should be
+	 * skipped.
+	 */
+
+	all_cpus_skipped = true;
+	for (i = 0; i < PLATFORM_CORE_COUNT; i++) {
+		if (!test_skipped[i]) {
+			all_cpus_skipped = false;
+			break;
+		}
+	}
+
+	if (all_cpus_skipped) {
+		return TEST_RESULT_SKIPPED;
+	} else {
+		return test_result;
+	}
+}
+
+/* Test Asymmetric Support for FEAT_TRBE */
+test_result_t test_trbe_errata_asymmetric(void)
+{
+	return run_asymmetric_test(test_trbe);
+}
+
+/* Test Asymmetric Support for FEAT_SPE */
+test_result_t test_spe_asymmetric(void)
+{
+	return run_asymmetric_test(test_spe);
 }

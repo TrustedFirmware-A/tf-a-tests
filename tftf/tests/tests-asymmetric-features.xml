@@ -8,7 +8,9 @@
 
 <testsuites>
   <testsuite name="Asymmetric Features" description="Asymmetric features support">
-      <testcase name="Asymmetric Features"
-                function="test_asymmetric_features" />
+      <testcase name="TRBE Errata Asymmetric Test"
+                function="test_trbe_errata_asymmetric" />
+      <testcase name="Asymmetric SPE Test"
+                function="test_spe_asymmetric" />
   </testsuite>
 </testsuites>

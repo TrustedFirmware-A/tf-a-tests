@@ -450,4 +450,10 @@ static inline unsigned int get_feat_ls64_support(void)
 		ID_AA64ISAR1_LS64_MASK);
 }
 
+static inline bool is_feat_trbe_present(void)
+{
+	return EXTRACT(ID_AA64DFR0_TRACEBUFFER, read_id_aa64dfr0_el1())
+		>= ID_AA64DFR0_TRACEBUFFER_SUPPORTED;
+}
+
 #endif /* ARCH_FEATURES_H */

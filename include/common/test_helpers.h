@@ -88,6 +88,20 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}								\
 	} while (0)
 
+#define SKIP_TEST_IF_SMCCC_VERSION_LT(major, minor)				\
+	do {									\
+		smc_args args = {0};						\
+		smc_ret_values ret;						\
+		args.fid = SMCCC_VERSION;					\
+		ret = tftf_smc(&args);						\
+		if ((int32_t)ret.ret0 < MAKE_SMCCC_VERSION(major, minor)) {	\
+			tftf_testcase_printf(					\
+				"Unexpected SMCCC version: 0x%x\n",		\
+			       (int)ret.ret0);					\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (0)
+
 #define SKIP_TEST_IF_DIT_NOT_SUPPORTED()					\
 	do {									\
 		if (!is_armv8_4_dit_present()) {				\

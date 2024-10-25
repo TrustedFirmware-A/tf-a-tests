@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -12,6 +12,7 @@
 #include <psci.h>
 #include <smccc.h>
 #include <string.h>
+#include <test_helpers.h>
 #include <tftf_lib.h>
 
 #ifdef __aarch64__
@@ -65,21 +66,11 @@ static test_result_t test_smccc_entrypoint(void)
 {
 	smc_args args;
 	smc_ret_values ret;
-	int32_t expected_ver;
 	unsigned int my_midr, midr_mask;
 	int wa_required;
 	size_t i;
 
-	/* Check if SMCCC version is at least v1.1 */
-	expected_ver = MAKE_SMCCC_VERSION(1, 1);
-	memset(&args, 0, sizeof(args));
-	args.fid = SMCCC_VERSION;
-	ret = tftf_smc(&args);
-	if ((int32_t)ret.ret0 < expected_ver) {
-		tftf_testcase_printf("Unexpected SMCCC version: 0x%x\n",
-		       (int)ret.ret0);
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_SMCCC_VERSION_LT(1, 1);
 
 	/* Check if SMCCC_ARCH_WORKAROUND_3 is required or not */
 	memset(&args, 0, sizeof(args));

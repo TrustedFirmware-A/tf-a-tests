@@ -2525,3 +2525,69 @@ destroy_realm:
 	}
 	return res;
 }
+
+/*
+ * Test aims to test that TF-RMM takes SCTLR2_EL1.EASE bit into account
+ * when injecting a SEA (Feat_DoubleFault2).
+ */
+test_result_t host_test_feat_doublefault2(void)
+{
+	bool ret;
+	u_register_t rec_flag;
+	u_register_t base;
+	struct realm realm;
+	struct rtt_entry rtt;
+	u_register_t feature_flag = 0UL;
+	long sl = RTT_MIN_LEVEL;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+	SKIP_TEST_IF_DOUBLE_FAULT2_NOT_SUPPORTED();
+
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	rec_flag = RMI_RUNNABLE;
+
+	if (!host_create_activate_realm_payload(&realm,
+					(u_register_t)REALM_IMAGE_BASE,
+				feature_flag, sl, &rec_flag, 1U)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/*
+	 * Allocate a page so we pass its address as first argument of
+	 * the test command. The test will attempt an instruction fetch
+	 * from that address, which will fail as the address will not
+	 * be mapped into the Realm.
+	 */
+	base = (u_register_t)page_alloc(PAGE_SIZE);
+
+	(void)host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
+	if (rtt.state != RMI_UNASSIGNED ||
+			(rtt.ripas != RMI_EMPTY)) {
+		ERROR("wrong initial state\n");
+		host_destroy_realm(&realm);
+		return TEST_RESULT_FAIL;
+	}
+
+	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base);
+
+	for (unsigned int i = 0U; i < 2U; i++) {
+		host_shared_data_set_host_val(&realm, 0U, HOST_ARG2_INDEX,
+					      (unsigned long)i);
+
+		/* Rec0 expect IA due to SEA unassigned empty page */
+		ret = host_enter_realm_execute(&realm, REALM_FEAT_DOUBLEFAULT2_TEST,
+							RMI_EXIT_HOST_CALL, 0U);
+
+		if (!ret) {
+			host_destroy_realm(&realm);
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	host_destroy_realm(&realm);
+	return TEST_RESULT_SUCCESS;
+}

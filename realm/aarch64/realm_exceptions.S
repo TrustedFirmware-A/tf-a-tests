@@ -43,8 +43,9 @@ vector_entry fiq_spx
 	b	interrupt_vector_entry
 end_vector_entry fiq_spx
 
-unhandled_exception serr_spx
-
+vector_entry serr_spx
+	b	serr_exception_vector_entry
+end_vector_entry serr_spx
 	/*
 	 * Lower EL using AArch64 : 0x400 - 0x600.
 	 */
@@ -115,6 +116,22 @@ func sync_exception_vector_entry
 	add	sp, sp, #0x100
 	eret
 endfunc sync_exception_vector_entry
+
+func serr_exception_vector_entry
+	sub	sp, sp, #0x100
+	save_gp_regs
+	mov	x19, sp
+	bl	tftf_serror_handler
+	cbnz	x0, 0f
+	mov	x0, x19
+	/* Save original stack pointer value on the stack */
+	add	x1, x0, #0x100
+	str	x1, [x0, #0xf8]
+	b	realm_print_exception
+0:	restore_gp_regs
+	add	sp, sp, #0x100
+	eret
+endfunc serr_exception_vector_entry
 
 func interrupt_vector_entry
 	sub	sp, sp, #0x100

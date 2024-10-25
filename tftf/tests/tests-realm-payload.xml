@@ -76,6 +76,8 @@
 	  function="host_realm_set_ripas" />
 	  <testcase name="Realm reject set_ripas"
 	  function="host_realm_reject_set_ripas" />
+	  <testcase name="Realm FEAT_DoubleFault2"
+	  function="host_test_feat_doublefault2" />
 	  <!-- Test case related to SVE support and SIMD state -->
 	  <testcase name="Check RMI reports proper SVE VL"
 	  function="host_check_rmi_reports_proper_sve_vl" />

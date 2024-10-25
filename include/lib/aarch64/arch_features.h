@@ -120,12 +120,6 @@ static inline bool is_armv8_3_pauth_gpa_gpi_gpa3_present(void)
 		(read_id_aa64isar2_el1() & mask_id_aa64isar2)) != 0U;
 }
 
-static inline bool is_armv8_4_amuv1_present(void)
-{
-	return ((read_id_aa64pfr0_el1() >> ID_AA64PFR0_AMU_SHIFT) &
-		ID_AA64PFR0_AMU_MASK) == 1U;
-}
-
 static inline bool is_armv8_4_dit_present(void)
 {
 	return ((read_id_aa64pfr0_el1() >> ID_AA64PFR0_DIT_SHIFT) &
@@ -184,13 +178,6 @@ static inline uint32_t arch_get_debug_version(void)
 {
 	return ((read_id_aa64dfr0_el1() & ID_AA64DFR0_DEBUG_BITS) >>
 		ID_AA64DFR0_DEBUG_SHIFT);
-}
-
-static inline bool get_armv9_0_trbe_support(void)
-{
-	return ((read_id_aa64dfr0_el1() >> ID_AA64DFR0_TRACEBUFFER_SHIFT) &
-		ID_AA64DFR0_TRACEBUFFER_MASK) ==
-		ID_AA64DFR0_TRACEBUFFER_SUPPORTED;
 }
 
 static inline bool get_armv8_4_trf_support(void)
@@ -474,6 +461,22 @@ static inline unsigned int get_feat_ls64_support(void)
 		ID_AA64ISAR1_LS64_MASK);
 }
 
+static inline unsigned int amu_get_version(void)
+{
+	return (unsigned int)(read_id_aa64pfr0_el1() >> ID_AA64PFR0_AMU_SHIFT) &
+		ID_AA64PFR0_AMU_MASK;
+}
+
+static inline bool is_feat_amuv1_present(void)
+{
+	return amu_get_version() >= ID_AA64PFR0_AMU_V1;
+}
+
+static inline bool is_feat_amuv1p1_present(void)
+{
+	return amu_get_version() >= ID_AA64PFR0_AMU_V1P1;
+}
+
 static inline bool is_feat_trbe_present(void)
 {
 	return EXTRACT(ID_AA64DFR0_TRACEBUFFER, read_id_aa64dfr0_el1())
@@ -554,5 +557,11 @@ static inline bool is_feat_d128_supported(void)
 {
 	return (((read_id_aa64mmfr3_el1() >> ID_AA64MMFR3_EL1_D128_SHIFT) &
 		ID_AA64MMFR3_EL1_D128_MASK) == ID_AA64MMFR3_EL1_D128_SUPPORTED);
+}
+
+static inline bool is_feat_doublelock_present(void)
+{
+	return EXTRACT(ID_AA64DFR0_DOUBLELOCK, read_id_aa64dfr0_el1())
+			>= DOUBLELOCK_IMPLEMENTED;
 }
 #endif /* ARCH_FEATURES_H */

@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2018-2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <amu.h>
 #include <arch.h>
+#include <arch_features.h>
 #include <arch_helpers.h>
 #include <assert.h>
 #include <debug.h>

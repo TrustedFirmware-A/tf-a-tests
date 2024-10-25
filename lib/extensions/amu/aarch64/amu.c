@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,21 +7,10 @@
 #include <amu.h>
 #include <amu_private.h>
 #include <arch.h>
+#include <arch_features.h>
 #include <arch_helpers.h>
 #include <assert.h>
 
-/*
- * Get AMU version value from aa64pfr0.
- * Return values
- *   ID_AA64PFR0_AMU_V1: FEAT_AMUv1 supported (introduced in ARM v8.4)
- *   ID_AA64PFR0_AMU_V1P1: FEAT_AMUv1p1 supported (introduced in ARM v8.6)
- *   ID_AA64PFR0_AMU_NOT_SUPPORTED: not supported
- */
-unsigned int amu_get_version(void)
-{
-	return (unsigned int)(read_id_aa64pfr0_el1() >> ID_AA64PFR0_AMU_SHIFT) &
-		ID_AA64PFR0_AMU_MASK;
-}
 
 /* Check if group 1 counters is implemented */
 int amu_group1_supported(void)

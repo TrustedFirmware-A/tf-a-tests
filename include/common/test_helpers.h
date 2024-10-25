@@ -212,7 +212,7 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 
 #define SKIP_TEST_IF_TRBE_NOT_SUPPORTED()					\
 	do {									\
-		if (!get_armv9_0_trbe_support()) {				\
+		if (!is_feat_trbe_present()) {					\
 			tftf_testcase_printf("ARMv9-TRBE not supported\n");	\
 			return TEST_RESULT_SKIPPED;				\
 		}								\

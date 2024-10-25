@@ -102,6 +102,20 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}								\
 	} while (0)
 
+#define SKIP_TEST_IF_SMCCC_FUNC_NOT_SUPPORTED(func)				\
+	do {									\
+		smc_ret_values ret;						\
+		smc_args args = {0};						\
+		args.fid = SMCCC_ARCH_FEATURES;					\
+		args.arg1 = func;						\
+		ret = tftf_smc(&args);						\
+		if ((int)ret.ret0 == SMC_ARCH_CALL_NOT_SUPPORTED) {		\
+			tftf_testcase_printf(					\
+				#func " is not implemented\n");			\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (0)
+
 #define SKIP_TEST_IF_DIT_NOT_SUPPORTED()					\
 	do {									\
 		if (!is_armv8_4_dit_present()) {				\

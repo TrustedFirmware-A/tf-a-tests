@@ -625,6 +625,7 @@
 #define SCR_PFAREn_BIT		(UL(1) << 53)
 #define SCR_TWERR_BIT		(UL(1) << 52)
 #define SCR_TMEA_BIT		(UL(1) << 51)
+#define SCR_EnFPM_BIT		(UL(1) << 50)
 #define SCR_MECEn_BIT		(UL(1) << 49)
 #define SCR_GPF_BIT		(UL(1) << 48)
 #define SCR_D128En_BIT		(UL(1) << 47)

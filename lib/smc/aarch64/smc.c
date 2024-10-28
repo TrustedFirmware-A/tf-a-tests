@@ -102,3 +102,19 @@ smc_ret_values tftf_smc(const smc_args *args)
 			      args->arg6,
 			      args->arg7);
 }
+
+void tftf_smc_no_retval_x8(const smc_args_ext *args, smc_ret_values_ext *ret)
+{
+	uint32_t fid = args->fid;
+	/* Copy args into new structure so the fid field can be modified */
+	smc_args_ext args_copy = *args;
+
+	if (tftf_smc_get_sve_hint()) {
+		fid |= MASK(FUNCID_SVE_HINT);
+	} else {
+		fid &= ~MASK(FUNCID_SVE_HINT);
+	}
+	args_copy.fid = fid;
+
+	asm_tftf_smc64_no_retval_x8(&args_copy, ret);
+}

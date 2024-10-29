@@ -6,6 +6,7 @@ Platform Ports
    :caption: Contents
    :hidden:
 
+   xilinx-versal2
    xilinx-versal_net
    xilinx-versal
    xilinx-zynqmp

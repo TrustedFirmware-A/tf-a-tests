@@ -33,6 +33,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.properties = (FFA_PARTITION_AARCH64_EXEC |
 			       FFA_PARTITION_DIRECT_REQ_RECV |
 			       FFA_PARTITION_DIRECT_REQ_SEND |
+			       FFA_PARTITION_INDIRECT_MSG |
 			       FFA_PARTITION_NOTIFICATION),
 		.uuid = {PRIMARY_UUID}
 	},
@@ -84,13 +85,16 @@ static void ffa_features_test(bool el1_partition)
 	/* Get common features between tftf and cactus. */
 	unsigned int test_target_size =
 		get_ffa_feature_test_target(&func_id_targets);
-	struct ffa_features_test feature_id_targets[3] = {
+	/* Specific to SPs. */
+	struct ffa_features_test feature_id_targets[] = {
 		{"FFA_FEATURE_MEI", FFA_FEATURE_MEI, FFA_SUCCESS_SMC32, 0,
 			FFA_VERSION_1_1},
 		{"FFA_FEATURE_SRI", FFA_FEATURE_SRI, FFA_ERROR, 0,
 			FFA_VERSION_1_1},
 		{"FFA_FEATURE_NPI", FFA_FEATURE_NPI, FFA_SUCCESS_SMC32, 0,
 			FFA_VERSION_1_1},
+		{"FFA_YIELD_32", FFA_MSG_YIELD, FFA_SUCCESS_SMC32,
+			FFA_VERSION_1_0},
 	};
 
 	INFO("Test FFA_FEATURES.\n");

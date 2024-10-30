@@ -202,7 +202,6 @@ static const struct ffa_features_test ffa_feature_test_target[] = {
 		FFA_SUCCESS_SMC32},
 	{"FFA_NOTIFICATION_INFO_GET_64", FFA_NOTIFICATION_INFO_GET_SMC64,
 		FFA_SUCCESS_SMC32},
-	{"FFA_YIELD_32", FFA_MSG_YIELD, FFA_ERROR},
 	{"Check non-existent command", 0xFFFF, FFA_ERROR},
 };
 
@@ -721,13 +720,13 @@ static bool ffa_compare_partition_info(
 	}
 
 	if (info->exec_context != expected->exec_context) {
-		ERROR("Wrong context. Expected %d, got %d\n",
+		ERROR("Wrong context. Expected %x, got %x\n",
 		      expected->exec_context,
 		      info->exec_context);
 		result = false;
 	}
 	if (info->properties != expected->properties) {
-		ERROR("Wrong properties. Expected %d, got %d\n",
+		ERROR("Wrong properties. Expected %x, got %x\n",
 		      expected->properties,
 		      info->properties);
 		result = false;

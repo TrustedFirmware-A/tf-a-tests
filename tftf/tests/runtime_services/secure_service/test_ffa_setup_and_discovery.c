@@ -45,6 +45,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.exec_context = PRIMARY_EXEC_CTX_COUNT,
 		.properties = FFA_PARTITION_AARCH64_EXEC |
 			      FFA_PARTITION_DIRECT_REQ_RECV |
+			      FFA_PARTITION_INDIRECT_MSG |
 			      FFA_PARTITION_NOTIFICATION,
 		.uuid = {PRIMARY_UUID}
 	},
@@ -95,6 +96,7 @@ test_result_t test_ffa_features(void)
 			FFA_VERSION_1_1},
 		{"FFA_FEATURE_NPI", FFA_FEATURE_NPI, FFA_ERROR, 0,
 			FFA_VERSION_1_1},
+		{"FFA_YIELD_32", FFA_MSG_YIELD, FFA_ERROR},
 	};
 	unsigned int test_target_size =
 		get_ffa_feature_test_target(&func_ids_target);

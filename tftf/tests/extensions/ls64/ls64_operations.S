@@ -8,9 +8,29 @@
 
 #if __aarch64__
 
-        .arch armv8.7-a
 	.globl	ls64_store
 	.globl	ls64_load
+
+/*
+ * macros to encode the st64b and ld64b instructions, even when the toolchain
+ * does not know about them. The first argument contains the first of the
+ * consecutive GPR numbers, the second the register number containing the
+ * pointer to the buffer.
+ * When calling the macro, both numbers must be given as plain numbers,
+ * without the typical "x" prefix:
+ * _st64b  8, 1   =>  st64b  x8, [x1]
+ */
+.macro _st64b rt, addr
+	.inst	0xf83f9000			\
+		| ((\rt) & 0x1f)		\
+		| (((\addr) & 0x1f) << 5)
+.endm
+
+.macro _ld64b rt, addr
+	.inst	0xf83fd000			\
+		| ((\rt) & 0x1f)		\
+		| (((\addr) & 0x1f) << 5)
+.endm
 
 /*
  * Function to store 64 bytes of data from consecutive registers into a memory
@@ -27,7 +47,8 @@ func ls64_store
 	ldp	x10, x11, [x0, #16]
 	ldp	x12, x13, [x0, #32]
 	ldp	x14, x15, [x0, #48]
-	st64b	x8, [x1]		/* x1: Address where 64-byte data to be stored */
+	_st64b	8, 1			/* since ARMv8.7: st64b x8, [x1] */
+					/* x1: Address where 64-byte data to be stored */
 	ret
 endfunc ls64_store
 
@@ -37,11 +58,11 @@ endfunc ls64_store
  *
  * x0: Holds the address of memory from where 64-byte of data to be loaded.
  * x1: Holds the base address of the destination/output array of 8 64-bit integers.
- * x9-x16: consecutive registers into which data will be copied with ld64b inst.
+ * x4-x11: consecutive registers into which data will be copied with ld64b inst.
  */
 
 func ls64_load
-	ld64b	x4, [x0]
+	_ld64b	4, 0			/* since ARMv8.7: ld64b x4, [x0] */
 	stp	x4, x5, [x1, #0]	/* Base address of destination buffer */
 	stp	x6, x7, [x1, #16]
 	stp	x8, x9, [x1, #32]

@@ -45,6 +45,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.exec_context = PRIMARY_EXEC_CTX_COUNT,
 		.properties = FFA_PARTITION_AARCH64_EXEC |
 			      FFA_PARTITION_DIRECT_REQ_RECV |
+			      FFA_PARTITION_INDIRECT_MSG |
 			      FFA_PARTITION_NOTIFICATION,
 		.uuid = {PRIMARY_UUID}
 	},

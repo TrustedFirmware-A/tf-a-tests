@@ -721,13 +721,13 @@ static bool ffa_compare_partition_info(
 	}
 
 	if (info->exec_context != expected->exec_context) {
-		ERROR("Wrong context. Expected %d, got %d\n",
+		ERROR("Wrong context. Expected %x, got %x\n",
 		      expected->exec_context,
 		      info->exec_context);
 		result = false;
 	}
 	if (info->properties != expected->properties) {
-		ERROR("Wrong properties. Expected %d, got %d\n",
+		ERROR("Wrong properties. Expected %x, got %x\n",
 		      expected->properties,
 		      info->properties);
 		result = false;

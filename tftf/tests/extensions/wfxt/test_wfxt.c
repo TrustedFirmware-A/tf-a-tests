@@ -19,7 +19,6 @@ typedef enum {
 #ifdef __aarch64__
 static test_result_t test_wfxt_inst(exec_wfxt val, uint64_t ms)
 {
-	__asm__ volatile(".arch armv8.7-a");
 	uint64_t timer_cnt1, timer_cnt2, feed_cnt;
 	uint64_t timer_freq = read_cntfrq_el0();
 	uint64_t ms_to_counts = ((ms * timer_freq) / 1000U);

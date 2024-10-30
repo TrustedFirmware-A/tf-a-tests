@@ -26,6 +26,12 @@ static inline u_register_t read_ ## _name(void)			\
 	return v;						\
 }
 
+#define DEFINE_SYSREG_ACCESS_FUNC(_name, _reg_name)			\
+static inline void _name(u_register_t v)				\
+{									\
+	__asm__ volatile ("msr " #_reg_name ", %0" : : "r" (v));	\
+}
+
 #define _DEFINE_SYSREG_WRITE_FUNC(_name, _reg_name)			\
 static inline void write_ ## _name(u_register_t v)			\
 {									\

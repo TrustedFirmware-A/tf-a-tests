@@ -981,14 +981,6 @@ static test_result_t request_notification_get_per_vcpu_on_handler(void)
 		 per_vcpu_receiver, core_pos);
 
 	/*
-	 * Secure Partitions secondary ECs need one round of ffa_run to reach
-	 * the message loop.
-	 */
-	if (!spm_core_sp_init(per_vcpu_receiver)) {
-		goto out;
-	}
-
-	/*
 	 * Request to get notifications sent to the respective vCPU.
 	 * Check also if NPI was handled by the receiver. It should have been
 	 * pended at notifications set, in the respective vCPU.
@@ -1002,6 +994,8 @@ static test_result_t request_notification_get_per_vcpu_on_handler(void)
 	result = TEST_RESULT_SUCCESS;
 
 out:
+	INFO("Request get per-vCPU notification to %x, core: %u.\n",
+		 per_vcpu_receiver, core_pos);
 	/* Tell the lead CPU that the calling CPU has completed the test. */
 	tftf_send_event(&per_vcpu_finished[core_pos]);
 
@@ -1016,17 +1010,8 @@ static test_result_t base_npi_enable_per_cpu(bool enable)
 	VERBOSE("Request SP %x to enable NPI in core %u\n",
 		 per_vcpu_receiver, core_pos);
 
-	/*
-	 * Secure Partitions secondary ECs need one round of ffa_run to reach
-	 * the message loop.
-	 */
-	if (!spm_core_sp_init(per_vcpu_receiver)) {
-		goto out;
-	}
-
 	result = TEST_RESULT_SUCCESS;
 
-out:
 	/* Tell the lead CPU that the calling CPU has completed the test. */
 	tftf_send_event(&per_vcpu_finished[core_pos]);
 
@@ -1083,6 +1068,7 @@ static test_result_t base_test_per_vcpu_notifications(ffa_id_t sender,
 	per_vcpu_receiver = receiver;
 	per_vcpu_sender = sender;
 
+	INFO("Execute npi_enable_per_vcpu_on_handler\n");
 	/* Boot all cores and enable the NPI in all of them. */
 	if (spm_run_multi_core_test(
 		(uintptr_t)npi_enable_per_vcpu_on_handler,
@@ -1134,6 +1120,7 @@ static test_result_t base_test_per_vcpu_notifications(ffa_id_t sender,
 		result = TEST_RESULT_FAIL;
 	}
 
+	INFO("Execute request_notification_get_per_vcpu_on_handler\n");
 	/*
 	 * Bring up all the cores, and request the receiver to get notifications
 	 * in each one of them.
@@ -1145,6 +1132,7 @@ static test_result_t base_test_per_vcpu_notifications(ffa_id_t sender,
 	}
 
 out:
+	INFO("UNbind message on CPU:%lx\n", read_mpidr_el1());
 	/* As a clean-up, unbind notifications. */
 	if (!request_notification_unbind(receiver, receiver,
 					 sender,
@@ -1153,6 +1141,7 @@ out:
 		result = TEST_RESULT_FAIL;
 	}
 
+	INFO("Execute npi_disable_per_vcpu_on_handler\n");
 	/* Boot all cores and DISABLE the NPI in all of them. */
 	if (spm_run_multi_core_test(
 		(uintptr_t)npi_disable_per_vcpu_on_handler,
@@ -1187,10 +1176,6 @@ static test_result_t notification_get_per_vcpu_on_handler(void)
 	VERBOSE("Getting per-vCPU notifications from %x, core: %u.\n",
 		 per_vcpu_receiver, core_pos);
 
-	if (!spm_core_sp_init(per_vcpu_sender)) {
-		goto out;
-	}
-
 	if (!notification_get_and_validate(per_vcpu_receiver,
 					   FFA_NOTIFICATION(core_pos), 0,
 					   core_pos,
@@ -1199,7 +1184,6 @@ static test_result_t notification_get_per_vcpu_on_handler(void)
 		result = TEST_RESULT_FAIL;
 	}
 
-out:
 	/* Tell the lead CPU that the calling CPU has completed the test. */
 	tftf_send_event(&per_vcpu_finished[core_pos]);
 
@@ -1497,10 +1481,6 @@ test_result_t notifications_set_per_vcpu_on_handler(void)
 {
 	unsigned int core_pos = get_current_core_id();
 	test_result_t result = TEST_RESULT_FAIL;
-
-	if (!spm_core_sp_init(per_vcpu_sender)) {
-		goto out;
-	}
 
 	if (!notification_set(per_vcpu_receiver, per_vcpu_sender,
 			      FFA_NOTIFICATIONS_FLAG_DELAY_SRI |

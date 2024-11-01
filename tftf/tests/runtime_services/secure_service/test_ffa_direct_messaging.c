@@ -185,19 +185,6 @@ static test_result_t cpu_on_handler(void)
 	}
 
 	/*
-	 * Secure Partitions beyond the first SP only have their first
-	 * EC (or vCPU0) woken up at boot time by the SPMC.
-	 * Other ECs need one round of ffa_run to reach the message loop.
-	 */
-	ffa_ret = ffa_run(SP_ID(2), core_pos);
-	if (ffa_func_id(ffa_ret) != FFA_MSG_WAIT) {
-		ERROR("Failed to run SP%x on core %u\n", SP_ID(2),
-				core_pos);
-		ret = TEST_RESULT_FAIL;
-		goto out;
-	}
-
-	/*
 	 * Send a direct message request to SP2 (MP SP) from current physical
 	 * CPU. The SPMC uses the MP pinned context corresponding to the
 	 * physical CPU emitting the request.

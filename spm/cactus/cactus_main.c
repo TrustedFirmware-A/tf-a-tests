@@ -61,8 +61,9 @@ static void __dead2 message_loop(ffa_id_t vm_id, struct mailbox_buffers *mb)
 	ffa_ret = ffa_msg_wait();
 
 	for (;;) {
-		VERBOSE("Woke up with func id: %s\n",
-			ffa_func_name(ffa_func_id(ffa_ret)));
+		VERBOSE("Woke up with func:%s  id: %x\n",
+			ffa_func_name(ffa_func_id(ffa_ret)),
+			ffa_func_id(ffa_ret));
 
 		if (ffa_func_id(ffa_ret) == FFA_ERROR) {
 			ERROR("Error: %s\n",
@@ -74,7 +75,7 @@ static void __dead2 message_loop(ffa_id_t vm_id, struct mailbox_buffers *mb)
 		    ffa_func_id(ffa_ret) != FFA_MSG_SEND_DIRECT_REQ_SMC64 &&
 		    ffa_func_id(ffa_ret) != FFA_INTERRUPT &&
 		    ffa_func_id(ffa_ret) != FFA_RUN) {
-			ERROR("%s(%u) unknown func id %s\n", __func__, vm_id,
+			ERROR("%s(%x) unknown func id %s\n", __func__, vm_id,
 			      ffa_func_name(ffa_func_id(ffa_ret)));
 			break;
 		}
@@ -87,10 +88,15 @@ static void __dead2 message_loop(ffa_id_t vm_id, struct mailbox_buffers *mb)
 			 * informational as we're running with virtual
 			 * interrupts unmasked and the interrupt is processed
 			 * by the interrupt handler.
-			 *
-			 * Received FFA_RUN in waiting state, the endpoint
-			 * simply returns by FFA_MSG_WAIT.
 			 */
+			if (ffa_func_id(ffa_ret) == FFA_RUN) {
+				/*
+				 * Received FFA_RUN in waiting state, the
+				 * endpoint simply returns by FFA_MSG_WAIT.
+				 */
+				VERBOSE("Nothing to do. Exit to NWd\n");
+			}
+
 			ffa_ret = ffa_msg_wait();
 			continue;
 		}

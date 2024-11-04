@@ -910,14 +910,16 @@ u_register_t host_realm_init_ipa_state(struct realm *realm, long level,
 			int8_t cur_level = RMI_RETURN_INDEX(ret);
 
 			if ((int)cur_level < level) {
-				ret = host_rmi_create_rtt_levels(realm,
-								 start,
-								 cur_level,
-								 level);
-				if (ret != RMI_SUCCESS) {
+				u_register_t cret;
+
+				cret = host_rmi_create_rtt_levels(realm,
+								  start,
+								  cur_level,
+								  level);
+				if (cret != RMI_SUCCESS) {
 					ERROR("%s() failed, ret=0x%lx line=%u\n",
 						"host_rmi_create_rtt_levels",
-						ret, __LINE__);
+						cret, __LINE__);
 					return REALM_ERROR;
 				}
 

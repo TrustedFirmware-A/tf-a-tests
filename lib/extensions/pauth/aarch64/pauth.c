@@ -169,9 +169,8 @@ void pauth_test_lib_read_keys(uint128_t *pauth_keys_arr)
 void pauth_test_lib_test_intrs(void)
 {
 	/* Pointer authentication instructions */
-	__asm__ volatile (
-			"paciasp\n"
-			"autiasp\n"
-			"paciasp\n"
-			"xpaclri");
+	paciasp();
+	autiasp();
+	paciasp();
+	xpaclri();
 }

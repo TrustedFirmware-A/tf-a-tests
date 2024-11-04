@@ -9,6 +9,9 @@
 
 	.global	pauth_init_enable
 	.global	pauth_disable
+	.global paciasp
+	.global autiasp
+	.global xpaclri
 
 /* -----------------------------------------------------------
  * Program APIAKey_EL1 key and enable Pointer Authentication
@@ -52,6 +55,21 @@ enable_exit:
 	ldp	x29, x30, [sp], #16
 	ret
 endfunc pauth_init_enable
+
+func paciasp
+	hint	#25
+	ret
+endfunc paciasp
+
+func autiasp
+	hint	#29
+	ret
+endfunc autiasp
+
+func xpaclri
+	hint	#7
+	ret
+endfunc xpaclri
 
 /* -----------------------------------------------------------
  * Disable pointer authentication in EL1/EL2

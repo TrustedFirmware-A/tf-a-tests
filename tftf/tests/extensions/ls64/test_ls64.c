@@ -64,7 +64,6 @@ test_result_t test_ls64_instructions(void)
 
 	return TEST_RESULT_SUCCESS;
 #else
-	/* Skip test if AArch32 */
 	SKIP_TEST_IF_AARCH32();
 #endif /* __aarch64_ */
 #else
@@ -72,4 +71,29 @@ test_result_t test_ls64_instructions(void)
 	return TEST_RESULT_SKIPPED;
 #endif /* PLAT_fvp */
 
+}
+
+/*
+ * @brief Test LS64_ACCDATA feature support when the extension is enabled.
+ *
+ * Write to the ACCDATA_EL1 system register, and read it back. This is
+ * primarily to see if accesses to this register trap to EL3 (they should not).
+ *
+ * @return test_result_t
+ */
+test_result_t test_ls64_accdata_sysreg(void)
+{
+#ifdef __aarch64__
+	SKIP_TEST_IF_LS64_ACCDATA_NOT_SUPPORTED();
+
+	write_sys_accdata_el1(0x1234567890);
+	if ((read_sys_accdata_el1() & 0xffffffff) != 0x34567890) {
+		NOTICE("SYS_ACCDATA_EL1: 0x%lx\n", read_sys_accdata_el1());
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+#else
+	SKIP_TEST_IF_AARCH32();
+#endif /* __aarch64_ */
 }

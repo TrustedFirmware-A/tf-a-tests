@@ -867,6 +867,21 @@ uint32_t ffa_memory_retrieve_request_init(
 void ffa_hypervisor_retrieve_request_init(struct ffa_memory_region *region,
 					  ffa_memory_handle_t handle);
 
+static inline uint32_t ffa_mem_retrieve_res_total_size(struct ffa_value ret)
+{
+	return ret.arg1;
+}
+
+static inline uint32_t ffa_mem_retrieve_res_frag_size(struct ffa_value ret)
+{
+	return ret.arg2;
+}
+
+static inline uint32_t ffa_mem_frag_tx_frag_size(struct ffa_value ret)
+{
+	return ret.arg3;
+}
+
 uint32_t ffa_memory_region_init(
 	struct ffa_memory_region *memory_region, size_t memory_region_max_size,
 	ffa_id_t sender, struct ffa_memory_access receivers[],

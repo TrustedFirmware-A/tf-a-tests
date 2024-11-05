@@ -116,6 +116,10 @@ bool memory_retrieve(struct mailbox_buffers *mb,
 		     uint32_t receiver_count, ffa_memory_region_flags_t flags,
 		     bool is_normal_memory);
 
+bool hypervisor_retrieve_request_continue(
+	struct mailbox_buffers *mb, uint64_t handle, void *out, uint32_t out_size,
+	uint32_t total_size, uint32_t fragment_offset, bool release_rx);
+
 bool hypervisor_retrieve_request(struct mailbox_buffers *mb, uint64_t handle,
 				 void *out, uint32_t out_size);
 

@@ -83,6 +83,10 @@
                 function="test_ffa_hypervisor_retrieve_request_fail_tx_realm" />
       <testcase name="FF-A Memory Relinquish, NWd TX buffer is in realm PAS"
                 function="test_ffa_memory_relinquish_fail_tx_realm" />
+      <testcase name="FF-A Memory Frag Tx, NWd TX buffer is in realm PAS"
+                function="test_ffa_memory_share_fragmented_tx_realm" />
+      <testcase name="FF-A Memory Frag Rx, NWd RX buffer is in realm PAS"
+                function="test_ffa_memory_share_fragmented_rx_realm" />
   </testsuite>
 
 </testsuites>

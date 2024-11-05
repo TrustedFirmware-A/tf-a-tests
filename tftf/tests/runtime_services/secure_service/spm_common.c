@@ -333,6 +333,99 @@ bool memory_retrieve(struct mailbox_buffers *mb,
 	return true;
 }
 
+/**
+ * Looping part of the fragmented retrieve request.
+ */
+bool hypervisor_retrieve_request_continue(
+	struct mailbox_buffers *mb, uint64_t handle, void *out, uint32_t out_size,
+	uint32_t total_size, uint32_t fragment_offset, bool release_rx)
+{
+	struct ffa_value ret;
+	uint32_t fragment_size;
+
+	if (mb == NULL) {
+		ERROR("Invalid parameters, please provide valid mailbox.\n");
+		return false;
+	}
+
+	while (fragment_offset < total_size) {
+		VERBOSE("Calling again. frag offset: %d; total: %d\n",
+			fragment_offset, total_size);
+
+		/* The first time it is called is controlled through arguments. */
+		if (release_rx) {
+			ret = ffa_rx_release();
+			if (ret.fid != FFA_SUCCESS_SMC32) {
+				ERROR("ffa_rx_release() failed: %d\n",
+				      ffa_error_code(ret));
+				return false;
+			}
+		} else {
+			release_rx = true;
+		}
+
+		ret = ffa_mem_frag_rx(handle, fragment_offset);
+		if (ret.fid != FFA_MEM_FRAG_TX) {
+			ERROR("ffa_mem_frag_rx() failed: %d\n",
+			      ffa_error_code(ret));
+			return false;
+		}
+
+		if (ffa_frag_handle(ret) != handle) {
+			ERROR("%s: fragment handle mismatch: expected %llu, got "
+			      "%llu\n",
+			      __func__, handle, ffa_frag_handle(ret));
+			return false;
+		}
+
+		/* Sender MBZ at physical instance. */
+		if (ffa_frag_sender(ret) != 0) {
+			ERROR("%s: fragment sender mismatch: expected %d, got "
+			      "%d\n",
+			      __func__, 0, ffa_frag_sender(ret));
+			return false;
+		}
+
+		fragment_size = ffa_mem_frag_tx_frag_size(ret);
+
+		if (fragment_size == 0) {
+			ERROR("%s: fragment size must not be 0\n", __func__);
+			return false;
+		}
+
+		if (out != NULL) {
+			if (fragment_offset + fragment_size > out_size) {
+				ERROR("%s: fragment is too big to fit in out buffer "
+				      "(%d > %d)\n",
+				      __func__, fragment_offset + fragment_size,
+				      out_size);
+				return false;
+			}
+
+			VERBOSE("Copying fragment at offset %d with size %d\n",
+				fragment_offset, fragment_size);
+			memcpy((uint8_t *)out + fragment_offset, mb->recv,
+			       fragment_size);
+		}
+
+		fragment_offset += fragment_size;
+	}
+
+	if (fragment_offset != total_size) {
+		ERROR("%s: fragment size mismatch: expected %d, got %d\n",
+		      __func__, total_size, fragment_offset);
+		return false;
+	}
+
+	ret = ffa_rx_release();
+	if (ret.fid != FFA_SUCCESS_SMC32) {
+		ERROR("ffa_rx_release() failed: %d\n", ffa_error_code(ret));
+		return false;
+	}
+
+	return true;
+}
+
 bool hypervisor_retrieve_request(struct mailbox_buffers *mb, uint64_t handle,
 				 void *out, uint32_t out_size)
 {
@@ -342,8 +435,8 @@ bool hypervisor_retrieve_request(struct mailbox_buffers *mb, uint64_t handle,
 	uint32_t fragment_offset;
 	struct ffa_memory_region *region_out = out;
 
-	if (out == NULL || mb == NULL) {
-		ERROR("Invalid parameters!\n");
+	if (mb == NULL) {
+		ERROR("Invalid parameters, please provide valid mailbox.\n");
 		return false;
 	}
 
@@ -363,112 +456,49 @@ bool hypervisor_retrieve_request(struct mailbox_buffers *mb, uint64_t handle,
 	 * fragments is equal to total_size, the memory transaction has been
 	 * completed.
 	 */
-	total_size = ret.arg1;
-	fragment_size = ret.arg2;
+	total_size = ffa_mem_retrieve_res_total_size(ret);
+	fragment_size = ffa_mem_retrieve_res_frag_size(ret);
+
 	fragment_offset = fragment_size;
 	VERBOSE("total_size=%d, fragment_size=%d, fragment_offset=%d\n",
 		total_size, fragment_size, fragment_offset);
 
-	if (fragment_size > PAGE_SIZE) {
-		ERROR("Fragment should be smaller than RX buffer!\n");
-		return false;
-	}
-	if (total_size > out_size) {
-		ERROR("output buffer is not large enough to store all "
-		      "fragments (total_size=%d, max_size=%d)\n",
-		      total_size, out_size);
-		return false;
-	}
-
-	/*
-	 * Copy the received message to the out buffer. This is necessary
-	 * because `mb->recv` will be overwritten if sending a fragmented
-	 * message.
-	 */
-	memcpy(out, mb->recv, fragment_size);
-
-	if (region_out->receiver_count == 0) {
-		VERBOSE("copied region has no recivers\n");
-		return false;
-	}
-
-	if (region_out->receiver_count > MAX_MEM_SHARE_RECIPIENTS) {
-		VERBOSE("SPMC memory sharing operations support max of %u "
-			"receivers!\n",
-			MAX_MEM_SHARE_RECIPIENTS);
-		return false;
-	}
-
-	while (fragment_offset < total_size) {
-		VERBOSE("Calling again. frag offset: %d; total: %d\n",
-			fragment_offset, total_size);
-		ret = ffa_rx_release();
-		if (ret.fid != FFA_SUCCESS_SMC32) {
-			ERROR("ffa_rx_release() failed: %d\n",
-			      ffa_error_code(ret));
+	if (out != NULL) {
+		if (fragment_size > PAGE_SIZE) {
+			ERROR("Fragment should be smaller than RX buffer!\n");
+			return false;
+		}
+		if (total_size > out_size) {
+			ERROR("Output buffer is not large enough to store all "
+			      "fragments (total_size=%d, max_size=%d)\n",
+			      total_size, out_size);
 			return false;
 		}
 
-		ret = ffa_mem_frag_rx(handle, fragment_offset);
-		if (ret.fid != FFA_MEM_FRAG_TX) {
-			ERROR("ffa_mem_frag_rx() failed: %d\n",
-			      ffa_error_code(ret));
+		/*
+		 * Copy the received message to the out buffer. This is necessary
+		 * because `mb->recv` will be overwritten if sending a fragmented
+		 * message.
+		 */
+		memcpy(out, mb->recv, fragment_size);
+
+		if (region_out->receiver_count == 0) {
+			VERBOSE("Copied region has no recivers\n");
 			return false;
 		}
 
-		if (ffa_frag_handle(ret) != handle) {
-			ERROR("%s: fragment handle mismatch: expected %llu, "
-			      "got "
-			      "%llu\n",
-			      __func__, handle, ffa_frag_handle(ret));
+		if (region_out->receiver_count > MAX_MEM_SHARE_RECIPIENTS) {
+			VERBOSE("SPMC memory sharing operations support max of %u "
+				"receivers!\n",
+				MAX_MEM_SHARE_RECIPIENTS);
 			return false;
 		}
-
-		/* Sender MBZ at physical instance. */
-		if (ffa_frag_sender(ret) != 0) {
-			ERROR("%s: fragment sender mismatch: expected %d, got "
-			      "%d\n",
-			      __func__, 0, ffa_frag_sender(ret));
-			return false;
-		}
-
-		fragment_size = ret.arg2;
-		if (fragment_size == 0) {
-			ERROR("%s: fragment size must not be 0\n", __func__);
-			return false;
-		}
-
-		if (fragment_offset + fragment_size > out_size) {
-			ERROR("%s: fragment is too big to fit in out buffer "
-			      "(%d > %d)\n",
-			      __func__, fragment_offset + fragment_size,
-			      out_size);
-			return false;
-		}
-
-		VERBOSE("copying fragment at offset %d with size %d\n",
-			fragment_offset, fragment_size);
-		memcpy((uint8_t *)out + fragment_offset, mb->recv,
-		       fragment_size);
-
-		fragment_offset += fragment_size;
+	} else {
+		VERBOSE("%s: No output buffer provided...\n", __func__);
 	}
 
-	if (fragment_offset != total_size) {
-		ERROR("%s: fragment size mismatch: expected %d, got %d\n",
-		      __func__, total_size, fragment_offset);
-		return false;
-	}
-
-	ret = ffa_rx_release();
-	if (ret.fid != FFA_SUCCESS_SMC32) {
-		ERROR("ffa_rx_release() failed: %d\n", ffa_error_code(ret));
-		return false;
-	}
-
-	VERBOSE("Memory Retrieved!\n");
-
-	return true;
+	return hypervisor_retrieve_request_continue(
+			mb, handle, out, out_size, total_size, fragment_offset, false);
 }
 
 bool memory_relinquish(struct ffa_mem_relinquish *m, uint64_t handle,
@@ -493,9 +523,8 @@ bool send_fragmented_memory_region(
 	const struct ffa_memory_region_constituent constituents[],
 	uint32_t constituent_count, uint32_t remaining_constituent_count,
 	uint32_t sent_length, uint32_t total_length, bool allocator_is_spmc,
-	struct ffa_value ret)
+	struct ffa_value *ret)
 {
-
 	uint64_t handle;
 	uint64_t handle_mask;
 	uint64_t expected_handle_mask =
@@ -508,25 +537,24 @@ bool send_fragmented_memory_region(
 	while (remaining_constituent_count != 0) {
 		VERBOSE("%s: %d constituents left to send.\n", __func__,
 			remaining_constituent_count);
-		if (ret.fid != FFA_MEM_FRAG_RX) {
+		if (ret->fid != FFA_MEM_FRAG_RX) {
 			ERROR("ffa_mem_frax_tx() failed: %d\n",
-			      ffa_error_code(ret));
+			      ffa_error_code(*ret));
 			return false;
 		}
 
 		if (fragment_handle == FFA_MEMORY_HANDLE_INVALID) {
-			fragment_handle = ffa_frag_handle(ret);
-		} else if (ffa_frag_handle(ret) != fragment_handle) {
-			ERROR("%s: fragment handle mismatch: expected %llu, "
-			      "got %llu\n",
-			      __func__, fragment_handle, ffa_frag_handle(ret));
+			fragment_handle = ffa_frag_handle(*ret);
+		} else if (ffa_frag_handle(*ret) != fragment_handle) {
+			ERROR("%s: fragment handle mismatch: expected %llu, got %llu\n",
+			      __func__, fragment_handle, ffa_frag_handle(*ret));
 			return false;
 		}
 
-		if (ret.arg3 != sent_length) {
+		if (ret->arg3 != sent_length) {
 			ERROR("%s: fragment length mismatch: expected %u, got "
 			      "%lu\n",
-			      __func__, sent_length, ret.arg3);
+			      __func__, sent_length, ret->arg3);
 			return false;
 		}
 
@@ -536,7 +564,7 @@ bool send_fragmented_memory_region(
 				remaining_constituent_count,
 			remaining_constituent_count, &fragment_length);
 
-		ret = ffa_mem_frag_tx(fragment_handle, fragment_length);
+		*ret = ffa_mem_frag_tx(fragment_handle, fragment_length);
 		sent_length += fragment_length;
 	}
 
@@ -546,13 +574,13 @@ bool send_fragmented_memory_region(
 		return false;
 	}
 
-	if (ret.fid != FFA_SUCCESS_SMC32) {
+	if (ret->fid != FFA_SUCCESS_SMC32) {
 		ERROR("%s: ffa_mem_frax_tx() failed: %d\n", __func__,
-		      ffa_error_code(ret));
+		      ffa_error_code(*ret));
 		return false;
 	}
 
-	handle = ffa_mem_success_handle(ret);
+	handle = ffa_mem_success_handle(*ret);
 	handle_mask = (handle >> FFA_MEMORY_HANDLE_ALLOCATOR_SHIFT) &
 		      FFA_MEMORY_HANDLE_ALLOCATOR_MASK;
 
@@ -612,7 +640,7 @@ ffa_memory_handle_t memory_send(
 	if (!send_fragmented_memory_region(
 		    send_buffer, constituents, constituent_count,
 		    remaining_constituent_count, fragment_length, total_length,
-		    true, *ret)) {
+		    true, ret)) {
 		return FFA_MEMORY_HANDLE_INVALID;
 	}
 
@@ -967,7 +995,6 @@ bool receive_indirect_message(void *buffer, size_t buffer_size, void *recv,
 		      header.receiver, receiver);
 		return false;
 	}
-
 
 	if (sender != NULL) {
 		*sender = source_vm_id;

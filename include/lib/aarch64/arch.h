@@ -395,6 +395,12 @@
 #define ID_AA64MMFR2_EL1_CNP_SHIFT	U(0)
 #define ID_AA64MMFR2_EL1_CNP_MASK	ULL(0xf)
 
+/* ID_AA64MMFR3_EL1 definitions */
+#define ID_AA64MMFR3_EL1		S3_0_C0_C7_3
+
+#define ID_AA64MMFR3_TCR2_SHIFT		U(0)
+#define ID_AA64MMFR3_TCR2_MASK		ULL(0xf)
+
 /* ID_AA64PFR1_EL1 definitions */
 #define ID_AA64PFR1_EL1_SSBS_SHIFT	U(4)
 #define ID_AA64PFR1_EL1_SSBS_MASK	ULL(0xf)
@@ -1345,6 +1351,12 @@
 #define BRBSRCINJ_EL1	S2_1_C9_C1_1
 #define BRBTGTINJ_EL1	S2_1_C9_C1_2
 #define BRBIDR0_EL1	S2_1_C9_C2_0
+
+/*******************************************************************************
+ * FEAT_TCR2 - Extended Translation Control Registers
+ ******************************************************************************/
+#define TCR2_EL1		S3_0_C2_C0_3
+#define TCR2_EL2		S3_4_C2_C0_3
 
 /*******************************************************************************
  * Armv8.4 - Trace Filter System Registers

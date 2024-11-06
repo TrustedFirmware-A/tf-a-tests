@@ -256,6 +256,12 @@ static inline bool is_feat_spe_supported(void)
 	return spe_get_version() >= ID_AA64DFR0_SPE;
 }
 
+static inline bool is_feat_tcr2_supported(void)
+{
+	return (((read_id_aa64mmfr3_el1() >> ID_AA64MMFR3_TCR2_SHIFT) &
+		ID_AA64MMFR3_TCR2_MASK) != 0);
+}
+
 static inline bool get_feat_pmuv3_supported(void)
 {
 	return (((read_id_aa64dfr0_el1() >> ID_AA64DFR0_PMUVER_SHIFT) &

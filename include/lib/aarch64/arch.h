@@ -104,12 +104,34 @@
 #define ICC_EOIR0_EL1		S3_0_C12_C8_1
 #define ICC_EOIR1_EL1		S3_0_C12_C12_1
 #define ICC_SGI0R_EL1		S3_0_C12_C11_7
-
 #define ICV_CTRL_EL1		S3_0_C12_C12_4
 #define ICV_IAR1_EL1		S3_0_C12_C12_0
 #define ICV_IGRPEN1_EL1		S3_0_C12_C12_7
 #define ICV_EOIR1_EL1		S3_0_C12_C12_1
 #define ICV_PMR_EL1		S3_0_C4_C6_0
+
+/*******************************************************************************
+ * Definitions for EL2 system registers.
+ ******************************************************************************/
+#define CNTPOFF_EL2		S3_4_C14_C0_6
+#define HDFGRTR2_EL2		S3_4_C3_C1_0
+#define HDFGWTR2_EL2		S3_4_C3_C1_1
+#define HFGRTR2_EL2		S3_4_C3_C1_2
+#define HFGWTR2_EL2		S3_4_C3_C1_3
+#define HDFGRTR_EL2		S3_4_C3_C1_4
+#define HDFGWTR_EL2		S3_4_C3_C1_5
+#define HAFGRTR_EL2		S3_4_C3_C1_6
+#define HFGITR2_EL2		S3_4_C3_C1_7
+#define HFGITR_EL2		S3_4_C1_C1_6
+#define HFGRTR_EL2		S3_4_C1_C1_4
+#define HFGWTR_EL2		S3_4_C1_C1_5
+#define ICH_HCR_EL2		S3_4_C12_C11_0
+#define ICH_VMCR_EL2		S3_4_C12_C11_7
+#define VNCR_EL2		S3_4_C2_C2_0
+#define PMSCR_EL2		S3_4_C9_C9_0
+#define TFSR_EL2		S3_4_C5_C6_0
+#define CONTEXTIDR_EL2		S3_4_C13_C0_1
+#define TTBR1_EL2		S3_4_C2_C0_1
 
 /*******************************************************************************
  * Generic timer memory mapped registers & offsets
@@ -384,7 +406,8 @@
 #define ID_AA64MMFR1_EL1_LO_WIDTH		U(4)
 #define ID_AA64MMFR1_EL1_LOR_NOT_SUPPORTED	ULL(0x0)
 #define ID_AA64MMFR1_EL1_LOR_SUPPORTED		ULL(0x1)
-
+#define ID_AA64MMFR1_EL1_VHE_SHIFT		ULL(8)
+#define ID_AA64MMFR1_EL1_VHE_MASK		ULL(0xf)
 
 /* ID_AA64MMFR2_EL1 definitions */
 #define ID_AA64MMFR2_EL1		S3_0_C0_C7_2
@@ -395,41 +418,54 @@
 #define ID_AA64MMFR2_EL1_CNP_SHIFT	U(0)
 #define ID_AA64MMFR2_EL1_CNP_MASK	ULL(0xf)
 
-/* ID_AA64MMFR3_EL1 definitions */
-#define ID_AA64MMFR3_EL1		S3_0_C0_C7_3
+#define ID_AA64MMFR2_EL1_NV_SHIFT	U(24)
+#define ID_AA64MMFR2_EL1_NV_MASK	ULL(0xf)
+#define NV2_IMPLEMENTED			ULL(0x2)
 
-#define ID_AA64MMFR3_TCR2_SHIFT		U(0)
-#define ID_AA64MMFR3_TCR2_MASK		ULL(0xf)
+/* ID_AA64MMFR3_EL1 definitions */
+#define ID_AA64MMFR3_EL1			S3_0_C0_C7_3
+
+#define ID_AA64MMFR3_EL1_S2POE_SHIFT		U(20)
+#define ID_AA64MMFR3_EL1_S2POE_MASK		ULL(0xf)
+#define ID_AA64MMFR3_EL1_S2POE_WIDTH		U(4)
+#define ID_AA64MMFR3_EL1_S2POE_SUPPORTED	ULL(0x1)
+
+#define ID_AA64MMFR3_EL1_S1POE_SHIFT		U(16)
+#define ID_AA64MMFR3_EL1_S1POE_MASK		ULL(0xf)
+#define ID_AA64MMFR3_EL1_S1POE_WIDTH		U(4)
+#define ID_AA64MMFR3_EL1_S1POE_SUPPORTED	ULL(0x1)
+
+#define ID_AA64MMFR3_EL1_S2PIE_SHIFT		U(12)
+#define ID_AA64MMFR3_EL1_S2PIE_MASK		ULL(0xf)
+#define ID_AA64MMFR3_EL1_S2PIE_WIDTH		U(4)
+#define ID_AA64MMFR3_EL1_S2PIE_SUPPORTED	ULL(0x1)
+
+#define ID_AA64MMFR3_EL1_S1PIE_SHIFT		U(8)
+#define ID_AA64MMFR3_EL1_S1PIE_MASK		ULL(0xf)
+#define ID_AA64MMFR3_EL1_S1PIE_WIDTH		U(4)
+#define ID_AA64MMFR3_EL1_S1PIE_SUPPORTED	ULL(0x1)
+
+#define ID_AA64MMFR3_EL1_TCRX_SHIFT		U(0)
+#define ID_AA64MMFR3_EL1_TCRX_MASK		ULL(0xf)
+#define ID_AA64MMFR3_EL1_TCRX_WIDTH		U(4)
+#define ID_AA64MMFR3_EL1_TCR2_SUPPORTED		ULL(0x1)
 
 /* ID_AA64PFR1_EL1 definitions */
-#define ID_AA64PFR1_EL1_SSBS_SHIFT	U(4)
-#define ID_AA64PFR1_EL1_SSBS_MASK	ULL(0xf)
+#define ID_AA64PFR1_EL1_GCS_SHIFT		U(44)
+#define ID_AA64PFR1_EL1_GCS_MASK		ULL(0xf)
+#define ID_AA64PFR1_EL1_GCS_WIDTH		U(4)
+#define ID_AA64PFR1_EL1_GCS_SUPPORTED		ULL(1)
 
-#define SSBS_UNAVAILABLE	ULL(0)	/* No architectural SSBS support */
-
-#define ID_AA64PFR1_EL1_BT_SHIFT	U(0)
-#define ID_AA64PFR1_EL1_BT_MASK		ULL(0xf)
-
-#define BTI_IMPLEMENTED		ULL(1)	/* The BTI mechanism is implemented */
-
-#define ID_AA64PFR1_EL1_MTE_SHIFT	U(8)
-#define ID_AA64PFR1_EL1_MTE_MASK	ULL(0xf)
-
-#define ID_AA64PFR1_EL1_RNDR_TRAP_SHIFT	U(28)
-#define ID_AA64PFR1_EL1_RNDR_TRAP_MASK	ULL(0xf)
-
-#define ID_AA64PFR1_EL1_RNG_TRAP_SUPPORTED	ULL(0x1)
-#define ID_AA64PFR1_EL1_RNG_TRAP_NOT_SUPPORTED	ULL(0x0)
-
-#define ID_AA64PFR1_CSV2_FRAC_MASK		ULL(0xf)
 #define ID_AA64PFR1_CSV2_FRAC_SHIFT		U(32)
+#define ID_AA64PFR1_CSV2_FRAC_MASK		ULL(0xf)
 #define ID_AA64PFR1_CSV2_FRAC_WIDTH		U(4)
 #define ID_AA64PFR1_CSV2_1P1_SUPPORTED		ULL(0x1)
 #define ID_AA64PFR1_CSV2_1P2_SUPPORTED		ULL(0x2)
 
-#define MTE_UNIMPLEMENTED	ULL(0)
-#define MTE_IMPLEMENTED_EL0	ULL(1)	/* MTE is only implemented at EL0 */
-#define MTE_IMPLEMENTED_ELX	ULL(2)	/* MTE is implemented at all ELs */
+#define ID_AA64PFR1_EL1_RNDR_TRAP_SHIFT		U(28)
+#define ID_AA64PFR1_EL1_RNDR_TRAP_MASK		ULL(0xf)
+#define ID_AA64PFR1_EL1_RNG_TRAP_SUPPORTED	ULL(0x1)
+#define ID_AA64PFR1_EL1_RNG_TRAP_NOT_SUPPORTED	ULL(0x0)
 
 #define ID_AA64PFR1_EL1_SME_SHIFT		U(24)
 #define ID_AA64PFR1_EL1_SME_MASK		ULL(0xf)
@@ -438,13 +474,28 @@
 #define ID_AA64PFR1_EL1_SME_SUPPORTED		ULL(0x1)
 #define ID_AA64PFR1_EL1_SME2_SUPPORTED		ULL(0x2)
 
-#define ID_AA64PFR1_RAS_FRAC_MASK		ULL(0xf)
+#define ID_AA64PFR1_MPAM_FRAC_SHIFT		U(16)
+#define ID_AA64PFR1_MPAM_FRAC_MASK		ULL(0xf)
+
 #define ID_AA64PFR1_RAS_FRAC_SHIFT		U(12)
+#define ID_AA64PFR1_RAS_FRAC_MASK		ULL(0xf)
 #define ID_AA64PFR1_RAS_FRAC_WIDTH		U(4)
 #define ID_AA64PFR1_RASV1P1_SUPPORTED		ULL(0x1)
 
-#define ID_AA64PFR1_MPAM_FRAC_SHIFT   		U(16)
-#define ID_AA64PFR1_MPAM_FRAC_MASK    		ULL(0xf)
+#define ID_AA64PFR1_EL1_MTE_SHIFT		U(8)
+#define ID_AA64PFR1_EL1_MTE_MASK		ULL(0xf)
+#define ID_AA64PFR1_EL1_MTE_WIDTH		U(4)
+#define MTE_UNIMPLEMENTED			ULL(0)
+#define MTE_IMPLEMENTED_EL0			ULL(1)	/* MTE is only implemented at EL0 */
+#define MTE_IMPLEMENTED_ELX			ULL(2)	/* MTE is implemented at all ELs */
+
+#define ID_AA64PFR1_EL1_SSBS_SHIFT		U(4)
+#define ID_AA64PFR1_EL1_SSBS_MASK		ULL(0xf)
+#define SSBS_UNAVAILABLE			ULL(0)	/* No architectural SSBS support */
+
+#define ID_AA64PFR1_EL1_BT_SHIFT		U(0)
+#define ID_AA64PFR1_EL1_BT_MASK			ULL(0xf)
+#define BTI_IMPLEMENTED				ULL(1)	/* The BTI mechanism is implemented */
 
 /* ID_PFR1_EL1 definitions */
 #define ID_PFR1_VIRTEXT_SHIFT	U(12)
@@ -1456,5 +1507,33 @@
 #define HFGWTR_EL2_FEAT_PAUTH_MASK		ULL(0x1f0)
 #define HFGWTR_EL2_NON_FEAT_DEPENDENT_MASK	ULL(0x7f2903380b)
 
+/*******************************************************************************
+ * Permission indirection and overlay Registers
+ ******************************************************************************/
+#define PIRE0_EL2		S3_4_C10_C2_2
+#define PIR_EL2			S3_4_C10_C2_3
+#define POR_EL2			S3_4_C10_C2_4
+#define S2PIR_EL2		S3_4_C10_C2_5
+#define PIRE0_EL1		S3_0_C10_C2_2
+#define PIR_EL1			S3_0_C10_C2_3
+#define POR_EL1			S3_0_C10_C2_4
+#define S2POR_EL1		S3_0_C10_C2_5
+
+/*******************************************************************************
+ * FEAT_GCS - Guarded Control Stack Registers
+ ******************************************************************************/
+#define GCSCR_EL2		S3_4_C2_C5_0
+#define GCSPR_EL2		S3_4_C2_C5_1
+#define GCSCR_EL1		S3_0_C2_C5_0
+#define GCSCRE0_EL1		S3_0_C2_C5_2
+#define GCSPR_EL1		S3_0_C2_C5_1
+#define GCSPR_EL0		S3_3_C2_C5_1
+
+/*******************************************************************************
+ * Realm management extension register definitions
+ ******************************************************************************/
+#define SCXTNUM_EL2		S3_4_C13_C0_7
+#define SCXTNUM_EL1		S3_0_C13_C0_7
+#define SCXTNUM_EL0		S3_3_C13_C0_7
 
 #endif /* ARCH_H */

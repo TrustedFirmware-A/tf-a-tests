@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -36,6 +36,10 @@ static const mmap_region_t mmap[] = {
 	MAP_REGION_FLAT(FLASH_BASE, FLASH_SIZE, MT_DEVICE | MT_RW | MT_NS),
 #endif
 	MAP_REGION_FLAT(PCIE_CONFIG_BASE, PCIE_CONFIG_SIZE, MT_DEVICE | MT_RW | MT_NS),
+#ifdef __aarch64__
+	MAP_REGION_FLAT(PCIE_MEM_1_BASE, PCIE_MEM_1_SIZE, MT_DEVICE | MT_RW | MT_NS),
+	MAP_REGION_FLAT(PCIE_MEM_2_BASE, PCIE_MEM_2_SIZE, MT_DEVICE | MT_RW | MT_NS),
+#endif
 	MAP_REGION_FLAT(DRAM_BASE, TFTF_BASE - DRAM_BASE, MT_MEMORY | MT_RW | MT_NS),
 	{0}
 };

@@ -111,13 +111,13 @@ typedef struct {
 #define SKIP_TEST_IF_DOE_NOT_SUPPORTED(_bdf, _doe_cap_base)			\
 	do {									\
 		/* Test PCIe DOE only for RME */				\
-		if (!get_armv9_2_feat_rme_support()) {				\
+		if (get_armv9_2_feat_rme_support() == 0U) {			\
 			tftf_testcase_printf("FEAT_RME not supported\n");	\
 			return TEST_RESULT_SKIPPED;				\
 		}								\
 										\
 		pcie_init();							\
-		if (pcie_find_doe_device(&(_bdf), &(_doe_cap_base)) != 0) {		\
+		if (pcie_find_doe_device(&(_bdf), &(_doe_cap_base)) != 0) {	\
 			tftf_testcase_printf("PCIe DOE not supported\n");	\
 			return TEST_RESULT_SKIPPED;				\
 		}								\

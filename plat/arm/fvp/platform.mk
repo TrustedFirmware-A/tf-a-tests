@@ -81,7 +81,7 @@ $(eval $(call add_define,TFTF_DEFINES,FVP_MAX_CPUS_PER_CLUSTER))
 $(eval $(call add_define,TFTF_DEFINES,FVP_MAX_PE_PER_CPU))
 
 # Default PA size for FVP platform
-PA_SIZE := 34
+PA_SIZE := 39
 
 $(eval $(call add_define,CACTUS_DEFINES,PA_SIZE))
 $(eval $(call add_define,IVY_DEFINES,PA_SIZE))

@@ -114,24 +114,31 @@
  * Definitions for EL2 system registers.
  ******************************************************************************/
 #define CNTPOFF_EL2		S3_4_C14_C0_6
-#define HDFGRTR2_EL2		S3_4_C3_C1_0
-#define HDFGWTR2_EL2		S3_4_C3_C1_1
-#define HFGRTR2_EL2		S3_4_C3_C1_2
-#define HFGWTR2_EL2		S3_4_C3_C1_3
-#define HDFGRTR_EL2		S3_4_C3_C1_4
-#define HDFGWTR_EL2		S3_4_C3_C1_5
+#define CONTEXTIDR_EL2		S3_4_C13_C0_1
+#define DBGVCR32_EL2		S2_4_C0_C7_0
+#define HACR_EL2		S3_4_C1_C1_7
 #define HAFGRTR_EL2		S3_4_C3_C1_6
-#define HFGITR2_EL2		S3_4_C3_C1_7
+#define HDFGRTR_EL2		S3_4_C3_C1_4
+#define HDFGRTR2_EL2		S3_4_C3_C1_0
+#define HDFGWTR_EL2		S3_4_C3_C1_5
+#define HDFGWTR2_EL2		S3_4_C3_C1_1
 #define HFGITR_EL2		S3_4_C1_C1_6
+#define HFGITR2_EL2		S3_4_C3_C1_7
 #define HFGRTR_EL2		S3_4_C1_C1_4
+#define HFGRTR2_EL2		S3_4_C3_C1_2
 #define HFGWTR_EL2		S3_4_C1_C1_5
+#define HFGWTR2_EL2		S3_4_C3_C1_3
+#define HPFAR_EL2		S3_4_C6_C0_4
 #define ICH_HCR_EL2		S3_4_C12_C11_0
 #define ICH_VMCR_EL2		S3_4_C12_C11_7
-#define VNCR_EL2		S3_4_C2_C2_0
 #define PMSCR_EL2		S3_4_C9_C9_0
 #define TFSR_EL2		S3_4_C5_C6_0
-#define CONTEXTIDR_EL2		S3_4_C13_C0_1
+#define TPIDR_EL2		S3_4_C13_C0_2
 #define TTBR1_EL2		S3_4_C2_C0_1
+#define VDISR_EL2		S3_4_C12_C1_1
+#define VNCR_EL2		S3_4_C2_C2_0
+#define VSESR_EL2		S3_4_C5_C2_3
+#define VTCR_EL2		S3_4_C2_C1_2
 
 /*******************************************************************************
  * Generic timer memory mapped registers & offsets

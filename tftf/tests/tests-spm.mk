@@ -23,6 +23,7 @@ TESTS_SOURCES	+=							\
 		test_spm_smmu.c						\
 		test_ffa_exceptions.c					\
 		test_ffa_group0_interrupts.c				\
+		test_ffa_arch_timer.c					\
 	)
 
 ifeq (${ARCH},aarch64)

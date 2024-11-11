@@ -691,4 +691,23 @@ static inline uint64_t cactus_msg_send_flags(struct ffa_value ret)
 	return (uint64_t)ret.arg4;
 }
 
+#define CACTUS_SET_ARCH_TIMER_CMD U(0x54494d4552)
+
+static inline struct ffa_value cactus_send_arch_timer_cmd(
+	ffa_id_t source, ffa_id_t dest, uint64_t deadline, uint64_t wait)
+{
+	return cactus_send_cmd(source, dest, CACTUS_SET_ARCH_TIMER_CMD, deadline, wait,
+			0, 0);
+}
+
+static inline uint64_t cactus_get_timer_deadline(struct ffa_value ret)
+{
+	return (uint64_t)ret.arg4;
+}
+
+static inline uint64_t cactus_get_timer_wait_time(struct ffa_value ret)
+{
+	return (uint64_t)ret.arg5;
+}
+
 #endif

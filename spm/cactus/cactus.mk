@@ -57,6 +57,7 @@ CACTUS_SOURCES	:=					\
 		cactus_test_memory_sharing.c		\
 		cactus_tests_smmuv3.c			\
 		cactus_test_notifications.c		\
+		cactus_test_timer.c			\
 	)
 
 # TODO: Remove dependency on TFTF files.
@@ -66,7 +67,8 @@ CACTUS_SOURCES	+=							\
 	tftf/tests/runtime_services/secure_service/${ARCH}/ffa_arch_helpers.S \
 	tftf/tests/runtime_services/secure_service/ffa_helpers.c 	\
 	tftf/tests/runtime_services/secure_service/spm_common.c		\
-	tftf/framework/${ARCH}/exception_report.c
+	tftf/framework/${ARCH}/exception_report.c			\
+	lib/delay/delay.c
 
 CACTUS_SOURCES	+= 	drivers/arm/pl011/${ARCH}/pl011_console.S	\
 			drivers/arm/sp805/sp805.c			\

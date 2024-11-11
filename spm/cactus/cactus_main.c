@@ -288,6 +288,12 @@ void __dead2 cactus_main(bool primary_cold_boot,
 	enable_irq();
 	enable_fiq();
 
+	/* Disable the arch timer at boot. */
+	write_cntp_ctl_el0(0);
+
+	/* Enable the arch timer virtual interrupt. */
+	spm_interrupt_enable(TIMER_VIRTUAL_INTID, true, 0);
+
 	if (primary_cold_boot == false) {
 		goto msg_loop;
 	}

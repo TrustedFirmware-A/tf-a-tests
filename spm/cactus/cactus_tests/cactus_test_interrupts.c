@@ -224,7 +224,7 @@ fail:
 
 CACTUS_CMD_HANDLER(interrupt_serviced_cmd, CACTUS_LAST_INTERRUPT_SERVICED_CMD)
 {
-	unsigned int core_pos = get_current_core_id();
+	unsigned int core_pos = spm_get_my_core_pos();
 
 	return cactus_response(ffa_dir_msg_dest(*args),
 			       ffa_dir_msg_source(*args),

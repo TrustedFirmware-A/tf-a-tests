@@ -319,6 +319,14 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}								\
 	} while (false)
 
+#define SKIP_TEST_IF_FPMR_NOT_SUPPORTED()					\
+	do {									\
+		if(!is_feat_fpmr_present()) {					\
+			tftf_testcase_printf("FEAT_FPMR not supported\n");	\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)
+
 #define SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP()				\
 	do {									\
 		u_register_t retrmm = 0U;					\

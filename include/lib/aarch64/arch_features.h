@@ -532,4 +532,9 @@ static inline bool is_feat_double_fault2_present(void)
 		read_id_aa64pfr1_el1()) == 1UL);
 }
 
+static inline bool is_feat_fpmr_present(void)
+{
+	return EXTRACT(ID_AA64PFR2_EL1_FPMR, read_id_aa64pfr2_el1())
+		== ID_AA64PFR2_EL1_FPMR_SUPPORTED;
+}
 #endif /* ARCH_FEATURES_H */

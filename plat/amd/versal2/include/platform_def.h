@@ -122,5 +122,6 @@
 #define IRQ_TWDOG_INTID				U(0x51)
 
 #define TTC_TIMER_IRQ				U(75)
+#define TTC_CLK_SEL_OFFSET			U(0x360)
 
 #endif /* PLATFORM_DEF_H */

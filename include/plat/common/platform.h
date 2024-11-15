@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -192,5 +192,13 @@ static inline uint32_t get_current_core_id(void)
 {
 	return platform_get_core_pos(read_mpidr_el1() & MPID_MASK);
 }
+
+/* Forward declaration */
+struct pcie_info_table;
+
+/*
+ * Retrieve platform PCIe information.
+ */
+const struct pcie_info_table *plat_pcie_get_info_table(void);
 
 #endif /* __PLATFORM_H__ */

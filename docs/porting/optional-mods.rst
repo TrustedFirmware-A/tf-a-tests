@@ -50,6 +50,18 @@ The default implementation uses the ARM watchdog peripheral (`SP805`_) to
 generate a watchdog timeout interrupt. This interrupt remains deliberately
 unserviced, which eventually asserts the reset signal.
 
+Function : plat_pcie_get_info_table()
+----------------------------
+
+::
+
+    Argument : void
+    Return   : struct pcie_info_table *
+
+This function returns the pointer to `pcie_info_table` structure
+correponding to the platform. This needs to be implemented
+only if the platform want to run PCIe related tests.
+
 --------------
 
 *Copyright (c) 2019, Arm Limited. All rights reserved.*

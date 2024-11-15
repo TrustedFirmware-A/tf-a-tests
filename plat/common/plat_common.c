@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -24,6 +24,7 @@
 #pragma weak tftf_plat_enable_mmu
 #pragma weak tftf_plat_reset
 #pragma weak plat_get_prot_regions
+#pragma weak plat_pcie_get_info_table
 
 #if IMAGE_TFTF
 
@@ -146,5 +147,10 @@ void tftf_plat_reset(void)
 const mem_region_t *plat_get_prot_regions(int *nelem)
 {
 	*nelem = 0;
+	return NULL;
+}
+
+const struct pcie_info_table *plat_pcie_get_info_table(void)
+{
 	return NULL;
 }

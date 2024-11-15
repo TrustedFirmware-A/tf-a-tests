@@ -10,6 +10,13 @@
 
 #define SKIP_TEST_IF_DOE_NOT_SUPPORTED()					\
 	do {									\
+		/* Test PCIe DOE only for RME */				\
+		if (!get_armv9_2_feat_rme_support()) {				\
+			tftf_testcase_printf("FEAT_RME not supported\n");	\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+										\
+		pcie_init();							\
 		if (find_doe_device(&bdf, &doe_cap_base) != 0) {		\
 			tftf_testcase_printf("PCIe DOE not supported\n");	\
 			return TEST_RESULT_SKIPPED;				\
@@ -20,8 +27,6 @@ test_result_t doe_discovery_test(void)
 {
 	uint32_t bdf, doe_cap_base;
 	int ret;
-
-	pcie_init();
 
 	SKIP_TEST_IF_DOE_NOT_SUPPORTED();
 

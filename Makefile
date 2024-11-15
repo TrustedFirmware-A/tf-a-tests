@@ -6,7 +6,7 @@
 
 # TFTF Version
 VERSION_MAJOR		:= 2
-VERSION_MINOR		:= 11
+VERSION_MINOR		:= 12
 
 MAKE_HELPERS_DIRECTORY := make_helpers/
 include ${MAKE_HELPERS_DIRECTORY}build_macros.mk

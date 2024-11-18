@@ -13,9 +13,10 @@
 static volatile uint64_t serror_triggered;
 extern void inject_unrecoverable_ras_error(void);
 
-static bool serror_handler(void)
+static bool serror_handler(bool *incr_elr_elx)
 {
 	serror_triggered = 1;
+	*incr_elr_elx = false;
 	return true;
 }
 

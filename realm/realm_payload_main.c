@@ -202,10 +202,14 @@ static bool realm_exception_handler(void)
 	return false;
 }
 
-static bool realm_serror_handler_doublefault(void)
+static bool realm_serror_handler_doublefault(bool *incr_elr_elx)
 {
+	*incr_elr_elx = false;
+
 	if ((read_sctlr2_el1() & SCTLR2_EASE_BIT) != 0UL) {
 		/* The serror exception should have been routed here */
+		*incr_elr_elx = true;
+
 		return true;
 	}
 

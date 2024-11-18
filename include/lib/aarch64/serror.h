@@ -7,8 +7,8 @@
 #ifndef __SERROR_H__
 #define  __SERROR_H__
 
-typedef bool (*exception_handler_t)(void);
-void register_custom_serror_handler(exception_handler_t handler);
+typedef bool (*serr_exception_handler_t)(bool *incr_elr_elx);
+void register_custom_serror_handler(serr_exception_handler_t handler);
 void unregister_custom_serror_handler(void);
 
 #endif /* __SERROR_H__ */

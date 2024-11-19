@@ -58,6 +58,10 @@ PSCI System Suspend Validation/System suspend multiple times
 PSCI System Suspend Validation/system suspend from all cores
 PSCI System Suspend Validation/Validate suspend to RAM functionality
 
+#Query runtime services
+Query runtime services/Query Vendor-Specific Service
+Query runtime services/Probe PMF Version
+
 #TESTS: el3-power-state
 EL3 power state parser validation
 

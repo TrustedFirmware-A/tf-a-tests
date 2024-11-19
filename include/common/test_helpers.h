@@ -364,6 +364,13 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}							\
 	} while (false)
 
+#define SKIP_TEST_IF_DOUBLE_FAULT2_NOT_SUPPORTED()				\
+	do {									\
+		if (is_feat_double_fault2_present() == false) {			\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)
+
 /* Helper macro to verify if system suspend API is supported */
 #define is_psci_sys_susp_supported()	\
 		(tftf_get_psci_feature_info(SMC_PSCI_SYSTEM_SUSPEND)		\

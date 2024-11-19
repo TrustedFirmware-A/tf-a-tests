@@ -43,6 +43,7 @@ REALM_SOURCES += lib/${ARCH}/cache_helpers.S				\
 	lib/${ARCH}/misc_helpers.S					\
 	lib/smc/${ARCH}/asm_smc.S					\
 	lib/smc/${ARCH}/smc.c						\
+	lib/exceptions/${ARCH}/serror.c					\
 	lib/exceptions/${ARCH}/sync.c					\
 	lib/locks/${ARCH}/spinlock.S					\
 	lib/delay/delay.c						\

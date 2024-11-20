@@ -7,6 +7,139 @@ Firmware-A version for simplicity. At any point in time, TF-A Tests version
 Tests are not guaranteed to be compatible. This also means that a version
 upgrade on the TF-A-Tests side might not necessarily introduce any new feature.
 
+Version 2.12
+------------
+
+New features
+^^^^^^^^^^^^
+
+-  More tests are made available in this release to help validate the
+   functionalities in the following areas:
+
+   - FF-A
+   - Realm Management Extension
+   - EL3 Runtime
+   - New Platform ports
+
+TFTF
+^^^^
+
+- SPM/FF-A Testing:
+
+    - Added tests to attest SPMC handles GPF in memory sharing ABIs:
+
+        - FFA_MEM_RETRIEVE_REQ
+        - FFA_MEM_FRAG_RX/TX
+        - FFA_MEM_RELINQUISH
+
+    - Added tests using the SMC64 ABI version for the FF-A memory management
+      interfaces.
+    - Tests to attest the SPMC is doing the necessary context management
+      of SME registers.
+    - Check that SRI delay flag use from normal world results in an error.
+    - FF-A Setup and discovery interfaces:
+
+        - FFA_VERSION called restricted to be used until first FF-A call,
+          from a given endpoint is handled.
+        - FFA_FEATURES tests changed to cater for feature return based on
+          EL of the FF-A endpoint, and the security state it relates to.
+        - FFA_PARTITION_INFO_GET changed to report support of indirect
+          messaging.
+
+  - New tests
+
+    - Added AMU counter restriction (RAZ) test.
+    - Added test to validate EL1 and EL2 registers during context switch.
+    - Added PCIe DOE library and tests.
+    - Added tests for newly supported features FEAT_FGT2, LS64_ACCDATA,
+      FEAT_Debugv8p9.
+    - Added test for 64-byte load/store instructions introduced by LS64.
+    - Added asymmetric feature testing for FEAT_SPE, FEAT_TRBE, and FEAT_TCR2.
+    - Added a new test suite supported by EL3 SPMC.
+    - Added SDEI tests for attempting to bind too many events.
+    - Added test suite to exercise SIMD context management with Cactus SP
+      (supported by EL3 SPMC).
+
+- Platforms
+
+    - Corstone-1000:
+
+        - Updated test skip list.
+
+    - FVP:
+
+        - Added PCIe support.
+
+    - Neoverse-RD:
+
+        - Defined naming convention for CSS macros.
+        - Introduced flash and ROS macros.
+        - Introduced timer and watchdog macros.
+        - Refactored header files for first gen platforms.
+        - refactored header files for second gen platforms.
+        - Removed deprecated header files.
+
+    - Versal-2:
+
+        - Added support for AMD Versal Gen 2 platform.
+        - Added AMD Versal Gen 2 documentation.
+
+- Miscellaneous:
+
+    - Added skeleton for asymmetric feature testing capability.
+    - Added asymmetric tests to skip when features are not present on a core.
+    - Added test to ensure arch timer in NWd is honored across world switch.
+    - Added test to confirm errata 2938996/2726228 workaround by checking
+      trbe_el1 access.
+    - Fixed GICD_ITARGETSR assertion to relax check on unicore systems.
+    - Fixed expect to print file and line number on failure for easier debugging.
+    - Fixed TRBE extension test to skip on Cortex-A520 and Cortex-X4 due to errata.
+    - Refactored to register undef_injection_handler only during register accesses
+      for better control over exceptions.
+    - Fixed firmware handoff register convention value to match updated spec.
+    - Updated toolchain requirements.
+
+Realm Management Extension
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    - Set number of num_bps and num_wps.
+    - Updated rsi_ipa_state_get() function.
+    - Increased maximum number of RECs.
+    - Use random start REC.
+    - Added specific tests for FEAT_LPA2 on RMI tests.
+    - Added support for FEAT_LPA2 to the Realm Extension tests.
+    - Added test for rtt_fold unassigned.
+    - Added test for rtt_fold assigned.
+    - Unified SIMD test cases.
+    - Fixed pauth exception test.
+    - Fix(realm): cater for removal of SH from rtte.
+    - Fixed RMI and RSI definitions to match RMM Specification 1.0-rel0-rc1.
+    - Fixed RMI commands arguments descriptions.
+    - Fixed calculation of Realm's REC index.
+    - Fixed host_realm_init_ipa_state()'s retry path.
+    - Fixed realm initialisation code.
+    - Separated pool creation from Realm creation helpers.
+    - Fixed tests passing with TRP but not with RMM.
+
+Cactus (Secure-EL1 FF-A test partition)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - Added support for Cactus SP to boot on EL3 SPMC.
+    - Added fix to skip computing linear core id.
+    - Fixed cactus_mm verbosity on some tests.
+
+Issues resolved since last release
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    - Added "build" directory dependency to ensure correct ordering
+      on slow systems.
+    - Fixed race condition in tests_list generation by using grouped target.
+    - Fixed virtual timer enablement by moving it to command handler.
+    - Fixed test case test_smccc_callee_preserved.
+    - Updated definitions for sysregs on older toolchains.
+    - Fixed undef_injection_handler to clarify it catches both undef injections
+  and EL2 register traps.
+
 Version 2.11
 ------------
 

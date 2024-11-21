@@ -140,41 +140,99 @@ unsigned int tftf_is_psci_pstate_format_original(void);
 void waitms(uint64_t ms);
 void waitus(uint64_t us);
 
+/* Define fields in common for smc_args and smc_args_ext */
+#define FID_COMMON_ARGS()						\
+	/*								\
+	 * Function identifier. Identifies which function is being	\
+	 * invoked.							\
+	 */								\
+	uint32_t	fid;						\
+									\
+	u_register_t	arg1;						\
+	u_register_t	arg2;						\
+	u_register_t	arg3;						\
+	u_register_t	arg4;						\
+	u_register_t	arg5;						\
+	u_register_t	arg6;						\
+	u_register_t	arg7;
+
+/* Define fields in common for smc_ret_values and smc_ret_values_ext */
+#define COMMON_RETVALS()						\
+	u_register_t	ret0;						\
+	u_register_t	ret1;						\
+	u_register_t	ret2;						\
+	u_register_t	ret3;						\
+	u_register_t	ret4;						\
+	u_register_t	ret5;						\
+	u_register_t	ret6;						\
+	u_register_t	ret7;
+
+
 /*
- * SMC calls take a function identifier and up to 7 arguments.
+ * SMC calls take a function identifier and up to 7 arguments if using x8
+ * as an address pointing to a structure where return values are stored.
  * Additionally, few SMC calls that originate from EL2 leverage the seventh
  * argument explicitly. Given that TFTF runs in EL2, we need to be able to
  * specify it.
  */
 typedef struct {
-	/* Function identifier. Identifies which function is being invoked. */
-	uint32_t	fid;
-
-	u_register_t	arg1;
-	u_register_t	arg2;
-	u_register_t	arg3;
-	u_register_t	arg4;
-	u_register_t	arg5;
-	u_register_t	arg6;
-	u_register_t	arg7;
+	FID_COMMON_ARGS()
 } smc_args;
 
-/* SMC calls can return up to 8 register values */
+/*
+ * If x8 is not used as an address pointing to a structure where the return
+ * values are stored, SMC calls take up to 17 arguments.
+ */
 typedef struct {
-	u_register_t	ret0;
-	u_register_t	ret1;
-	u_register_t	ret2;
-	u_register_t	ret3;
-	u_register_t	ret4;
-	u_register_t	ret5;
-	u_register_t	ret6;
-	u_register_t	ret7;
+	FID_COMMON_ARGS()
+	u_register_t	arg8;
+	u_register_t	arg9;
+	u_register_t	arg10;
+	u_register_t	arg11;
+	u_register_t	arg12;
+	u_register_t	arg13;
+	u_register_t	arg14;
+	u_register_t	arg15;
+	u_register_t	arg16;
+	u_register_t	arg17;
+} smc_args_ext;
+
+/*
+ * SMC calls can return up to 8 register values if x8 is used as an address
+ * pointing to a structure where the return values are stored.
+ */
+typedef struct {
+	COMMON_RETVALS()
 } smc_ret_values;
 
 /*
- * Trigger an SMC call.
+ * If x8 is not used as an address pointing to a structure where the return
+ * values are stored, SMC calls return up to 18 register values.
+ */
+typedef struct {
+	COMMON_RETVALS()
+	u_register_t	ret8;
+	u_register_t	ret9;
+	u_register_t	ret10;
+	u_register_t	ret11;
+	u_register_t	ret12;
+	u_register_t	ret13;
+	u_register_t	ret14;
+	u_register_t	ret15;
+	u_register_t	ret16;
+	u_register_t	ret17;
+} smc_ret_values_ext;
+
+/*
+ * Trigger an SMC call. Return values are stored in structure pointed by address
+ * stored in x8.
  */
 smc_ret_values tftf_smc(const smc_args *args);
+
+/*
+ * Trigger an SMC call. Return values are stored in structure pointed by 'ret'
+ */
+void tftf_smc_no_retval_x8(const smc_args_ext *args, smc_ret_values_ext *ret);
 
 /* Assembler routine to trigger a SMC call. */
 smc_ret_values asm_tftf_smc64(uint32_t fid, u_register_t arg1, u_register_t arg2,
@@ -182,6 +240,9 @@ smc_ret_values asm_tftf_smc64(uint32_t fid, u_register_t arg1, u_register_t arg2
 			      u_register_t arg5, u_register_t arg6,
 			      u_register_t arg7);
 
+/* Assembler routine to trigger a SMC call without smc_ret_values in x8. */
+u_register_t asm_tftf_smc64_no_retval_x8(const smc_args_ext *args,
+					  smc_ret_values_ext *ret);
 /*
  * Update the SVE hint for the current CPU. Any SMC call made through tftf_smc
  * will update the SVE hint bit in the SMC Function ID.

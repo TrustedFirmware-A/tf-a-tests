@@ -21,7 +21,7 @@
 	exception-level = <1>; /* S-EL0 */
 	execution-state = <0>; /* AARCH64 */
 	load-address = <0x7600000>;
-	entrypoint-offset = <0x00004000>;
+	entrypoint-offset = <0x00002000>;
 	boot-order = <3>;
 	messaging-method = <3>; /* Direct messaging only */
 

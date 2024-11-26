@@ -432,6 +432,11 @@
 /* ID_AA64MMFR3_EL1 definitions */
 #define ID_AA64MMFR3_EL1			S3_0_C0_C7_3
 
+#define ID_AA64MMFR3_EL1_D128_SHIFT		U(32)
+#define ID_AA64MMFR3_EL1_D128_MASK		ULL(0xf)
+#define ID_AA64MMFR3_EL1_D128_WIDTH		U(4)
+#define ID_AA64MMFR3_EL1_D128_SUPPORTED		ULL(0x1)
+
 #define ID_AA64MMFR3_EL1_S2POE_SHIFT		U(20)
 #define ID_AA64MMFR3_EL1_S2POE_MASK		ULL(0xf)
 #define ID_AA64MMFR3_EL1_S2POE_WIDTH		U(4)
@@ -453,7 +458,9 @@
 #define ID_AA64MMFR3_EL1_S1PIE_SUPPORTED	ULL(0x1)
 
 #define ID_AA64MMFR3_EL1_SCTLRX_SHIFT		U(4)
+#define ID_AA64MMFR3_EL1_SCTLRX_MASK		ULL(0xf)
 #define ID_AA64MMFR3_EL1_SCTLRX_WIDTH		ULL(0x4)
+#define ID_AA64MMFR3_EL1_SCTLR2_SUPPORTED	ULL(0x1)
 
 #define ID_AA64MMFR3_EL1_TCRX_SHIFT		U(0)
 #define ID_AA64MMFR3_EL1_TCRX_MASK		ULL(0xf)
@@ -464,6 +471,11 @@
 #define ID_AA64PFR1_EL1_DF2_SHIFT		U(56)
 #define ID_AA64PFR1_EL1_DF2_WIDTH		U(4)
 #define ID_AA64PFR1_EL1_DF2_MASK		(0xf << ID_AA64PFR1_EL1_DF2_SHIFT)
+
+#define ID_AA64PFR1_EL1_THE_SHIFT		U(48)
+#define ID_AA64PFR1_EL1_THE_MASK		ULL(0xf)
+#define ID_AA64PFR1_EL1_THE_WIDTH		U(4)
+#define ID_AA64PFR1_EL1_THE_SUPPORTED		ULL(1)
 
 #define ID_AA64PFR1_EL1_GCS_SHIFT		U(44)
 #define ID_AA64PFR1_EL1_GCS_MASK		ULL(0xf)
@@ -571,7 +583,8 @@
 #define SCTLR_DSSBS_BIT		(ULL(1) << 44)
 #define SCTLR_RESET_VAL		SCTLR_EL3_RES1
 
-/* SCTLR2_EL1 register definitions */
+/* SCTLR2 register definitions */
+#define SCTLR2_EL2		S3_4_C1_C0_3
 #define SCTLR2_EL1		S3_0_C1_C0_3
 
 #define SCTLR2_NMEA_BIT		(UL(1) << 2)
@@ -1417,6 +1430,12 @@
  * Armv8.9 - Breakpoint and Watchpoint Selection Register
  ******************************************************************************/
 #define MDSELR_EL1		S2_0_C0_C4_2
+
+/******************************************************************************
+ * Armv8.9 - Translation Hardening Extension Registers
+ ******************************************************************************/
+#define RCWMASK_EL1		S3_0_C13_C0_6
+#define RCWSMASK_EL1		S3_0_C13_C0_3
 
 /*******************************************************************************
  * Armv9.0 - Trace Buffer Extension System Registers

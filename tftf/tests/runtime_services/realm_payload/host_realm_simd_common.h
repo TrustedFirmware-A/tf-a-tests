@@ -4,7 +4,7 @@
  */
 
 #ifndef HOST_REALM_COMMON_H
-#define HOST_REALM_COMMON_h
+#define HOST_REALM_COMMON_H
 
 #define NS_NORMAL_SVE		0x1U
 #define NS_STREAMING_SVE	0x2U

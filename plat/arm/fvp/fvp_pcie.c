@@ -11,7 +11,7 @@
 
 CASSERT(PLATFORM_NUM_ECAM != 0, PLATFORM_NUM_ECAM_is_zero);
 
-const pcie_info_table_t fvp_pcie_cfg = {
+const struct pcie_info_table fvp_pcie_cfg = {
 	.num_entries = PLATFORM_NUM_ECAM,
 	.block[0] = {
 		PLATFORM_PCIE_ECAM_BASE_ADDR_0,
@@ -21,7 +21,7 @@ const pcie_info_table_t fvp_pcie_cfg = {
 	}
 };
 
-const pcie_info_table_t *plat_pcie_get_info_table(void)
+const struct pcie_info_table *plat_pcie_get_info_table(void)
 {
 	return &fvp_pcie_cfg;
 }

@@ -90,12 +90,8 @@ $(eval $(call add_define,NS_BL2U_DEFINES,PA_SIZE))
 $(eval $(call add_define,TFTF_DEFINES,PA_SIZE))
 $(eval $(call add_define,REALM_DEFINES,PA_SIZE))
 
-ifeq ($(TESTS),pcie-doe)
-USE_PCIE=1
-$(eval $(call add_define,TFTF_DEFINES,USE_PCIE))
-endif
-
-PLAT_INCLUDES	+=	-Iplat/arm/fvp/include/
+PLAT_INCLUDES	+=	-Iplat/arm/fvp/include/				\
+			-Iinclude/lib/pcie/
 
 PLAT_SOURCES	:=	drivers/arm/gic/arm_gic_v2v3.c			\
 			drivers/arm/gic/gic_v2.c			\
@@ -104,6 +100,7 @@ PLAT_SOURCES	:=	drivers/arm/gic/arm_gic_v2v3.c			\
 			drivers/arm/timer/private_timer.c		\
 			drivers/arm/timer/system_timer.c		\
 			plat/arm/fvp/${ARCH}/plat_helpers.S		\
+			plat/arm/fvp/fvp_pcie.c				\
 			plat/arm/fvp/fvp_pwr_state.c			\
 			plat/arm/fvp/fvp_topology.c			\
 			plat/arm/fvp/fvp_mem_prot.c			\

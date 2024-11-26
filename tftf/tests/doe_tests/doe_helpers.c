@@ -13,12 +13,15 @@
 #include <pcie_doe.h>
 #include <spdm.h>
 
-#include <platform_pcie.h>
-
 void pcie_init(void)
 {
+	static bool is_init;
+
 	/* Create PCIe table and enumeration */
-	pcie_create_info_table();
+	if (!is_init) {
+		pcie_create_info_table();
+		is_init = true;
+	}
 }
 
 /*
@@ -113,7 +116,7 @@ int get_spdm_version(uint32_t bdf, uint32_t doe_cap_base)
 			sizeof(ver_resp->version_number_entry_count));
 
 	while (entry_count-- != 0) {
-		spdm_version_number_t ver = *ver_ptr++;
+		spdm_version_number_t ver __unused = *ver_ptr++;
 
 		INFO("SPDM v%llu.%llu.%llu.%llu\n",
 			EXTRACT(SPDM_VER_MAJOR, ver),

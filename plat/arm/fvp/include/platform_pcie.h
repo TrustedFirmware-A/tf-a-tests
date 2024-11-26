@@ -19,6 +19,4 @@
 #define PLATFORM_PCIE_START_BUS_NUM_0	0x0
 #define PLATFORM_PCIE_END_BUS_NUM_0	0xFF
 
-const pcie_info_table_t *plat_pcie_get_info_table(void);
-
 #endif	/* PLATFORM_PCIE_H */

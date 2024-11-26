@@ -11,6 +11,9 @@
 #include <stdint.h>
 #include <utils_def.h>
 
+/* platforms need to ensure that number of entries is less that this value */
+#define MAX_PCIE_INFO_ENTRIES 5
+
 typedef struct {
 	unsigned long ecam_base;	/* ECAM base address */
 	unsigned int segment_num;	/* Segment number of this ECAM */
@@ -18,10 +21,10 @@ typedef struct {
 	unsigned int end_bus_num;	/* Last bus number */
 } pcie_info_block_t;
 
-typedef struct {
+struct pcie_info_table{
 	unsigned int num_entries;	/* Number of entries */
-	pcie_info_block_t block[];
-} pcie_info_table_t;
+	pcie_info_block_t block[MAX_PCIE_INFO_ENTRIES];
+};
 
 typedef struct {
 	uint32_t bdf;

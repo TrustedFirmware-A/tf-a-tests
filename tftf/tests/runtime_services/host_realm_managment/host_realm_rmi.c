@@ -482,12 +482,12 @@ static u_register_t host_realm_create_rtt_aux_levels(struct realm *realm,
 				return REALM_ERROR;
 			}
 		}
-		ipa_align = ALIGN_DOWN(map_addr, RTT_MAP_SIZE(level - 1));
-		ret = host_rmi_rtt_aux_create(realm->rd, rtt, ipa_align, (u_register_t)level,
+		ipa_align = ALIGN_DOWN(map_addr, RTT_MAP_SIZE(level <= 0 ? level : level - 1));
+		ret = host_rmi_rtt_aux_create(realm->rd, rtt, ipa_align, level,
 				tree_index);
 		if (ret != RMI_SUCCESS) {
-			ERROR("%s() failed, rtt=0x%lx ret=0x%lx\n",
-				"host_realm_rtt_aux_create", rtt, ret);
+			ERROR("%s() failed, map_addr =0x%lx ipa_align=0x%lx level=%lx ret=0x%lx\n",
+				"host_realm_rtt_aux_create", map_addr, ipa_align, level, ret);
 			host_rmi_granule_undelegate(rtt);
 			page_free(rtt);
 			return REALM_ERROR;
@@ -551,7 +551,7 @@ u_register_t host_realm_aux_map_protected_data(struct realm *realm,
 			level = (long)ulevel;
 
 			ret = host_realm_create_rtt_aux_levels(realm, map_addr,
-							 (u_register_t)level,
+							 level,
 							 3U, tree_index);
 			if (ret != RMI_SUCCESS) {
 				ERROR("%s() failed, ret=0x%lx line=%u\n",
@@ -1700,6 +1700,126 @@ unsigned int host_realm_find_rec_by_mpidr(unsigned int mpidr, struct realm *real
 	return MAX_REC_COUNT;
 }
 
+/* Check if adr is in range of any of the Plane Images */
+static bool is_adr_in_par(struct realm *realm, u_register_t addr)
+{
+	if ((addr >= realm->par_base) && (addr <
+			(realm->par_base + (realm->par_size * (realm->num_aux_planes + 1U))))) {
+		return true;
+	}
+	return false;
+}
+
+/* Handle Plane permission falut, return true to return to realm, false to host */
+static bool host_realm_handle_perm_fault(struct realm *realm, struct rmi_rec_run *run)
+{
+	/*
+	 * If exception is not in primary rtt
+	 * Map Adr in failing Aux RTT and re-enter rec
+	 * Validate faulting adr is in Realm payload area
+	 * Note - PlaneN uses Primary RTT tree index 0
+	 */
+
+	u_register_t fail_index;
+	u_register_t level_pri;
+	u_register_t state;
+	u_register_t ripas;
+	u_register_t ret;
+
+	VERBOSE("host aux_map 0x%lx rtt 0x%lx\n",
+			run->exit.hpfar, run->exit.rtt_tree);
+
+	ret = host_realm_aux_map_protected_data(realm,
+			run->exit.hpfar << 8U,
+			PAGE_SIZE,
+			run->exit.rtt_tree,
+			&fail_index, &level_pri, &state, &ripas);
+
+	if (ret != REALM_SUCCESS) {
+		ERROR("host_realm_aux_map_protected_data failed\n");
+		return false;
+	}
+
+	/* re-enter realm */
+	return true;
+}
+
+/* Handle RSI_MEM_SET_PERM_INDEX by P0, return true to return to realm, false to return to host */
+static bool host_realm_handle_s2ap_change(struct realm *realm, struct rmi_rec_run *run)
+{
+
+
+	u_register_t new_base = run->exit.s2ap_base;
+	u_register_t top = run->exit.s2ap_top;
+	u_register_t rtt_tree, ret;
+	bool ret1 = true;
+
+	while (new_base != top) {
+		ret = host_rmi_rtt_set_s2ap(realm->rd,
+				    realm->rec[0U],
+				    new_base,
+				    top, &new_base,
+				    &rtt_tree);
+
+		if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT_AUX) {
+
+			int8_t ulevel = RMI_RETURN_INDEX(ret);
+			long level = (long)ulevel;
+
+			assert(rtt_tree != PRIMARY_RTT_INDEX);
+
+			/* create missing aux rtt level */
+			VERBOSE("set s2ap fail missing aux rtt=%lx 0x%lx 0x%lx\n",
+					rtt_tree, new_base, top);
+
+			ret = host_realm_create_rtt_aux_levels(realm, new_base,
+						level,
+						level + 1, rtt_tree);
+			if (ret != RMI_SUCCESS) {
+				INFO("host_rmi_create_rtt_aux_levels \
+						failed 0x%lx\n", new_base);
+				ret1 = false;
+				break;
+			}
+
+			/* Retry RMI_RTT_SET_S2AP */
+			continue;
+		} else if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
+
+			int8_t ulevel = RMI_RETURN_INDEX(ret);
+			long level = (long)ulevel;
+
+			assert(rtt_tree == PRIMARY_RTT_INDEX);
+			INFO("set s2ap failed missing rtt=0x%lx 0x%lx 0x%lx\n\n",
+						rtt_tree, new_base, top);
+
+			/* create missing rtt level */
+			ret = host_rmi_create_rtt_levels(realm, new_base,
+							level,
+							level + 1);
+
+			if (ret != RMI_SUCCESS) {
+				INFO("host_rmi_create_rtt_levels \
+							failed 0x%lx\n", new_base);
+				ret1 = false;
+				break;
+			}
+
+			/* Retry RMI_RTT_SET_S2AP */
+			continue;
+		} else if (RMI_RETURN_STATUS(ret) != RMI_SUCCESS) {
+			INFO("host set s2ap failed ret=0x%lx\n",
+					RMI_RETURN_STATUS(ret));
+			ret1 = false;
+			break;
+		}
+	}
+
+	/* re-enter realm */
+	return ret1;
+}
+
+
 u_register_t host_realm_rec_enter(struct realm *realm,
 				  u_register_t *exit_reason,
 				  unsigned int *host_call_result,
@@ -1732,6 +1852,28 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 				DFSC_GPF_DABORT) {
 				ERROR("DFSC_GPF_DABORT\n");
 			}
+		}
+
+		if ((run->exit.exit_reason == RMI_EXIT_SYNC) &&
+		     is_adr_in_par(realm, (run->exit.hpfar << 8U)) &&
+		     (((((run->exit.esr & ISS_FSC_MASK) >= FSC_L0_TRANS_FAULT) &&
+		     ((run->exit.esr & ISS_FSC_MASK) <= FSC_L3_TRANS_FAULT)) ||
+		     ((run->exit.esr & ISS_FSC_MASK) == FSC_L_MINUS1_TRANS_FAULT))) &&
+		     !realm->rtt_tree_single &&
+		     (realm->num_aux_planes > 0U)) {
+
+			re_enter_rec = host_realm_handle_perm_fault(realm, run);
+		}
+
+		/*
+		 * P0 issued RSI_MEM_SET_PERM_INDEX call
+		 * Validate base is in range of realm payload area
+		 */
+		if ((run->exit.exit_reason == RMI_EXIT_S2AP_CHANGE) &&
+		    is_adr_in_par(realm, run->exit.s2ap_base) &&
+		    (realm->num_aux_planes > 0U)) {
+
+			re_enter_rec = host_realm_handle_s2ap_change(realm, run);
 		}
 
 		if (ret != RMI_SUCCESS) {

@@ -1037,13 +1037,22 @@
 #define EC_AARCH32_FP			U(0x28)
 #define EC_AARCH64_FP			U(0x2c)
 #define EC_SERROR			U(0x2f)
+
+/* Common DFSC/IFSC code */
+#define ISS_FSC_MASK			U(0x3f)
+#define FSC_L0_ADR_SIZE_FAULT		U(0)
+#define FSC_L0_TRANS_FAULT		U(4)
+#define FSC_L1_TRANS_FAULT		U(5)
+#define FSC_L2_TRANS_FAULT		U(6)
+#define FSC_L3_TRANS_FAULT		U(7)
+#define FSC_L_MINUS1_TRANS_FAULT	U(0x2B)
+#define FSC_L0_PERM_FAULT		U(0xC)
+#define FSC_L1_PERM_FAULT		U(0xD)
+#define FSC_L2_PERM_FAULT		U(0xE)
+#define FSC_L3_PERM_FAULT		U(0xF)
+
 /* Data Fault Status code, not all error codes listed */
 #define ISS_DFSC_MASK			U(0x3f)
-#define DFSC_L0_ADR_SIZE_FAULT		U(0)
-#define DFSC_L0_TRANS_FAULT		U(4)
-#define DFSC_L1_TRANS_FAULT		U(5)
-#define DFSC_L2_TRANS_FAULT		U(6)
-#define DFSC_L3_TRANS_FAULT		U(7)
 #define DFSC_NO_WALK_SEA		U(0x10)
 #define DFSC_L0_SEA			U(0x14)
 #define DFSC_L1_SEA			U(0x15)
@@ -1054,11 +1063,6 @@
 
 /* Instr Fault Status code, not all error codes listed */
 #define ISS_IFSC_MASK			U(0x3f)
-#define IFSC_L0_ADR_SIZE_FAULT		U(0)
-#define IFSC_L0_TRANS_FAULT		U(4)
-#define IFSC_L1_TRANS_FAULT		U(5)
-#define IFSC_L2_TRANS_FAULT		U(6)
-#define IFSC_L3_TRANS_FAULT		U(7)
 #define IFSC_NO_WALK_SEA		U(0x10)
 #define IFSC_L0_SEA			U(0x24)
 #define IFSC_L1_SEA			U(0x25)

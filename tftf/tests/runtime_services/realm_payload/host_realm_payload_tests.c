@@ -714,8 +714,8 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	/* ESR.EC == 0b100000 Instruction Abort from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 			|| (EC_BITS(run->exit.esr) != EC_IABORT_LOWER_EL)
-			|| ((run->exit.esr & ISS_IFSC_MASK) < IFSC_L0_TRANS_FAULT)
-			|| ((run->exit.esr & ISS_IFSC_MASK) > IFSC_L3_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_IFSC_MASK) < FSC_L0_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_IFSC_MASK) > FSC_L3_TRANS_FAULT)
 			|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault ESR=0x%lx\n", run->exit.esr);
 		goto undelegate_destroy;
@@ -732,8 +732,8 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	/* ESR.EC == 0b100100 Data Abort exception from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_DFSC_MASK) < DFSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_DFSC_MASK) > DFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault\n");
 		goto undelegate_destroy;
@@ -824,8 +824,8 @@ test_result_t host_realm_abort_unassigned_ram(void)
 	/* ESR.EC == 0b100000 Instruction Abort from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 			|| (EC_BITS(run->exit.esr) != EC_IABORT_LOWER_EL)
-			|| ((run->exit.esr & ISS_IFSC_MASK) < IFSC_L0_TRANS_FAULT)
-			|| ((run->exit.esr & ISS_IFSC_MASK) > IFSC_L3_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_IFSC_MASK) < FSC_L0_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_IFSC_MASK) > FSC_L3_TRANS_FAULT)
 			|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault ESR=0x%lx\n", run->exit.esr);
 		goto destroy_realm;
@@ -841,8 +841,8 @@ test_result_t host_realm_abort_unassigned_ram(void)
 	/* ESR.EC == 0b100100 Data Abort exception from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_DFSC_MASK) < DFSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_DFSC_MASK) > DFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault ESR=0x%lx\n", run->exit.esr);
 		goto destroy_realm;
@@ -957,8 +957,8 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	/* ESR.EC == 0b100000 Instruction Abort from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_IABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_IFSC_MASK) < IFSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_IFSC_MASK) > IFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_IFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_IFSC_MASK) > FSC_L3_TRANS_FAULT)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault ESR=0x%lx\n", run->exit.esr);
 		goto destroy_data;
@@ -974,8 +974,8 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	/* ESR.EC == 0b100100 Data Abort exception from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_DFSC_MASK) < DFSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_DFSC_MASK) > DFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault ESR=0x%lx\n", run->exit.esr);
 		goto destroy_data;
@@ -1215,8 +1215,8 @@ test_result_t host_realm_sea_unprotected(void)
 
 	if (!ret1 || (run->exit.hpfar >> 4U) != (base_ipa >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_DFSC_MASK) < DFSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_DFSC_MASK) > DFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
 		ERROR("Rec1 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
 				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
@@ -1818,7 +1818,7 @@ test_result_t host_realm_sea_adr_fault(void)
 
 	/* get ESR set by Realm exception handler */
 	esr = host_shared_data_get_realm_val(&realm, PRIMARY_PLANE_ID, 2U, HOST_ARG2_INDEX);
-	if (((esr & ISS_DFSC_MASK) != DFSC_L0_ADR_SIZE_FAULT)
+	if (((esr & ISS_DFSC_MASK) != FSC_L0_ADR_SIZE_FAULT)
 			|| (EC_BITS(esr) != EC_DABORT_CUR_EL)
 			|| ((esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
 		ERROR("Rec2 incorrect ESR=0x%lx\n", esr);
@@ -1838,7 +1838,7 @@ test_result_t host_realm_sea_adr_fault(void)
 
 	/* get ESR set by Realm exception handler */
 	esr = host_shared_data_get_realm_val(&realm, PRIMARY_PLANE_ID, 3U, HOST_ARG2_INDEX);
-	if (((esr & ISS_IFSC_MASK) != IFSC_L0_ADR_SIZE_FAULT)
+	if (((esr & ISS_IFSC_MASK) != FSC_L0_ADR_SIZE_FAULT)
 			|| (EC_BITS(esr) != EC_IABORT_CUR_EL)
 			|| ((esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
 		ERROR("Rec3 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",

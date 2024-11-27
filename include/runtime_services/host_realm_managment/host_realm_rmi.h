@@ -1011,6 +1011,8 @@ struct realm {
 	unsigned short   vmid;
 	enum realm_state state;
 	long start_level;
+	u_register_t     aux_rtt_addr[MAX_AUX_PLANE_COUNT];
+	unsigned short   aux_vmid[MAX_AUX_PLANE_COUNT];
 };
 
 /* RMI/SMC */

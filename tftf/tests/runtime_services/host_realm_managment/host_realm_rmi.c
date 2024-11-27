@@ -392,7 +392,7 @@ u_register_t host_realm_delegate_map_protected_data(bool unknown,
 	u_register_t phys = target_pa;
 	u_register_t map_addr = target_pa;
 
-	if (!IS_ALIGNED(map_addr, map_size)) {
+	if (!IS_ALIGNED(map_addr, PAGE_SIZE)) {
 		return REALM_ERROR;
 	}
 
@@ -704,7 +704,7 @@ u_register_t host_realm_create(struct realm *realm)
 {
 	struct rmi_realm_params *params;
 	u_register_t ret;
-	unsigned int count;
+	unsigned int count, rtt_page_count = 0U;
 
 	realm->par_size = REALM_MAX_LOAD_IMG_SIZE;
 
@@ -724,11 +724,16 @@ u_register_t host_realm_create(struct realm *realm)
 		}
 	}
 
+	assert(realm->num_aux_planes <= MAX_AUX_PLANE_COUNT);
+
 	/*
-	 * Allocate memory for PAR - Realm image. Granule delegation
+	 * Allocate memory for PAR - Realm image for each Plane.
+	 * Granule delegation
 	 * of PAR will be performed during rtt creation.
 	 */
-	realm->par_base = (u_register_t)page_alloc(realm->par_size);
+	realm->par_base = (u_register_t)page_alloc((realm->par_size) *
+			(realm->num_aux_planes + 1U));
+
 	if (realm->par_base == HEAP_NULL_PTR) {
 		ERROR("page_alloc failed, base=0x%lx, size=0x%lx\n",
 			  realm->par_base, realm->par_size);
@@ -736,6 +741,15 @@ u_register_t host_realm_create(struct realm *realm)
 	}
 
 	INFO("Realm start adr=0x%lx\n", realm->par_base);
+
+	/* Allocate memory for params */
+	params = (struct rmi_realm_params *)page_alloc(PAGE_SIZE);
+	if (params == NULL) {
+		ERROR("Failed to allocate memory for params\n");
+		goto pool_reset;
+	}
+
+	memset(params, 0, PAGE_SIZE);
 
 	/* Allocate and delegate RD */
 	realm->rd = (u_register_t)page_alloc(PAGE_SIZE);
@@ -752,27 +766,40 @@ u_register_t host_realm_create(struct realm *realm)
 	}
 
 	/* Allocate and delegate RTT */
-	realm->rtt_addr = (u_register_t)page_alloc(PAGE_SIZE);
+	if (realm->rtt_tree_single) {
+		rtt_page_count = 1U;
+	} else {
+		/* Primary + AUX RTT Tree */
+		rtt_page_count = (realm->num_aux_planes + 1U);
+	}
+
+	realm->rtt_addr = (u_register_t)page_alloc(rtt_page_count * PAGE_SIZE);
+
 	if (realm->rtt_addr == HEAP_NULL_PTR) {
 		ERROR("Failed to allocate memory for rtt_addr\n");
 		goto err_undelegate_rd;
 	} else {
-		ret = host_rmi_granule_delegate(realm->rtt_addr);
-		if (ret != RMI_SUCCESS) {
-			ERROR("%s() failed, rtt_addr=0x%lx ret=0x%lx\n",
+		for (unsigned int i = 0U; i < rtt_page_count; i++) {
+			ret = host_rmi_granule_delegate(realm->rtt_addr + (i * PAGE_SIZE));
+
+			if (ret != RMI_SUCCESS) {
+				ERROR("%s() failed, rtt_addr=0x%lx ret=0x%lx\n",
 				"host_rmi_granule_delegate", realm->rtt_addr, ret);
-			goto err_free_rtt;
+
+				for (unsigned int j = 0U; j < i; j++) {
+					host_rmi_granule_undelegate(realm->rtt_addr
+							+ (i * PAGE_SIZE));
+				}
+
+				goto err_free_rtt;
+			}
+
+			if (i > 0U && !realm->rtt_tree_single) {
+				realm->aux_rtt_addr[i - 1] = realm->rtt_addr + (i * PAGE_SIZE);
+				params->aux_rtt_base[i - 1] = realm->rtt_addr + (i * PAGE_SIZE);
+			}
 		}
 	}
-
-	/* Allocate memory for params */
-	params = (struct rmi_realm_params *)page_alloc(PAGE_SIZE);
-	if (params == NULL) {
-		ERROR("Failed to allocate memory for params\n");
-		goto err_undelegate_rtt;
-	}
-
-	memset((char *)params, 0U, PAGE_SIZE);
 
 	/* Populate params */
 	params->s2sz = EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
@@ -813,12 +840,18 @@ u_register_t host_realm_create(struct realm *realm)
 	}
 	params->num_aux_planes = realm->num_aux_planes;
 
+	/* Allocate VMID for all planes */
+	for (unsigned int i = 0U; i < realm->num_aux_planes; i++) {
+		params->aux_vmid[i] = (unsigned short)(vmid++);
+		realm->aux_vmid[i] = params->aux_vmid[i];
+	}
+
 	/* Create Realm */
 	ret = host_rmi_realm_create(realm->rd, (u_register_t)params);
 	if (ret != RMI_SUCCESS) {
 		ERROR("%s() failed, rd=0x%lx ret=0x%lx\n",
 			"host_rmi_realm_create", realm->rd, ret);
-		goto err_free_params;
+		goto err_free_vmid;
 	}
 
 	realm->vmid = params->vmid;
@@ -827,7 +860,7 @@ u_register_t host_realm_create(struct realm *realm)
 		ERROR("%s() failed, rd=0x%lx ret=0x%lx\n",
 			"host_rmi_rec_aux_count", realm->rd, ret);
 		host_rmi_realm_destroy(realm->rd);
-		goto err_free_params;
+		goto err_free_vmid;
 	}
 
 	realm->state = REALM_STATE_NEW;
@@ -836,14 +869,10 @@ u_register_t host_realm_create(struct realm *realm)
 	page_free((u_register_t)params);
 	return REALM_SUCCESS;
 
-err_free_params:
-	page_free((u_register_t)params);
-
-err_undelegate_rtt:
-	ret = host_rmi_granule_undelegate(realm->rtt_addr);
-	if (ret != RMI_SUCCESS) {
-		WARN("%s() failed, rtt_addr=0x%lx ret=0x%lx\n",
-			"host_rmi_granule_undelegate", realm->rtt_addr, ret);
+err_free_vmid:
+	/* Free VMID */
+	for (unsigned int i = 0U; i <= realm->num_aux_planes; i++) {
+		vmid--;
 	}
 
 err_free_rtt:
@@ -855,8 +884,19 @@ err_undelegate_rd:
 		WARN("%s() failed, rd=0x%lx ret=0x%lx\n",
 			"host_rmi_granule_undelegate", realm->rd, ret);
 	}
+
 err_free_rd:
 	page_free(realm->rd);
+
+	page_free((u_register_t)params);
+
+	for (unsigned int i = 0U; i < rtt_page_count; i++) {
+		ret = host_rmi_granule_undelegate(realm->rtt_addr + (i * PAGE_SIZE));
+		if (ret != RMI_SUCCESS) {
+			WARN("%s() failed, rtt_addr=0x%lx ret=0x%lx\n",
+			"host_rmi_granule_undelegate", realm->rtt_addr + (i * PAGE_SIZE), ret);
+		}
+	}
 
 err_free_par:
 	page_free(realm->par_base);
@@ -880,22 +920,23 @@ u_register_t host_realm_map_payload_image(struct realm *realm,
 					  u_register_t realm_payload_adr)
 {
 	u_register_t src_pa = realm_payload_adr;
-	u_register_t i = 0UL;
 	u_register_t ret;
 
 	/* MAP image regions */
-	while (i < (realm->par_size / PAGE_SIZE)) {
+	/* Copy Plane 0-N Images */
+
+	for (unsigned int j = 0U; j <= realm->num_aux_planes; j++) {
 		ret = host_realm_delegate_map_protected_data(false, realm,
-						realm->par_base + i * PAGE_SIZE,
-						PAGE_SIZE,
-						src_pa + i * PAGE_SIZE);
+					realm->par_base + (j * realm->par_size),
+					realm->par_size,
+					src_pa);
+
 		if (ret != RMI_SUCCESS) {
-			ERROR("%s() failed, par_base=0x%lx ret=0x%lx\n",
-				"host_realm_delegate_map_protected_data",
-				realm->par_base, ret);
+			ERROR("%s() failed par_base=0x%lx size=0x%lx j=%u ret=0x%lx\n",
+			"host_realm_delegate_map_protected_data",
+			realm->par_base, realm->par_size, j, ret);
 			return REALM_ERROR;
 		}
-		i++;
 	}
 
 	return REALM_SUCCESS;
@@ -1136,6 +1177,7 @@ u_register_t host_realm_activate(struct realm *realm)
 u_register_t host_realm_destroy(struct realm *realm)
 {
 	u_register_t ret;
+	unsigned int rtt_page_count;
 	long rtt_start_level = realm->start_level;
 
 	if (realm->state == REALM_STATE_NULL) {
@@ -1214,11 +1256,24 @@ u_register_t host_realm_destroy(struct realm *realm)
 		return REALM_ERROR;
 	}
 
-	ret = host_rmi_granule_undelegate(realm->rtt_addr);
-	if (ret != RMI_SUCCESS) {
-		ERROR("%s() failed, rtt_addr=0x%lx ret=0x%lx\n",
-			"host_rmi_granule_undelegate", realm->rtt_addr, ret);
-		return REALM_ERROR;
+	if (realm->rtt_tree_single) {
+		rtt_page_count = 1U;
+	} else {
+		rtt_page_count = realm->num_aux_planes + 1U;
+	}
+
+	for (unsigned int i = 0U; i < rtt_page_count; i++) {
+		ret = host_rmi_granule_undelegate(realm->rtt_addr + (i * PAGE_SIZE));
+		if (ret != RMI_SUCCESS) {
+			ERROR("%s() failed, rtt_addr=0x%lx ret=0x%lx\n",
+			"host_rmi_granule_undelegate", realm->rtt_addr + (i * PAGE_SIZE), ret);
+			return REALM_ERROR;
+		}
+	}
+
+	/* Free VMID */
+	for (unsigned int i = 0U; i <= realm->num_aux_planes; i++) {
+		vmid--;
 	}
 
 	page_free(realm->rd);

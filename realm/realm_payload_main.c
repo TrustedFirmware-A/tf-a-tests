@@ -270,7 +270,7 @@ void realm_payload_main(void)
 	/* No serror handler registered by default */
 	unregister_custom_serror_handler();
 
-	realm_set_shared_structure((host_shared_data_t *)realm_get_ns_buffer());
+	realm_set_shared_structure(realm_get_ns_buffer());
 
 	if (realm_get_my_shared_structure() != NULL) {
 		uint8_t cmd = realm_shared_data_get_my_realm_cmd();

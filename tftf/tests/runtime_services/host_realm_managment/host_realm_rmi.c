@@ -1340,25 +1340,74 @@ u_register_t host_realm_map_ns_shared(struct realm *realm,
 					u_register_t ns_shared_mem_adr,
 					u_register_t ns_shared_mem_size)
 {
-	u_register_t i = 0UL;
 	u_register_t ret;
 
 	realm->ipa_ns_buffer = ns_shared_mem_adr |
 			(1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
 			realm->rmm_feat_reg0) - 1));
 	realm->ns_buffer_size = ns_shared_mem_size;
+
 	/* MAP SHARED_NS region */
-	while (i < ns_shared_mem_size / PAGE_SIZE) {
-		ret = host_realm_map_unprotected(realm, ns_shared_mem_adr +
-						 (i * PAGE_SIZE), PAGE_SIZE);
+	for (unsigned int i = 0U; i < ns_shared_mem_size / PAGE_SIZE; i++) {
+		ret = host_realm_map_unprotected(realm,
+				ns_shared_mem_adr + (i * PAGE_SIZE),
+				PAGE_SIZE);
+
 		if (ret != RMI_SUCCESS) {
 			ERROR("%s() failed, par_base=0x%lx ret=0x%lx\n",
 				"host_realm_map_unprotected",
-				(ns_shared_mem_adr + i * PAGE_SIZE), ret);
+				(ns_shared_mem_adr + (i * PAGE_SIZE)), ret);
 			return REALM_ERROR;
 		}
-		i++;
 	}
+
+	/* AUX MAP NS buffer for all RTTs */
+	if (!realm->rtt_tree_single) {
+		for (unsigned int i = 0U; i < ns_shared_mem_size / PAGE_SIZE; i++) {
+			for (unsigned int j = 0U; j < realm->num_aux_planes; j++) {
+				u_register_t fail_index, level_pri, state;
+
+				ret = host_rmi_rtt_aux_map_unprotected(realm->rd,
+						realm->ipa_ns_buffer + (i * PAGE_SIZE),
+						j + 1, &fail_index, &level_pri, &state);
+
+				if (ret == RMI_SUCCESS) {
+					continue;
+				} else if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT_AUX) {
+
+					/* Create Level and retry */
+					int8_t ulevel = RMI_RETURN_INDEX(ret);
+					long level = (long)ulevel;
+
+					ret = host_realm_create_rtt_aux_levels(realm,
+							realm->ipa_ns_buffer +
+							(i * PAGE_SIZE),
+							level, 3, j + 1);
+
+					if (ret != RMI_SUCCESS) {
+						return REALM_ERROR;
+					}
+
+					ret = host_rmi_rtt_aux_map_unprotected(realm->rd,
+							realm->ipa_ns_buffer +
+							(i * PAGE_SIZE),
+							j + 1, &fail_index,
+							&level_pri, &state);
+
+					if (ret == RMI_SUCCESS) {
+						continue;
+					}
+				}
+
+				ERROR("%s() failed, par_base=0x%lx ret=0x%lx\n",
+						"host_realm_aux_map_unprotected",
+						(ns_shared_mem_adr), ret);
+				return REALM_ERROR;
+
+			}
+		}
+	}
+
 	return REALM_SUCCESS;
 }
 

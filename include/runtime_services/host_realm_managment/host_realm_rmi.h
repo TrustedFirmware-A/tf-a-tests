@@ -146,6 +146,30 @@
 
 /*
  * arg0 == RD address
+ * arg1 == RTT address
+ * arg2 == map address
+ * arg3 == level
+ * arg4 == RTT tree index
+ *
+ * ret0 == status/index
+ */
+#define RMI_RTT_AUX_CREATE		SMC64_RMI_FID(U(0x2D))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == level
+ * arg3 == RTT tree index
+ *
+ * ret1 == Address (PA) of the RTT, if ret0 == RMI_SUCCESS
+ *         Otherwise, undefined.
+ * ret2 == Top of the non-live address region. Only valid
+ *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT_WALK, x)
+ */
+#define RMI_RTT_AUX_DESTROY		SMC64_RMI_FID(U(0x2E))
+
+/*
+ * arg0 == RD address
  * arg1 == map address
  * arg2 == level
  *
@@ -163,6 +187,31 @@
  * arg3 == s2tte
  */
 #define RMI_RTT_MAP_UNPROTECTED		SMC64_RMI_FID(U(0xF))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == RTT tree index
+ *
+ * ret0 == status/index
+ * ret1 == fail_index
+ * ret2 == primary level
+ * ret3 == state
+ * ret4 == ripas
+ */
+#define RMI_RTT_AUX_MAP_PROTECTED	SMC64_RMI_FID(U(0x30))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == RTT tree index
+ *
+ * ret0 == status/index
+ * ret1 == fail_index
+ * ret2 == primary level
+ * ret3 == state
+ */
+#define RMI_RTT_AUX_MAP_UNPROTECTED	SMC64_RMI_FID(U(0x31))
 
 /*
  * arg0 == RD address
@@ -185,6 +234,40 @@
 #define RMI_RTT_UNMAP_UNPROTECTED	SMC64_RMI_FID(U(0x12))
 
 /*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == RTT tree index
+ *
+ * ret0 == status/index
+ * ret1 == top
+ * ret2 == level
+ */
+#define RMI_RTT_AUX_UNMAP_PROTECTED	SMC64_RMI_FID(U(0x33))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == RTT tree index
+ *
+ * ret0 == status/index
+ * ret1 == top
+ * ret2 == level
+ */
+#define RMI_RTT_AUX_UNMAP_UNPROTECTED	SMC64_RMI_FID(U(0x34))
+
+/*
+ * arg0 == RD address
+ * arg1 == target rec
+ * arg2 == base adr
+ * arg3 == top adr
+ *
+ * ret0 == return code
+ * ret1 == Top IPA of range whose S2AP was modified
+ * ret2 == Index of RTT tree in which base alignment check failed
+ */
+#define RMI_RTT_SET_S2AP		SMC64_RMI_FID(U(0x3B))
+
+/*
  * arg0 == calling rec address
  * arg1 == target rec address
  */
@@ -203,6 +286,16 @@
  * ret1 == Address(PA) of the RTT folded, if ret0 == RMI_SUCCESS
  */
 #define RMI_RTT_FOLD			SMC64_RMI_FID(U(0x16))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == level
+ * arg3 == RTT tree index
+ *
+ * ret1 == Address(PA) of the RTT folded, if ret0 == RMI_SUCCESS
+ */
+#define RMI_RTT_AUX_FOLD		SMC64_RMI_FID(U(0x2F))
 
 /*
  * arg0 == RD address
@@ -430,7 +523,11 @@
 #define RMI_EXIT_RIPAS_CHANGE		4U
 #define RMI_EXIT_HOST_CALL		5U
 #define RMI_EXIT_SERROR			6U
-#define RMI_EXIT_INVALID		(RMI_EXIT_SERROR + 1U)
+#define RMI_EXIT_IO			7U
+#define RMI_EXIT_RTT_REQUEST		8U
+#define RMI_EXIT_S2AP_CHANGE		9U
+#define RMI_EXIT_VDEV_REQUEST		10U
+#define RMI_EXIT_INVALID		(RMI_EXIT_VDEV_REQUEST + 1U)
 
 /* RmiRecRunnable types */
 #define RMI_NOT_RUNNABLE		0U
@@ -537,6 +634,18 @@ typedef enum {
 	 * index: RTT level at which the walk terminated
 	 */
 	RMI_ERROR_RTT = 4,
+	/*
+	 * An attribute of a device does not match the expected value
+	 */
+	RMI_ERROR_DEVICE = 5,
+	/*
+	 * The command is not supported
+	 */
+	RMI_ERROR_NOT_SUPPORTED = 6,
+	/*
+	 * RTTE in an auxiliary RTT contained an unexpected value
+	 */
+	RMI_ERROR_RTT_AUX = 7,
 	RMI_ERROR_COUNT
 } status_t;
 
@@ -1051,6 +1160,12 @@ u_register_t host_rmi_rtt_set_ripas(u_register_t rd,
 				    u_register_t start,
 				    u_register_t end,
 				    u_register_t *top);
+u_register_t host_rmi_rtt_set_s2ap(u_register_t rd,
+				   u_register_t rec,
+				   u_register_t start,
+				   u_register_t end,
+				   u_register_t *top,
+				   u_register_t *rtt_tree);
 u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t target_rec,
 				    unsigned long status);
 void host_rmi_init_cmp_result(void);

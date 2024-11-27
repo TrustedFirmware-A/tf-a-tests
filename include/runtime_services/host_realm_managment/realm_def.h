@@ -21,6 +21,9 @@
 #define MAX_REALM_COUNT			U(2)
 #define MAX_AUX_PLANE_COUNT		U(3)
 #define MAX_PLANE_COUNT			MAX_AUX_PLANE_COUNT + U(1)
+#define PRIMARY_RTT_INDEX		0U
+#define PRIMARY_PLANE_ID		0U
+
 /* Only support 4KB at the moment */
 
 #if (PAGE_SIZE == PAGE_SIZE_4KB)

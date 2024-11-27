@@ -11,10 +11,22 @@
 #include <debug.h>
 
 #include <host_realm_helper.h>
+#include <realm_psi.h>
 #include <realm_rsi.h>
 #include <sync.h>
 
-bool is_plane0;
+static bool is_plane0;
+static unsigned int plane_num;
+
+bool realm_is_plane0(void)
+{
+	return is_plane0;
+}
+
+unsigned int realm_get_my_plane_num(void)
+{
+	return plane_num;
+}
 
 void realm_plane_init(void)
 {
@@ -23,8 +35,10 @@ void realm_plane_init(void)
 	ret = rsi_get_version(RSI_ABI_VERSION_VAL);
 	if (ret == RSI_ERROR_STATE) {
 		is_plane0 = false;
+		plane_num = (unsigned int)psi_get_plane_id();
 	} else {
 		is_plane0 = true;
+		plane_num = PRIMARY_PLANE_ID;
 	}
 }
 
@@ -37,18 +51,59 @@ static void restore_plane_context(rsi_plane_run *run)
 	run->enter.pc = run->exit.elr;
 }
 
+static u_register_t realm_exit_to_host_as_plane_n(enum host_call_cmd exit_code,
+		u_register_t plane_num)
+{
+	struct rsi_host_call host_cal __aligned(sizeof(struct rsi_host_call));
+	smc_ret_values res = {};
+
+	assert(realm_is_p0());
+	host_cal.imm = exit_code;
+	host_cal.gprs[0] = plane_num;
+	host_cal.gprs[1] = read_mpidr_el1();
+	res = tftf_smc(&(smc_args) {RSI_HOST_CALL, (u_register_t)&host_cal,
+		0UL, 0UL, 0UL, 0UL, 0UL, 0UL});
+	return res.ret0;
+}
+
 /* return true to re-enter PlaneN, false to exit to P0 */
 static bool handle_plane_exit(u_register_t plane_index,
 		u_register_t perm_index,
 		rsi_plane_run *run)
 {
 	u_register_t ec = EC_BITS(run->exit.esr);
+	u_register_t ret;
 
 	/* Disallow SMC from Plane N */
 	if (ec == EC_AARCH64_SMC) {
 		restore_plane_context(run);
 		run->enter.gprs[0] = RSI_ERROR_STATE;
 		return true;
+	}
+
+	/* Handle PSI HVC call from Plane N */
+	if (ec == EC_AARCH64_HVC) {
+		u_register_t hvc_id = run->exit.gprs[0];
+
+		restore_plane_context(run);
+		switch (hvc_id) {
+		case PSI_CALL_GET_SHARED_BUFF_CMD:
+			run->enter.gprs[0] = RSI_SUCCESS;
+			run->enter.gprs[1] = (u_register_t)realm_get_my_shared_structure();
+			return true;
+		case PSI_CALL_GET_PLANE_ID_CMD:
+			run->enter.gprs[0] = RSI_SUCCESS;
+			run->enter.gprs[1] = plane_index;
+			return true;
+		case PSI_CALL_EXIT_PRINT_CMD:
+			/* exit to host to flush buffer, then return to PN */
+			ret = realm_exit_to_host_as_plane_n(HOST_CALL_EXIT_PRINT_CMD, plane_index);
+			run->enter.gprs[0] = ret;
+			return true;
+		case PSI_P0_CALL:
+		default:
+			return false;
+		}
 	}
 	return false;
 }

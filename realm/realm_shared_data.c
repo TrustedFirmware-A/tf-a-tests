@@ -59,4 +59,3 @@ void realm_shared_data_set_my_realm_val(uint8_t index, u_register_t val)
 	assert(index < MAX_DATA_SIZE);
 	guest_shared_data[REC_IDX(read_mpidr_el1())].realm_out_val[index] = val;
 }
-

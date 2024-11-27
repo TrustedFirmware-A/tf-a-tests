@@ -1696,7 +1696,8 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 				re_enter_rec = true;
 				break;
 			case HOST_CALL_EXIT_PRINT_CMD:
-				realm_print_handler(realm, REC_IDX(run->exit.gprs[0]));
+				realm_print_handler(realm, run->exit.gprs[0],
+						REC_IDX(run->exit.gprs[1]));
 				re_enter_rec = true;
 				break;
 			case HOST_CALL_EXIT_SUCCESS_CMD:

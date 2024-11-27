@@ -321,9 +321,6 @@ u_register_t rsi_ipa_state_get(u_register_t base,
 /* This function return RSI_ABI_VERSION */
 u_register_t rsi_get_version(u_register_t req_ver);
 
-/* This function will call the Host to request IPA of the NS shared buffer */
-u_register_t rsi_get_ns_buffer(void);
-
 /* This function will initialize the attestation context */
 u_register_t rsi_attest_token_init(u_register_t challenge_0,
 				   u_register_t challenge_1,
@@ -342,7 +339,7 @@ u_register_t rsi_attest_token_continue(u_register_t buffer_addr,
 					u_register_t *bytes_copied);
 
 /* This function call Host and request to exit Realm with proper exit code */
-void rsi_exit_to_host(enum host_call_cmd exit_code);
+u_register_t rsi_exit_to_host(enum host_call_cmd exit_code);
 
 /* Function to get Realm configuration. See RSI_REALM_CONFIG */
 u_register_t rsi_realm_config(struct rsi_realm_config *s);

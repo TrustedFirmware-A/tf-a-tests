@@ -50,7 +50,7 @@ void host_rec_send_sgi(struct realm *realm_ptr,
 bool host_enter_realm_execute(struct realm *realm_ptr, uint8_t cmd,
 		int test_exit_reason, unsigned int rec_num);
 test_result_t host_cmp_result(void);
-void realm_print_handler(struct realm *realm_ptr, unsigned int rec_num);
+void realm_print_handler(struct realm *realm_ptr, unsigned int plane_num, unsigned int rec_num);
 bool host_ipa_is_ns(u_register_t addr, u_register_t rmm_feat_reg0);
 
 #endif /* HOST_REALM_HELPER_H */

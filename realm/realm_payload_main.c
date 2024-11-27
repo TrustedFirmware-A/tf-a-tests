@@ -14,6 +14,8 @@
 #include <host_shared_data.h>
 #include <pauth.h>
 #include "realm_def.h"
+#include <realm_helpers.h>
+#include <realm_psi.h>
 #include <realm_rsi.h>
 #include <realm_tests.h>
 #include <serror.h>
@@ -184,18 +186,20 @@ static bool test_realm_data_access_cmd(void)
 
 static bool realm_exception_handler(void)
 {
-	u_register_t base, far, esr;
+	u_register_t base, far, esr, elr;
 
 	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
 	far = read_far_el1();
 	esr = read_esr_el1();
+	elr = read_elr_el1();
 
 	if (far == base) {
 		/* Return ESR to Host */
 		realm_shared_data_set_my_realm_val(HOST_ARG2_INDEX, esr);
 		rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
 	}
-	realm_printf("Realm Abort fail incorrect FAR=0x%lx ESR=0x%lx\n", far, esr);
+	realm_printf("Realm Abort fail incorrect FAR=0x%lx ESR=0x%lx ELR=0x%lx\n",
+			far, esr, elr);
 	rsi_exit_to_host(HOST_CALL_EXIT_FAILED_CMD);
 
 	/* Should not return */
@@ -266,7 +270,7 @@ void realm_payload_main(void)
 	/* No serror handler registered by default */
 	unregister_custom_serror_handler();
 
-	realm_set_shared_structure((host_shared_data_t *)rsi_get_ns_buffer());
+	realm_set_shared_structure((host_shared_data_t *)realm_get_ns_buffer());
 
 	if (realm_get_my_shared_structure() != NULL) {
 		uint8_t cmd = realm_shared_data_get_my_realm_cmd();
@@ -381,8 +385,18 @@ void realm_payload_main(void)
 	}
 
 	if (test_succeed) {
-		rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
+		if (realm_is_plane0()) {
+			rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
+		} else {
+			psi_exit_to_plane0(PSI_CALL_EXIT_SUCCESS_CMD,
+					0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL);
+		}
 	} else {
-		rsi_exit_to_host(HOST_CALL_EXIT_FAILED_CMD);
+		if (realm_is_plane0()) {
+			rsi_exit_to_host(HOST_CALL_EXIT_FAILED_CMD);
+		} else {
+			psi_exit_to_plane0(PSI_CALL_EXIT_FAILED_CMD,
+					0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL);
+		}
 	}
 }

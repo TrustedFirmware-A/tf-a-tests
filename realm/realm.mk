@@ -37,6 +37,7 @@ REALM_SOURCES:=								\
 	realm_plane.c							\
 	realm_pmuv3.c							\
 	realm_psci.c							\
+	realm_psi.c							\
 	realm_rsi.c							\
 	realm_shared_data.c						\
 	realm_simd.c							\
@@ -45,6 +46,7 @@ REALM_SOURCES:=								\
 REALM_SOURCES += lib/${ARCH}/cache_helpers.S				\
 	lib/${ARCH}/misc_helpers.S					\
 	lib/smc/${ARCH}/asm_smc.S					\
+	lib/smc/${ARCH}/hvc.c						\
 	lib/smc/${ARCH}/smc.c						\
 	lib/exceptions/${ARCH}/serror.c					\
 	lib/exceptions/${ARCH}/sync.c					\

@@ -1572,6 +1572,24 @@
 #define POR_EL1			S3_0_C10_C2_4
 #define S2POR_EL1		S3_0_C10_C2_5
 
+/* Perm value encoding for S2POR_EL1 */
+#define PERM_LABEL_NO_ACCESS		U(0)
+#define PERM_LABEL_RESERVED_1		U(1)
+#define PERM_LABEL_MRO			U(2)
+#define PERM_LABEL_MRO_TL1		U(3)
+#define PERM_LABEL_WO			U(4)
+#define PERM_LABEL_RESERVED_5		U(5)
+#define PERM_LABEL_MRO_TL0		U(6)
+#define PERM_LABEL_MRO_TL01		U(7)
+#define PERM_LABEL_RO			U(8)
+#define PERM_LABEL_RO_uX		U(9)
+#define PERM_LABEL_RO_pX		U(10)
+#define PERM_LABEL_RO_upX		U(11)
+#define PERM_LABEL_RW			U(12)
+#define PERM_LABEL_RW_uX		U(13)
+#define PERM_LABEL_RW_pX		U(14)
+#define PERM_LABEL_RW_upX		U(15)
+
 /*******************************************************************************
  * FEAT_GCS - Guarded Control Stack Registers
  ******************************************************************************/

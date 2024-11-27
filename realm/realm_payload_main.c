@@ -24,6 +24,7 @@
 
 static fpu_state_t rl_fpu_state_write;
 static fpu_state_t rl_fpu_state_read;
+static rsi_plane_run run __aligned(PAGE_SIZE);
 
 /*
  * This function reads sleep time in ms from shared buffer and spins PE
@@ -42,6 +43,18 @@ static void realm_loop_cmd(void)
 	while (true) {
 		waitms(500);
 	}
+}
+
+static bool test_realm_enter_plane_n(void)
+{
+	u_register_t base, plane_index, perm_index, flags = 0U;
+
+	plane_index = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	base = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
+	perm_index = plane_index + 1U;
+
+	realm_printf("Entering plane %ld, ep=0x%lx run=0x%lx\n", plane_index, base, &run);
+	return realm_plane_enter(plane_index, perm_index, base, flags, &run);
 }
 
 /*
@@ -283,6 +296,9 @@ void realm_payload_main(void)
 		case REALM_LOOP_CMD:
 			realm_loop_cmd();
 			test_succeed = true;
+			break;
+		case REALM_ENTER_PLANE_N_CMD:
+			test_succeed = test_realm_enter_plane_n();
 			break;
 		case REALM_MULTIPLE_REC_PSCI_DENIED_CMD:
 			test_succeed = test_realm_multiple_rec_psci_denied_cmd();

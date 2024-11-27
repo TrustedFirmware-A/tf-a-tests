@@ -1082,6 +1082,9 @@ u_register_t host_realm_create(struct realm *realm)
 	 * Allocate memory for PAR - Realm image for each Plane.
 	 * Granule delegation
 	 * of PAR will be performed during rtt creation.
+	 * realm->par_size is size if single Plane image.
+	 * Same image is copied for each plane.
+	 * Offset for Plane N will be realm->par_base + (N*realm->par_size)
 	 */
 	realm->par_base = (u_register_t)page_alloc((realm->par_size) *
 			(realm->num_aux_planes + 1U));

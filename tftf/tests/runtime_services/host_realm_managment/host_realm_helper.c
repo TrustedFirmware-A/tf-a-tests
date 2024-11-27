@@ -485,3 +485,19 @@ void host_rec_send_sgi(struct realm *realm_ptr,
 		tftf_send_sgi(sgi, core_pos);
 	}
 }
+
+/*
+ * Set Args for Aux Plane Enter
+ * Realm helpers copy the same realm image for each plane
+ * Entrypoint for aux plane = realm.par_base + (plane_num * realm..par_size)
+ */
+void host_realm_set_aux_plane_args(struct realm *realm_ptr,
+		unsigned int plane_num)
+{
+	/* Plane Index */
+	host_shared_data_set_host_val(realm_ptr, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, plane_num);
+
+	/* Plane entrypoint */
+	host_shared_data_set_host_val(realm_ptr, PRIMARY_PLANE_ID, 0U, HOST_ARG2_INDEX,
+			realm_ptr->par_base + (plane_num * realm_ptr->par_size));
+}

@@ -782,16 +782,16 @@ u_register_t host_realm_create(struct realm *realm)
 
 	/* SVE enable and vector length */
 	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_SVE_EN) != 0UL) {
-		params->flags = RMI_REALM_FLAGS_SVE;
+		params->flags0 = RMI_REALM_FLAGS0_SVE;
 		params->sve_vl = realm->sve_vl;
 	} else {
-		params->flags = 0UL;
+		params->flags0 = 0UL;
 		params->sve_vl = 0U;
 	}
 
 	/* PMU enable and number of event counters */
 	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_PMU_EN) != 0UL) {
-		params->flags |= RMI_REALM_FLAGS_PMU;
+		params->flags0 |= RMI_REALM_FLAGS0_PMU;
 		params->pmu_num_ctrs = realm->pmu_num_ctrs;
 	} else {
 		params->pmu_num_ctrs = 0U;
@@ -799,14 +799,19 @@ u_register_t host_realm_create(struct realm *realm)
 
 	/* LPA2 enable */
 	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_LPA2) != 0UL) {
-		params->flags |= RMI_REALM_FLAGS_LPA2;
+		params->flags0 |= RMI_REALM_FLAGS0_LPA2;
 	}
 
 	params->rtt_level_start = realm->start_level;
-	params->hash_algo = RMI_HASH_SHA_256;
+	params->algorithm = RMI_HASH_SHA_256;
 	params->vmid = vmid++;
 	params->rtt_base = realm->rtt_addr;
 	params->rtt_num_start = 1U;
+
+	if (!realm->rtt_tree_single) {
+		params->flags1 = RMI_REALM_FLAGS1_RTT_TREE_PP;
+	}
+	params->num_aux_planes = realm->num_aux_planes;
 
 	/* Create Realm */
 	ret = host_rmi_realm_create(realm->rd, (u_register_t)params);

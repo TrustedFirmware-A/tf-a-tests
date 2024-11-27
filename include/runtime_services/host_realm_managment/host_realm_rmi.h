@@ -398,10 +398,14 @@
 #define RMI_FEATURE_FALSE		0U
 #define RMI_FEATURE_TRUE		1U
 
-/* RmiRealmFlags format */
-#define RMI_REALM_FLAGS_LPA2		BIT(0)
-#define RMI_REALM_FLAGS_SVE		BIT(1)
-#define RMI_REALM_FLAGS_PMU		BIT(2)
+/* RmiRealmFlags0 format */
+#define RMI_REALM_FLAGS0_LPA2		BIT(0)
+#define RMI_REALM_FLAGS0_SVE		BIT(1)
+#define RMI_REALM_FLAGS0_PMU		BIT(2)
+#define RMI_REALM_FLAGS0_DA		BIT(3)
+
+/* RmiRealmFlags1 format */
+#define RMI_REALM_FLAGS1_RTT_TREE_PP	BIT(0)
 
 /* RmiInterfaceVersion type */
 #define RMI_MAJOR_VERSION		0U
@@ -473,14 +477,27 @@
  * Value -1 (0 in case of NUM_BPS and NUM_WPS) indicates not set field,
  * and parameter will be set from the corresponding field of feature register 0.
  */
-#define FEATURE_SVE_VL_SHIFT				32UL
-#define FEATURE_SVE_VL_WIDTH				8UL
-#define FEATURE_NUM_BPS_SHIFT				40UL
-#define FEATURE_NUM_BPS_WIDTH				8UL
-#define FEATURE_NUM_WPS_SHIFT				48UL
-#define FEATURE_NUM_WPS_WIDTH				8UL
-#define FEATURE_PMU_NUM_CTRS_SHIFT			56UL
-#define FEATURE_PMU_NUM_CTRS_WIDTH			8UL
+#define RMI_FEATURE_REGISTER_0_DA			BIT(42)
+
+#define RMI_FEATURE_REGISTER_0_PLANE_RTT_SHIFT		43UL
+#define RMI_FEATURE_REGISTER_0_PLANE_RTT_WIDTH		2UL
+
+#define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_SHIFT	45UL
+#define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_WIDTH	4UL
+
+#define FEATURE_SVE_VL_SHIFT				56UL
+#define FEATURE_SVE_VL_WIDTH				4UL
+#define FEATURE_NUM_BPS_SHIFT				14UL
+#define FEATURE_NUM_BPS_WIDTH				6UL
+#define FEATURE_NUM_WPS_SHIFT				20UL
+#define FEATURE_NUM_WPS_WIDTH				6UL
+#define FEATURE_PMU_NUM_CTRS_SHIFT			35UL
+#define FEATURE_PMU_NUM_CTRS_WIDTH			4UL
+
+/* Possible values for RmiPlaneRttFeature */
+#define RMI_PLANE_RTT_AUX				0UL
+#define RMI_PLANE_RTT_AUX_SINGLE			1UL
+#define RMI_PLANE_RTT_SINGLE				2UL
 
 /* RmiStatusCode types */
 /*
@@ -560,31 +577,41 @@ typedef enum {
  */
 struct rmi_realm_params {
 	/* Flags */
-	SET_MEMBER(unsigned long flags, 0, 0x8);		/* Offset 0 */
+	SET_MEMBER(unsigned long flags0, 0, 0x8);			/* Offset 0 */
 	/* Requested IPA width */
-	SET_MEMBER(unsigned int s2sz, 0x8, 0x10);		/* 0x8 */
+	SET_MEMBER(unsigned int s2sz, 0x8, 0x10);			/* 0x8 */
 	/* Requested SVE vector length */
-	SET_MEMBER(unsigned int sve_vl, 0x10, 0x18);		/* 0x10 */
+	SET_MEMBER(unsigned int sve_vl, 0x10, 0x18);			/* 0x10 */
 	/* Requested number of breakpoints */
-	SET_MEMBER(unsigned int num_bps, 0x18, 0x20);		/* 0x18 */
+	SET_MEMBER(unsigned int num_bps, 0x18, 0x20);			/* 0x18 */
 	/* Requested number of watchpoints */
-	SET_MEMBER(unsigned int num_wps, 0x20, 0x28);		/* 0x20 */
+	SET_MEMBER(unsigned int num_wps, 0x20, 0x28);			/* 0x20 */
 	/* Requested number of PMU counters */
-	SET_MEMBER(unsigned int pmu_num_ctrs, 0x28, 0x30);	/* 0x28 */
+	SET_MEMBER(unsigned int pmu_num_ctrs, 0x28, 0x30);		/* 0x28 */
 	/* Measurement algorithm */
-	SET_MEMBER(unsigned char hash_algo, 0x30, 0x400);	/* 0x30 */
+	SET_MEMBER(unsigned char algorithm, 0x30, 0x38);		/* 0x30 */
+	/* Number of auxiliary Planes */
+	SET_MEMBER(unsigned int num_aux_planes, 0x38, 0x400);		/* 0x38 */
 	/* Realm Personalization Value */
-	SET_MEMBER(unsigned char rpv[RPV_SIZE], 0x400, 0x800);	/* 0x400 */
+	SET_MEMBER(unsigned char rpv[RPV_SIZE], 0x400, 0x800);		/* 0x400 */
 	SET_MEMBER(struct {
-		/* Virtual Machine Identifier */
-		unsigned short vmid;				/* 0x800 */
-		/* Realm Translation Table base */
-		u_register_t rtt_base;				/* 0x808 */
-		/* RTT starting level */
-		long rtt_level_start;				/* 0x810 */
-		/* Number of starting level RTTs */
-		unsigned int rtt_num_start;			/* 0x818 */
-	}, 0x800, 0x1000);
+			/* Virtual Machine Identifier */
+			unsigned short vmid;				/* 0x800 */
+			/* Realm Translation Table base */
+			unsigned long rtt_base;				/* 0x808 */
+			/* RTT starting level */
+			long rtt_level_start;				/* 0x810 */
+			/* Number of starting level RTTs */
+			unsigned int rtt_num_start;			/* 0x818 */
+		   }, 0x800, 0x820);
+	/* Flags */
+	SET_MEMBER(unsigned long flags1, 0x820, 0x828);			/* 0x820 */
+	/* MECID */
+	SET_MEMBER(long mecid, 0x828, 0xF00);				/* 0x828 */
+	/* Auxiliary Virtual Machine Identifiers */
+	SET_MEMBER(unsigned short aux_vmid[3], 0xF00, 0xF80);		/* 0xF00 */
+	/* Base address of auxiliary RTTs */
+	SET_MEMBER(unsigned long aux_rtt_base[3], 0xF80, 0x1000);	/* 0xF80 */
 };
 
 /*
@@ -959,6 +986,7 @@ enum realm_state {
 struct realm {
 	u_register_t     host_shared_data;
 	unsigned int     rec_count;
+	unsigned int     num_aux_planes;
 	u_register_t     par_base;
 	u_register_t     par_size;
 	u_register_t     rd;
@@ -979,6 +1007,7 @@ struct realm {
 	uint8_t          pmu_num_ctrs;
 	bool             payload_created;
 	bool             shared_mem_created;
+	bool             rtt_tree_single;
 	unsigned short   vmid;
 	enum realm_state state;
 	long start_level;

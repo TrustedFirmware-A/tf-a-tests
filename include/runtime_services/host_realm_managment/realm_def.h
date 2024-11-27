@@ -10,7 +10,7 @@
 
 #include <xlat_tables_defs.h>
 
-/* 1MB for Realm payload as a default value */
+/* 1 MB for Realm payload as a default value */
 #define REALM_MAX_LOAD_IMG_SIZE		U(0x100000)
 #define REALM_STACK_SIZE		0x1000U
 #define DATA_PATTERN_1			0x12345678U
@@ -19,7 +19,8 @@
 #define REALM_ERROR			1U
 #define MAX_REC_COUNT			17U
 #define MAX_REALM_COUNT			U(2)
-
+#define MAX_AUX_PLANE_COUNT		U(3)
+#define MAX_PLANE_COUNT			MAX_AUX_PLANE_COUNT + U(1)
 /* Only support 4KB at the moment */
 
 #if (PAGE_SIZE == PAGE_SIZE_4KB)

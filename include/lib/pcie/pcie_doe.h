@@ -8,6 +8,11 @@
 #ifndef PCIE_DOE_H
 #define PCIE_DOE_H
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <pcie.h>
+#include <test_helpers.h>
+
 /* DOE Extended Capability */
 #define DOE_CAP_ID			0x002E
 
@@ -86,10 +91,45 @@ typedef struct {
 	uint8_t next_index;
 } pcie_doe_disc_resp_t;
 
+/* Skip test if DA is not supported in RMI features */
+#define CHECK_DA_SUPPORT_IN_RMI(_reg0)						\
+	do {									\
+		SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();			\
+		/* Get feature register0 */					\
+		if (host_rmi_features(0UL, &_reg0) != REALM_SUCCESS) {		\
+			ERROR("Failed to get RMI feat_reg0\n");			\
+			return TEST_RESULT_FAIL;				\
+		}								\
+										\
+		/* DA not supported in RMI features? */				\
+		if ((_reg0 & RMI_FEATURE_REGISTER_0_DA_EN) == 0UL) {		\
+			WARN("DA not in RMI features, skipping\n");		\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)
+
+#define SKIP_TEST_IF_DOE_NOT_SUPPORTED(_bdf, _doe_cap_base)			\
+	do {									\
+		/* Test PCIe DOE only for RME */				\
+		if (!get_armv9_2_feat_rme_support()) {				\
+			tftf_testcase_printf("FEAT_RME not supported\n");	\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+										\
+		pcie_init();							\
+		if (pcie_find_doe_device(&(_bdf), &(_doe_cap_base)) != 0) {		\
+			tftf_testcase_printf("PCIe DOE not supported\n");	\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)
+
 void print_doe_disc(pcie_doe_disc_resp_t *data);
 int pcie_doe_send_req(uint32_t header, uint32_t bdf, uint32_t doe_cap_base,
 			uint32_t *req_addr, uint32_t req_len);
 int pcie_doe_recv_resp(uint32_t bdf, uint32_t doe_cap_base,
 			uint32_t *resp_addr, uint32_t *resp_len);
+int pcie_doe_communicate(uint32_t header, uint32_t bdf, uint32_t doe_cap_base, void *req_buf,
+			 size_t req_sz, void *rsp_buf, size_t *rsp_sz);
+int pcie_find_doe_device(uint32_t *bdf_ptr, uint32_t *cap_base_ptr);
 
 #endif /* PCIE_DOE_H */

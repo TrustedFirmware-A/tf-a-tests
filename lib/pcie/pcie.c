@@ -5,11 +5,13 @@
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <stddef.h>
 
 #include <debug.h>
 #include <mmio.h>
 #include <pcie.h>
+#include <pcie_doe.h>
 #include <pcie_spec.h>
 #include <platform.h>
 #include <tftf_lib.h>
@@ -616,4 +618,15 @@ void pcie_create_info_table(void)
 	}
 	pcie_create_device_bdf_table();
 	pcie_print_device_info();
+}
+
+void pcie_init(void)
+{
+	static bool is_init;
+
+	/* Create PCIe table and enumeration */
+	if (!is_init) {
+		pcie_create_info_table();
+		is_init = true;
+	}
 }

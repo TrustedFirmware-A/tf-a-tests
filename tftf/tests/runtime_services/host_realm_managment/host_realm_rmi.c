@@ -1299,3 +1299,55 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 	*exit_reason = run->exit.exit_reason;
 	return ret;
 }
+
+u_register_t host_rmi_pdev_aux_count(u_register_t pdev_ptr, u_register_t *count)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_AUX_COUNT, pdev_ptr},
+				2U);
+	*count = rets.ret1;
+	return rets.ret0;
+}
+
+u_register_t host_rmi_pdev_create(u_register_t pdev_ptr, u_register_t params_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_CREATE, pdev_ptr,
+					     params_ptr}, 3U).ret0;
+}
+
+u_register_t host_rmi_pdev_get_state(u_register_t pdev_ptr, u_register_t *state)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_GET_STATE, pdev_ptr},
+				2U);
+	*state = rets.ret1;
+	return rets.ret0;
+}
+
+u_register_t host_rmi_pdev_communicate(u_register_t pdev_ptr,
+				       u_register_t data_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_COMMUNICATE, pdev_ptr,
+						data_ptr}, 3U).ret0;
+}
+
+u_register_t host_rmi_pdev_set_pubkey(u_register_t pdev_ptr, u_register_t key,
+				      u_register_t len, uint8_t algo)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_SET_PUBKEY, pdev_ptr,
+						key, len, algo}, 5U).ret0;
+}
+
+u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STOP, pdev_ptr},
+				2U).ret0;
+}
+
+u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_DESTROY, pdev_ptr},
+				2U).ret0;
+}

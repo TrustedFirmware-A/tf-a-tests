@@ -137,5 +137,8 @@
 	  function="doe_discovery_test" />
 	  <testcase name="SPDM Get Version"
 	  function="spdm_version_test" />
+	  <!-- Invoke RMI calls related to PDEV management -->
+	  <testcase name="Invoke RMI PDEV calls "
+	  function="host_test_rmi_pdev_calls" />
   </testsuite>
 </testsuites>

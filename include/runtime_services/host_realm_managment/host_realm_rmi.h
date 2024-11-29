@@ -18,6 +18,12 @@
 #define RMI_FNUM_MIN_VALUE	U(0x150)
 #define RMI_FNUM_MAX_VALUE	U(0x18F)
 
+/*
+ * Defines member of structure and reserves space
+ * for the next member with specified offset.
+ */
+#define SET_MEMBER_RMI	SET_MEMBER
+
 /* Get RMI fastcall std FID from offset */
 #define SMC64_RMI_FID(_offset)					\
 	((SMC_TYPE_FAST << FUNCID_TYPE_SHIFT) |			\
@@ -90,6 +96,11 @@
  *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT_WALK, x)
  */
 #define RMI_DATA_DESTROY		SMC64_RMI_FID(U(0x5))
+
+/*
+ * FID: 0xC4000156
+ */
+#define SMC_RMI_PDEV_AUX_COUNT		SMC64_RMI_FID(U(0x6))
 
 /*
  * arg0 == RD address
@@ -219,6 +230,156 @@
  */
 #define RMI_RTT_SET_RIPAS		SMC64_RMI_FID(U(0x19))
 
+/*
+ * FID: 0xC4000170
+ */
+#define SMC_RMI_GRANULE_DEV_DELEGATE		SMC64_RMI_FID(U(0x20))
+
+/*
+ * FID: 0xC4000171
+ */
+#define SMC_RMI_GRANULE_DEV_UNDELEGATE		SMC64_RMI_FID(U(0x21))
+
+/*
+ * FID: 0xC4000172
+ */
+#define SMC_RMI_DEV_MAP				SMC64_RMI_FID(U(0x22))
+
+/*
+ * FID: 0xC4000173
+ */
+#define SMC_RMI_DEV_UNMAP			SMC64_RMI_FID(U(0x23))
+
+/*
+ * FID: 0xC4000174
+ */
+#define SMC_RMI_PDEV_ABORT			SMC64_RMI_FID(U(0x24))
+
+/*
+ * FID: 0xC4000175
+ */
+#define SMC_RMI_PDEV_COMMUNICATE		SMC64_RMI_FID(U(0x25))
+
+/*
+ * FID: 0xC4000176
+ */
+#define SMC_RMI_PDEV_CREATE			SMC64_RMI_FID(U(0x26))
+
+/*
+ * FID: 0xC4000177
+ */
+#define SMC_RMI_PDEV_DESTROY			SMC64_RMI_FID(U(0x27))
+
+/*
+ * FID: 0xC4000178
+ */
+#define SMC_RMI_PDEV_GET_STATE			SMC64_RMI_FID(U(0x28))
+
+/*
+ * FID: 0xC4000179
+ */
+#define SMC_RMI_PDEV_IDE_RESET			SMC64_RMI_FID(U(0x29))
+
+/*
+ * FID: 0xC400017A
+ */
+#define SMC_RMI_PDEV_NOTIFY			SMC64_RMI_FID(U(0x2A))
+
+/*
+ * FID: 0xC400017B
+ */
+#define SMC_RMI_PDEV_SET_PUBKEY			SMC64_RMI_FID(U(0x2B))
+
+/*
+ * FID: 0xC400017C
+ */
+#define SMC_RMI_PDEV_STOP			SMC64_RMI_FID(U(0x2C))
+
+/*
+ * FID: 0xC400017D
+ */
+#define SMC_RMI_RTT_AUX_CREATE			SMC64_RMI_FID(U(0x2D))
+
+/*
+ * FID: 0xC400017E
+ */
+#define SMC_RMI_RTT_AUX_DESTROY			SMC64_RMI_FID(U(0x2E))
+
+/*
+ * FID: 0xC400017F
+ */
+#define SMC_RMI_RTT_AUX_FOLD			SMC64_RMI_FID(U(0x2F))
+
+/*
+ * FID: 0xC4000180
+ */
+#define SMC_RMI_RTT_AUX_MAP_PROTECTED		SMC64_RMI_FID(U(0x30))
+
+/*
+ * FID: 0xC4000181
+ */
+#define SMC_RMI_RTT_AUX_MAP_UNPROTECTED		SMC64_RMI_FID(U(0x31))
+
+/*
+ * FID: 0xC4000183
+ */
+#define SMC_RMI_RTT_AUX_UNMAP_PROTECTED		SMC64_RMI_FID(U(0x33))
+
+/*
+ * FID: 0xC4000184
+ */
+#define SMC_RMI_RTT_AUX_UNMAP_UNPROTECTED	SMC64_RMI_FID(U(0x34))
+
+/*
+ * FID: 0xC4000185
+ */
+#define SMC_RMI_VDEV_ABORT			SMC64_RMI_FID(U(0x35))
+
+/*
+ * FID: 0xC4000186
+ */
+#define SMC_RMI_VDEV_COMMUNICATE		SMC64_RMI_FID(U(0x36))
+
+/*
+ * FID: 0xC4000187
+ */
+#define SMC_RMI_VDEV_CREATE			SMC64_RMI_FID(U(0x37))
+
+/*
+ * FID: 0xC4000188
+ */
+#define SMC_RMI_VDEV_DESTROY			SMC64_RMI_FID(U(0x38))
+
+/*
+ * FID: 0xC4000189
+ */
+#define SMC_RMI_VDEV_GET_STATE			SMC64_RMI_FID(U(0x39))
+
+/*
+ * FID: 0xC400018A
+ */
+#define SMC_RMI_VDEV_STOP			SMC64_RMI_FID(U(0x3A))
+
+/*
+ * FID: 0xC400018B
+ */
+#define SMC_RMI_RTT_SET_S2AP			SMC64_RMI_FID(U(0x3B))
+
+/*
+ * FID: 0xC400018C
+ */
+#define SMC_RMI_MEC_SET_SHARED			SMC64_RMI_FID(U(0x3C))
+
+/*
+ * FID: 0xC400018D
+ */
+#define SMC_RMI_MEC_SET_PRIVATE			SMC64_RMI_FID(U(0x3D))
+
+/*
+ * FID: 0xC400018E
+ */
+#define SMC_RMI_VDEV_COMPLETE			SMC64_RMI_FID(U(0x3E))
+
 #define GRANULE_SIZE			PAGE_SIZE_4KB
 
 /* Maximum number of auxiliary granules required for a REC */
@@ -305,6 +466,7 @@
 #define RMI_FEATURE_REGISTER_0_GICV3_NUM_LRS_WIDTH	4UL
 #define RMI_FEATURE_REGISTER_0_MAX_RECS_ORDER_SHIFT	38UL
 #define RMI_FEATURE_REGISTER_0_MAX_RECS_ORDER_WIDTH	4UL
+#define RMI_FEATURE_REGISTER_0_DA_EN			BIT(42)
 
 /*
  * Format of feature_flag[63:32].
@@ -537,6 +699,249 @@ struct rmi_rec_run {
 	SET_MEMBER(struct rmi_rec_exit exit, 0x800, 0x1000);	/* 0x800 */
 };
 
+/*
+ * RmiPdevProtConfig
+ * Represents the protection between system and device.
+ * Width: 2 bits
+ */
+#define RMI_PDEV_IOCOH_E2E_IDE			U(0)
+#define RMI_PDEV_IOCOH_E2E_SYS			U(1)
+#define RMI_PDEV_FCOH_E2E_IDE			U(2)
+#define RMI_PDEV_FCOH_E2E_SYS			U(3)
+
+/*
+ * RmiPdevFlags
+ * Fieldset contains flags provided by the Host during PDEV creation
+ * Width: 64 bits
+ */
+/* RmiPdevProtConfig Bits 1:0 */
+#define RMI_PDEV_FLAGS_PROT_CONFIG_SHIFT	UL(0)
+#define RMI_PDEV_FLAGS_PROT_CONFIG_WIDTH	UL(2)
+
+/*
+ * RmiPdevEvent
+ * Represents physical device event.
+ * Width: 8 bits
+ */
+#define RMI_PDEV_EVENT_IDE_KEY_REFRESH		U(0)
+
+/*
+ * RmiPdevState
+ * Represents the state of a PDEV
+ * Width: 8 bits
+ */
+#define RMI_PDEV_STATE_NEW			U(0)
+#define RMI_PDEV_STATE_NEEDS_KEY		U(1)
+#define RMI_PDEV_STATE_HAS_KEY			U(2)
+#define RMI_PDEV_STATE_READY			U(3)
+#define RMI_PDEV_STATE_COMMUNICATING		U(4)
+#define RMI_PDEV_STATE_STOPPING			U(5)
+#define RMI_PDEV_STATE_STOPPED			U(6)
+#define RMI_PDEV_STATE_ERROR			U(7)
+
+/*
+ * RmiSignatureAlgorithm
+ * Represents signature algorithm used in PDEV set key RMI call.
+ * Width: 8 bits
+ */
+#define RMI_SIGNATURE_ALGORITHM_RSASSA_3072	U(0)
+#define RMI_SIGNATURE_ALGORITHM_ECDSA_P256	U(1)
+#define RMI_SIGNATURE_ALGORITHM_ECDSA_P384	U(2)
+
+/*
+ * RmiDevMemShared
+ * Represents whether device memory Granule should be shared
+ * Width: 1 bit
+ */
+#define RMI_DEV_MEM_PRIVATE			U(0)
+#define RMI_DEV_MEM_SHARED			U(1)
+
+/*
+ * RmiDevDelegateFlags
+ * Fieldset contains flags provided by the Host during device memory granule
+ * delegation.
+ * Width: 64 bits
+ */
+/* RmiDevMemShared: Bit 0 */
+#define RMI_DEV_DELEGATE_FLAGS_SHARE_SHIFT	U(0)
+#define RMI_DEV_DELEGATE_FLAGS_SHARE_WIDTH	U(1)
+
+/*
+ * RmiDevCommEnterStatus (Name in Spec RmiDevCommStatus)
+ * Represents status passed from the Host to the RMM during device communication.
+ * Width: 8 bits
+ */
+#define RMI_DEV_COMM_ENTER_STATUS_SUCCESS	U(0)
+#define RMI_DEV_COMM_ENTER_STATUS_ERROR		U(1)
+#define RMI_DEV_COMM_ENTER_STATUS_NONE		U(2)
+
+/*
+ * RmiDevCommEnter
+ * This structure contains data passed from the Host to the RMM during device
+ * communication.
+ * Width: 256 (0x100) bytes
+ */
+struct rmi_dev_comm_enter {
+	/* RmiDevCommEnterStatus: Status of device transaction */
+	SET_MEMBER_RMI(unsigned char status, 0, 0x8);
+	/* Address: Address of request buffer */
+	SET_MEMBER_RMI(unsigned long req_addr, 0x8, 0x10);
+	/* Address: Address of response buffer */
+	SET_MEMBER_RMI(unsigned long resp_addr, 0x10, 0x18);
+	/* UInt64: Amount of valid data in response buffer in bytes */
+	SET_MEMBER_RMI(unsigned long resp_len, 0x18, 0x100);
+};
+
+/*
+ * RmiDevCommExitFlags
+ * Fieldset contains flags provided by the RMM during a device transaction.
+ * Width: 64 bits
+ */
+#define RMI_DEV_COMM_EXIT_FLAGS_CACHE_SHIFT		UL(0)
+#define RMI_DEV_COMM_EXIT_FLAGS_CACHE_WIDTH		UL(1)
+#define RMI_DEV_COMM_EXIT_FLAGS_SEND_SHIFT		UL(1)
+#define RMI_DEV_COMM_EXIT_FLAGS_SEND_WIDTH		UL(1)
+#define RMI_DEV_COMM_EXIT_FLAGS_WAIT_SHIFT		UL(2)
+#define RMI_DEV_COMM_EXIT_FLAGS_WAIT_WIDTH		UL(1)
+#define RMI_DEV_COMM_EXIT_FLAGS_MULTI_SHIFT		UL(3)
+#define RMI_DEV_COMM_EXIT_FLAGS_MULTI_WIDTH		UL(1)
+
+/*
+ * RmiDevCommProtocol
+ * Represents the protocol used for device communication.
+ * Width: 8 bits
+ */
+#define RMI_DEV_COMM_PROTOCOL_SPDM		U(0)
+#define RMI_DEV_COMM_PROTOCOL_SECURE_SPDM	U(1)
+
+/*
+ * RmiDevCommExit
+ * This structure contains data passed from the RMM to the Host during device
+ * communication.
+ * Width: 256 (0x100) bytes.
+ */
+struct rmi_dev_comm_exit {
+	/*
+	 * RmiDevCommExitFlags: Flags indicating the actions the host is
+	 * requested to perform
+	 */
+	SET_MEMBER_RMI(unsigned long flags, 0, 0x8);
+	/*
+	 * UInt64: If flags.cache is true, offset in the device response buffer
+	 * to the start of data to be cached in bytes.
+	 */
+	SET_MEMBER_RMI(unsigned long cache_offset, 0x8, 0x10);
+	/*
+	 * UInt64: If flags.cache is true, amount of data to be cached in
+	 * bytes.
+	 */
+	SET_MEMBER_RMI(unsigned long cache_len, 0x10, 0x18);
+	/* RmiDevCommProtocol: If flags.send is true, type of request */
+	SET_MEMBER_RMI(unsigned char protocol, 0x18, 0x20);
+	/*
+	 * UInt64: If flags.send is true, amount of valid data in request buffer
+	 * in bytes
+	 */
+	SET_MEMBER_RMI(unsigned long req_len, 0x20, 0x28);
+	/*
+	 * UInt64: If flags.wait is true, amount of time to wait for device
+	 * response in milliseconds
+	 */
+	SET_MEMBER_RMI(unsigned long timeout, 0x28, 0x100);
+};
+
+/*
+ * RmiDevCommData
+ * This structure contains data structure shared between Host and RMM for
+ * device communication.
+ * Width: 4096 (0x1000) bytes.
+ */
+#define RMI_DEV_COMM_ENTER_OFFSET		0x0
+#define RMI_DEV_COMM_EXIT_OFFSET		0x800
+#define RMI_DEV_COMM_DATA_SIZE			0x1000
+struct rmi_dev_comm_data {
+	/* RmiDevCommEnter: Entry information */
+	SET_MEMBER_RMI(struct rmi_dev_comm_enter enter,
+		       RMI_DEV_COMM_ENTER_OFFSET, RMI_DEV_COMM_EXIT_OFFSET);
+	/* RmiDevCommExit: Exit information */
+	SET_MEMBER_RMI(struct rmi_dev_comm_exit exit,
+		       RMI_DEV_COMM_EXIT_OFFSET, RMI_DEV_COMM_DATA_SIZE);
+};
+
+/*
+ * RmiAddressRange
+ * This structure contains base and top value of an address range.
+ * Width: 16 (0x10) bytes.
+ */
+struct rmi_address_range {
+	/* Address: Base of the address range (inclusive) */
+	SET_MEMBER_RMI(unsigned long base, 0, 0x8);
+	/* Address: Top of the address range (exclusive) */
+	SET_MEMBER_RMI(unsigned long top, 0x8, 0x10);
+};
+
+/*
+ * Maximum number of aux granules paramenter passed in rmi_pdev_params during
+ * PDEV createto PDEV create
+ */
+#define PDEV_PARAM_AUX_GRANULES_MAX		U(32)
+
+/*
+ * Maximum number of IO coherent RmiAddressRange parameter passed in
+ * rmi_pdev_params during PDEV create
+ */
+#define PDEV_PARAM_IOCOH_ADDR_RANGE_MAX		U(16)
+
+/*
+ * Maximum number of fully coherent RmiAddressRange parameter passed in
+ * rmi_pdev_params during PDEV create
+ */
+#define PDEV_PARAM_FCOH_ADDR_RANGE_MAX		U(4)
+
+/*
+ * RmiPdevParams
+ * This structure contains parameters provided by Host during PDEV creation.
+ * Width: 4096 (0x1000) bytes.
+ */
+struct rmi_pdev_params {
+	/* RmiPdevFlags: Flags */
+	SET_MEMBER_RMI(unsigned long flags, 0, 0x8);
+	/* Bits64: Physical device identifier */
+	SET_MEMBER_RMI(unsigned long pdev_id, 0x8, 0x10);
+	/* Bits16: Segment ID */
+	SET_MEMBER_RMI(unsigned short segment_id, 0x10, 0x18);
+	/* Bits16: Root Port identifier */
+	SET_MEMBER_RMI(unsigned short root_id, 0x18, 0x20);
+	/* UInt64: Certificate identifier */
+	SET_MEMBER_RMI(unsigned long cert_id, 0x20, 0x28);
+	/* UInt64: Base requester ID range (inclusive) */
+	SET_MEMBER_RMI(unsigned long rid_base, 0x28, 0x30);
+	/* UInt64: Top of requester ID range (exclusive) */
+	SET_MEMBER_RMI(unsigned long rid_top, 0x30, 0x38);
+	/* RmiHashAlgorithm: Algorithm used to generate device digests */
+	SET_MEMBER_RMI(unsigned char hash_algo, 0x38, 0x40);
+	/* UInt64: Number of auxiliary granules */
+	SET_MEMBER_RMI(unsigned long num_aux, 0x40, 0x48);
+	/* UInt64: IDE stream identifier */
+	SET_MEMBER_RMI(unsigned long ide_sid, 0x48, 0x50);
+	/* UInt64: Number of IO-coherent address ranges */
+	SET_MEMBER_RMI(unsigned long iocoh_num_addr_range, 0x50, 0x58);
+	/* UInt64: Number of fully-coherent address ranges */
+	SET_MEMBER_RMI(unsigned long fcoh_num_addr_range, 0x58, 0x100);
+
+	/* Address: Addresses of auxiliary granules */
+	SET_MEMBER_RMI(unsigned long aux[PDEV_PARAM_AUX_GRANULES_MAX], 0x100,
+		       0x200);
+	/* RmiAddressRange: IO-coherent address range */
+	SET_MEMBER_RMI(struct rmi_address_range
+		       iocoh_addr_range[PDEV_PARAM_IOCOH_ADDR_RANGE_MAX],
+		       0x200, 0x300);
+	/* RmiAddressRange: Fully coherent address range */
+	SET_MEMBER_RMI(struct rmi_address_range
+		       fcoh_addr_range[PDEV_PARAM_FCOH_ADDR_RANGE_MAX],
+		       0x300, 0x1000);
+};
+
 struct rtt_entry {
 	long walk_level;
 	uint64_t out_addr;
@@ -645,5 +1050,16 @@ u_register_t host_realm_delegate_map_protected_data(bool unknown,
 u_register_t host_realm_map_unprotected(struct realm *realm, u_register_t ns_pa,
 					u_register_t map_size);
 u_register_t host_realm_fold_rtt(u_register_t rd, u_register_t addr, long level);
+
+u_register_t host_rmi_pdev_aux_count(u_register_t pdev_ptr, u_register_t *count);
+u_register_t host_rmi_pdev_create(u_register_t pdev_ptr,
+				  u_register_t params_ptr);
+u_register_t host_rmi_pdev_get_state(u_register_t pdev_ptr, u_register_t *state);
+u_register_t host_rmi_pdev_communicate(u_register_t pdev_ptr,
+				       u_register_t data_ptr);
+u_register_t host_rmi_pdev_set_pubkey(u_register_t pdev_ptr, u_register_t key,
+				      u_register_t len, uint8_t algo);
+u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr);
+u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr);
 
 #endif /* HOST_REALM_RMI_H */

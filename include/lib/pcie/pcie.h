@@ -99,6 +99,7 @@ typedef enum {
 #define CC_SUB_SHIFT	16
 #define CC_BASE_SHIFT	24
 
+void pcie_init(void);
 void pcie_create_info_table(void);
 pcie_device_bdf_table_t *pcie_get_bdf_table(void);
 uint32_t pcie_find_capability(uint32_t bdf, uint32_t cid_type, uint32_t cid,

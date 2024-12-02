@@ -22,7 +22,7 @@ test_result_t host_test_realm_no_lpa2_invalid_sl(void)
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			0UL, RTT_MIN_LEVEL_LPA2, rec_flag, 1U, 0U)) {
+			0UL, 0UL, RTT_MIN_LEVEL_LPA2, rec_flag, 1U, 0U)) {
 		return TEST_RESULT_SUCCESS;
 	}
 
@@ -40,7 +40,7 @@ test_result_t host_test_realm_no_lpa2_invalid_s2sz(void)
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 50UL),
+			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 50UL), 0UL,
 			RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
 		return TEST_RESULT_SUCCESS;
 	}
@@ -66,7 +66,7 @@ test_result_t host_test_non_lpa2_realm_on_lpa2plat(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL),
+			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL), 0UL,
 			RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
 		return TEST_RESULT_FAIL;
 	}
@@ -98,7 +98,7 @@ test_result_t host_test_data_bound_non_lpa2_realm_on_lpa2plat(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL),
+			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL), 0UL,
 			RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
 		return TEST_RESULT_FAIL;
 	}
@@ -144,18 +144,18 @@ test_result_t host_test_lpa2_realm_on_non_lpa2plat(void)
 {
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 	struct realm realm;
-	u_register_t feature_flag = INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL);
+	u_register_t feature_flag0 = INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL);
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		return TEST_RESULT_SKIPPED;
 	} else {
-		feature_flag |= RMI_FEATURE_REGISTER_0_LPA2;
+		feature_flag0 |= RMI_FEATURE_REGISTER_0_LPA2;
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag, RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
+			feature_flag0, 0UL, RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
 		return TEST_RESULT_SUCCESS;
 	}
 

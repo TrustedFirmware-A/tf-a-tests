@@ -498,7 +498,8 @@
 #define RMI_REALM_FLAGS0_DA		BIT(3)
 
 /* RmiRealmFlags1 format */
-#define RMI_REALM_FLAGS1_RTT_TREE_PP	BIT(0)
+#define RMI_REALM_FLAGS1_RTT_TREE_PP			BIT(0)
+#define RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT	BIT(1)
 
 /* RmiInterfaceVersion type */
 #define RMI_MAJOR_VERSION		0U
@@ -581,6 +582,8 @@
 
 #define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_SHIFT	45UL
 #define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_WIDTH	4UL
+
+#define RMI_FEATURE_REGISTER_0_RTT_S2AP_INDIRECT	BIT(50)
 
 /* Possible values for RmiPlaneRttFeature */
 #define RMI_PLANE_RTT_AUX				0UL
@@ -669,6 +672,26 @@ typedef enum {
 #define OA_50_51_SHIFT			ULL(50)
 #define OA_50_51_WIDTH			TTE_OA_50_51_WIDTH
 #define OA_50_51_MASK			MASK(OA_50_51)
+
+/*
+ * When FEAT_S2PIE is enabled PIINDEX is saved at following index
+ */
+#define S2TTE_PI_INDEX_BIT0_SHIFT	6
+#define S2TTE_PI_INDEX_BIT1_SHIFT	51
+#define S2TTE_PI_INDEX_BIT2_SHIFT	53
+#define S2TTE_PI_INDEX_BIT3_SHIFT	54
+#define S2TTE_PI_INDEX_MASK		((1UL << S2TTE_PI_INDEX_BIT0_SHIFT) | \
+					(1UL << S2TTE_PI_INDEX_BIT1_SHIFT) | \
+					(1UL << S2TTE_PI_INDEX_BIT2_SHIFT) | \
+					(1UL << S2TTE_PI_INDEX_BIT3_SHIFT))
+/*
+ * RmiUnprotectedS2AP type
+ * Encoding for S2AP base index value for UNPROTECTED IPA
+ */
+#define RMI_PERM_S2AP_NO_ACCESS_IDX		U(0)
+#define RMI_PERM_S2AP_RO_IDX			U(1)
+#define RMI_PERM_S2AP_WO_IDX			U(2)
+#define RMI_PERM_S2AP_RW_IDX			U(3)
 
 /*
  * The Realm attribute parameters are shared by the Host via
@@ -1120,6 +1143,7 @@ struct realm {
 	bool             payload_created;
 	bool             shared_mem_created;
 	bool             rtt_tree_single;
+	bool		 rtt_s2ap_enc_indirect;
 	unsigned short   vmid;
 	enum realm_state state;
 	long start_level;

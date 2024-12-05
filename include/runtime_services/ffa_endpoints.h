@@ -14,6 +14,7 @@
 #define SECONDARY_UUID {0x092358d1, 0xb94723f0, 0x64447c82, 0xc88f57f5}
 #define TERTIARY_UUID {0x735cb579, 0xb9448c1d, 0xe1619385, 0xd2d80a77}
 #define IVY_UUID {0xd883baea, 0xaf4eafba, 0xfdf74481, 0xa744e5cb}
+#define STMM_UUID {0xdcae8d37, 0x46446bf0, 0xab401483, 0xa3873c93}
 #define EL3_SPMD_LP_UUID {0xe98e43ad, 0xb7db524f, 0x47a3bf57, 0x1588f4e3}
 
 /* vcpu_count of cactus SPs. */

@@ -22,8 +22,9 @@
 static uint32_t spm_version;
 
 static const struct ffa_uuid sp_uuids[] = {
-		{PRIMARY_UUID}, {SECONDARY_UUID}, {TERTIARY_UUID}, {IVY_UUID}, {EL3_SPMD_LP_UUID}
-	};
+		{PRIMARY_UUID}, {SECONDARY_UUID}, {TERTIARY_UUID}, {IVY_UUID},
+		{STMM_UUID}, {EL3_SPMD_LP_UUID}
+};
 
 static const struct ffa_partition_info ffa_expected_partition_info[] = {
 	/* Primary partition info */
@@ -65,6 +66,14 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 			       FFA_PARTITION_DIRECT_REQ_RECV |
 			       FFA_PARTITION_DIRECT_REQ_SEND),
 		.uuid = {IVY_UUID}
+	},
+	{
+		.id = SP_ID(5),
+		.exec_context = 1,
+		.properties = (FFA_PARTITION_AARCH64_EXEC |
+			       FFA_PARTITION_DIRECT_REQ_RECV |
+			       FFA_PARTITION_DIRECT_REQ_SEND),
+		.uuid = {STMM_UUID}
 	},
 	/* EL3 SPMD logical partition */
 	{
@@ -160,7 +169,7 @@ static void ffa_partition_info_get_regs_test(void)
 	 * we assume they dont exist and skip further tests to avoid
 	 * failures on platforms without el3 spmd logical partitions.
 	 */
-	ret = ffa_partition_info_get_regs(sp_uuids[4], 0, 0);
+	ret = ffa_partition_info_get_regs(sp_uuids[5], 0, 0);
 	if ((ffa_func_id(ret) == FFA_ERROR) &&
 	    ((ffa_error_code(ret) == FFA_ERROR_NOT_SUPPORTED) ||
 	    (ffa_error_code(ret) == FFA_ERROR_INVALID_PARAMETER))) {

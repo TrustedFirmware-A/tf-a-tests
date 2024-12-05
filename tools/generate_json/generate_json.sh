@@ -68,7 +68,17 @@ if [ $CACTUS_PRESENT == "true" ]; then
 	"pm": "cactus-tertiary.dts",
 	"physical-load-address": "0x7200000",
 	"owner": "Plat",
-	"package": "tl_pkg"
+	"package": "tl_pkg",
+	"size": "0x100000"
+},
+
+"cactus-stmm" : {
+	"image": "cactus.bin",
+	"pm": "cactus-stmm.dts",
+	"physical-load-address": "0x7700000",
+	"owner": "Plat",
+	"package": "tl_pkg",
+	"size": "0x300000"
 EOF
 	PARTITION_ALREADY_PRESENT=true
 fi
@@ -99,7 +109,8 @@ cat >> "$GENERATED_JSON" << EOF
 	"pm": "ivy-sel1.dts",
 	"physical-load-address": "0x7600000",
 	"owner": "Plat",
-	"package":"tl_pkg"
+	"package":"tl_pkg",
+	"size": "0x100000"
 }
 EOF
 

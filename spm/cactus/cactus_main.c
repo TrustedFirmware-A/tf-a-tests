@@ -308,7 +308,12 @@ void __dead2 cactus_main(bool primary_cold_boot,
 		cactus_print_boot_info(boot_info_header);
 	}
 
-	if (ffa_id == (SPM_VM_ID_FIRST + 2)) {
+	/*
+	 * Cactus-tertiary and cactus-stmm make use of FFA_RXTX_MAP API
+	 * instead of specifying `rx_tx-info` in their manifests, as done by the
+	 * primary and secondary cactus partitions.
+	 */
+	if (ffa_id == SP_ID(3) || ffa_id == SP_ID(5)) {
 		VERBOSE("Mapping RXTX Region\n");
 		CONFIGURE_AND_MAP_MAILBOX(mb, PAGE_SIZE, ret);
 		if (ffa_func_id(ret) != FFA_SUCCESS_SMC32) {
@@ -323,7 +328,7 @@ void __dead2 cactus_main(bool primary_cold_boot,
 	ret = register_secondary_entrypoint();
 
 	/* FFA_SECONDARY_EP_REGISTER interface is not supported for UP SP. */
-	if (ffa_id == (SPM_VM_ID_FIRST + 2)) {
+	if (ffa_id == SP_ID(3) || ffa_id == SP_ID(5)) {
 		EXPECT(ffa_func_id(ret), FFA_ERROR);
 		EXPECT(ffa_error_code(ret), FFA_ERROR_NOT_SUPPORTED);
 	} else {

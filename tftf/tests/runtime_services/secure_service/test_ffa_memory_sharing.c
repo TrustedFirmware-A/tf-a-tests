@@ -1713,7 +1713,11 @@ test_result_t test_ffa_memory_share_fragmented_tx_realm(void)
 		goto exit;
 	}
 
-	/* This time test should pass. */
+	/* Undelegate operation scrubbed the TX buffer, re-init the fragment. */
+	remaining_constituent_count = ffa_memory_fragment_init(
+		mb.send, PAGE_SIZE, &constituents[1], 1, &fragment_length);
+
+	/* This time the test is expected to pass. */
 	ffa_ret = ffa_mem_frag_tx(handle, fragment_length);
 
 	if (is_ffa_call_error(ffa_ret)) {

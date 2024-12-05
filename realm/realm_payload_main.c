@@ -48,13 +48,100 @@ static void realm_loop_cmd(void)
 static bool test_realm_enter_plane_n(void)
 {
 	u_register_t base, plane_index, perm_index, flags = 0U;
+	bool ret1;
 
 	plane_index = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
 	base = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
 	perm_index = plane_index + 1U;
 
+	ret1 = plane_common_init(plane_index, perm_index, base, &run);
+	if (!ret1) {
+		return ret1;
+	}
+
 	realm_printf("Entering plane %ld, ep=0x%lx run=0x%lx\n", plane_index, base, &run);
 	return realm_plane_enter(plane_index, perm_index, base, flags, &run);
+}
+
+static bool test_realm_enter_plane_n_reg_rw(void)
+{
+	u_register_t base, plane_index, perm_index, flags = 0U;
+	u_register_t reg1, reg2, reg3, reg4, ret;
+	bool ret1;
+
+	if (realm_is_plane0()) {
+		plane_index = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+		base = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
+		perm_index = plane_index + 1U;
+
+		ret1 = plane_common_init(plane_index, perm_index, base, &run);
+		if (!ret1) {
+			return ret1;
+		}
+
+		realm_printf("Entering plane %ld, ep=0x%lx run=0x%lx\n", plane_index, base, &run);
+		ret = realm_plane_enter(plane_index, perm_index, base, flags, &run);
+		if (ret) {
+			/* get return value from plane1 */
+			reg1 = realm_shared_data_get_plane_n_val(plane_index,
+					REC_IDX(read_mpidr_el1()), HOST_ARG1_INDEX);
+
+			reg2 = realm_shared_data_get_plane_n_val(plane_index,
+					REC_IDX(read_mpidr_el1()), HOST_ARG2_INDEX);
+
+			realm_printf("P0 read 0x%lx 0x%lx\n", reg1, reg2);
+
+			/* read pauth register for plane1 */
+			ret = rsi_plane_reg_read(plane_index, SYSREG_ID_apiakeylo_el1, &reg3);
+			if ((ret != RSI_SUCCESS) || (reg1 != reg3)) {
+				realm_printf("pauth register mismatch 0x%lx 0x%lx\n", reg1, reg3);
+				return false;
+			}
+
+			/* read sctlr register for plane1 */
+			ret = rsi_plane_reg_read(plane_index, SYSREG_ID_sctlr_el1, &reg4);
+			if ((ret != RSI_SUCCESS) || (reg2 != reg4)) {
+				realm_printf("sctlr register mismatch 0x%lx 0x%lx\n", reg2, reg4);
+				return false;
+			}
+
+			/* write pauth register and verify it is same after exiting plane n */
+			ret = rsi_plane_reg_write(plane_index, SYSREG_ID_apibkeylo_el1, 0xABCD);
+			if (ret != RSI_SUCCESS) {
+				realm_printf("pauth register write failed\n");
+				return false;
+			}
+
+			/* enter plane n */
+			ret = realm_plane_enter(plane_index, perm_index, base, flags, &run);
+			if (ret) {
+				/* read pauth register for plane1 */
+				ret = rsi_plane_reg_read(plane_index, SYSREG_ID_apibkeylo_el1,
+						&reg3);
+
+				if ((ret != RSI_SUCCESS) || (reg3 != 0xABCD)) {
+					realm_printf("reg mismatch after write 0x%lx\n", reg3);
+					return false;
+				}
+			}
+
+			/* read sysreg not supported by rmm, expect error */
+			ret = rsi_plane_reg_read(plane_index, SYSREG_ID_mpamidr_el1, &reg3);
+			if (ret == RSI_SUCCESS) {
+				realm_printf("reg read should have failed\n");
+				return false;
+			}
+			return true;
+		}
+		return false;
+	} else {
+		realm_printf("PN set 0x%lx 0x%lx\n", read_apiakeylo_el1(), read_sctlr_el1());
+
+		/* return pauth and sctlr back to p0 */
+		realm_shared_data_set_my_realm_val(HOST_ARG1_INDEX, read_apiakeylo_el1());
+		realm_shared_data_set_my_realm_val(HOST_ARG2_INDEX, read_sctlr_el1());
+		return true;
+	}
 }
 
 /*
@@ -299,6 +386,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_ENTER_PLANE_N_CMD:
 			test_succeed = test_realm_enter_plane_n();
+			break;
+		case REALM_PLANE_N_REG_RW_CMD:
+			test_succeed = test_realm_enter_plane_n_reg_rw();
 			break;
 		case REALM_MULTIPLE_REC_PSCI_DENIED_CMD:
 			test_succeed = test_realm_multiple_rec_psci_denied_cmd();

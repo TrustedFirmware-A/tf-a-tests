@@ -135,7 +135,7 @@ u_register_t handle_plane_exit(u_register_t plane_index,
 	return PSI_RETURN_TO_P0;
 }
 
-static bool plane_common_init(u_register_t plane_index,
+bool plane_common_init(u_register_t plane_index,
 		u_register_t perm_index,
 		u_register_t base,
 		rsi_plane_run *run)
@@ -161,12 +161,6 @@ bool realm_plane_enter(u_register_t plane_index,
 		rsi_plane_run *run)
 {
 	u_register_t ret;
-	bool ret1;
-
-	ret1 = plane_common_init(plane_index, perm_index, base, run);
-	if (!ret1) {
-		return ret1;
-	}
 
 	run->enter.flags = flags;
 

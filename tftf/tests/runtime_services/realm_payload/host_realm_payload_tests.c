@@ -50,6 +50,63 @@ bool are_planes_supported(void)
 }
 
 /*
+ * @Test_Aim@ Test RSI_PLANE_REG_READ/WRITE
+ */
+test_result_t host_test_realm_create_planes_register_rw(void)
+{
+	bool ret1, ret2;
+	u_register_t rec_flag[MAX_REC_COUNT];
+	struct realm realm;
+	u_register_t feature_flag = 0UL;
+	long sl = RTT_MIN_LEVEL;
+	struct rmi_rec_run *run;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (!are_planes_supported()) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
+	}
+
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			feature_flag, sl, rec_flag, 1U, 1U)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* CMD for Plane N */
+	host_shared_data_set_realm_cmd(&realm, REALM_PLANE_N_REG_RW_CMD, 1U, 0U);
+
+	run = (struct rmi_rec_run *)realm.run[0U];
+
+	host_realm_set_aux_plane_args(&realm, 1U);
+	ret1 = host_enter_realm_execute(&realm, REALM_PLANE_N_REG_RW_CMD,
+			RMI_EXIT_HOST_CALL, 0U);
+
+	if (run->exit.exit_reason != RMI_EXIT_HOST_CALL) {
+		ERROR("Rec0 error exit=0x%lx ret1=%d HPFAR=0x%lx \
+				esr=0x%lx far=0x%lx\n",
+				run->exit.exit_reason, ret1,
+				run->exit.hpfar,
+				run->exit.esr, run->exit.far);
+	}
+	ret2 = host_destroy_realm(&realm);
+
+	if (!ret1 || !ret2) {
+		ERROR("%s(): enter=%d destroy=%d\n",
+		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+	return host_cmp_result();
+}
+/*
  * @Test_Aim@ Test realm payload creation with 3 Aux Planes, enter all Planes
  * Host cannot enter Aux Planes directly,
  * Host will enter P0, P0 will enter aux plane

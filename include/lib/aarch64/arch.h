@@ -1705,4 +1705,72 @@
  ******************************************************************************/
 #define FPMR			S3_3_C4_C4_2
 
+/******************************************************************************
+ * Definitions of system register identifiers
+ *****************************************************************************/
+
+#define ESR_EL2_SYSREG_TRAP_OP0_SHIFT	20
+#define ESR_EL2_SYSREG_TRAP_OP0_WIDTH	U(2)
+
+#define ESR_EL2_SYSREG_TRAP_OP2_SHIFT	17
+#define ESR_EL2_SYSREG_TRAP_OP2_WIDTH	U(3)
+
+#define ESR_EL2_SYSREG_TRAP_OP1_SHIFT	14
+#define ESR_EL2_SYSREG_TRAP_OP1_WIDTH	U(3)
+
+#define ESR_EL2_SYSREG_TRAP_CRN_SHIFT	10
+#define ESR_EL2_SYSREG_TRAP_CRN_WIDTH	U(4)
+
+#define ESR_EL2_SYSREG_TRAP_CRM_SHIFT	1
+#define ESR_EL2_SYSREG_TRAP_CRM_WIDTH	U(4)
+
+#define SYSREG_ESR(op0, op1, crn, crm, op2) \
+		((UL(op0) << ESR_EL2_SYSREG_TRAP_OP0_SHIFT) | \
+		 (UL(op1) << ESR_EL2_SYSREG_TRAP_OP1_SHIFT) | \
+		 (UL(crn) << ESR_EL2_SYSREG_TRAP_CRN_SHIFT) | \
+		 (UL(crm) << ESR_EL2_SYSREG_TRAP_CRM_SHIFT) | \
+		 (UL(op2) << ESR_EL2_SYSREG_TRAP_OP2_SHIFT))
+
+#define SYSREG_ID_sp_el0			SYSREG_ESR(3, 0, 4, 1, 0)
+#define SYSREG_ID_sp_el1			SYSREG_ESR(3, 4, 4, 1, 0)
+#define SYSREG_ID_elr_el1			SYSREG_ESR(3, 0, 4, 0, 1)
+#define SYSREG_ID_spsr_el1			SYSREG_ESR(3, 0, 4, 0, 0)
+#define SYSREG_ID_pmcr_el0			SYSREG_ESR(3, 3, 9, 12, 0)
+#define SYSREG_ID_tpidrro_el0			SYSREG_ESR(3, 3, 13, 0, 3)
+#define SYSREG_ID_tpidr_el0			SYSREG_ESR(3, 3, 13, 0, 2)
+#define SYSREG_ID_csselr_el1			SYSREG_ESR(3, 2, 0, 0, 0)
+#define SYSREG_ID_sctlr_el1			SYSREG_ESR(3, 0, 1, 0, 0)
+#define SYSREG_ID_actlr_el1			SYSREG_ESR(3, 0, 1, 0, 1)
+#define SYSREG_ID_cpacr_el1			SYSREG_ESR(3, 0, 1, 0, 2)
+#define SYSREG_ID_zcr_el1			SYSREG_ESR(3, 0, 1, 2, 0)
+#define SYSREG_ID_ttbr0_el1			SYSREG_ESR(3, 0, 2, 0, 0)
+#define SYSREG_ID_ttbr1_el1			SYSREG_ESR(3, 0, 2, 0, 1)
+#define SYSREG_ID_tcr_el1			SYSREG_ESR(3, 0, 2, 0, 2)
+#define SYSREG_ID_esr_el1			SYSREG_ESR(3, 0, 5, 2, 0)
+#define SYSREG_ID_afsr0_el1			SYSREG_ESR(3, 0, 5, 1, 0)
+#define SYSREG_ID_afsr1_el1			SYSREG_ESR(3, 0, 5, 1, 1)
+#define SYSREG_ID_far_el1			SYSREG_ESR(3, 0, 6, 0, 0)
+#define SYSREG_ID_mair_el1			SYSREG_ESR(3, 0, 10, 2, 0)
+#define SYSREG_ID_vbar_el1			SYSREG_ESR(3, 0, 12, 0, 0)
+#define SYSREG_ID_contextidr_el1		SYSREG_ESR(3, 0, 13, 0, 1)
+#define SYSREG_ID_tpidr_el1			SYSREG_ESR(3, 0, 13, 0, 4)
+#define SYSREG_ID_amair_el1			SYSREG_ESR(3, 0, 10, 3, 0)
+#define SYSREG_ID_cntkctl_el1			SYSREG_ESR(3, 0, 14, 1, 0)
+#define SYSREG_ID_par_el1			SYSREG_ESR(3, 0, 7, 4, 0)
+#define SYSREG_ID_mdscr_el1			SYSREG_ESR(2, 0, 0, 2, 2)
+#define SYSREG_ID_mdccint_el1			SYSREG_ESR(2, 0, 0, 2, 0)
+#define SYSREG_ID_disr_el1			SYSREG_ESR(3, 0, 12, 1, 1)
+#define SYSREG_ID_mpam0_el1			SYSREG_ESR(3, 0, 10, 5, 1)
+#define SYSREG_ID_apiakeylo_el1			SYSREG_ESR(3, 0, 2,  1, 0)
+#define SYSREG_ID_apiakeyhi_el1			SYSREG_ESR(3, 0, 2,  1, 1)
+#define SYSREG_ID_apibkeylo_el1			SYSREG_ESR(3, 0, 2,  1, 2)
+#define SYSREG_ID_apibkeyhi_el1			SYSREG_ESR(3, 0, 2,  1, 3)
+#define SYSREG_ID_apdakeylo_el1			SYSREG_ESR(3, 0, 2,  2, 0)
+#define SYSREG_ID_apdakeyhi_el1			SYSREG_ESR(3, 0, 2,  2, 1)
+#define SYSREG_ID_apdbkeylo_el1			SYSREG_ESR(3, 0, 2,  2, 2)
+#define SYSREG_ID_apdbkeyhi_el1			SYSREG_ESR(3, 0, 2,  2, 3)
+#define SYSREG_ID_apgakeylo_el1			SYSREG_ESR(3, 0, 2,  3, 0)
+#define SYSREG_ID_apgakeyhi_el1			SYSREG_ESR(3, 0, 2,  3, 1)
+#define SYSREG_ID_mpamidr_el1			SYSREG_ESR(3, 0, 10, 4, 4)
+
 #endif /* ARCH_H */

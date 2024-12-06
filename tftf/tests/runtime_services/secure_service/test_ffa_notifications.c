@@ -679,8 +679,6 @@ static void schedule_receiver_interrupt_init(void)
 {
 	tftf_irq_register_handler(FFA_SCHEDULE_RECEIVER_INTERRUPT_ID,
 				  schedule_receiver_interrupt_handler);
-
-	tftf_irq_enable(FFA_SCHEDULE_RECEIVER_INTERRUPT_ID, 0xA);
 }
 
 /**
@@ -689,7 +687,6 @@ static void schedule_receiver_interrupt_init(void)
  */
 static void schedule_receiver_interrupt_deinit(void)
 {
-	tftf_irq_disable(FFA_SCHEDULE_RECEIVER_INTERRUPT_ID);
 	tftf_irq_unregister_handler(FFA_SCHEDULE_RECEIVER_INTERRUPT_ID);
 	schedule_receiver_interrupt_received = 0;
 }

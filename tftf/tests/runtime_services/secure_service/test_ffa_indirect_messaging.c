@@ -32,12 +32,17 @@ const char expected_msg[] = "Testing FF-A message.";
 static __aligned(PAGE_SIZE) uint8_t vm1_rx_buffer[PAGE_SIZE];
 static __aligned(PAGE_SIZE) uint8_t vm1_tx_buffer[PAGE_SIZE];
 
+static int schedule_receiver_interrupt_handler(void *data)
+{
+	return 0;
+}
+
 test_result_t test_ffa_indirect_message_sp_to_vm(void)
 {
 	struct ffa_value ret;
 	struct mailbox_buffers mb;
 	ffa_id_t header_sender;
-	const ffa_id_t vm_id = 1;
+	const ffa_id_t vm_id = VM_ID(1);
 	const ffa_id_t sender = SP_ID(1);
 	char msg[300];
 
@@ -47,6 +52,9 @@ test_result_t test_ffa_indirect_message_sp_to_vm(void)
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
 	GET_TFTF_MAILBOX(mb);
+
+	tftf_irq_register_handler(FFA_SCHEDULE_RECEIVER_INTERRUPT_ID,
+				  schedule_receiver_interrupt_handler);
 
 	ret = ffa_rxtx_map_forward(mb.send, vm_id, vm1_rx_buffer,
 				   vm1_tx_buffer);
@@ -89,6 +97,15 @@ test_result_t test_ffa_indirect_message_sp_to_vm(void)
 		return TEST_RESULT_FAIL;
 	}
 
+	/*
+	 * Managed exit occured while SP was running and it is left in its
+	 * fiq handler, resume the SP to reach the FF-A message loop again.
+	 */
+	ret = cactus_resume_after_managed_exit(HYP_ID, SPM_VM_ID_FIRST);
+	if (!is_ffa_direct_response(ret)) {
+		return TEST_RESULT_FAIL;
+	}
+
 	ret = ffa_notification_bitmap_destroy(vm_id);
 	if (!is_expected_ffa_return(ret, FFA_SUCCESS_SMC32)) {
 		return TEST_RESULT_FAIL;
@@ -98,6 +115,8 @@ test_result_t test_ffa_indirect_message_sp_to_vm(void)
 	if (!is_expected_ffa_return(ret, FFA_SUCCESS_SMC32)) {
 		return TEST_RESULT_FAIL;
 	}
+
+	tftf_irq_unregister_handler(FFA_SCHEDULE_RECEIVER_INTERRUPT_ID);
 
 	return TEST_RESULT_SUCCESS;
 }
@@ -110,7 +129,7 @@ test_result_t test_ffa_indirect_message_sp_to_vm_rx_realm_fail(void)
 {
 	struct ffa_value ret;
 	struct mailbox_buffers mb;
-	const ffa_id_t vm_id = 1;
+	const ffa_id_t vm_id = VM_ID(1);
 	const ffa_id_t sender = SP_ID(1);
 	ffa_id_t header_sender;
 	u_register_t ret_rmm;
@@ -147,6 +166,9 @@ test_result_t test_ffa_indirect_message_sp_to_vm_rx_realm_fail(void)
 		ERROR("Failed to create bitmap for vm %x\n", vm_id);
 		return TEST_RESULT_FAIL;
 	}
+
+	tftf_irq_register_handler(FFA_SCHEDULE_RECEIVER_INTERRUPT_ID,
+				  schedule_receiver_interrupt_handler);
 
 	/*
 	 * Delegate RX buffer of VM to realm.
@@ -201,6 +223,15 @@ test_result_t test_ffa_indirect_message_sp_to_vm_rx_realm_fail(void)
 		return TEST_RESULT_FAIL;
 	}
 
+	/*
+	 * Managed exit occured while SP was running and it is left in its
+	 * fiq handler, resume the SP to reach the FF-A message loop again.
+	 */
+	ret = cactus_resume_after_managed_exit(HYP_ID, SPM_VM_ID_FIRST);
+	if (!is_ffa_direct_response(ret)) {
+		return TEST_RESULT_FAIL;
+	}
+
 	if (strncmp(msg, expected_msg, ARRAY_SIZE(expected_msg)) != 0) {
 		ERROR("Unexpected message: %s, expected: %s\n", msg, expected_msg);
 		return TEST_RESULT_FAIL;
@@ -213,6 +244,7 @@ test_result_t test_ffa_indirect_message_sp_to_vm_rx_realm_fail(void)
 	}
 
 	/* Cleaning up after the test: */
+	tftf_irq_unregister_handler(FFA_SCHEDULE_RECEIVER_INTERRUPT_ID);
 
 	/* Destroy bitmap of VM. */
 	ret = ffa_notification_bitmap_destroy(vm_id);

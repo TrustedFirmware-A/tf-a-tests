@@ -19,6 +19,7 @@ TFTF_INCLUDES	:= 					\
 	-Iinclude/lib					\
 	-Iinclude/lib/${ARCH}				\
 	-Iinclude/lib/extensions			\
+	-Iinclude/lib/hob			\
 	-Iinclude/lib/pcie				\
 	-Iinclude/lib/spdm				\
 	-Iinclude/lib/utils				\
@@ -57,6 +58,7 @@ FRAMEWORK_SOURCES	+=						\
 	lib/extensions/amu/${ARCH}/amu.c				\
 	lib/extensions/amu/${ARCH}/amu_helpers.S			\
 	lib/exceptions/irq.c						\
+	lib/hob/hob.c						\
 	lib/locks/${ARCH}/spinlock.S					\
 	lib/power_management/hotplug/hotplug.c				\
 	lib/power_management/suspend/${ARCH}/asm_tftf_suspend.S		\

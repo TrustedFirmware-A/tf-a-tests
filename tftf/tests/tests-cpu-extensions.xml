@@ -23,6 +23,7 @@
     <testcase name="Check for MTE register leakage" function="test_mte_leakage" />
     <testcase name="Use FGT Registers" function="test_fgt_enabled" />
     <testcase name="Use FGT2 Registers" function="test_fgt2_enabled" />
+    <testcase name="Use FPMR Register" function="test_fpmr_enabled" />
     <testcase name="Use ECV Registers" function="test_ecv_enabled" />
     <testcase name="Use trace buffer control Registers" function="test_trbe_enabled" />
     <testcase name="Use branch record buffer control registers" function="test_brbe_enabled" />

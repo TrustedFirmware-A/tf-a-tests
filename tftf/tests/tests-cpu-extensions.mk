@@ -11,6 +11,7 @@ TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	extensions/debugv8p9/test_debugv8p9.c				\
 	extensions/ecv/test_ecv.c					\
 	extensions/fgt/test_fgt.c					\
+	extensions/fpmr/test_fpmr.c					\
 	extensions/ls64/test_ls64.c 					\
 	extensions/ls64/ls64_operations.S				\
 	extensions/mpam/test_mpam.c					\

@@ -515,6 +515,13 @@
 #define ID_AA64PFR1_DF2_SHIFT			U(56)
 #define ID_AA64PFR1_DF2_WIDTH			ULL(0x4)
 
+/* ID_AA64PFR2_EL1 definitions */
+#define ID_AA64PFR2_EL1				S3_0_C0_C4_2
+#define ID_AA64PFR2_EL1_FPMR_SHIFT		U(32)
+#define ID_AA64PFR2_EL1_FPMR_MASK		ULL(0xf)
+#define ID_AA64PFR2_EL1_FPMR_WIDTH		U(4)
+#define ID_AA64PFR2_EL1_FPMR_SUPPORTED		ULL(0x1)
+
 /* ID_PFR1_EL1 definitions */
 #define ID_PFR1_VIRTEXT_SHIFT	U(12)
 #define ID_PFR1_VIRTEXT_MASK	U(0xf)
@@ -1562,5 +1569,10 @@
 #define SCXTNUM_EL2		S3_4_C13_C0_7
 #define SCXTNUM_EL1		S3_0_C13_C0_7
 #define SCXTNUM_EL0		S3_3_C13_C0_7
+
+/*******************************************************************************
+ * Floating Point Mode Register definitions
+ ******************************************************************************/
+#define FPMR			S3_3_C4_C4_2
 
 #endif /* ARCH_H */

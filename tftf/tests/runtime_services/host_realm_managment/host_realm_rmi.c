@@ -772,6 +772,8 @@ u_register_t host_realm_create(struct realm *realm)
 		goto err_undelegate_rtt;
 	}
 
+	memset((char *)params, 0U, PAGE_SIZE);
+
 	/* Populate params */
 	params->s2sz = EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
 				realm->rmm_feat_reg0);

@@ -21,8 +21,8 @@
 /* For snprintf function declaration */
 #include <stdio.h>
 
-/* This file is compatible with release 3.6.0 */
-#define MBEDTLS_CONFIG_VERSION         0x03060000
+/* This file is compatible with release 3.6.2 */
+#define MBEDTLS_CONFIG_VERSION         0x03060200
 
 /* Configuration file to build mbed TLS with the required features for TFTF */
 #define MBEDTLS_PLATFORM_MEMORY

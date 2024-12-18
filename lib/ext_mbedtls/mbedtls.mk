@@ -9,9 +9,9 @@ ifeq (${MBEDTLS_DIR},)
 $(error Error: MBEDTLS_DIR not set)
 endif
 
-MBEDTLS_CHECK := $(shell find ${MBEDTLS_DIR}/include -name mbedtls)
+MBEDTLS_PRESENT := $(wildcard ${MBEDTLS_DIR}/include/mbedtls)
 
-ifneq (${MBEDTLS_CHECK},)
+ifneq (${MBEDTLS_PRESENT},)
 $(info Found mbedTLS at ${MBEDTLS_DIR})
 
 TFTF_INCLUDES += -I${MBEDTLS_DIR}/include
@@ -51,5 +51,5 @@ TESTS_SOURCES	+=				\
 		x509_crt.c 			\
 		)
 else
-$(info MbedTLS not found, some dependent tests will be skipped or failed.)
+$(info MbedTLS not found, some dependent tests will be skipped or fail.)
 endif

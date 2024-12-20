@@ -537,4 +537,22 @@ static inline bool is_feat_fpmr_present(void)
 	return EXTRACT(ID_AA64PFR2_EL1_FPMR, read_id_aa64pfr2_el1())
 		== ID_AA64PFR2_EL1_FPMR_SUPPORTED;
 }
+
+static inline bool is_feat_sctlr2_supported(void)
+{
+	return (((read_id_aa64mmfr3_el1() >> ID_AA64MMFR3_EL1_SCTLRX_SHIFT) &
+		ID_AA64MMFR3_EL1_SCTLRX_MASK) == ID_AA64MMFR3_EL1_SCTLR2_SUPPORTED);
+}
+
+static inline bool is_feat_the_supported(void)
+{
+	return (((read_id_aa64pfr1_el1() >> ID_AA64PFR1_EL1_THE_SHIFT) &
+		ID_AA64PFR1_EL1_THE_MASK) == ID_AA64PFR1_EL1_THE_SUPPORTED);
+}
+
+static inline bool is_feat_d128_supported(void)
+{
+	return (((read_id_aa64mmfr3_el1() >> ID_AA64MMFR3_EL1_D128_SHIFT) &
+		ID_AA64MMFR3_EL1_D128_MASK) == ID_AA64MMFR3_EL1_D128_SUPPORTED);
+}
 #endif /* ARCH_FEATURES_H */

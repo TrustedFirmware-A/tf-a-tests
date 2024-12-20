@@ -40,6 +40,9 @@
     <testcase name="PMUv3 SMC counter preservation" function="test_pmuv3_el3_preserves" />
     <testcase name="LS64 support" function="test_ls64_instructions" />
     <testcase name="LS64-ACCDATA support" function="test_ls64_accdata_sysreg" />
+    <testcase name="SCTLR2 support" function="test_sctlr2_support" />
+    <testcase name="THE support" function="test_the_support" />
+    <testcase name="D128 support" function="test_d128_support" />
   </testsuite>
 
   <testsuite name="ARM_ARCH_SVC" description="Arm Architecture Service tests">

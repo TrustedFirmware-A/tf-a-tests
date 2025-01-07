@@ -1968,11 +1968,11 @@ u_register_t host_rmi_pdev_communicate(u_register_t pdev_ptr,
 					     data_ptr}, 3U).ret0;
 }
 
-u_register_t host_rmi_pdev_set_pubkey(u_register_t pdev_ptr, u_register_t key,
-				      u_register_t len, uint8_t algo)
+u_register_t host_rmi_pdev_set_pubkey(u_register_t pdev_ptr,
+				      u_register_t pubkey_params_ptr)
 {
 	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_SET_PUBKEY, pdev_ptr,
-					     key, len, algo}, 5U).ret0;
+					     pubkey_params_ptr}, 3U).ret0;
 }
 
 u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr)

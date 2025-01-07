@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -132,12 +132,21 @@ static int host_tdi_pdev_create(struct host_tdi *tdi)
 
 static int host_tdi_pdev_set_pubkey(struct host_tdi *tdi)
 {
+	struct rmi_public_key_params *pubkey_params;
 	u_register_t ret;
 
+	pubkey_params = (struct rmi_public_key_params *)page_alloc(PAGE_SIZE);
+	memset(pubkey_params, 0, GRANULE_SIZE);
+
+	memcpy(pubkey_params->key, tdi->public_key, tdi->public_key_len);
+	memcpy(pubkey_params->metadata, tdi->public_key_metadata,
+	       tdi->public_key_metadata_len);
+	pubkey_params->key_len = tdi->public_key_len;
+	pubkey_params->metadata_len = tdi->public_key_metadata_len;
+	pubkey_params->algo = tdi->public_key_sig_algo;
+
 	ret = host_rmi_pdev_set_pubkey((u_register_t)tdi->pdev,
-				       (u_register_t)tdi->public_key,
-				       (u_register_t)tdi->public_key_len,
-				       (u_register_t)tdi->public_key_sig_algo);
+				       (u_register_t)pubkey_params);
 	if (ret != RMI_SUCCESS) {
 		return -1;
 	}
@@ -238,20 +247,21 @@ static int host_tdi_pdev_communicate(struct host_tdi *tdi,
 		 * If cache is set, then response buffer has the device object
 		 * to be cached.
 		 */
-		if (EXTRACT(RMI_DEV_COMM_EXIT_FLAGS_CACHE,
+		if (EXTRACT(RMI_DEV_COMM_EXIT_FLAGS_CACHE_RSP,
 			    dev_comm_exit->flags)) {
 			uint8_t *obj_buf;
 			uint8_t obj_type;
 
-			if (dev_comm_exit->cache_len == 0 ||
-			    (dev_comm_exit->cache_offset +
-			     dev_comm_exit->cache_len) >
+			if (dev_comm_exit->cache_rsp_len == 0 ||
+			    (dev_comm_exit->cache_rsp_offset +
+			     dev_comm_exit->cache_rsp_len) >
 			    GRANULE_SIZE) {
 				INFO("Invalid cache offset/length\n");
 				rc = -1;
 				break;
 			}
 
+			/* todo: use 'dev_comm_exit->cache_obj_id' */
 			if (state == RMI_PDEV_STATE_NEW) {
 				obj_type = DEV_OBJ_CERT;
 			} else if (state == RMI_PDEV_STATE_HAS_KEY) {
@@ -263,10 +273,10 @@ static int host_tdi_pdev_communicate(struct host_tdi *tdi,
 			}
 
 			obj_buf = (uint8_t *)dev_comm_enter->resp_addr +
-				dev_comm_exit->cache_offset;
+				dev_comm_exit->cache_rsp_offset;
 			rc = host_tdi_pdev_cache_device_object(tdi, obj_type,
 							       obj_buf,
-						       dev_comm_exit->cache_len);
+					       dev_comm_exit->cache_rsp_len);
 			if (rc != 0) {
 				INFO("host_pdev_cache_device_object failed\n");
 				rc = -1;
@@ -304,7 +314,7 @@ static int host_tdi_pdev_communicate(struct host_tdi *tdi,
 			 */
 			if (rc == 0) {
 				dev_comm_enter->status =
-					RMI_DEV_COMM_ENTER_STATUS_SUCCESS;
+					RMI_DEV_COMM_ENTER_STATUS_RESPONSE;
 				dev_comm_enter->resp_len = resp_len;
 			} else {
 				dev_comm_enter->status =
@@ -389,9 +399,14 @@ static int host_tdi_pdev_setup(struct host_tdi *tdi)
 		return -1;
 	}
 
-	/* Set flags as IO coherent device protected by end to end IDE. */
-	tdi->pdev_flags = INPLACE(RMI_PDEV_FLAGS_PROT_CONFIG,
-				  RMI_PDEV_IOCOH_E2E_IDE);
+	/*
+	 * Off chip PCIe device - set flags as non coherent device protected by
+	 * end to end IDE, with SPDM.
+	 */
+	tdi->pdev_flags = (INPLACE(RMI_PDEV_FLAGS_SPDM, RMI_PDEV_SPDM_TRUE) |
+			   INPLACE(RMI_PDEV_FLAGS_IDE, RMI_PDEV_IDE_TRUE) |
+			   INPLACE(RMI_PDEV_FLAGS_COHERENT,
+				   RMI_PDEV_COHERENT_FALSE));
 
 	/* Get num of aux granules required for this PDEV */
 	ret = host_rmi_pdev_aux_count(tdi->pdev_flags, &count);

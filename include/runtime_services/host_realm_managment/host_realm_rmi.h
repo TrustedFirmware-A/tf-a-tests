@@ -578,18 +578,18 @@
  * RmiRecExitReason represents the reason for a REC exit.
  * This is returned to NS hosts via RMI_REC_ENTER::run_ptr.
  */
-#define RMI_EXIT_SYNC			0U
-#define RMI_EXIT_IRQ			1U
-#define RMI_EXIT_FIQ			2U
-#define RMI_EXIT_PSCI			3U
-#define RMI_EXIT_RIPAS_CHANGE		4U
-#define RMI_EXIT_HOST_CALL		5U
-#define RMI_EXIT_SERROR			6U
-#define RMI_EXIT_IO			7U
-#define RMI_EXIT_RTT_REQUEST		8U
-#define RMI_EXIT_S2AP_CHANGE		9U
-#define RMI_EXIT_VDEV_REQUEST		10U
-#define RMI_EXIT_INVALID		(RMI_EXIT_VDEV_REQUEST + 1U)
+#define RMI_EXIT_SYNC			U(0)
+#define RMI_EXIT_IRQ			U(1)
+#define RMI_EXIT_FIQ			U(2)
+#define RMI_EXIT_PSCI			U(3)
+#define RMI_EXIT_RIPAS_CHANGE		U(4)
+#define RMI_EXIT_HOST_CALL		U(5)
+#define RMI_EXIT_SERROR			U(6)
+#define RMI_EXIT_S2AP_CHANGE		U(7)
+#define RMI_EXIT_VDEV_REQUEST		U(8)
+#define RMI_EXIT_VDEV_COMM		U(9)
+#define RMI_EXIT_DEV_MEM_MAP		U(10)
+#define RMI_EXIT_INVALID		(RMI_EXIT_DEV_MEM_MAP + 1U)
 
 /* RmiRecRunnable types */
 #define RMI_NOT_RUNNABLE		0U
@@ -632,19 +632,24 @@
 #define RMI_FEATURE_REGISTER_0_MAX_RECS_ORDER_SHIFT	38UL
 #define RMI_FEATURE_REGISTER_0_MAX_RECS_ORDER_WIDTH	4UL
 #define RMI_FEATURE_REGISTER_0_DA_EN			BIT(42)
+#define RMI_FEATURE_REGISTER_0_PLANE_RTT_SHIFT		43UL
+#define RMI_FEATURE_REGISTER_0_PLANE_RTT_WIDTH		2UL
+#define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_SHIFT	45UL
+#define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_WIDTH	4UL
 
 /*
  * Format of feature_flag[63:32].
  * Value -1 (0 in case of NUM_BPS and NUM_WPS) indicates not set field,
  * and parameter will be set from the corresponding field of feature register 0.
  */
-#define RMI_FEATURE_REGISTER_0_DA			BIT(42)
-
-#define RMI_FEATURE_REGISTER_0_PLANE_RTT_SHIFT		43UL
-#define RMI_FEATURE_REGISTER_0_PLANE_RTT_WIDTH		2UL
-
-#define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_SHIFT	45UL
-#define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_WIDTH	4UL
+#define FEATURE_SVE_VL_SHIFT				56UL
+#define FEATURE_SVE_VL_WIDTH				4UL
+#define FEATURE_NUM_BPS_SHIFT				14UL
+#define FEATURE_NUM_BPS_WIDTH				6UL
+#define FEATURE_NUM_WPS_SHIFT				20UL
+#define FEATURE_NUM_WPS_WIDTH				6UL
+#define FEATURE_PMU_NUM_CTRS_SHIFT			35UL
+#define FEATURE_PMU_NUM_CTRS_WIDTH			4UL
 
 #define RMI_FEATURE_REGISTER_0_RTT_S2AP_INDIRECT	BIT(49)
 
@@ -853,65 +858,104 @@ struct rmi_rec_entry {
 };
 
 /*
+ * RmiVdevAction
+ * Represents realm action which triggered REC exit due to device communication.
+ * Width: 8 bits
+ */
+#define RMI_VDEV_ACTION_GET_INTERFACE_REPORT	U(0)
+#define RMI_VDEV_ACTION_GET_MEASUREMENTS	U(1)
+#define RMI_VDEV_ACTION_LOCK			U(2)
+#define RMI_VDEV_ACTION_START			U(3)
+#define RMI_VDEV_ACTION_STOP			U(4)
+
+/*
+ * RmiRecExitFlags
+ * Fieldset contains flags provided by the RMM during REC exit.
+ * Width: 64 bits
+ */
+#define RMI_REC_EXIT_FLAGS_RIPAS_DEV_SHARED_SHIFT	U(0)
+#define RMI_REC_EXIT_FLAGS_RIPAS_DEV_SHARED_WIDTH	U(1)
+
+/*
  * Structure contains data passed from the RMM to the Host on REC exit
  */
 struct rmi_rec_exit {
 	/* Exit reason */
-	SET_MEMBER(u_register_t exit_reason, 0, 0x100);/* Offset 0 */
-	SET_MEMBER(struct {
-		/* Exception Syndrome Register */
-		u_register_t esr;				/* 0x100 */
-		/* Fault Address Register */
-		u_register_t far;				/* 0x108 */
-		/* Hypervisor IPA Fault Address register */
-		u_register_t hpfar;				/* 0x110 */
-	}, 0x100, 0x118);
-	/* Index of RTT tree active at time of the exit */
-	SET_MEMBER(u_register_t rtt_tree, 0x118, 0x120);/* Offset 0x118 */
-	/* Level of requested RTT */
-	SET_MEMBER(u_register_t rtt_level, 0x120, 0x200);/* Offset 0x120 */
+	SET_MEMBER_RMI(unsigned long exit_reason, 0, 0x8);/* Offset 0 */
+	/* RmiRecExitFlags: Flags */
+	SET_MEMBER_RMI(unsigned long flags, 0x8, 0x100);/* 0x8 */
+	SET_MEMBER_RMI(struct {
+			/* Exception Syndrome Register */
+			unsigned long esr;		/* 0x100 */
+			/* Fault Address Register */
+			unsigned long far;		/* 0x108 */
+			/* Hypervisor IPA Fault Address register */
+			unsigned long hpfar;		/* 0x110 */
+			/* Index of RTT tree active at time of the exit */
+			unsigned long rtt_tree;		/* 0x118 */
+			/* Level of requested RTT */
+			unsigned long rtt_level;	/* 0x120 */
+		   }, 0x100, 0x200);
 	/* General-purpose registers */
-	SET_MEMBER(u_register_t gprs[REC_EXIT_NR_GPRS], 0x200, 0x300); /* 0x200 */
-	SET_MEMBER(struct {
-		/* GICv3 Hypervisor Control Register */
-		u_register_t gicv3_hcr;				/* 0x300 */
-		/* GICv3 List Registers */
-		u_register_t gicv3_lrs[REC_GIC_NUM_LRS];	/* 0x308 */
-		/* GICv3 Maintenance Interrupt State Register */
-		u_register_t gicv3_misr;			/* 0x388 */
-		/* GICv3 Virtual Machine Control Register */
-		u_register_t gicv3_vmcr;			/* 0x390 */
-	}, 0x300, 0x400);
-	SET_MEMBER(struct {
-		/* Counter-timer Physical Timer Control Register */
-		u_register_t cntp_ctl;				/* 0x400 */
-		/* Counter-timer Physical Timer CompareValue Register */
-		u_register_t cntp_cval;				/* 0x408 */
-		/* Counter-timer Virtual Timer Control Register */
-		u_register_t cntv_ctl;				/* 0x410 */
-		/* Counter-timer Virtual Timer CompareValue Register */
-		u_register_t cntv_cval;				/* 0x418 */
-	}, 0x400, 0x500);
-	SET_MEMBER(struct {
-		/* Base address of pending RIPAS change */
-		u_register_t ripas_base;			/* 0x500 */
-		/* Size of pending RIPAS change */
-		u_register_t ripas_size;			/* 0x508 */
-		/* RIPAS value of pending RIPAS change */
-		unsigned char ripas_value;			/* 0x510 */
-	}, 0x500, 0x518);
-	/* Base PA of MMIO region, if RIPAS change
-	 * is pending due to exeception of RSI_RDEV_VALIDATE_IO
-	 */
-	SET_MEMBER(u_register_t ripas_io_pa, 0x518, 0x520);	/* Offset 0x518 */
-	/* Base address of target region for pending S2AP change */
-	SET_MEMBER(u_register_t s2ap_base, 0x520, 0x528);     /* Offset 0x520 */
-	/* Top address of target region for pending S2AP change */
-	SET_MEMBER(u_register_t s2ap_top, 0x528, 0x600);     /* Offset 0x528 */
+	SET_MEMBER_RMI(unsigned long gprs[REC_EXIT_NR_GPRS], 0x200, 0x300); /* 0x200 */
+	SET_MEMBER_RMI(struct {
+			/* GICv3 Hypervisor Control Register */
+			unsigned long gicv3_hcr;	/* 0x300 */
+			/* GICv3 List Registers */
+			unsigned long gicv3_lrs[REC_GIC_NUM_LRS]; /* 0x308 */
+			/* GICv3 Maintenance Interrupt State Register */
+			unsigned long gicv3_misr;	/* 0x388 */
+			/* GICv3 Virtual Machine Control Register */
+			unsigned long gicv3_vmcr;	/* 0x390 */
+		   }, 0x300, 0x400);
+	SET_MEMBER_RMI(struct {
+			/* Counter-timer Physical Timer Control Register */
+			unsigned long cntp_ctl;		/* 0x400 */
+			/* Counter-timer Physical Timer CompareValue Register */
+			unsigned long cntp_cval;	/* 0x408 */
+			/* Counter-timer Virtual Timer Control Register */
+			unsigned long cntv_ctl;		/* 0x410 */
+			/* Counter-timer Virtual Timer CompareValue Register */
+			unsigned long cntv_cval;	/* 0x418 */
+		   }, 0x400, 0x500);
+	SET_MEMBER_RMI(struct {
+			/* Base address of pending RIPAS change */
+			unsigned long ripas_base;	/* 0x500 */
+			/* Size of pending RIPAS change */
+			unsigned long ripas_top;	/* 0x508 */
+			/* RIPAS value of pending RIPAS change */
+			unsigned char ripas_value;	/* 0x510 */
+			/*
+			 * Base PA of device memory region, if RIPAS change is
+			 * pending due to execution of
+			 * RSI_RDEV_VALIDATE_MAPPING
+			 */
+			unsigned long ripas_dev_pa; /* 0x518 */
+			/* Base addr of target region for pending S2AP change */
+			unsigned long s2ap_base; /* 0x520 */
+			/* Top addr of target region for pending S2AP change */
+			unsigned long s2ap_top; /* 0x528 */
+			/* Virtual device ID */
+			unsigned long vdev_id; /* 0x530 */
+		   }, 0x500, 0x600);
+
 	/* Host call immediate value */
-	SET_MEMBER(unsigned int imm, 0x600, 0x700);		/* 0x600 */
+	SET_MEMBER_RMI(unsigned int imm, 0x600, 0x608);
+	/* UInt64: Plane Index */
+	SET_MEMBER_RMI(unsigned long plane, 0x608, 0x610);
+	/* Address: VDEV which triggered REC exit due to device communication */
+	SET_MEMBER_RMI(unsigned long vdev, 0x610, 0x618);
+	/* RmiVdevAction: Action which triggered REC exit due to device comm */
+	SET_MEMBER_RMI(unsigned char vdev_action, 0x618, 0x620);
+	/* Bits64: Base IPA of target region for device mem mapping validation */
+	SET_MEMBER_RMI(unsigned long dev_mem_base, 0x620, 0x628);
+	/* Bits64: Top IPA of target region for device mem mapping validation */
+	SET_MEMBER_RMI(unsigned long dev_mem_top, 0x628, 0x630);
+	/* Addres: Base PA of device memory region */
+	SET_MEMBER_RMI(unsigned long dev_mem_pa, 0x630, 0x700);
+
 	/* PMU overflow status */
-	SET_MEMBER(unsigned long pmu_ovf_status, 0x700, 0x800);	/* 0x700 */
+	SET_MEMBER_RMI(unsigned long pmu_ovf_status, 0x700, 0x800);
 };
 
 /*
@@ -926,23 +970,46 @@ struct rmi_rec_run {
 };
 
 /*
- * RmiPdevProtConfig
- * Represents the protection between system and device.
- * Width: 2 bits
+ * RmiPdevSpdm
+ * Represents whether communication with the device uses SPDM.
+ * Width: 1 bit
  */
-#define RMI_PDEV_IOCOH_E2E_IDE			U(0)
-#define RMI_PDEV_IOCOH_E2E_SYS			U(1)
-#define RMI_PDEV_FCOH_E2E_IDE			U(2)
-#define RMI_PDEV_FCOH_E2E_SYS			U(3)
+#define RMI_PDEV_SPDM_FALSE			U(0)
+#define RMI_PDEV_SPDM_TRUE			U(1)
+
+/*
+ * RmiPdevIde
+ * Represents whether the link to the device is protected using IDE.
+ * Width: 1 bit
+ */
+#define RMI_PDEV_IDE_FALSE			U(0)
+#define RMI_PDEV_IDE_TRUE			U(1)
+
+/*
+ * RmiPdevCoherent
+ * Represents the device access is non-coherent or coherent
+ * Width: 1 bit
+ */
+#define RMI_PDEV_COHERENT_FALSE			U(0)
+#define RMI_PDEV_COHERENT_TRUE			U(1)
 
 /*
  * RmiPdevFlags
  * Fieldset contains flags provided by the Host during PDEV creation
  * Width: 64 bits
  */
-/* RmiPdevProtConfig Bits 1:0 */
-#define RMI_PDEV_FLAGS_PROT_CONFIG_SHIFT	UL(0)
-#define RMI_PDEV_FLAGS_PROT_CONFIG_WIDTH	UL(2)
+/* RmiPdevSpdm: Bit 0 */
+#define RMI_PDEV_FLAGS_SPDM_SHIFT		UL(0)
+#define RMI_PDEV_FLAGS_SPDM_WIDTH		UL(1)
+/* RmiPdevIde: Bit 1 */
+#define RMI_PDEV_FLAGS_IDE_SHIFT		UL(1)
+#define RMI_PDEV_FLAGS_IDE_WIDTH		UL(1)
+/* RmiPdevCoherent: Bit 2 */
+#define RMI_PDEV_FLAGS_COHERENT_SHIFT		UL(2)
+#define RMI_PDEV_FLAGS_COHERENT_WIDTH		UL(1)
+/* RmiFeature: Bit 3 */
+#define RMI_PDEV_FLAGS_P2P_SHIFT		UL(3)
+#define RMI_PDEV_FLAGS_P2P_WIDTH		UL(1)
 
 /*
  * RmiPdevEvent
@@ -960,10 +1027,11 @@ struct rmi_rec_run {
 #define RMI_PDEV_STATE_NEEDS_KEY		U(1)
 #define RMI_PDEV_STATE_HAS_KEY			U(2)
 #define RMI_PDEV_STATE_READY			U(3)
-#define RMI_PDEV_STATE_COMMUNICATING		U(4)
-#define RMI_PDEV_STATE_STOPPING			U(5)
-#define RMI_PDEV_STATE_STOPPED			U(6)
-#define RMI_PDEV_STATE_ERROR			U(7)
+#define RMI_PDEV_STATE_IDE_RESETTING		U(4)
+#define RMI_PDEV_STATE_COMMUNICATING		U(5)
+#define RMI_PDEV_STATE_STOPPING			U(6)
+#define RMI_PDEV_STATE_STOPPED			U(7)
+#define RMI_PDEV_STATE_ERROR			U(8)
 
 /*
  * RmiSignatureAlgorithm
@@ -997,9 +1065,9 @@ struct rmi_rec_run {
  * Represents status passed from the Host to the RMM during device communication.
  * Width: 8 bits
  */
-#define RMI_DEV_COMM_ENTER_STATUS_SUCCESS	U(0)
-#define RMI_DEV_COMM_ENTER_STATUS_ERROR		U(1)
-#define RMI_DEV_COMM_ENTER_STATUS_NONE		U(2)
+#define RMI_DEV_COMM_ENTER_STATUS_NONE		U(0)
+#define RMI_DEV_COMM_ENTER_STATUS_RESPONSE	U(1)
+#define RMI_DEV_COMM_ENTER_STATUS_ERROR		U(2)
 
 /*
  * RmiDevCommEnter
@@ -1023,14 +1091,27 @@ struct rmi_dev_comm_enter {
  * Fieldset contains flags provided by the RMM during a device transaction.
  * Width: 64 bits
  */
-#define RMI_DEV_COMM_EXIT_FLAGS_CACHE_SHIFT		UL(0)
-#define RMI_DEV_COMM_EXIT_FLAGS_CACHE_WIDTH		UL(1)
-#define RMI_DEV_COMM_EXIT_FLAGS_SEND_SHIFT		UL(1)
+#define RMI_DEV_COMM_EXIT_FLAGS_CACHE_REQ_SHIFT		UL(0)
+#define RMI_DEV_COMM_EXIT_FLAGS_CACHE_REQ_WIDTH		UL(1)
+#define RMI_DEV_COMM_EXIT_FLAGS_CACHE_RSP_SHIFT		UL(1)
+#define RMI_DEV_COMM_EXIT_FLAGS_CACHE_RSP_WIDTH		UL(1)
+#define RMI_DEV_COMM_EXIT_FLAGS_SEND_SHIFT		UL(2)
 #define RMI_DEV_COMM_EXIT_FLAGS_SEND_WIDTH		UL(1)
-#define RMI_DEV_COMM_EXIT_FLAGS_WAIT_SHIFT		UL(2)
+#define RMI_DEV_COMM_EXIT_FLAGS_WAIT_SHIFT		UL(3)
 #define RMI_DEV_COMM_EXIT_FLAGS_WAIT_WIDTH		UL(1)
-#define RMI_DEV_COMM_EXIT_FLAGS_MULTI_SHIFT		UL(3)
+#define RMI_DEV_COMM_EXIT_FLAGS_MULTI_SHIFT		UL(4)
 #define RMI_DEV_COMM_EXIT_FLAGS_MULTI_WIDTH		UL(1)
+
+/*
+ * RmiDevCommObject
+ * This represents identifier of a device communication object which the Host is
+ * requested to cache.
+ * Width: 8 bits
+ */
+#define RMI_DEV_COMM_OBJECT_VCA			U(0)
+#define RMI_DEV_COMM_OBJECT_CERTIFICATE		U(1)
+#define RMI_DEV_COMM_OBJECT_MEASUREMENTS	U(2)
+#define RMI_DEV_COMM_OBJECT_INTERFACE_REPORT	U(3)
 
 /*
  * RmiDevCommProtocol
@@ -1053,27 +1134,43 @@ struct rmi_dev_comm_exit {
 	 */
 	SET_MEMBER_RMI(unsigned long flags, 0, 0x8);
 	/*
-	 * UInt64: If flags.cache is true, offset in the device response buffer
-	 * to the start of data to be cached in bytes.
+	 * UInt64: If flags.cache_req is true, offset in the device request
+	 * buffer to the start of data to be cached, in bytes
 	 */
-	SET_MEMBER_RMI(unsigned long cache_offset, 0x8, 0x10);
+	SET_MEMBER_RMI(unsigned long cache_req_offset, 0x8, 0x10);
 	/*
-	 * UInt64: If flags.cache is true, amount of data to be cached in
-	 * bytes.
+	 * UInt64: If flags.cache_req is true, amount of device request data to
+	 * be cached, in bytes
 	 */
-	SET_MEMBER_RMI(unsigned long cache_len, 0x10, 0x18);
+	SET_MEMBER_RMI(unsigned long cache_req_len, 0x10, 0x18);
+	/*
+	 * UInt64: If flags.cache_rsp is true, offset in the device response
+	 * buffer to the start of data to be cached, in bytes
+	 */
+	SET_MEMBER_RMI(unsigned long cache_rsp_offset, 0x18, 0x20);
+	/*
+	 * UInt64: If flags.cache_rsp is true, amount of device response data to
+	 * be cached, in bytes.
+	 */
+	SET_MEMBER_RMI(unsigned long cache_rsp_len, 0x20, 0x28);
+	/*
+	 * RmiDevCommObject: If flags.cache_req is true and / or flags.cache_rsp
+	 * is true, identifier for the object to be cachedIf flags.cache_rsp is
+	 * true, amount of device response data to be cached, in bytes.
+	 */
+	SET_MEMBER_RMI(unsigned char cache_obj_id, 0x28, 0x30);
 	/* RmiDevCommProtocol: If flags.send is true, type of request */
-	SET_MEMBER_RMI(unsigned char protocol, 0x18, 0x20);
+	SET_MEMBER_RMI(unsigned char protocol, 0x30, 0x38);
 	/*
 	 * UInt64: If flags.send is true, amount of valid data in request buffer
 	 * in bytes
 	 */
-	SET_MEMBER_RMI(unsigned long req_len, 0x20, 0x28);
+	SET_MEMBER_RMI(unsigned long req_len, 0x38, 0x40);
 	/*
 	 * UInt64: If flags.wait is true, amount of time to wait for device
 	 * response in milliseconds
 	 */
-	SET_MEMBER_RMI(unsigned long timeout, 0x28, 0x100);
+	SET_MEMBER_RMI(unsigned long timeout, 0x40, 0x100);
 };
 
 /*
@@ -1113,16 +1210,16 @@ struct rmi_address_range {
 #define PDEV_PARAM_AUX_GRANULES_MAX		U(32)
 
 /*
- * Maximum number of IO coherent RmiAddressRange parameter passed in
+ * Maximum number of device non-coherent RmiAddressRange parameter passed in
  * rmi_pdev_params during PDEV create
  */
-#define PDEV_PARAM_IOCOH_ADDR_RANGE_MAX		U(16)
+#define PDEV_PARAM_NCOH_ADDR_RANGE_MAX		U(16)
 
 /*
- * Maximum number of fully coherent RmiAddressRange parameter passed in
+ * Maximum number of device coherent RmiAddressRange parameter passed in
  * rmi_pdev_params during PDEV create
  */
-#define PDEV_PARAM_FCOH_ADDR_RANGE_MAX		U(4)
+#define PDEV_PARAM_COH_ADDR_RANGE_MAX		U(4)
 
 /*
  * RmiPdevParams
@@ -1136,36 +1233,105 @@ struct rmi_pdev_params {
 	SET_MEMBER_RMI(unsigned long pdev_id, 0x8, 0x10);
 	/* Bits16: Segment ID */
 	SET_MEMBER_RMI(unsigned short segment_id, 0x10, 0x18);
+	/* Address: ECAM base address of the PCIe configuration space */
+	SET_MEMBER_RMI(unsigned short ecam_addr, 0x18, 0x20);
 	/* Bits16: Root Port identifier */
-	SET_MEMBER_RMI(unsigned short root_id, 0x18, 0x20);
+	SET_MEMBER_RMI(unsigned short root_id, 0x20, 0x28);
 	/* UInt64: Certificate identifier */
-	SET_MEMBER_RMI(unsigned long cert_id, 0x20, 0x28);
+	SET_MEMBER_RMI(unsigned long cert_id, 0x28, 0x30);
 	/* UInt64: Base requester ID range (inclusive) */
-	SET_MEMBER_RMI(unsigned long rid_base, 0x28, 0x30);
+	SET_MEMBER_RMI(unsigned long rid_base, 0x30, 0x38);
 	/* UInt64: Top of requester ID range (exclusive) */
-	SET_MEMBER_RMI(unsigned long rid_top, 0x30, 0x38);
+	SET_MEMBER_RMI(unsigned long rid_top, 0x38, 0x40);
 	/* RmiHashAlgorithm: Algorithm used to generate device digests */
-	SET_MEMBER_RMI(unsigned char hash_algo, 0x38, 0x40);
+	SET_MEMBER_RMI(unsigned char hash_algo, 0x40, 0x48);
 	/* UInt64: Number of auxiliary granules */
-	SET_MEMBER_RMI(unsigned long num_aux, 0x40, 0x48);
+	SET_MEMBER_RMI(unsigned long num_aux, 0x48, 0x50);
 	/* UInt64: IDE stream identifier */
-	SET_MEMBER_RMI(unsigned long ide_sid, 0x48, 0x50);
-	/* UInt64: Number of IO-coherent address ranges */
-	SET_MEMBER_RMI(unsigned long iocoh_num_addr_range, 0x50, 0x58);
-	/* UInt64: Number of fully-coherent address ranges */
-	SET_MEMBER_RMI(unsigned long fcoh_num_addr_range, 0x58, 0x100);
-
+	SET_MEMBER_RMI(unsigned long ide_sid, 0x50, 0x58);
+	/* UInt64: Number of device non-coherent address ranges */
+	SET_MEMBER_RMI(unsigned long ncoh_num_addr_range, 0x58, 0x60);
+	/* UInt64: Number of device coherent address ranges */
+	SET_MEMBER_RMI(unsigned long coh_num_addr_range, 0x60, 0x100);
 	/* Address: Addresses of auxiliary granules */
 	SET_MEMBER_RMI(unsigned long aux[PDEV_PARAM_AUX_GRANULES_MAX], 0x100,
 		       0x200);
-	/* RmiAddressRange: IO-coherent address range */
+	/* RmiAddressRange: Device non-coherent address range */
 	SET_MEMBER_RMI(struct rmi_address_range
-		       iocoh_addr_range[PDEV_PARAM_IOCOH_ADDR_RANGE_MAX],
+		       ncoh_addr_range[PDEV_PARAM_NCOH_ADDR_RANGE_MAX],
 		       0x200, 0x300);
-	/* RmiAddressRange: Fully coherent address range */
+	/* RmiAddressRange: Device coherent address range */
 	SET_MEMBER_RMI(struct rmi_address_range
-		       fcoh_addr_range[PDEV_PARAM_FCOH_ADDR_RANGE_MAX],
+		       coh_addr_range[PDEV_PARAM_COH_ADDR_RANGE_MAX],
 		       0x300, 0x1000);
+};
+
+/* Max length of public key data passed in rmi_public_key_params */
+#define PUBKEY_PARAM_KEY_LEN_MAX	U(1024)
+
+/* Max length of public key metadata passed in rmi_public_key_params */
+#define PUBKEY_PARAM_METADATA_LEN_MAX	U(1024)
+
+/*
+ * RmiPublicKeyParams
+ * This structure contains public key parameters.
+ * Width: 4096 (0x1000) bytes.
+ */
+struct rmi_public_key_params {
+	/* Bits8: Key data */
+	SET_MEMBER_RMI(unsigned char key[PUBKEY_PARAM_KEY_LEN_MAX], 0x0, 0x400);
+	/* Bits8: Key metadata */
+	SET_MEMBER_RMI(unsigned char metadata[PUBKEY_PARAM_METADATA_LEN_MAX],
+		       0x400, 0x800);
+	/* UInt64: Length of key data in bytes */
+	SET_MEMBER_RMI(unsigned long key_len, 0x800, 0x808);
+	/* UInt64: Length of metadata in bytes */
+	SET_MEMBER_RMI(unsigned long metadata_len, 0x808, 0x810);
+	/* RmiSignatureAlgorithm: Signature algorithm */
+	SET_MEMBER_RMI(unsigned char algo, 0x810, 0x1000);
+};
+
+/*
+ * RmiVdevFlags
+ * Fieldset contains flags provided by the Host during VDEV creation.
+ * Width: 64 bits
+ */
+#define RMI_VDEV_FLAGS_RES0_SHIFT		UL(0)
+#define RMI_VDEV_FLAGS_RES0_WIDTH		UL(63)
+
+/*
+ * RmiVdevState
+ * Represents the state of the VDEV
+ * Width: 8 bits
+ */
+#define RMI_VDEV_STATE_READY			U(0)
+#define RMI_VDEV_STATE_COMMUNICATING		U(1)
+#define RMI_VDEV_STATE_STOPPING			U(2)
+#define RMI_VDEV_STATE_STOPPED			U(3)
+#define RMI_VDEV_STATE_ERROR			U(4)
+
+/* Maximum number of aux granules paramenter passed to VDEV create */
+#define VDEV_PARAM_AUX_GRANULES_MAX		U(32)
+
+/*
+ * RmiVdevParams
+ * The RmiVdevParams structure contains parameters provided by the Host during
+ * VDEV creation.
+ * Width: 4096 (0x1000) bytes.
+ */
+struct rmi_vdev_params {
+	/* RmiVdevFlags: Flags */
+	SET_MEMBER_RMI(unsigned long flags, 0, 0x8);
+	/* Bits64: Virtual device identifier */
+	SET_MEMBER_RMI(unsigned long vdev_id, 0x8, 0x10);
+	/* Bits64: TDI identifier */
+	SET_MEMBER_RMI(unsigned long tdi_id, 0x10, 0x18);
+	/* UInt64: Number of auxiliary granules */
+	SET_MEMBER_RMI(unsigned long num_aux, 0x18, 0x100);
+
+	/* Address: Addresses of auxiliary granules */
+	SET_MEMBER_RMI(unsigned long aux[VDEV_PARAM_AUX_GRANULES_MAX], 0x100,
+		       0x1000);
 };
 
 struct rtt_entry {
@@ -1294,8 +1460,8 @@ u_register_t host_rmi_pdev_create(u_register_t pdev_ptr,
 u_register_t host_rmi_pdev_get_state(u_register_t pdev_ptr, u_register_t *state);
 u_register_t host_rmi_pdev_communicate(u_register_t pdev_ptr,
 				       u_register_t data_ptr);
-u_register_t host_rmi_pdev_set_pubkey(u_register_t pdev_ptr, u_register_t key,
-				      u_register_t len, uint8_t algo);
+u_register_t host_rmi_pdev_set_pubkey(u_register_t pdev_ptr,
+				      u_register_t pubkey_params_ptr);
 u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr);
 u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr);
 

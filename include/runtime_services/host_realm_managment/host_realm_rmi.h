@@ -52,99 +52,131 @@
 /* RMI SMC64 FIDs handled by the RMMD */
 
 /*
+ * FID: 0xC4000150
+ *
  * arg0: Requested interface version
  *
  * ret0: Command return status
  * ret1: Lower implemented interface revision
  * ret2: Higher implemented interface revision
  */
-#define RMI_VERSION			SMC64_RMI_FID(U(0x0))
+#define SMC_RMI_VERSION				SMC64_RMI_FID(U(0x0))
 
 /*
+ * FID: 0xC4000151
+ *
  * arg0 == target granule address
  */
-#define RMI_GRANULE_DELEGATE		SMC64_RMI_FID(U(0x1))
+#define SMC_RMI_GRANULE_DELEGATE		SMC64_RMI_FID(U(0x1))
 
 /*
+ * FID: 0xC4000152
+ *
  * arg0 == target granule address
  */
-#define RMI_GRANULE_UNDELEGATE		SMC64_RMI_FID(U(0x2))
+#define SMC_RMI_GRANULE_UNDELEGATE		SMC64_RMI_FID(U(0x2))
+
+/* RmiDataMeasureContent type */
+#define RMI_NO_MEASURE_CONTENT	U(0)
+#define RMI_MEASURE_CONTENT	U(1)
 
 /*
+ * FID: 0xC4000153
+ *
  * arg0 == RD address
  * arg1 == data address
  * arg2 == map address
  * arg3 == SRC address
  * arg4 == flags
-*/
-#define RMI_DATA_CREATE			SMC64_RMI_FID(U(0x3))
+ */
+#define SMC_RMI_DATA_CREATE			SMC64_RMI_FID(U(0x3))
 
 /*
+ * FID: 0xC4000154
+ *
  * arg0 == RD address
  * arg1 == data address
  * arg2 == map address
  */
-#define RMI_DATA_CREATE_UNKNOWN		SMC64_RMI_FID(U(0x4))
+#define SMC_RMI_DATA_CREATE_UNKNOWN		SMC64_RMI_FID(U(0x4))
 
 /*
+ * FID: 0xC4000155
+ *
  * arg0 == RD address
  * arg1 == map address
  *
  * ret1 == Address(PA) of the DATA granule, if ret0 == RMI_SUCCESS.
  *         Otherwise, undefined.
  * ret2 == Top of the non-live address region. Only valid
- *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT_WALK, x)
+ *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT, x)
  */
-#define RMI_DATA_DESTROY		SMC64_RMI_FID(U(0x5))
+#define SMC_RMI_DATA_DESTROY			SMC64_RMI_FID(U(0x5))
 
 /*
  * FID: 0xC4000156
  */
-#define SMC_RMI_PDEV_AUX_COUNT		SMC64_RMI_FID(U(0x6))
+#define SMC_RMI_PDEV_AUX_COUNT			SMC64_RMI_FID(U(0x6))
 
 /*
+ * FID: 0xC4000157
+ *
  * arg0 == RD address
  */
-#define RMI_REALM_ACTIVATE		SMC64_RMI_FID(U(0x7))
+#define SMC_RMI_REALM_ACTIVATE			SMC64_RMI_FID(U(0x7))
 
 /*
+ * FID: 0xC4000158
+ *
  * arg0 == RD address
  * arg1 == struct rmi_realm_params address
  */
-#define RMI_REALM_CREATE		SMC64_RMI_FID(U(0x8))
+#define SMC_RMI_REALM_CREATE			SMC64_RMI_FID(U(0x8))
 
 /*
+ * FID: 0xC4000159
+ *
  * arg0 == RD address
  */
-#define RMI_REALM_DESTROY		SMC64_RMI_FID(U(0x9))
+#define SMC_RMI_REALM_DESTROY			SMC64_RMI_FID(U(0x9))
 
 /*
+ * FID: 0xC400015A
+ *
  * arg0 == RD address
  * arg1 == REC address
  * arg2 == struct rmm_rec address
  */
-#define RMI_REC_CREATE			SMC64_RMI_FID(U(0xA))
+#define SMC_RMI_REC_CREATE			SMC64_RMI_FID(U(0xA))
 
 /*
+ * FID: 0xC400015B
+ *
  * arg0 == REC address
  */
-#define RMI_REC_DESTROY			SMC64_RMI_FID(U(0xB))
+#define SMC_RMI_REC_DESTROY			SMC64_RMI_FID(U(0xB))
 
 /*
+ * FID: 0xC400015C
+ *
  * arg0 == rec address
  * arg1 == struct rec_run address
  */
-#define RMI_REC_ENTER			SMC64_RMI_FID(U(0xC))
+#define SMC_RMI_REC_ENTER			SMC64_RMI_FID(U(0xC))
 
 /*
+ * FID: 0xC400015D
+ *
  * arg0 == RD address
  * arg1 == RTT address
  * arg2 == map address
  * arg3 == level
  */
-#define RMI_RTT_CREATE			SMC64_RMI_FID(U(0xD))
+#define SMC_RMI_RTT_CREATE			SMC64_RMI_FID(U(0xD))
 
 /*
+ * FID: 0xC400015E
+ *
  * arg0 == RD address
  * arg1 == RTT address
  * arg2 == map address
@@ -176,44 +208,28 @@
  * ret1 == Address (PA) of the RTT, if ret0 == RMI_SUCCESS
  *         Otherwise, undefined.
  * ret2 == Top of the non-live address region. Only valid
- *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT_WALK, x)
+ *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT, x)
  */
-#define RMI_RTT_DESTROY			SMC64_RMI_FID(U(0xE))
+#define SMC_RMI_RTT_DESTROY			SMC64_RMI_FID(U(0xE))
 
 /*
+ * FID: 0xC400015F
+ *
  * arg0 == RD address
  * arg1 == map address
  * arg2 == level
  * arg3 == s2tte
  */
-#define RMI_RTT_MAP_UNPROTECTED		SMC64_RMI_FID(U(0xF))
+#define SMC_RMI_RTT_MAP_UNPROTECTED		SMC64_RMI_FID(U(0xF))
 
 /*
- * arg0 == RD address
- * arg1 == map address
- * arg2 == RTT tree index
- *
- * ret0 == status/index
- * ret1 == fail_index
- * ret2 == primary level
- * ret3 == state
- * ret4 == ripas
+ * FID: 0xC4000160
  */
-#define RMI_RTT_AUX_MAP_PROTECTED	SMC64_RMI_FID(U(0x30))
+#define SMC_RMI_VDEV_AUX_COUNT			SMC64_RMI_FID(U(0x10))
 
 /*
- * arg0 == RD address
- * arg1 == map address
- * arg2 == RTT tree index
+ * FID: 0xC4000161
  *
- * ret0 == status/index
- * ret1 == fail_index
- * ret2 == primary level
- * ret3 == state
- */
-#define RMI_RTT_AUX_MAP_UNPROTECTED	SMC64_RMI_FID(U(0x31))
-
-/*
  * arg0 == RD address
  * arg1 == map address
  * arg2 == level
@@ -224,85 +240,53 @@
  * ret4 == ripas
  * if ret0 == RMI_SUCCESS, otherwise, undefined.
  */
-#define RMI_RTT_READ_ENTRY		SMC64_RMI_FID(U(0x11))
+#define SMC_RMI_RTT_READ_ENTRY			SMC64_RMI_FID(U(0x11))
 
 /*
+ * FID: 0xC4000162
+ *
  * arg0 == RD address
  * arg1 == map address
  * arg2 == level
  */
-#define RMI_RTT_UNMAP_UNPROTECTED	SMC64_RMI_FID(U(0x12))
+#define SMC_RMI_RTT_UNMAP_UNPROTECTED		SMC64_RMI_FID(U(0x12))
 
 /*
- * arg0 == RD address
- * arg1 == map address
- * arg2 == RTT tree index
+ * FID: 0xC4000164
  *
- * ret0 == status/index
- * ret1 == top
- * ret2 == level
- */
-#define RMI_RTT_AUX_UNMAP_PROTECTED	SMC64_RMI_FID(U(0x33))
-
-/*
- * arg0 == RD address
- * arg1 == map address
- * arg2 == RTT tree index
- *
- * ret0 == status/index
- * ret1 == top
- * ret2 == level
- */
-#define RMI_RTT_AUX_UNMAP_UNPROTECTED	SMC64_RMI_FID(U(0x34))
-
-/*
- * arg0 == RD address
- * arg1 == target rec
- * arg2 == base adr
- * arg3 == top adr
- *
- * ret0 == return code
- * ret1 == Top IPA of range whose S2AP was modified
- * ret2 == Index of RTT tree in which base alignment check failed
- */
-#define RMI_RTT_SET_S2AP		SMC64_RMI_FID(U(0x3B))
-
-/*
  * arg0 == calling rec address
  * arg1 == target rec address
  */
-#define RMI_PSCI_COMPLETE		SMC64_RMI_FID(U(0x14))
+#define SMC_RMI_PSCI_COMPLETE			SMC64_RMI_FID(U(0x14))
 
 /*
+ * FID: 0xC4000165
+ *
  * arg0 == Feature register index
  */
-#define RMI_FEATURES			SMC64_RMI_FID(U(0x15))
+#define SMC_RMI_FEATURES			SMC64_RMI_FID(U(0x15))
 
 /*
+ * FID: 0xC4000166
+ *
  * arg0 == RD address
  * arg1 == map address
  * arg2 == level
  *
  * ret1 == Address(PA) of the RTT folded, if ret0 == RMI_SUCCESS
  */
-#define RMI_RTT_FOLD			SMC64_RMI_FID(U(0x16))
+#define SMC_RMI_RTT_FOLD			SMC64_RMI_FID(U(0x16))
 
 /*
- * arg0 == RD address
- * arg1 == map address
- * arg2 == level
- * arg3 == RTT tree index
+ * FID: 0xC4000167
  *
- * ret1 == Address(PA) of the RTT folded, if ret0 == RMI_SUCCESS
- */
-#define RMI_RTT_AUX_FOLD		SMC64_RMI_FID(U(0x2F))
-
-/*
  * arg0 == RD address
  */
-#define RMI_REC_AUX_COUNT		SMC64_RMI_FID(U(0x17))
+#define SMC_RMI_REC_AUX_COUNT			SMC64_RMI_FID(U(0x17))
 
 /*
+ * FID: 0xC4000168
+ *
  * arg0 == RD address
  * arg1 == start address
  * arg2 == end address
@@ -310,9 +294,11 @@
  * ret1 == Top of the address range where the RIPAS was updated,
  * if ret0 == RMI_SUCCESS
  */
-#define RMI_RTT_INIT_RIPAS		SMC64_RMI_FID(U(0x18))
+#define SMC_RMI_RTT_INIT_RIPAS			SMC64_RMI_FID(U(0x18))
 
 /*
+ * FID: 0xC4000169
+ *
  * arg0 == RD address
  * arg1 == REC address
  * arg2 == start address
@@ -321,17 +307,59 @@
  * ret1 == Top of the address range where the RIPAS was updated,
  *	   if ret0 == RMI_SUCCESS
  */
-#define RMI_RTT_SET_RIPAS		SMC64_RMI_FID(U(0x19))
+#define SMC_RMI_RTT_SET_RIPAS			SMC64_RMI_FID(U(0x19))
 
 /*
+ * TODO: Update the documentation of new FIDs once the 1.1 spec has stabilized.
+ */
+
+/*
+ * FID: 0xC400016A
+ */
+#define SMC_RMI_VSMMU_CREATE			SMC64_RMI_FID(U(0x1A))
+
+/*
+ * FID: 0xC400016B
+ */
+#define SMC_RMI_VSMMU_DESTROY			SMC64_RMI_FID(U(0x1B))
+
+/*
+ * FID: 0xC400016C
+ */
+#define SMC_RMI_VSMMU_MAP			SMC64_RMI_FID(U(0x1C))
+
+/*
+ * FID: 0xC400016D
+ */
+#define SMC_RMI_VSMMU_UNMAP			SMC64_RMI_FID(U(0x1D))
+
+/*
+ * FID: 0xC400016E
+ */
+#define SMC_RMI_PSMMU_MSI_CONFIG		SMC64_RMI_FID(U(0x1E))
+
+/*
+ * FID: 0xC400016F
+ */
+#define SMC_RMI_PSMMU_IRQ_NOTIFY		SMC64_RMI_FID(U(0x1F))
+
+/*
+ * FID: 0xC4000170 and 0xC4000171 are not used.
+ */
+
+/*
+ * FID: 0xC4000172
+ *
  * arg0 == RD address
  * arg1 == map address
  * arg2 == level
  * arg3 == PA of the target device memory
  */
-#define SMC_RMI_DEV_MEM_MAP		SMC64_RMI_FID(U(0x22))
+#define SMC_RMI_DEV_MEM_MAP			SMC64_RMI_FID(U(0x22))
 
 /*
+ * FID: 0xC4000173
+ *
  * arg0 == RD address
  * arg1 == map address
  * arg2 == level
@@ -341,7 +369,7 @@
  * ret2 == Top of the non-live address region. Only valid
  *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT, x)
  */
-#define SMC_RMI_DEV_MEM_UNMAP		SMC64_RMI_FID(U(0x23))
+#define SMC_RMI_DEV_MEM_UNMAP			SMC64_RMI_FID(U(0x23))
 
 /*
  * FID: 0xC4000174
@@ -414,12 +442,32 @@
 #define SMC_RMI_RTT_AUX_MAP_UNPROTECTED		SMC64_RMI_FID(U(0x31))
 
 /*
+ * FID: 0xC4000182 is not used.
+ */
+
+/*
  * FID: 0xC4000183
+ *
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == RTT tree index
+ *
+ * ret0 == status/index
+ * ret1 == top
+ * ret2 == level
  */
 #define SMC_RMI_RTT_AUX_UNMAP_PROTECTED		SMC64_RMI_FID(U(0x33))
 
 /*
  * FID: 0xC4000184
+ *
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == RTT tree index
+ *
+ * ret0 == status/index
+ * ret1 == top
+ * ret2 == level
  */
 #define SMC_RMI_RTT_AUX_UNMAP_UNPROTECTED	SMC64_RMI_FID(U(0x34))
 
@@ -455,6 +503,15 @@
 
 /*
  * FID: 0xC400018B
+ *
+ * arg0 == RD address
+ * arg1 == target rec
+ * arg2 == base adr
+ * arg3 == top adr
+ *
+ * ret0 == return code
+ * ret1 == Top IPA of range whose S2AP was modified
+ * ret2 == Index of RTT tree in which base alignment check failed
  */
 #define SMC_RMI_RTT_SET_S2AP			SMC64_RMI_FID(U(0x3B))
 
@@ -472,6 +529,10 @@
  * FID: 0xC400018E
  */
 #define SMC_RMI_VDEV_COMPLETE			SMC64_RMI_FID(U(0x3E))
+
+/*
+ * FID: 0xC400018F is not used.
+ */
 
 #define GRANULE_SIZE			PAGE_SIZE_4KB
 

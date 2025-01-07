@@ -12,6 +12,7 @@
 #include <drivers/arm/pl011.h>
 #include <drivers/console.h>
 #include <lib/aarch64/arch_helpers.h>
+#include <lib/hob/hob.h>
 #include <lib/tftf_lib.h>
 #include <lib/xlat_tables/xlat_mmu_helpers.h>
 #include <lib/xlat_tables/xlat_tables_v2.h>
@@ -155,6 +156,15 @@ static void cactus_print_memory_layout(unsigned int vm_id)
 		(void *)get_sp_tx_end(vm_id));
 }
 
+static void cactus_print_hob_list(uint64_t hob_content_addr, size_t size)
+{
+	INFO("SP Hob List Contents: 0x%llx, size 0x%lx\n", hob_content_addr, size);
+	struct efi_hob_handoff_info_table *hob_list = (struct
+			efi_hob_handoff_info_table *) hob_content_addr;
+
+	dump_hob_list(hob_list);
+}
+
 static void cactus_print_boot_info(struct ffa_boot_info_header *boot_info_header)
 {
 	struct ffa_boot_info_desc *boot_info_desc;
@@ -191,6 +201,9 @@ static void cactus_print_boot_info(struct ffa_boot_info_header *boot_info_header
 				ffa_boot_info_content_format(&boot_info_desc[i]));
 		VERBOSE("      Size: %u\n", boot_info_desc[i].size);
 		VERBOSE("      Value: %llx\n", boot_info_desc[i].content);
+		if (ffa_boot_info_type_id(&boot_info_desc[i]) == 1) {
+			cactus_print_hob_list(boot_info_desc[i].content, boot_info_desc[i].size);
+		}
 	}
 }
 

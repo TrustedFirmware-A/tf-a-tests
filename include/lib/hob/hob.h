@@ -95,6 +95,7 @@ struct efi_hob_firmware_volume {
  *                              Interfaces.                                  *
  *****************************************************************************/
 
-void tftf_dump_hob_generic_header(struct efi_hob_generic_header h);
+void dump_hob_list(struct efi_hob_handoff_info_table *hob_list);
+void dump_hob_generic_header(struct efi_hob_generic_header *header);
 
 #endif /* HOB_H */

@@ -7,6 +7,7 @@
 #ifndef HOB_GUID_H
 #define HOB_GUID_H
 
+#include <stdint.h>
 #include <lib/hob/efi_types.h>
 
 /**
@@ -23,9 +24,9 @@
 	0xf00497e3, 0xbfa2, 0x41a1, {0x9d, 0x29, 0x54, 0xc2, 0xe9, 0x37, 0x21, 0xc5 } \
 }
 
-#define MM_MP_INFORMATION_GUID                                                  \
-{                                                                               \
-	0xba33f15d, 0x4000, 0x45c1, {0x8e, 0x88, 0xf9, 0x16, 0x92, 0xd4, 0x57, 0xe3}  \
-}
+struct mm_comm_buffer_desc {
+	efi_physical_address_t physical_start;
+	uint64_t number_of_pages;
+};
 
 #endif /* HOB_GUID_H */

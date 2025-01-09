@@ -57,7 +57,7 @@ static void el2_save_fgt_registers(el2_fgt_regs_t *ctx)
 {
 	if (is_armv8_6_fgt_present()) {
 		EL2_SAVE_CTX_REG(ctx, hdfgrtr_el2);
-		if (is_armv8_4_amuv1_present())
+		if (is_feat_amuv1_present())
 			EL2_SAVE_CTX_REG(ctx, hafgrtr_el2);
 		EL2_SAVE_CTX_REG(ctx, hdfgwtr_el2);
 		EL2_SAVE_CTX_REG(ctx, hfgitr_el2);
@@ -231,7 +231,7 @@ static void el2_write_fgt_registers_with_mask(const el2_fgt_regs_t *ctx, uint64_
 {
 	if (is_armv8_6_fgt_present()) {
 		EL2_WRITE_MASK_CTX_REG(ctx, hdfgrtr_el2, or_mask);
-		if (is_armv8_4_amuv1_present())
+		if (is_feat_amuv1_present())
 			EL2_WRITE_MASK_CTX_REG(ctx, hafgrtr_el2, or_mask);
 		EL2_WRITE_MASK_CTX_REG(ctx, hdfgwtr_el2, or_mask);
 		EL2_WRITE_MASK_CTX_REG(ctx, hfgitr_el2, or_mask);

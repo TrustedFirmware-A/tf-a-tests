@@ -80,4 +80,9 @@
 #define SMC_GET_SOC_VERSION		0
 #define SMC_GET_SOC_REVISION		1
 
+#define SCR_EL3_OPCODE			U(0x1E1100)
+#define CPTR_EL3_OPCODE			U(0x1E1140)
+#define MDCR_EL3_OPCODE			U(0x1E1320)
+#define MPAM3_EL3_OPCODE		U(0x1EA500)
+
 #endif /* __SMCCC_H__ */

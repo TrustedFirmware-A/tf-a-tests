@@ -88,6 +88,34 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}								\
 	} while (0)
 
+#define SKIP_TEST_IF_SMCCC_VERSION_LT(major, minor)				\
+	do {									\
+		smc_args args = {0};						\
+		smc_ret_values ret;						\
+		args.fid = SMCCC_VERSION;					\
+		ret = tftf_smc(&args);						\
+		if ((int32_t)ret.ret0 < MAKE_SMCCC_VERSION(major, minor)) {	\
+			tftf_testcase_printf(					\
+				"Unexpected SMCCC version: 0x%x\n",		\
+			       (int)ret.ret0);					\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (0)
+
+#define SKIP_TEST_IF_SMCCC_FUNC_NOT_SUPPORTED(func)				\
+	do {									\
+		smc_ret_values ret;						\
+		smc_args args = {0};						\
+		args.fid = SMCCC_ARCH_FEATURES;					\
+		args.arg1 = func;						\
+		ret = tftf_smc(&args);						\
+		if ((int)ret.ret0 == SMC_ARCH_CALL_NOT_SUPPORTED) {		\
+			tftf_testcase_printf(					\
+				#func " is not implemented\n");			\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (0)
+
 #define SKIP_TEST_IF_DIT_NOT_SUPPORTED()					\
 	do {									\
 		if (!is_armv8_4_dit_present()) {				\
@@ -212,7 +240,7 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 
 #define SKIP_TEST_IF_TRBE_NOT_SUPPORTED()					\
 	do {									\
-		if (!get_armv9_0_trbe_support()) {				\
+		if (!is_feat_trbe_present()) {					\
 			tftf_testcase_printf("ARMv9-TRBE not supported\n");	\
 			return TEST_RESULT_SKIPPED;				\
 		}								\

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2017-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -60,8 +60,6 @@
 #endif
 
 CASSERT(AMU_GROUP1_COUNTERS_MASK <= 0xffff, invalid_amu_group1_counters_mask);
-
-unsigned int amu_get_version(void);
 
 uint64_t amu_group0_cnt_read(unsigned int idx);
 #if __aarch64__

@@ -41,8 +41,8 @@
 #ifdef ENABLE_REALM_PAYLOAD_TESTS
  /* 1MB for shared buffer between Realm and Host */
  #define NS_REALM_SHARED_MEM_SIZE	U(0x100000)
- /* 8MB of memory used as a pool for realm's objects creation */
- #define PAGE_POOL_MAX_SIZE		U(0x800000)
+ /* 10MB of memory used as a pool for realm's objects creation */
+ #define PAGE_POOL_MAX_SIZE		U(0xA00000)
 #else
  #define NS_REALM_SHARED_MEM_SIZE       U(0x0)
  #define PAGE_POOL_MAX_SIZE             U(0x0)

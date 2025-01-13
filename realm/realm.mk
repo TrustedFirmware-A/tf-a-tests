@@ -34,6 +34,7 @@ REALM_SOURCES:=								\
 	realm_multiple_rec.c						\
 	realm_pauth.c							\
 	realm_payload_main.c						\
+	realm_plane.c							\
 	realm_pmuv3.c							\
 	realm_psci.c							\
 	realm_rsi.c							\

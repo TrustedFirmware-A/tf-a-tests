@@ -8,6 +8,7 @@
 #ifndef REALM_RSI_H
 #define REALM_RSI_H
 
+#include <arch.h>
 #include <stdint.h>
 #include <host_shared_data.h>
 #include <tftf_lib.h>
@@ -71,7 +72,9 @@ struct rsi_realm_config {
 	/* IPA width in bits */
 	SET_MEMBER(unsigned long ipa_width, 0, 8);	/* Offset 0 */
 	/* Hash algorithm */
-	SET_MEMBER(unsigned long algorithm, 8, 0x200);	/* Offset 8 */
+	SET_MEMBER(unsigned long algorithm, 8, 0x10);	/* Offset 8 */
+	/* Number of auxiliary Planes */
+	SET_MEMBER(unsigned long num_aux_planes, 0x10, 0x200); /* Offset 0x10 */
 	/* Realm Personalization Value */
 	SET_MEMBER(unsigned char rpv[RSI_RPV_SIZE], 0x200, 0x1000); /* Offset 0x200 */
 };
@@ -157,7 +160,151 @@ typedef enum {
 #define RSI_NO_CHANGE_DESTROYED	0UL
 #define RSI_CHANGE_DESTROYED	1UL
 
-/* Request RIPAS of a target IPA range to be changed to a specified value */
+/*
+ * arg1 == plane index
+ * arg2 == perm index
+ *
+ * ret0 == status
+ * ret1 == perm value
+ */
+#define RSI_MEM_GET_PERM_VALUE	SMC_RSI_FID(0x10U)
+
+/*
+ * arg1 == base adr
+ * arg2 == top adr
+ * arg3 == perm index
+ * arg4 == cookie
+ *
+ * ret0 == status
+ * ret1 == new_base
+ * ret2 == response
+ * ret3 == new_cookie
+ */
+#define RSI_MEM_SET_PERM_INDEX	SMC_RSI_FID(0x11U)
+
+/*
+ * arg1 == plane index
+ * arg2 == perm index
+ *
+ * ret0 == status
+ */
+#define RSI_MEM_SET_PERM_VALUE	SMC_RSI_FID(0x12U)
+
+#define RSI_PLANE_NR_GPRS	31U
+#define RSI_PLANE_GIC_NUM_LRS	16U
+
+/*
+ * Flags provided by the Primary Plane to the secondary ones upon
+ * plane entry.
+ */
+#define RSI_PLANE_ENTRY_FLAG_TRAP_WFI	U(1UL << 0)
+#define RSI_PLANE_ENTRY_FLAG_TRAP_WFE	U(1UL << 1)
+#define RSI_PLANE_ENTRY_FLAG_TRAP_HC	U(1UL << 2)
+
+/* Data structure used to pass values from P0 to the RMM on Plane entry */
+struct rsi_plane_entry {
+	/* Flags */
+	SET_MEMBER(u_register_t flags, 0, 0x8);	/* Offset 0 */
+	/* PC */
+	SET_MEMBER(u_register_t pc, 0x8, 0x100);	/* Offset 0x8 */
+	/* General-purpose registers */
+	SET_MEMBER(u_register_t gprs[RSI_PLANE_NR_GPRS], 0x100, 0x200);	/* 0x100 */
+	/* EL1 system registers */
+	SET_MEMBER(struct {
+		/* GICv3 Hypervisor Control Register */
+		u_register_t gicv3_hcr;                         /* 0x200 */
+		/* GICv3 List Registers */
+		u_register_t gicv3_lrs[RSI_PLANE_GIC_NUM_LRS];        /* 0x208 */
+	}, 0x200, 0x800);
+};
+
+/* Data structure used to pass values from the RMM to P0 on Plane exit */
+struct rsi_plane_exit {
+	/* Exit reason */
+	SET_MEMBER(u_register_t exit_reason, 0, 0x100);/* Offset 0 */
+	SET_MEMBER(struct {
+		/* Exception Link Register */
+		u_register_t elr;				/* 0x100 */
+		/* Exception Syndrome Register */
+		u_register_t esr;				/* 0x108 */
+		/* Fault Address Register */
+		u_register_t far;				/* 0x108 */
+		/* Hypervisor IPA Fault Address register */
+		u_register_t hpfar;				/* 0x110 */
+	}, 0x100, 0x200);
+	/* General-purpose registers */
+	SET_MEMBER(u_register_t gprs[RSI_PLANE_NR_GPRS], 0x200, 0x300); /* 0x200 */
+	SET_MEMBER(struct {
+		/* GICv3 Hypervisor Control Register */
+		u_register_t gicv3_hcr;				/* 0x300 */
+		/* GICv3 List Registers */
+		u_register_t gicv3_lrs[RSI_PLANE_GIC_NUM_LRS];	/* 0x308 */
+		/* GICv3 Maintenance Interrupt State Register */
+		u_register_t gicv3_misr;			/* 0x388 */
+		/* GICv3 Virtual Machine Control Register */
+		u_register_t gicv3_vmcr;			/* 0x390 */
+	}, 0x300, 0x600);
+};
+
+typedef struct {
+	/* Entry information */
+	SET_MEMBER(struct rsi_plane_entry enter, 0, 0x800); /* Offset 0 */
+	/* Exit information */
+	SET_MEMBER(struct rsi_plane_exit exit, 0x800, 0x1000);/* 0x800 */
+} rsi_plane_run;
+
+/*
+ * arg1 == plane index
+ * arg2 == run pointer
+ *
+ * ret0 == status
+ */
+#define RSI_PLANE_ENTER		SMC_RSI_FID(0x13U)
+
+/*
+ * arg1 == plane index
+ * arg2 == register encoding
+ *
+ * ret0 == status
+ * ret1 = register value
+ */
+#define RSI_PLANE_REG_READ	SMC_RSI_FID(0x1EU)
+
+/*
+ * arg1 == plane index
+ * arg2 == register encoding
+ * arg3 == register value
+ *
+ * ret0 == status
+ */
+#define RSI_PLANE_REG_WRITE	SMC_RSI_FID(0x1FU)
+
+/*
+ * Function to set overlay permission value for a specified
+ * (plane index, overlay permission index) tuple
+ */
+u_register_t rsi_mem_set_perm_value(u_register_t plane_index,
+	u_register_t perm_index,
+	u_register_t perm);
+
+/*
+ * Function to Get overlay permission value for a specified
+ * (plane index, overlay permission index) tuple
+ */
+u_register_t rsi_mem_get_perm_value(u_register_t plane_index,
+	u_register_t perm_index,
+	u_register_t *perm);
+
+/* Function to Set overlay permission index for a specified IPA range See RSI_MEM_SET_PERM_INDEX */
+u_register_t rsi_mem_set_perm_index(u_register_t base,
+	u_register_t top,
+	u_register_t perm_index,
+	u_register_t cookie,
+	u_register_t *new_base,
+	u_register_t *response,
+	u_register_t *new_cookie);
+
+/* Request RIPAS of a target IPA range to be changed to a specified value. */
 u_register_t rsi_ipa_state_set(u_register_t base,
 				u_register_t top,
 				rsi_ripas_type ripas,
@@ -196,5 +343,11 @@ u_register_t rsi_attest_token_continue(u_register_t buffer_addr,
 
 /* This function call Host and request to exit Realm with proper exit code */
 void rsi_exit_to_host(enum host_call_cmd exit_code);
+
+/* Function to get Realm configuration. See RSI_REALM_CONFIG */
+u_register_t rsi_realm_config(struct rsi_realm_config *s);
+
+/* Function to enter aux plane. See RSI_PLANE_ENTER */
+u_register_t rsi_plane_enter(u_register_t plane_index, u_register_t run);
 
 #endif /* REALM_RSI_H */

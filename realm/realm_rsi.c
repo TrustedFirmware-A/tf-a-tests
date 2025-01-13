@@ -22,6 +22,11 @@ u_register_t rsi_get_version(u_register_t req_ver)
 	if (res.ret0 == SMC_UNKNOWN) {
 		return SMC_UNKNOWN;
 	}
+
+	if (res.ret0 == RSI_ERROR_STATE) {
+		return RSI_ERROR_STATE;
+	}
+
 	/* Return lower version */
 	return res.ret1;
 }
@@ -139,5 +144,69 @@ u_register_t rsi_attest_token_continue(u_register_t buffer_addr,
 	if ((res.ret0 == RSI_SUCCESS) || (res.ret0 == RSI_INCOMPLETE)) {
 		*bytes_copied = res.ret1;
 	}
+	return res.ret0;
+}
+
+u_register_t rsi_realm_config(struct rsi_realm_config *s)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+			{RSI_REALM_CONFIG, (u_register_t)s});
+	return res.ret0;
+}
+
+u_register_t rsi_mem_get_perm_value(u_register_t plane_index,
+				    u_register_t perm_index,
+				    u_register_t *perm)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+			{RSI_MEM_GET_PERM_VALUE, plane_index, perm_index});
+	if (res.ret0 == RSI_SUCCESS) {
+		*perm = res.ret1;
+	}
+	return res.ret0;
+}
+
+u_register_t rsi_mem_set_perm_value(u_register_t plane_index,
+				    u_register_t perm_index,
+				    u_register_t perm)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+			{RSI_MEM_SET_PERM_VALUE, plane_index, perm_index, perm});
+	return res.ret0;
+}
+
+u_register_t rsi_mem_set_perm_index(u_register_t base,
+				    u_register_t top,
+				    u_register_t perm_index,
+				    u_register_t cookie,
+				    u_register_t *new_base,
+				    u_register_t *response,
+				    u_register_t *new_cookie)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+			{RSI_MEM_SET_PERM_INDEX, base, top, perm_index, cookie});
+	if (res.ret0 == RSI_SUCCESS) {
+		*new_base = res.ret1;
+		*response = res.ret2;
+		*new_cookie = res.ret3;
+	}
+	return res.ret0;
+}
+
+u_register_t rsi_plane_enter(u_register_t plane_index,
+			     u_register_t plane_run)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+			{RSI_PLANE_ENTER, plane_index, plane_run});
 	return res.ret0;
 }

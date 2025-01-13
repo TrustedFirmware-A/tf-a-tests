@@ -146,6 +146,30 @@
 
 /*
  * arg0 == RD address
+ * arg1 == RTT address
+ * arg2 == map address
+ * arg3 == level
+ * arg4 == RTT tree index
+ *
+ * ret0 == status/index
+ */
+#define RMI_RTT_AUX_CREATE		SMC64_RMI_FID(U(0x2D))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == level
+ * arg3 == RTT tree index
+ *
+ * ret1 == Address (PA) of the RTT, if ret0 == RMI_SUCCESS
+ *         Otherwise, undefined.
+ * ret2 == Top of the non-live address region. Only valid
+ *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT_WALK, x)
+ */
+#define RMI_RTT_AUX_DESTROY		SMC64_RMI_FID(U(0x2E))
+
+/*
+ * arg0 == RD address
  * arg1 == map address
  * arg2 == level
  *
@@ -163,6 +187,31 @@
  * arg3 == s2tte
  */
 #define RMI_RTT_MAP_UNPROTECTED		SMC64_RMI_FID(U(0xF))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == RTT tree index
+ *
+ * ret0 == status/index
+ * ret1 == fail_index
+ * ret2 == primary level
+ * ret3 == state
+ * ret4 == ripas
+ */
+#define RMI_RTT_AUX_MAP_PROTECTED	SMC64_RMI_FID(U(0x30))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == RTT tree index
+ *
+ * ret0 == status/index
+ * ret1 == fail_index
+ * ret2 == primary level
+ * ret3 == state
+ */
+#define RMI_RTT_AUX_MAP_UNPROTECTED	SMC64_RMI_FID(U(0x31))
 
 /*
  * arg0 == RD address
@@ -185,6 +234,40 @@
 #define RMI_RTT_UNMAP_UNPROTECTED	SMC64_RMI_FID(U(0x12))
 
 /*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == RTT tree index
+ *
+ * ret0 == status/index
+ * ret1 == top
+ * ret2 == level
+ */
+#define RMI_RTT_AUX_UNMAP_PROTECTED	SMC64_RMI_FID(U(0x33))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == RTT tree index
+ *
+ * ret0 == status/index
+ * ret1 == top
+ * ret2 == level
+ */
+#define RMI_RTT_AUX_UNMAP_UNPROTECTED	SMC64_RMI_FID(U(0x34))
+
+/*
+ * arg0 == RD address
+ * arg1 == target rec
+ * arg2 == base adr
+ * arg3 == top adr
+ *
+ * ret0 == return code
+ * ret1 == Top IPA of range whose S2AP was modified
+ * ret2 == Index of RTT tree in which base alignment check failed
+ */
+#define RMI_RTT_SET_S2AP		SMC64_RMI_FID(U(0x3B))
+
+/*
  * arg0 == calling rec address
  * arg1 == target rec address
  */
@@ -203,6 +286,16 @@
  * ret1 == Address(PA) of the RTT folded, if ret0 == RMI_SUCCESS
  */
 #define RMI_RTT_FOLD			SMC64_RMI_FID(U(0x16))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == level
+ * arg3 == RTT tree index
+ *
+ * ret1 == Address(PA) of the RTT folded, if ret0 == RMI_SUCCESS
+ */
+#define RMI_RTT_AUX_FOLD		SMC64_RMI_FID(U(0x2F))
 
 /*
  * arg0 == RD address
@@ -398,10 +491,14 @@
 #define RMI_FEATURE_FALSE		0U
 #define RMI_FEATURE_TRUE		1U
 
-/* RmiRealmFlags format */
-#define RMI_REALM_FLAGS_LPA2		BIT(0)
-#define RMI_REALM_FLAGS_SVE		BIT(1)
-#define RMI_REALM_FLAGS_PMU		BIT(2)
+/* RmiRealmFlags0 format */
+#define RMI_REALM_FLAGS0_LPA2		BIT(0)
+#define RMI_REALM_FLAGS0_SVE		BIT(1)
+#define RMI_REALM_FLAGS0_PMU		BIT(2)
+#define RMI_REALM_FLAGS0_DA		BIT(3)
+
+/* RmiRealmFlags1 format */
+#define RMI_REALM_FLAGS1_RTT_TREE_PP	BIT(0)
 
 /* RmiInterfaceVersion type */
 #define RMI_MAJOR_VERSION		0U
@@ -426,7 +523,11 @@
 #define RMI_EXIT_RIPAS_CHANGE		4U
 #define RMI_EXIT_HOST_CALL		5U
 #define RMI_EXIT_SERROR			6U
-#define RMI_EXIT_INVALID		(RMI_EXIT_SERROR + 1U)
+#define RMI_EXIT_IO			7U
+#define RMI_EXIT_RTT_REQUEST		8U
+#define RMI_EXIT_S2AP_CHANGE		9U
+#define RMI_EXIT_VDEV_REQUEST		10U
+#define RMI_EXIT_INVALID		(RMI_EXIT_VDEV_REQUEST + 1U)
 
 /* RmiRecRunnable types */
 #define RMI_NOT_RUNNABLE		0U
@@ -473,14 +574,27 @@
  * Value -1 (0 in case of NUM_BPS and NUM_WPS) indicates not set field,
  * and parameter will be set from the corresponding field of feature register 0.
  */
-#define FEATURE_SVE_VL_SHIFT				32UL
-#define FEATURE_SVE_VL_WIDTH				8UL
-#define FEATURE_NUM_BPS_SHIFT				40UL
-#define FEATURE_NUM_BPS_WIDTH				8UL
-#define FEATURE_NUM_WPS_SHIFT				48UL
-#define FEATURE_NUM_WPS_WIDTH				8UL
-#define FEATURE_PMU_NUM_CTRS_SHIFT			56UL
-#define FEATURE_PMU_NUM_CTRS_WIDTH			8UL
+#define RMI_FEATURE_REGISTER_0_DA			BIT(42)
+
+#define RMI_FEATURE_REGISTER_0_PLANE_RTT_SHIFT		43UL
+#define RMI_FEATURE_REGISTER_0_PLANE_RTT_WIDTH		2UL
+
+#define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_SHIFT	45UL
+#define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_WIDTH	4UL
+
+#define FEATURE_SVE_VL_SHIFT				56UL
+#define FEATURE_SVE_VL_WIDTH				4UL
+#define FEATURE_NUM_BPS_SHIFT				14UL
+#define FEATURE_NUM_BPS_WIDTH				6UL
+#define FEATURE_NUM_WPS_SHIFT				20UL
+#define FEATURE_NUM_WPS_WIDTH				6UL
+#define FEATURE_PMU_NUM_CTRS_SHIFT			35UL
+#define FEATURE_PMU_NUM_CTRS_WIDTH			4UL
+
+/* Possible values for RmiPlaneRttFeature */
+#define RMI_PLANE_RTT_AUX				0UL
+#define RMI_PLANE_RTT_AUX_SINGLE			1UL
+#define RMI_PLANE_RTT_SINGLE				2UL
 
 /* RmiStatusCode types */
 /*
@@ -520,6 +634,18 @@ typedef enum {
 	 * index: RTT level at which the walk terminated
 	 */
 	RMI_ERROR_RTT = 4,
+	/*
+	 * An attribute of a device does not match the expected value
+	 */
+	RMI_ERROR_DEVICE = 5,
+	/*
+	 * The command is not supported
+	 */
+	RMI_ERROR_NOT_SUPPORTED = 6,
+	/*
+	 * RTTE in an auxiliary RTT contained an unexpected value
+	 */
+	RMI_ERROR_RTT_AUX = 7,
 	RMI_ERROR_COUNT
 } status_t;
 
@@ -560,31 +686,41 @@ typedef enum {
  */
 struct rmi_realm_params {
 	/* Flags */
-	SET_MEMBER(unsigned long flags, 0, 0x8);		/* Offset 0 */
+	SET_MEMBER(unsigned long flags0, 0, 0x8);			/* Offset 0 */
 	/* Requested IPA width */
-	SET_MEMBER(unsigned int s2sz, 0x8, 0x10);		/* 0x8 */
+	SET_MEMBER(unsigned int s2sz, 0x8, 0x10);			/* 0x8 */
 	/* Requested SVE vector length */
-	SET_MEMBER(unsigned int sve_vl, 0x10, 0x18);		/* 0x10 */
+	SET_MEMBER(unsigned int sve_vl, 0x10, 0x18);			/* 0x10 */
 	/* Requested number of breakpoints */
-	SET_MEMBER(unsigned int num_bps, 0x18, 0x20);		/* 0x18 */
+	SET_MEMBER(unsigned int num_bps, 0x18, 0x20);			/* 0x18 */
 	/* Requested number of watchpoints */
-	SET_MEMBER(unsigned int num_wps, 0x20, 0x28);		/* 0x20 */
+	SET_MEMBER(unsigned int num_wps, 0x20, 0x28);			/* 0x20 */
 	/* Requested number of PMU counters */
-	SET_MEMBER(unsigned int pmu_num_ctrs, 0x28, 0x30);	/* 0x28 */
+	SET_MEMBER(unsigned int pmu_num_ctrs, 0x28, 0x30);		/* 0x28 */
 	/* Measurement algorithm */
-	SET_MEMBER(unsigned char hash_algo, 0x30, 0x400);	/* 0x30 */
+	SET_MEMBER(unsigned char algorithm, 0x30, 0x38);		/* 0x30 */
+	/* Number of auxiliary Planes */
+	SET_MEMBER(unsigned int num_aux_planes, 0x38, 0x400);		/* 0x38 */
 	/* Realm Personalization Value */
-	SET_MEMBER(unsigned char rpv[RPV_SIZE], 0x400, 0x800);	/* 0x400 */
+	SET_MEMBER(unsigned char rpv[RPV_SIZE], 0x400, 0x800);		/* 0x400 */
 	SET_MEMBER(struct {
-		/* Virtual Machine Identifier */
-		unsigned short vmid;				/* 0x800 */
-		/* Realm Translation Table base */
-		u_register_t rtt_base;				/* 0x808 */
-		/* RTT starting level */
-		long rtt_level_start;				/* 0x810 */
-		/* Number of starting level RTTs */
-		unsigned int rtt_num_start;			/* 0x818 */
-	}, 0x800, 0x1000);
+			/* Virtual Machine Identifier */
+			unsigned short vmid;				/* 0x800 */
+			/* Realm Translation Table base */
+			unsigned long rtt_base;				/* 0x808 */
+			/* RTT starting level */
+			long rtt_level_start;				/* 0x810 */
+			/* Number of starting level RTTs */
+			unsigned int rtt_num_start;			/* 0x818 */
+		   }, 0x800, 0x820);
+	/* Flags */
+	SET_MEMBER(unsigned long flags1, 0x820, 0x828);			/* 0x820 */
+	/* MECID */
+	SET_MEMBER(long mecid, 0x828, 0xF00);				/* 0x828 */
+	/* Auxiliary Virtual Machine Identifiers */
+	SET_MEMBER(unsigned short aux_vmid[3], 0xF00, 0xF80);		/* 0xF00 */
+	/* Base address of auxiliary RTTs */
+	SET_MEMBER(unsigned long aux_rtt_base[3], 0xF80, 0x1000);	/* 0xF80 */
 };
 
 /*
@@ -959,6 +1095,7 @@ enum realm_state {
 struct realm {
 	u_register_t     host_shared_data;
 	unsigned int     rec_count;
+	unsigned int     num_aux_planes;
 	u_register_t     par_base;
 	u_register_t     par_size;
 	u_register_t     rd;
@@ -979,9 +1116,12 @@ struct realm {
 	uint8_t          pmu_num_ctrs;
 	bool             payload_created;
 	bool             shared_mem_created;
+	bool             rtt_tree_single;
 	unsigned short   vmid;
 	enum realm_state state;
 	long start_level;
+	u_register_t     aux_rtt_addr[MAX_AUX_PLANE_COUNT];
+	unsigned short   aux_vmid[MAX_AUX_PLANE_COUNT];
 };
 
 /* RMI/SMC */
@@ -1020,6 +1160,12 @@ u_register_t host_rmi_rtt_set_ripas(u_register_t rd,
 				    u_register_t start,
 				    u_register_t end,
 				    u_register_t *top);
+u_register_t host_rmi_rtt_set_s2ap(u_register_t rd,
+				   u_register_t rec,
+				   u_register_t start,
+				   u_register_t end,
+				   u_register_t *top,
+				   u_register_t *rtt_tree);
 u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t target_rec,
 				    unsigned long status);
 void host_rmi_init_cmp_result(void);

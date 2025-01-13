@@ -34,7 +34,11 @@ const char *rmi_exit[] = {
 	RMI_EXIT(PSCI),
 	RMI_EXIT(RIPAS_CHANGE),
 	RMI_EXIT(HOST_CALL),
-	RMI_EXIT(SERROR)
+	RMI_EXIT(SERROR),
+	RMI_EXIT(IO),
+	RMI_EXIT(RTT_REQUEST),
+	RMI_EXIT(S2AP_CHANGE),
+	RMI_EXIT(VDEV_REQUEST)
 };
 
 /*
@@ -135,7 +139,8 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 			       u_register_t feature_flag,
 			       long sl,
 			       const u_register_t *rec_flag,
-			       unsigned int rec_count)
+			       unsigned int rec_count,
+			       unsigned int num_aux_planes)
 {
 	int8_t value;
 
@@ -167,6 +172,21 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 		realm_ptr->rmm_feat_reg0 &= ~MASK(RMI_FEATURE_REGISTER_0_S2SZ);
 		realm_ptr->rmm_feat_reg0 |= INPLACE(RMI_FEATURE_REGISTER_0_S2SZ,
 				EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feature_flag));
+	}
+
+	realm_ptr->rtt_tree_single = false;
+	if (num_aux_planes > 0U) {
+		if (EXTRACT(RMI_FEATURE_REGISTER_0_PLANE_RTT, feature_flag) >=
+							RMI_PLANE_RTT_SINGLE) {
+			ERROR("S2POE not suported on TFTF\n");
+			return false;
+		}
+
+		/*
+		 * @TODO: once S2POE is supported, this should be a parameter
+		 * so it can be tested with and without support for auxiliary
+		 * tables.
+		 */
 	}
 
 	/* Disable PMU if not required */
@@ -246,6 +266,12 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 
 	realm_ptr->start_level = sl;
 
+	if (num_aux_planes > MAX_AUX_PLANE_COUNT) {
+		ERROR("Invalid aux plane count\n");
+		return false;
+	}
+	realm_ptr->num_aux_planes = num_aux_planes;
+
 	/* Create Realm */
 	if (host_realm_create(realm_ptr) != REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_realm_create");
@@ -283,7 +309,8 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 			       u_register_t feature_flag,
 			       long sl,
 			       const u_register_t *rec_flag,
-			       unsigned int rec_count)
+			       unsigned int rec_count,
+			       unsigned int num_aux_planes)
 {
 	bool ret;
 
@@ -292,7 +319,8 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 			feature_flag,
 			sl,
 			rec_flag,
-			rec_count);
+			rec_count,
+			num_aux_planes);
 	if (!ret) {
 		goto destroy_realm;
 	} else {
@@ -323,7 +351,8 @@ bool host_create_activate_realm_payload(struct realm *realm_ptr,
 			u_register_t feature_flag,
 			long sl,
 			const u_register_t *rec_flag,
-			unsigned int rec_count)
+			unsigned int rec_count,
+			unsigned int num_aux_planes)
 
 {
 	bool ret;
@@ -333,7 +362,8 @@ bool host_create_activate_realm_payload(struct realm *realm_ptr,
 			feature_flag,
 			sl,
 			rec_flag,
-			rec_count);
+			rec_count,
+			num_aux_planes);
 	if (!ret) {
 		goto destroy_realm;
 	} else {

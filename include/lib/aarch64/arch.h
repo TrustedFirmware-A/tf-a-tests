@@ -1819,4 +1819,10 @@
 #define SYSREG_ID_apgakeyhi_el1			SYSREG_ESR(3, 0, 2,  3, 1)
 #define SYSREG_ID_mpamidr_el1			SYSREG_ESR(3, 0, 10, 4, 4)
 
+/* RNDR definition */
+#define RNDR			S3_3_C2_C4_0
+
+/* RNDRRS definition */
+#define RNDRRS			S3_3_C2_C4_1
+
 #endif /* ARCH_H */

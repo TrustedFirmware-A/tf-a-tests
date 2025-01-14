@@ -169,5 +169,8 @@
 	  function="host_dev_mem_delundel_multi_cpu" />
 	  <testcase name="Testing Dev Mem delegation fails"
 	  function="host_fail_dev_mem_del" />
+	  <!-- Test cases related to Dev Mem Map and Unmap -->
+	  <testcase name="Realm payload Dev Mem Map and Unmap"
+	  function="host_realm_dev_mem_map_unmap" />
   </testsuite>
 </testsuites>

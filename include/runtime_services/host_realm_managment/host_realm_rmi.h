@@ -324,14 +324,24 @@
 #define RMI_RTT_SET_RIPAS		SMC64_RMI_FID(U(0x19))
 
 /*
- * FID: 0xC4000172
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == level
+ * arg3 == PA of the target device memory
  */
-#define SMC_RMI_DEV_MAP				SMC64_RMI_FID(U(0x22))
+#define SMC_RMI_DEV_MEM_MAP		SMC64_RMI_FID(U(0x22))
 
 /*
- * FID: 0xC4000173
+ * arg0 == RD address
+ * arg1 == map address
+ * arg2 == level
+ *
+ * ret1 == Address (PA) of the device memory granule, if ret0 == RMI_SUCCESS
+ *         Otherwise, undefined.
+ * ret2 == Top of the non-live address region. Only valid
+ *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT, x)
  */
-#define SMC_RMI_DEV_UNMAP			SMC64_RMI_FID(U(0x23))
+#define SMC_RMI_DEV_MEM_UNMAP		SMC64_RMI_FID(U(0x23))
 
 /*
  * FID: 0xC4000174
@@ -528,11 +538,13 @@
 #define RMI_UNASSIGNED			UL(0)
 #define RMI_ASSIGNED			UL(1)
 #define RMI_TABLE			UL(2)
+#define RMI_ASSIGNED_DEV		UL(3)
 
 /* RmmRipas enumeration representing realm IPA state */
 #define RMI_EMPTY			UL(0)
 #define RMI_RAM				UL(1)
 #define RMI_DESTROYED			UL(2)
+#define RMI_DEV				UL(3)
 
 /* RmiPmuOverflowStatus enumeration representing PMU overflow status */
 #define RMI_PMU_OVERFLOW_NOT_ACTIVE	0U
@@ -636,6 +648,7 @@ typedef enum {
 #define RMI_RETURN_STATUS(ret)		((ret) & 0xFF)
 #define RMI_RETURN_INDEX(ret)		(((ret) >> 8U) & 0xFF)
 #define RTT_MAX_LEVEL			(3L)
+#define RTT_MIN_DEV_BLOCK_LEVEL		(2L)
 #define RTT_MIN_LEVEL			(0L)
 #define RTT_MIN_LEVEL_LPA2		(-1L)
 #define ALIGN_DOWN(x, a)		((uint64_t)(x) & ~(((uint64_t)(a)) - 1ULL))
@@ -1224,5 +1237,11 @@ u_register_t host_rmi_pdev_set_pubkey(u_register_t pdev_ptr, u_register_t key,
 				      u_register_t len, uint8_t algo);
 u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr);
 u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr);
+
+u_register_t host_rmi_dev_mem_map(u_register_t rd, u_register_t map_addr,
+				  u_register_t level, u_register_t dev_mem_addr);
+u_register_t host_rmi_dev_mem_unmap(u_register_t rd, u_register_t map_addr,
+				    u_register_t level, u_register_t *pa,
+				    u_register_t *top);
 
 #endif /* HOST_REALM_RMI_H */

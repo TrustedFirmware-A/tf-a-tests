@@ -26,6 +26,7 @@
 extern const char *rmi_exit[];
 
 static struct realm realm[MAX_REALM_COUNT];
+static struct pmu_registers pmu_state;
 
 #if ENABLE_PAUTH
 static uint128_t pauth_keys_before[NUM_KEYS];
@@ -440,7 +441,7 @@ static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 	}
 
 	num_cnts = EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS, rmm_feat_reg0);
-	host_set_pmu_state();
+	host_set_pmu_state(&pmu_state);
 
 	feature_flag = RMI_FEATURE_REGISTER_0_PMU_EN |
 			INPLACE(FEATURE_PMU_NUM_CTRS, num_cnts);
@@ -471,7 +472,7 @@ test_exit:
 		return TEST_RESULT_FAIL;
 	}
 
-	if (!host_check_pmu_state()) {
+	if (!host_check_pmu_state(&pmu_state)) {
 		return TEST_RESULT_FAIL;
 	}
 

@@ -22,6 +22,7 @@
 static uint64_t is_secondary_cpu_on;
 static struct realm realm;
 static struct realm realm1;
+static struct pmu_registers pmu_state[PLATFORM_CORE_COUNT];
 
 /*
  * Test tries to create max Rec
@@ -587,6 +588,9 @@ static test_result_t cpu_on_handler_pmu(void)
 	spin_lock(&secondary_cpu_lock);
 	i = is_secondary_cpu_on++;
 	spin_unlock(&secondary_cpu_lock);
+
+	host_set_pmu_state(&pmu_state[i]);
+
 	ret1 = host_enter_realm_execute(&realm, REALM_PMU_COUNTER, RMI_EXIT_HOST_CALL, i);
 	if (!ret1) {
 		return TEST_RESULT_FAIL;
@@ -599,10 +603,16 @@ static test_result_t cpu_on_handler_pmu(void)
 	if (!ret1) {
 		return TEST_RESULT_FAIL;
 	}
+
 	ret1 = host_enter_realm_execute(&realm1, REALM_PMU_PRESERVE, RMI_EXIT_HOST_CALL, i);
-	if (ret1) {
+	if (!ret1) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (host_check_pmu_state(&pmu_state[i])) {
 		return TEST_RESULT_SUCCESS;
 	}
+
 	return TEST_RESULT_FAIL;
 }
 
@@ -623,7 +633,7 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 	u_register_t rmm_feat_reg0;
 	u_register_t rec_flag[MAX_REC_COUNT];
 	bool ret1 = false, ret2;
-	unsigned int num_cnts, rec_count, i;
+	unsigned int rec_count, i, num_cnts;
 	u_register_t other_mpidr, my_mpidr, ret;
 	int cpu_node;
 	long sl = RTT_MIN_LEVEL;
@@ -649,7 +659,8 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 	}
 
 	num_cnts = EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS, rmm_feat_reg0);
-	host_set_pmu_state();
+	host_set_pmu_state(&pmu_state[0U]);
+
 	is_secondary_cpu_on = 0;
 	my_mpidr = read_mpidr_el1() & MPID_MASK;
 
@@ -776,6 +787,10 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 		goto test_exit2;
 	}
 
+	if (!host_check_pmu_state(&pmu_state[0U])) {
+		goto test_exit;
+	}
+
 	i = 0U;
 
 	/* Turn on all CPUs */
@@ -822,10 +837,6 @@ test_exit:
 	ret2 = host_destroy_realm(&realm);
 	if (!ret1 || !ret2) {
 		ERROR("%s() enter=%u destroy=%u\n", __func__, ret1, ret2);
-		return TEST_RESULT_FAIL;
-	}
-
-	if (!host_check_pmu_state()) {
 		return TEST_RESULT_FAIL;
 	}
 

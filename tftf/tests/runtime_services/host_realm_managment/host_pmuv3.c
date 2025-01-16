@@ -15,8 +15,6 @@
 #include <host_realm_pmu.h>
 #include <platform.h>
 
-#define MAX_COUNTERS		31
-
 /* PMCCFILTR_EL0 mask */
 #define PMCCFILTR_EL0_MASK (	  \
 	PMCCFILTR_EL0_P_BIT	| \
@@ -82,32 +80,10 @@
 	}							\
 }
 
-struct pmu_registers {
-	unsigned long pmcr_el0;
-	unsigned long pmcntenset_el0;
-	unsigned long pmovsset_el0;
-	unsigned long pmintenset_el1;
-	unsigned long pmccntr_el0;
-	unsigned long pmccfiltr_el0;
-	unsigned long pmuserenr_el0;
-
-	unsigned long pmevcntr_el0[MAX_COUNTERS];
-	unsigned long pmevtyper_el0[MAX_COUNTERS];
-
-	unsigned long pmselr_el0;
-	unsigned long pmxevcntr_el0;
-	unsigned long pmxevtyper_el0;
-
-} __aligned(CACHE_WRITEBACK_GRANULE);
-
-static struct pmu_registers pmu_state[PLATFORM_CORE_COUNT];
-
-void host_set_pmu_state(void)
+void host_set_pmu_state(struct pmu_registers *pmu_ptr)
 {
-	unsigned int core_pos = platform_get_core_pos(read_mpidr_el1());
-	struct pmu_registers *pmu_ptr = &pmu_state[core_pos];
-	unsigned int num_cnts = GET_PMU_CNT;
 	unsigned long val;
+	unsigned int num_cnts = GET_PMU_CNT;
 
 	val = read_pmcr_el0() | PMCR_EL0_DP_BIT;
 	pmu_ptr->pmcr_el0 = val;
@@ -181,12 +157,13 @@ void host_set_pmu_state(void)
 	pmu_ptr->pmxevtyper_el0 = read_pmxevtyper_el0();
 }
 
-bool host_check_pmu_state(void)
+bool host_check_pmu_state(struct pmu_registers *pmu_ptr)
 {
-	unsigned int core_pos = platform_get_core_pos(read_mpidr_el1());
-	struct pmu_registers *pmu_ptr = &pmu_state[core_pos];
-	unsigned int num_cnts = GET_PMU_CNT;
 	unsigned long val, read_val;
+	unsigned int num_cnts = GET_PMU_CNT;
+
+	INFO("Check PMU core_pos=%u num_cnts=%u\n",
+			platform_get_core_pos(read_mpidr_el1()), num_cnts);
 
 	CHECK_PMREG(pmcr_el0);
 	CHECK_PMREG(pmcntenset_el0);

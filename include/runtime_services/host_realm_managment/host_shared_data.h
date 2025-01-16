@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -54,7 +54,8 @@ enum realm_cmd {
 	REALM_PMU_COUNTER,
 	REALM_PMU_EVENT,
 	REALM_PMU_PRESERVE,
-	REALM_PMU_INTERRUPT,
+	REALM_PMU_CYCLE_INTERRUPT,
+	REALM_PMU_EVENT_INTERRUPT,
 	REALM_REQ_FPU_FILL_CMD,
 	REALM_REQ_FPU_CMP_CMD,
 	REALM_SET_RIPAS_CMD,

@@ -1,8 +1,10 @@
 /*
- * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
+
+#include <stdlib.h>
 
 #include <arch_helpers.h>
 #include <arm_arch_svc.h>
@@ -22,20 +24,20 @@
 
 #define PRE_OVERFLOW		~(0xF)
 
-#define	DELAY_MS		3000ULL
+#define	DELAY_MS		3000UL
 
-static inline void read_all_counters(u_register_t *array, int impl_ev_ctrs)
+static inline void read_all_counters(u_register_t *array, unsigned int num_cnts)
 {
 	array[0] = read_pmccntr_el0();
-	for (unsigned int i = 0U; i < impl_ev_ctrs; i++) {
+	for (unsigned int i = 0U; i < num_cnts; i++) {
 		array[i + 1] = read_pmevcntrn_el0(i);
 	}
 }
 
-static inline void read_all_counter_configs(u_register_t *array, int impl_ev_ctrs)
+static inline void read_all_counter_configs(u_register_t *array, unsigned int num_cnts)
 {
 	array[0] = read_pmccfiltr_el0();
-	for (unsigned int i = 0U; i < impl_ev_ctrs; i++) {
+	for (unsigned int i = 0U; i < num_cnts; i++) {
 		array[i + 1] = read_pmevtypern_el0(i);
 	}
 }
@@ -106,7 +108,7 @@ static inline void enable_cycle_counter(void)
 	isb();
 }
 
-static inline void enable_event_counter(int ctr_num)
+static inline void enable_event_counter(unsigned int ctr_num)
 {
 	/*
 	 * Set PMEVTYPER_EL0.U != PMEVTYPER_EL0.RLU
@@ -153,27 +155,21 @@ bool test_pmuv3_cycle_works_realm(void)
 	disable_counting();
 	clear_counters();
 
-	realm_printf("counted from %lu to %lu\n",
-		ccounter_start, ccounter_end);
-	if (ccounter_start != ccounter_end) {
-		return true;
-	}
-	return false;
+	realm_printf("cycle counter counted from %lu to %lu\n",
+			ccounter_start, ccounter_end);
+	return (ccounter_start != ccounter_end);
 }
 
 /* Test if max counter available is same as that programmed by host */
 bool test_pmuv3_counter(void)
 {
-	uint64_t num_cnts, num_cnts_host;
+	unsigned int num_cnts, num_cnts_host;
 
 	num_cnts_host = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
 	num_cnts = GET_PMU_CNT;
-	realm_printf("CPU=%u num_cnts=%lu num_cnts_host=%lu\n", read_mpidr_el1() & MPID_MASK,
+	realm_printf("CPU=%u num_cnts=%u num_cnts_host=%u\n", read_mpidr_el1() & MPID_MASK,
 			num_cnts, num_cnts_host);
-	if (num_cnts == num_cnts_host) {
-		return true;
-	}
-	return false;
+	return (num_cnts == num_cnts_host);
 }
 
 /*
@@ -183,28 +179,31 @@ bool test_pmuv3_event_works_realm(void)
 {
 	u_register_t evcounter_start;
 	u_register_t evcounter_end;
+	unsigned int num_cnts = GET_PMU_CNT;
+	unsigned int ctr_num;
 
-	if (GET_PMU_CNT == 0) {
-		realm_printf("no event counters implemented\n");
-		return false;
-	}
+	/* Seed the random number generator */
+	srand((unsigned int)read_cntpct_el0());
+
+	/* Select a random number of event counter */
+	ctr_num = (unsigned int)rand() % num_cnts;
 
 	pmu_reset();
 
-	enable_event_counter(0);
+	enable_event_counter(ctr_num);
 	enable_counting();
 
 	/*
 	 * If any is enabled it will be in the first range.
 	 */
-	evcounter_start = read_pmevcntrn_el0(0);
+	evcounter_start = read_pmevcntrn_el0(ctr_num);
 	execute_nops();
 	disable_counting();
-	evcounter_end = read_pmevcntrn_el0(0);
+	evcounter_end = read_pmevcntrn_el0(ctr_num);
 	clear_counters();
 
-	realm_printf("counted from %lu to %lu\n",
-		evcounter_start, evcounter_end);
+	realm_printf("event counter #%u counted from %lu to %lu\n",
+			ctr_num, evcounter_start, evcounter_end);
 	if (evcounter_start != evcounter_end) {
 		return true;
 	}
@@ -222,30 +221,38 @@ bool test_pmuv3_rmm_preserves(void)
 	u_register_t ctr_end[MAX_COUNTERS] = {0};
 	u_register_t ctr_cfg_end[MAX_COUNTERS] = {0};
 	u_register_t pmu_cfg_end[3];
-	unsigned int impl_ev_ctrs = GET_PMU_CNT;
+	unsigned int num_cnts = GET_PMU_CNT;
 
-	realm_printf("testing %u event counters\n", impl_ev_ctrs);
+	if (num_cnts  == 0U) {
+		realm_printf("testing cycle counter\n");
+	} else {
+		realm_printf("testing %u event counters\n", num_cnts);
+	}
 
 	pmu_reset();
 
-	/* Pretend counters have just been used */
+	/* Pretend all counters have just been used */
 	enable_cycle_counter();
-	enable_event_counter(0);
+
+	for (unsigned int i = 0U; i < num_cnts; i++) {
+		enable_event_counter(i);
+	}
+
 	enable_counting();
 	execute_nops();
 	disable_counting();
 
 	/* Get before reading */
-	read_all_counters(ctr_start, impl_ev_ctrs);
-	read_all_counter_configs(ctr_cfg_start, impl_ev_ctrs);
+	read_all_counters(ctr_start, num_cnts);
+	read_all_counter_configs(ctr_cfg_start, num_cnts);
 	read_all_pmu_configs(pmu_cfg_start);
 
 	/* Give RMM a chance to scramble everything */
 	(void)rsi_get_version(RSI_ABI_VERSION_VAL);
 
 	/* Get after reading */
-	read_all_counters(ctr_end, impl_ev_ctrs);
-	read_all_counter_configs(ctr_cfg_end, impl_ev_ctrs);
+	read_all_counters(ctr_end, num_cnts);
+	read_all_counter_configs(ctr_cfg_end, num_cnts);
 	read_all_pmu_configs(pmu_cfg_end);
 
 	if (memcmp(ctr_start, ctr_end, sizeof(ctr_start)) != 0) {
@@ -269,10 +276,11 @@ bool test_pmuv3_rmm_preserves(void)
 	return true;
 }
 
-bool test_pmuv3_overflow_interrupt(void)
+bool test_pmuv3_overflow_interrupt(bool cycle_cnt)
 {
 	unsigned long priority_bits, priority;
-	uint64_t delay_time = DELAY_MS;
+	unsigned long delay_time = DELAY_MS;
+	unsigned int num_cnts, ctr_num;
 
 	pmu_reset();
 
@@ -292,13 +300,30 @@ bool test_pmuv3_overflow_interrupt(void)
 	/* Enable IRQ */
 	enable_irq();
 
-	write_pmevcntrn_el0(0, PRE_OVERFLOW);
-	enable_event_counter(0);
+	if (cycle_cnt) {
+		write_pmccntr_el0(PRE_OVERFLOW);
+		enable_cycle_counter();
 
-	/* Enable interrupt on event counter #0 */
-	write_pmintenset_el1((1UL << 0));
+		/* Enable interrupt on cycle counter */
+		write_pmintenset_el1(PMINTENSET_EL1_C_BIT);
+		realm_printf("waiting for PMU cycle counter vIRQ...\n");
+	} else {
+		num_cnts = GET_PMU_CNT;
 
-	realm_printf("waiting for PMU vIRQ...\n");
+		/* Seed the random number generator */
+		srand((unsigned int)read_cntpct_el0());
+
+		/* Select a random number of event counter */
+		ctr_num = (unsigned int)rand() % num_cnts;
+
+		write_pmevcntrn_el0(ctr_num, PRE_OVERFLOW);
+		enable_event_counter(ctr_num);
+
+		/* Enable interrupt on event counter */
+		write_pmintenset_el1(PMINTENSET_EL1_P_BIT(ctr_num));
+		realm_printf("waiting for PMU event counter #%u vIRQ...\n",
+				ctr_num);
+	}
 
 	enable_counting();
 	execute_nops();
@@ -308,7 +333,7 @@ bool test_pmuv3_overflow_interrupt(void)
 	 * Performance Monitors Interrupt Enable Set register
 	 * as part of handling the overflow interrupt.
 	 */
-	while ((read_pmintenset_el1() != 0UL) && (delay_time != 0ULL)) {
+	while ((read_pmintenset_el1() != 0UL) && (delay_time != 0UL)) {
 		--delay_time;
 	}
 
@@ -317,14 +342,13 @@ bool test_pmuv3_overflow_interrupt(void)
 
 	pmu_reset();
 
-	if (delay_time == 0ULL) {
-		realm_printf("PMU vIRQ %sreceived in %llums\n",	"not ",
+	if (delay_time == 0UL) {
+		realm_printf("PMU vIRQ %sreceived in %lums\n",	"not ",
 				DELAY_MS);
 		return false;
 	}
 
-	realm_printf("PMU vIRQ %sreceived in %llums\n", "",
+	realm_printf("PMU vIRQ %sreceived in %lums\n", "",
 			DELAY_MS - delay_time);
-
 	return true;
 }

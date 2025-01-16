@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2023-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -65,9 +65,9 @@
 	CHECK_PMEV_REG(n, pmevtyper);	\
 }
 
-#define WRITE_PMREG(reg, mask) {		\
+#define WRITE_PMREG(reg, mask) {	\
 	pmu_ptr->reg = rand64() & mask;	\
-	write_##reg(pmu_ptr->reg);		\
+	write_##reg(pmu_ptr->reg);	\
 }
 
 #define CHECK_PMREG(reg) {					\
@@ -103,11 +103,15 @@ void host_set_pmu_state(struct pmu_registers *pmu_ptr)
 	pmu_ptr->pmintenset_el1 = 0UL;
 	write_pmintenclr_el1(PMU_CLEAR_ALL);
 
+	/* Seed the random number generator */
+	srand((unsigned int)read_cntpct_el0());
+
 	WRITE_PMREG(pmccntr_el0, UINT64_MAX);
 	WRITE_PMREG(pmccfiltr_el0, PMCCFILTR_EL0_MASK);
 
 	pmu_ptr->pmuserenr_el0 = read_pmuserenr_el0();
 
+	/* Check number of event counters implemented */
 	if (num_cnts != 0U) {
 		switch (--num_cnts) {
 		WRITE_PMEV_REGS(30);
@@ -144,17 +148,37 @@ void host_set_pmu_state(struct pmu_registers *pmu_ptr)
 		WRITE_PMEV_REGS(0);
 		}
 
-		/* Generate a random number between 0 and num_cnts */
+		/* Seed the random number generator */
+		srand((unsigned int)read_cntpct_el0());
+
+		/*
+		 * Select a random number of event counter
+		 * between 0 and num_cnts - 1
+		 */
 		val = rand() % ++num_cnts;
 	} else {
-		val = 0UL;
+		/* Select the cycle counter, PMCCNTR_EL0 */
+		val = 31UL;
 	}
 
 	pmu_ptr->pmselr_el0 = val;
 	write_pmselr_el0(val);
 
-	pmu_ptr->pmxevcntr_el0 = read_pmxevcntr_el0();
-	pmu_ptr->pmxevtyper_el0 = read_pmxevtyper_el0();
+	/*
+	 * When PMSELR_EL0.SEL is greater than or equal to the number of
+	 * accessible event counters, then reads and writes of PMXEVCNTR_EL0
+	 * are CONSTRAINED UNPREDICTABLE.
+	 *
+	 * When PMSELR_EL0.SEL is not 31 and is greater than or equal to the
+	 * number of accessible event counters, then reads and writes of
+	 * PMXEVTYPER_EL0 are CONSTRAINED UNPREDICTABLE.
+	 */
+	if (val < num_cnts) {
+		pmu_ptr->pmxevcntr_el0 = read_pmxevcntr_el0();
+		pmu_ptr->pmxevtyper_el0 = read_pmxevtyper_el0();
+	} else if (val == 31UL) {
+		pmu_ptr->pmxevtyper_el0 = read_pmxevtyper_el0();
+	}
 }
 
 bool host_check_pmu_state(struct pmu_registers *pmu_ptr)
@@ -173,9 +197,15 @@ bool host_check_pmu_state(struct pmu_registers *pmu_ptr)
 	CHECK_PMREG(pmccfiltr_el0);
 	CHECK_PMREG(pmuserenr_el0);
 	CHECK_PMREG(pmselr_el0);
-	CHECK_PMREG(pmxevcntr_el0);
-	CHECK_PMREG(pmxevtyper_el0);
 
+	if (pmu_ptr->pmselr_el0 < num_cnts) {
+		CHECK_PMREG(pmxevcntr_el0);
+		CHECK_PMREG(pmxevtyper_el0);
+	} else if (pmu_ptr->pmselr_el0 == 31UL) {
+		CHECK_PMREG(pmxevtyper_el0);
+	}
+
+	/* Check number of event counters implemented */
 	if (num_cnts != 0UL) {
 		switch (--num_cnts) {
 		CHECK_PMEV_REGS(30);

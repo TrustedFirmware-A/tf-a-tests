@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -581,15 +581,6 @@
 
 #define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_SHIFT	45UL
 #define RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES_WIDTH	4UL
-
-#define FEATURE_SVE_VL_SHIFT				56UL
-#define FEATURE_SVE_VL_WIDTH				4UL
-#define FEATURE_NUM_BPS_SHIFT				14UL
-#define FEATURE_NUM_BPS_WIDTH				6UL
-#define FEATURE_NUM_WPS_SHIFT				20UL
-#define FEATURE_NUM_WPS_WIDTH				6UL
-#define FEATURE_PMU_NUM_CTRS_SHIFT			35UL
-#define FEATURE_PMU_NUM_CTRS_WIDTH			4UL
 
 /* Possible values for RmiPlaneRttFeature */
 #define RMI_PLANE_RTT_AUX				0UL

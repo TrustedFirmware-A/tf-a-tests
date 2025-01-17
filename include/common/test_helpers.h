@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -430,6 +430,13 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 			return TEST_RESULT_SKIPPED;				\
 		}								\
 	} while (false)
+
+#define SKIP_TEST_IF_FEAT_MPAM_NOT_SUPPORTED()					\
+	do {									\
+		if (is_feat_mpam_supported() == false) {			\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)								\
 
 /* Helper macro to verify if system suspend API is supported */
 #define is_psci_sys_susp_supported()	\

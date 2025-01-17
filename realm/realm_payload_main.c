@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -389,6 +389,13 @@ void realm_payload_main(void)
 			break;
 		case REALM_PLANE_N_REG_RW_CMD:
 			test_succeed = test_realm_enter_plane_n_reg_rw();
+			break;
+		case REALM_MPAM_ACCESS:
+			test_succeed = test_realm_mpam_undef_abort();
+			break;
+		case REALM_MPAM_PRESENT:
+			/* FEAT_MPAM must be hidden to the Realm */
+			test_succeed = !is_feat_mpam_supported();
 			break;
 		case REALM_MULTIPLE_REC_PSCI_DENIED_CMD:
 			test_succeed = test_realm_multiple_rec_psci_denied_cmd();

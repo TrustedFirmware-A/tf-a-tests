@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2024, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2025, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -522,6 +522,9 @@ DEFINE_RENAME_SYSREG_READ_FUNC(mpamidr_el1, MPAMIDR_EL1)
 DEFINE_RENAME_SYSREG_RW_FUNCS(mpam3_el3, MPAM3_EL3)
 DEFINE_RENAME_SYSREG_RW_FUNCS(mpam2_el2, MPAM2_EL2)
 DEFINE_RENAME_SYSREG_RW_FUNCS(mpamhcr_el2, MPAMHCR_EL2)
+DEFINE_RENAME_SYSREG_WRITE_FUNC(mpamidr_el1, MPAMIDR_EL1)
+DEFINE_RENAME_SYSREG_WRITE_FUNC(mpam0_el1, MPAM0_EL1)
+DEFINE_RENAME_SYSREG_WRITE_FUNC(mpam1_el1, MPAM1_EL1)
 
 DEFINE_RENAME_SYSREG_RW_FUNCS(scxtnum_el2, SCXTNUM_EL2)
 DEFINE_RENAME_SYSREG_RW_FUNCS(scxtnum_el1, SCXTNUM_EL1)

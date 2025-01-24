@@ -39,23 +39,6 @@ static uint128_t pauth_keys_before[NUM_KEYS];
 static uint128_t pauth_keys_after[NUM_KEYS];
 #endif
 
-bool are_planes_supported(void)
-{
-	u_register_t feature_flag;
-
-	/* Read Realm Feature Reg 0 */
-	if (host_rmi_features(0UL, &feature_flag) != REALM_SUCCESS) {
-		ERROR("%s() failed\n", "host_rmi_features");
-		return false;
-	}
-
-	if (EXTRACT(RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES, feature_flag) > 0UL) {
-		return true;
-	}
-
-	return false;
-}
-
 /*
  * @Test_Aim@ Test RSI_PLANE_REG_READ/WRITE
  */
@@ -93,7 +76,7 @@ test_result_t host_test_realm_create_planes_register_rw(void)
 
 	run = (struct rmi_rec_run *)realm.run[0U];
 
-	host_realm_set_aux_plane_args(&realm, 1U);
+	host_realm_set_aux_plane_args(&realm, 1U, 0U);
 	ret1 = host_enter_realm_execute(&realm, REALM_PLANE_N_REG_RW_CMD,
 			RMI_EXIT_HOST_CALL, 0U);
 
@@ -172,7 +155,7 @@ test_result_t host_test_realm_create_planes_enter_multiple_rtt(void)
 	for (unsigned int j = 1U; j <= MAX_AUX_PLANE_COUNT; j++) {
 		run = (struct rmi_rec_run *)realm.run[0U];
 
-		host_realm_set_aux_plane_args(&realm, j);
+		host_realm_set_aux_plane_args(&realm, j, 0U);
 		ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
 				RMI_EXIT_HOST_CALL, 0U);
 
@@ -272,7 +255,7 @@ test_result_t host_test_realm_create_planes_enter_single_rtt(void)
 	for (unsigned int j = 1U; j <= MAX_AUX_PLANE_COUNT; j++) {
 		run = (struct rmi_rec_run *)realm.run[0U];
 
-		host_realm_set_aux_plane_args(&realm, j);
+		host_realm_set_aux_plane_args(&realm, j, 0U);
 		ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
 				RMI_EXIT_HOST_CALL, 0U);
 

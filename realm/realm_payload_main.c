@@ -418,6 +418,9 @@ void realm_payload_main(void)
 		case REALM_MULTIPLE_REC_MULTIPLE_CPU_CMD:
 			test_succeed = test_realm_multiple_rec_multiple_cpu_cmd();
 			break;
+		case REALM_PLANES_MULTIPLE_REC_MULTIPLE_CPU_CMD:
+			test_succeed = test_realm_multiple_plane_multiple_rec_multiple_cpu_cmd();
+			break;
 		case REALM_FEAT_DOUBLEFAULT2_TEST:
 			test_realm_feat_doublefault2();
 			test_succeed = true;

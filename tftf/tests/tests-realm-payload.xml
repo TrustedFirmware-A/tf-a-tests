@@ -152,9 +152,6 @@
 	  function="doe_discovery_test" />
 	  <testcase name="SPDM Get Version"
 	  function="spdm_version_test" />
-	  <!-- Invoke RMI calls related to PDEV management -->
-	  <testcase name="Invoke RMI PDEV calls "
-	  function="host_test_rmi_pdev_calls" />
 	  <!-- Test cases related to FEAT_MPAM -->
 	  <testcase name="Test that FEAT_MPAM is hidden to the Realm"
 	  function="host_realm_hide_feat_mpam" />
@@ -176,5 +173,8 @@
 	  <!-- Test cases related to Dev Mem Map and Unmap -->
 	  <testcase name="Realm payload Dev Mem Map and Unmap"
 	  function="host_realm_dev_mem_map_unmap" />
+	  <!-- Invoke RMI calls related to DA PDEV/VDEV management -->
+	  <testcase name="Invoke RMI DA ABIs "
+	  function="host_invoke_rmi_da_flow" />
   </testsuite>
 </testsuites>

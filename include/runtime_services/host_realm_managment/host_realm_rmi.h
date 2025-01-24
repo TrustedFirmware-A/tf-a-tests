@@ -1471,4 +1471,16 @@ u_register_t host_rmi_dev_mem_unmap(u_register_t rd, u_register_t map_addr,
 				    u_register_t level, u_register_t *pa,
 				    u_register_t *top);
 
+u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
+				  u_register_t vdev_ptr,
+				  u_register_t params_ptr);
+u_register_t host_rmi_vdev_complete(u_register_t rec_ptr, u_register_t vdev_ptr);
+u_register_t host_rmi_vdev_communicate(u_register_t pdev_ptr,
+				       u_register_t vdev_ptr,
+				       u_register_t dev_comm_data_ptr);
+u_register_t host_rmi_vdev_get_state(u_register_t vdev_ptr, u_register_t *state);
+u_register_t host_rmi_vdev_abort(u_register_t vdev_ptr);
+u_register_t host_rmi_vdev_stop(u_register_t vdev_ptr);
+u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,
+				   u_register_t vdev_ptr);
 #endif /* HOST_REALM_RMI_H */

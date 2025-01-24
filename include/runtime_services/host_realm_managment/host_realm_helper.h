@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -100,5 +100,11 @@ static inline bool is_single_rtt_supported(void)
 
 	return false;
 }
+
+/* Handle REC exit due to VDEV request */
+void host_do_vdev_complete(u_register_t rec_ptr, unsigned long vdev_id);
+
+/* Handle REC exit due to VDEV communication */
+void host_do_vdev_communicate(u_register_t vdev_ptr, unsigned long vdev_action);
 
 #endif /* HOST_REALM_HELPER_H */

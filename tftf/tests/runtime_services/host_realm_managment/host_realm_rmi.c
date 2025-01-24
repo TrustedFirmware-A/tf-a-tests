@@ -1204,6 +1204,11 @@ u_register_t host_realm_create(struct realm *realm)
 		params->flags0 |= RMI_REALM_FLAGS0_LPA2;
 	}
 
+	/* Enabled RMI FEAT_DA */
+	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_DA_EN) != 0UL) {
+		params->flags0 |= RMI_REALM_FLAGS0_DA;
+	}
+
 	params->rtt_level_start = realm->start_level;
 	params->algorithm = RMI_HASH_SHA_256;
 	params->vmid = vmid++;
@@ -1929,6 +1934,18 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 				break;
 			}
 		}
+
+		if (run->exit.exit_reason == RMI_EXIT_VDEV_REQUEST) {
+			host_do_vdev_complete(realm->rec[rec_num],
+					      run->exit.vdev_id);
+			re_enter_rec = true;
+		}
+
+		if (run->exit.exit_reason == RMI_EXIT_VDEV_COMM) {
+			host_do_vdev_communicate(run->exit.vdev,
+						 run->exit.vdev_action);
+			re_enter_rec = true;
+		}
 	} while (re_enter_rec);
 
 	*exit_reason = run->exit.exit_reason;
@@ -2010,4 +2027,55 @@ u_register_t host_rmi_dev_mem_unmap(u_register_t rd,
 	*pa = rets.ret1;
 	*top = rets.ret2;
 	return rets.ret0;
+}
+
+u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
+				  u_register_t vdev_ptr,
+				  u_register_t params_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_CREATE, rd_ptr,
+			pdev_ptr, vdev_ptr, params_ptr}, 5U).ret0;
+}
+
+u_register_t host_rmi_vdev_complete(u_register_t rec_ptr, u_register_t vdev_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_COMPLETE, rec_ptr,
+			vdev_ptr}, 3U).ret0;
+}
+
+u_register_t host_rmi_vdev_communicate(u_register_t pdev_ptr,
+				       u_register_t vdev_ptr,
+				       u_register_t dev_comm_data_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_COMMUNICATE, pdev_ptr,
+			vdev_ptr, dev_comm_data_ptr}, 4U).ret0;
+}
+
+u_register_t host_rmi_vdev_get_state(u_register_t vdev_ptr, u_register_t *state)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_GET_STATE, vdev_ptr},
+				2U);
+	*state = rets.ret1;
+	return rets.ret0;
+}
+
+u_register_t host_rmi_vdev_abort(u_register_t vdev_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_ABORT, vdev_ptr},
+				2U).ret0;
+}
+
+u_register_t host_rmi_vdev_stop(u_register_t vdev_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_STOP, vdev_ptr},
+				2U).ret0;
+}
+
+u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,
+				   u_register_t vdev_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_DESTROY, rd_ptr,
+			pdev_ptr, vdev_ptr}, 4U).ret0;
 }

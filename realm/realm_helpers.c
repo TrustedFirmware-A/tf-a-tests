@@ -27,7 +27,7 @@ u_register_t realm_get_ns_buffer(void)
 	struct rsi_host_call host_cal __aligned(sizeof(struct rsi_host_call));
 
 	host_cal.imm = HOST_CALL_GET_SHARED_BUFF_CMD;
-	res = tftf_smc(&(smc_args) {RSI_HOST_CALL, (u_register_t)&host_cal,
+	res = tftf_smc(&(smc_args) {SMC_RSI_HOST_CALL, (u_register_t)&host_cal,
 		0UL, 0UL, 0UL, 0UL, 0UL, 0UL});
 
 	if (res.ret0 != RSI_SUCCESS) {

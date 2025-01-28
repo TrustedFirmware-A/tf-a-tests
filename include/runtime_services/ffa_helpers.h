@@ -357,8 +357,8 @@ typedef uint64_t ffa_notification_bitmap_t;
  */
 struct ffa_partition_rxtx_header {
 	uint32_t flags;
-	/* MBZ */
-	uint32_t reserved;
+	/* Reserved (SBZ). */
+	uint32_t reserved_1;
 	/* Offset from the beginning of the buffer to the message payload. */
 	uint32_t offset;
 	/* Sender(Bits[31:16]) and Receiver(Bits[15:0]) endpoint IDs. */
@@ -366,6 +366,10 @@ struct ffa_partition_rxtx_header {
 	ffa_id_t sender;
 	/* Size of message in buffer. */
 	uint32_t size;
+	/* Reserved (SBZ). Added in v1.2 */
+	uint32_t reserved_2;
+	/* UUID identifying the communication protocol. Added in v1.2. */
+	struct ffa_uuid uuid;
 };
 
 #define FFA_RXTX_HEADER_SIZE sizeof(struct ffa_partition_rxtx_header)
@@ -375,11 +379,13 @@ static inline void ffa_rxtx_header_init(
 	struct ffa_partition_rxtx_header *header)
 {
 	header->flags = 0;
-	header->reserved = 0;
+	header->reserved_1 = 0;
 	header->offset = FFA_RXTX_HEADER_SIZE;
 	header->sender = sender;
 	header->receiver = receiver;
 	header->size = size;
+	header->reserved_2 = 0;
+	header->uuid = (struct ffa_uuid){0};
 }
 
 /* The maximum length possible for a single message. */

@@ -19,6 +19,7 @@ TESTS_SOURCES	+=							\
 		host_realm_mpam_tests.c					\
 		host_realm_brbe_tests.c					\
 		host_realm_mec_tests.c					\
+		host_realm_lfa.c					\
 	)
 
 TESTS_SOURCES	+=							\
@@ -66,7 +67,14 @@ TESTS_SOURCES	+=		\
 		pcie_dvsec_rmeda.c	\
 	)
 
+TESTS_SOURCES	+=		\
+	$(addprefix tftf/tests/runtime_services/lfa/,	\
+		test_lfa_single_cpu.c \
+		test_lfa_multi_cpu.c \
+	)
+
 ifeq (${ENABLE_REALM_PAYLOAD_TESTS},1)
 include lib/ext_mbedtls/mbedtls.mk
 endif
+
 endif

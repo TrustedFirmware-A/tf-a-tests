@@ -32,6 +32,22 @@ u_register_t rsi_get_version(u_register_t req_ver)
 	return res.ret1;
 }
 
+/* This function returns RSI feature register at 'feature_reg_index' */
+u_register_t rsi_features(u_register_t feature_reg_index,
+			  u_register_t *feature_reg_value_ret)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args) {SMC_RSI_FEATURES, feature_reg_index,
+				    0UL, 0UL, 0UL, 0UL, 0UL, 0UL});
+	/* This command always returns RSI_SUCCESS */
+	if (res.ret0 == RSI_SUCCESS) {
+		*feature_reg_value_ret = res.ret1;
+	}
+
+	return res.ret0;
+}
+
 /* This function call Host and request to exit Realm with proper exit code */
 u_register_t rsi_exit_to_host(enum host_call_cmd exit_code)
 {
@@ -226,5 +242,128 @@ u_register_t rsi_plane_reg_write(u_register_t plane_index,
 	res = tftf_smc(&(smc_args)
 			{SMC_RSI_PLANE_REG_WRITE, plane_index,
 			 register_encoding, value});
+	return res.ret0;
+}
+
+/* This function return instance ID of Realm device */
+u_register_t rsi_rdev_get_instance_id(u_register_t rdev_id,
+				      u_register_t *rdev_inst_id)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+		{SMC_RSI_RDEV_GET_INSTANCE_ID, rdev_id, 0UL, 0UL, 0UL, 0UL,
+		 0UL, 0UL});
+
+	if (res.ret0 == RSI_SUCCESS) {
+		*rdev_inst_id = res.ret1;
+	}
+
+	return res.ret0;
+}
+
+/* This function return state of the Realm device */
+u_register_t rsi_rdev_get_state(u_register_t rdev_id, u_register_t rdev_inst_id,
+				u_register_t *rdev_rsi_state)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+		{SMC_RSI_RDEV_GET_STATE, rdev_id, rdev_inst_id, 0UL, 0UL, 0UL,
+		 0UL, 0UL});
+
+	if (res.ret0 == RSI_SUCCESS) {
+		*rdev_rsi_state = res.ret1;
+	}
+
+	return res.ret0;
+}
+
+/* This function triggers RDEV interruptible operation to get_measurements */
+u_register_t rsi_rdev_get_measurements(u_register_t rdev_id,
+				       u_register_t rdev_inst_id,
+				       u_register_t meas_params_ptr)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+		{SMC_RSI_RDEV_GET_MEASUREMENTS, rdev_id, rdev_inst_id,
+		 meas_params_ptr, 0UL, 0UL, 0UL, 0UL});
+
+	return res.ret0;
+}
+
+/* This function triggers RDEV interruptible operation to get_measurements */
+u_register_t rsi_rdev_get_info(u_register_t rdev_id, u_register_t rdev_inst_id,
+			       u_register_t rdev_info_ptr)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+		       {SMC_RSI_RDEV_GET_INFO, rdev_id, rdev_inst_id,
+			rdev_info_ptr, 0UL, 0UL, 0UL, 0UL});
+
+	return res.ret0;
+}
+
+/* This function triggers RDEV interruptible operation to lock */
+u_register_t rsi_rdev_lock(u_register_t rdev_id, u_register_t rdev_inst_id)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+		{SMC_RSI_RDEV_LOCK, rdev_id, rdev_inst_id,
+		 0UL, 0UL, 0UL, 0UL, 0UL});
+
+	return res.ret0;
+}
+
+/* This function triggers RDEV interruptible operation to get interface report */
+u_register_t rsi_rdev_get_interface_report(u_register_t rdev_id,
+					   u_register_t rdev_inst_id,
+					   u_register_t tdisp_version_max)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+		{SMC_RSI_RDEV_GET_INTERFACE_REPORT, rdev_id, rdev_inst_id,
+		 tdisp_version_max, 0UL, 0UL, 0UL, 0UL});
+
+	return res.ret0;
+}
+
+/* This function triggers RDEV interruptible operation to start */
+u_register_t rsi_rdev_start(u_register_t rdev_id, u_register_t rdev_inst_id)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+		{SMC_RSI_RDEV_START, rdev_id, rdev_inst_id,
+		 0UL, 0UL, 0UL, 0UL, 0UL});
+
+	return res.ret0;
+}
+
+/* This function triggers RDEV interruptible operation to stop the TDI */
+u_register_t rsi_rdev_stop(u_register_t rdev_id, u_register_t rdev_inst_id)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+		{SMC_RSI_RDEV_STOP, rdev_id, rdev_inst_id,
+		 0UL, 0UL, 0UL, 0UL, 0UL});
+
+	return res.ret0;
+}
+
+/* This function exits the REC to do vdev communicate */
+u_register_t rsi_rdev_continue(u_register_t rdev_id, u_register_t rdev_inst_id)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args)
+		       {SMC_RSI_RDEV_CONTINUE, rdev_id, rdev_inst_id, 0UL, 0UL,
+			0UL, 0UL, 0UL});
+
 	return res.ret0;
 }

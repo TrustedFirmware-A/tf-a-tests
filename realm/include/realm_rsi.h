@@ -683,6 +683,10 @@ u_register_t rsi_ipa_state_get(u_register_t base,
 /* This function return RSI_ABI_VERSION */
 u_register_t rsi_get_version(u_register_t req_ver);
 
+/* This function returns RSI feature register at 'feature_reg_index' */
+u_register_t rsi_features(u_register_t feature_reg_index,
+			  u_register_t *feature_reg_value_ret);
+
 /* This function will initialize the attestation context */
 u_register_t rsi_attest_token_init(u_register_t challenge_0,
 				   u_register_t challenge_1,
@@ -708,5 +712,30 @@ u_register_t rsi_realm_config(struct rsi_realm_config *s);
 
 /* Function to enter aux plane. See RSI_PLANE_ENTER */
 u_register_t rsi_plane_enter(u_register_t plane_index, u_register_t run);
+
+u_register_t rsi_rdev_get_instance_id(u_register_t rdev_id,
+				      u_register_t *rdev_inst_id);
+
+u_register_t rsi_rdev_get_state(u_register_t rdev_id, u_register_t rdev_inst_id,
+				u_register_t *rdev_rsi_state);
+
+u_register_t rsi_rdev_get_measurements(u_register_t rdev_id,
+				       u_register_t rdev_inst_id,
+				       u_register_t meas_params_ptr);
+
+u_register_t rsi_rdev_get_info(u_register_t rdev_id, u_register_t rdev_inst_id,
+			       u_register_t rdev_info_ptr);
+
+u_register_t rsi_rdev_lock(u_register_t rdev_id, u_register_t rdev_inst_id);
+
+u_register_t rsi_rdev_get_interface_report(u_register_t rdev_id,
+					   u_register_t rdev_inst_id,
+					   u_register_t tdisp_version_max);
+
+u_register_t rsi_rdev_start(u_register_t rdev_id, u_register_t rdev_inst_id);
+
+u_register_t rsi_rdev_stop(u_register_t rdev_id, u_register_t rdev_inst_id);
+
+u_register_t rsi_rdev_continue(u_register_t rdev_id, u_register_t rdev_inst_id);
 
 #endif /* REALM_RSI_H */

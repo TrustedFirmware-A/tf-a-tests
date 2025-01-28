@@ -807,10 +807,29 @@ static int host_unassign_vdev_from_realm(struct realm *realm,
 					 struct host_vdev *h_vdev)
 {
 	int rc;
+	u_register_t state;
 
 	rc = host_rmi_vdev_stop((u_register_t)h_vdev->vdev_ptr);
 	if (rc != RMI_SUCCESS) {
 		INFO("VDEV stop failed\n");
+		return -1;
+	}
+
+	rc = host_vdev_get_state(h_vdev, &state);
+	if (rc != RMI_SUCCESS) {
+		INFO("VDEV get_state failed\n");
+		return -1;
+	}
+
+	if (state != RMI_VDEV_STATE_STOPPING) {
+		INFO("VDEV not in STOPPING state\n");
+		return -1;
+	}
+
+	/* Do VDEV communicate to move VDEV from STOPPING to STOPPED state */
+	rc = host_dev_communicate(h_pdev, h_vdev, RMI_VDEV_STATE_STOPPED);
+	if (rc != 0) {
+		INFO("VDEV STOPPING -> STOPPED failed\n");
 		return -1;
 	}
 
@@ -898,6 +917,8 @@ test_result_t host_invoke_rmi_da_flow(void)
 
 	CHECK_DA_SUPPORT_IN_RMI(rmi_feat_reg0);
 	SKIP_TEST_IF_DOE_NOT_SUPPORTED(pdev_bdf, doe_cap_base);
+
+	INFO("DA on bdf: 0x%x, doe_cap_base: 0x%x\n", pdev_bdf, doe_cap_base);
 
 	/* Initialize Host NS heap memory */
 	ret = page_pool_init((u_register_t)PAGE_POOL_BASE,

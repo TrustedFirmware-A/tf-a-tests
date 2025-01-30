@@ -23,7 +23,7 @@
 #define TEST_SPURIOUS_ITERATIONS_COUNT	1000000
 
 #define TEST_SPI_ID		(MIN_SPI_ID + 2)
-#define CPU_TARGET_FIELD	((1 << PLATFORM_CORE_COUNT) - 1)
+#define CPU_TARGET_FIELD	0xFF
 
 static event_t cpu_ready[PLATFORM_CORE_COUNT];
 static volatile int requested_irq_received[PLATFORM_CORE_COUNT];

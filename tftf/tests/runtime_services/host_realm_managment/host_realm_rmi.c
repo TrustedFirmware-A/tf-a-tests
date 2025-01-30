@@ -820,7 +820,7 @@ static u_register_t host_realm_destroy_free_aux_rtt(struct realm *realm,
 					rtt2=0x%lx \
 					top=0x%lx level=0x%lx\n",
 					"host_rmi_rtt_aux_destroy",
-					map_addr, ret, rtt2,
+					addr, ret, rtt2,
 					top, level + 1L);
 		}
 
@@ -864,7 +864,7 @@ static u_register_t host_realm_destroy_undelegate_range(struct realm *realm,
 								tree_index,
 								&top1, &level1);
 				if (ret != RMI_SUCCESS) {
-					VERBOSE("%s() failed, addr=0x%lx ret=0x%lx tree=0x%lx\n",
+					VERBOSE("%s() failed, addr=0x%lx ret=0x%lx tree=0x%x\n",
 					"host_rmi_rtt_aux_unmap_protected",
 					ipa, ret, tree_index);
 				}

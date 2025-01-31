@@ -21,7 +21,7 @@
 #include <host_realm_pmu.h>
 #include <host_shared_data.h>
 
-#define SLEEP_TIME_MS	20U
+#define SLEEP_TIME_MS		2U
 
 extern const char *rmi_exit[];
 
@@ -31,6 +31,91 @@ static struct realm realm[MAX_REALM_COUNT];
 static uint128_t pauth_keys_before[NUM_KEYS];
 static uint128_t pauth_keys_after[NUM_KEYS];
 #endif
+
+bool are_planes_supported(void)
+{
+	u_register_t feature_flag;
+
+	/* Read Realm Feature Reg 0 */
+	if (host_rmi_features(0UL, &feature_flag) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_rmi_features");
+		return false;
+	}
+
+	if (EXTRACT(RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES, feature_flag) > 0UL) {
+		return true;
+	}
+
+	return false;
+}
+
+/*
+ * @Test_Aim@ Test realm payload creation with 3 Aux Planes, enter all Planes
+ * Host cannot enter Aux Planes directly,
+ * Host will enter P0, P0 will enter aux plane
+ */
+test_result_t host_test_realm_create_planes_enter(void)
+{
+	bool ret1, ret2;
+	u_register_t rec_flag[MAX_REC_COUNT];
+	struct realm realm;
+	u_register_t feature_flag = 0UL;
+	long sl = RTT_MIN_LEVEL;
+	struct rmi_rec_run *run;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (!are_planes_supported()) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
+	}
+
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			feature_flag, sl, rec_flag, 1U, MAX_AUX_PLANE_COUNT)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* CMD for Plane N */
+	for (unsigned int j = 1U; j <= MAX_AUX_PLANE_COUNT; j++) {
+		host_shared_data_set_realm_cmd(&realm, REALM_SLEEP_CMD, j, 0U);
+		host_shared_data_set_host_val(&realm, j, 0U,
+				HOST_ARG1_INDEX, SLEEP_TIME_MS);
+	}
+
+	for (unsigned int j = 1U; j <= MAX_AUX_PLANE_COUNT; j++) {
+		run = (struct rmi_rec_run *)realm.run[0U];
+
+		host_realm_set_aux_plane_args(&realm, j);
+		ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
+				RMI_EXIT_HOST_CALL, 0U);
+
+
+		if (run->exit.exit_reason != RMI_EXIT_HOST_CALL) {
+			ERROR("Rec0 error exit=0x%lx ret1=%d HPFAR=0x%lx \
+					esr=0x%lx far=0x%lx\n",
+					run->exit.exit_reason, ret1,
+					run->exit.hpfar,
+					run->exit.esr, run->exit.far);
+		}
+	}
+	ret2 = host_destroy_realm(&realm);
+
+	if (!ret1 || !ret2) {
+		ERROR("%s(): enter=%d destroy=%d\n",
+		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return host_cmp_result();
+}
 
 /*
  * @Test_Aim@ Test realm payload creation, execution and destruction iteratively
@@ -63,7 +148,9 @@ test_result_t host_test_realm_create_enter(void)
 			return TEST_RESULT_FAIL;
 		}
 
-		host_shared_data_set_host_val(&realm, run_num, HOST_ARG1_INDEX, SLEEP_TIME_MS);
+		host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, run_num,
+				HOST_ARG1_INDEX, SLEEP_TIME_MS);
+
 		ret1 = host_enter_realm_execute(&realm, REALM_SLEEP_CMD, RMI_EXIT_HOST_CALL,
 						run_num);
 		ret2 = host_destroy_realm(&realm);
@@ -429,8 +516,9 @@ test_result_t host_test_multiple_realm_create_enter(void)
 
 	for (unsigned int j = 0U; j < MAX_REC_COUNT; j++) {
 		for (unsigned int i = 0U; i < MAX_REALM_COUNT; i++) {
-			host_shared_data_set_host_val(&realm[i], run_rec[i], HOST_ARG1_INDEX,
-							SLEEP_TIME_MS);
+			host_shared_data_set_host_val(&realm[i], PRIMARY_PLANE_ID, run_rec[i],
+					HOST_ARG1_INDEX, SLEEP_TIME_MS);
+
 			ret = host_enter_realm_execute(&realm[i], REALM_SLEEP_CMD,
 							RMI_EXIT_HOST_CALL, run_rec[i]);
 			if (!ret) {
@@ -489,11 +577,11 @@ test_result_t host_realm_set_ripas(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, 10U);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, 10U);
 	ret1 = host_enter_realm_execute(&realm, REALM_SLEEP_CMD, RMI_EXIT_HOST_CALL, 0U);
 	base = (u_register_t)page_alloc(PAGE_SIZE * test_page_num);
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG2_INDEX,
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG2_INDEX,
 			base + (PAGE_SIZE * test_page_num));
 
 	for (unsigned int i = 0U; i < test_page_num; i++) {
@@ -595,7 +683,7 @@ test_result_t host_realm_reject_set_ripas(void)
 		ERROR("host_realm_delegate_map_protected_data failede\n");
 		goto destroy_realm;
 	}
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base);
 	ret1 = host_enter_realm_execute(&realm, REALM_REJECT_SET_RIPAS_CMD,
 			RMI_EXIT_RIPAS_CHANGE, 0U);
 
@@ -681,8 +769,8 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	}
 	INFO("Initial state base = 0x%lx rtt.state=0x%lx rtt.ripas=0x%lx\n",
 			base, rtt.state, rtt.ripas);
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, 1U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base);
 
 	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
 	if (ret != RMI_SUCCESS || data != base) {
@@ -711,8 +799,8 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	/* ESR.EC == 0b100000 Instruction Abort from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 			|| (EC_BITS(run->exit.esr) != EC_IABORT_LOWER_EL)
-			|| ((run->exit.esr & ISS_IFSC_MASK) < IFSC_L0_TRANS_FAULT)
-			|| ((run->exit.esr & ISS_IFSC_MASK) > IFSC_L3_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_IFSC_MASK) < FSC_L0_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_IFSC_MASK) > FSC_L3_TRANS_FAULT)
 			|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault ESR=0x%lx\n", run->exit.esr);
 		goto undelegate_destroy;
@@ -729,8 +817,8 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	/* ESR.EC == 0b100100 Data Abort exception from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_DFSC_MASK) < DFSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_DFSC_MASK) > DFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault\n");
 		goto undelegate_destroy;
@@ -811,8 +899,8 @@ test_result_t host_realm_abort_unassigned_ram(void)
 	}
 	INFO("Initial state base = 0x%lx rtt.state=0x%lx rtt.ripas=0x%lx\n",
 			base, rtt.state, rtt.ripas);
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, 1U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base);
 
 	/* Rec0 expect rec exit due to Instr Abort unassigned ram page */
 	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
@@ -821,8 +909,8 @@ test_result_t host_realm_abort_unassigned_ram(void)
 	/* ESR.EC == 0b100000 Instruction Abort from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 			|| (EC_BITS(run->exit.esr) != EC_IABORT_LOWER_EL)
-			|| ((run->exit.esr & ISS_IFSC_MASK) < IFSC_L0_TRANS_FAULT)
-			|| ((run->exit.esr & ISS_IFSC_MASK) > IFSC_L3_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_IFSC_MASK) < FSC_L0_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_IFSC_MASK) > FSC_L3_TRANS_FAULT)
 			|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault ESR=0x%lx\n", run->exit.esr);
 		goto destroy_realm;
@@ -838,8 +926,8 @@ test_result_t host_realm_abort_unassigned_ram(void)
 	/* ESR.EC == 0b100100 Data Abort exception from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_DFSC_MASK) < DFSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_DFSC_MASK) > DFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault ESR=0x%lx\n", run->exit.esr);
 		goto destroy_realm;
@@ -913,8 +1001,8 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	}
 	INFO("Initial state base = 0x%lx rtt.state=0x%lx rtt.ripas=0x%lx\n",
 			base, rtt.state, rtt.ripas);
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, 1U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base);
 
 	if (host_realm_activate(&realm) != REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_realm_activate");
@@ -954,8 +1042,8 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	/* ESR.EC == 0b100000 Instruction Abort from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_IABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_IFSC_MASK) < IFSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_IFSC_MASK) > IFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_IFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_IFSC_MASK) > FSC_L3_TRANS_FAULT)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault ESR=0x%lx\n", run->exit.esr);
 		goto destroy_data;
@@ -971,8 +1059,8 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	/* ESR.EC == 0b100100 Data Abort exception from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_DFSC_MASK) < DFSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_DFSC_MASK) > DFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Rec did not fault ESR=0x%lx\n", run->exit.esr);
 		goto destroy_data;
@@ -1038,10 +1126,10 @@ test_result_t host_realm_sea_empty(void)
 		ERROR("wrong initial state\n");
 		goto destroy_realm;
 	}
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, 1U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, 2U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, 3U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 2U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 3U, HOST_ARG1_INDEX, base);
 
 	/* Rec0 expect IA due to SEA unassigned empty page */
 	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
@@ -1052,7 +1140,7 @@ test_result_t host_realm_sea_empty(void)
 	}
 
 	/* get ESR set by Realm exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 0U, HOST_ARG2_INDEX);
+	esr = host_shared_data_get_realm_val(&realm, 0U, 0U, HOST_ARG2_INDEX);
 	if (((esr & ISS_IFSC_MASK) != IFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_IABORT_CUR_EL)) {
 		ERROR("Rec0 incorrect ESR=0x%lx\n", esr);
 		goto destroy_realm;
@@ -1068,7 +1156,7 @@ test_result_t host_realm_sea_empty(void)
 	}
 
 	/* get ESR set by Realm exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 1U, HOST_ARG2_INDEX);
+	esr = host_shared_data_get_realm_val(&realm, 0U, 1U, HOST_ARG2_INDEX);
 	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_DABORT_CUR_EL)) {
 		ERROR("Rec1 incorrect ESR=0x%lx\n", esr);
 		goto destroy_realm;
@@ -1100,7 +1188,7 @@ test_result_t host_realm_sea_empty(void)
 	}
 
 	/* get ESR set by Realm exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 2U, HOST_ARG2_INDEX);
+	esr = host_shared_data_get_realm_val(&realm, 0U, 2U, HOST_ARG2_INDEX);
 	if (((esr & ISS_IFSC_MASK) != IFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_IABORT_CUR_EL)) {
 		ERROR("Rec2 incorrect ESR=0x%lx\n", esr);
 		goto destroy_realm;
@@ -1116,7 +1204,7 @@ test_result_t host_realm_sea_empty(void)
 	}
 
 	/* get ESR set by Realm exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 3U, HOST_ARG2_INDEX);
+	esr = host_shared_data_get_realm_val(&realm, 0U, 3U, HOST_ARG2_INDEX);
 	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_DABORT_CUR_EL)) {
 		ERROR("Rec3 incorrect ESR=0x%lx\n", esr);
 	}
@@ -1185,8 +1273,8 @@ test_result_t host_realm_sea_unprotected(void)
 	}
 
 	run = (struct rmi_rec_run *)realm.run[0];
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base_ipa);
-	host_shared_data_set_host_val(&realm, 1U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base_ipa);
 
 	/* Rec0 expect SEA in realm due to IA unprotected IPA page */
 	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
@@ -1197,7 +1285,7 @@ test_result_t host_realm_sea_unprotected(void)
 	}
 
 	/* get ESR set by Realm exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 0U, HOST_ARG2_INDEX);
+	esr = host_shared_data_get_realm_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG2_INDEX);
 	if (((esr & ISS_IFSC_MASK) != IFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_IABORT_CUR_EL)) {
 		ERROR("Rec0 incorrect ESR=0x%lx\n", esr);
 		goto destroy_realm;
@@ -1212,8 +1300,8 @@ test_result_t host_realm_sea_unprotected(void)
 
 	if (!ret1 || (run->exit.hpfar >> 4U) != (base_ipa >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_DFSC_MASK) < DFSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_DFSC_MASK) > DFSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
 		ERROR("Rec1 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
 				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
@@ -1233,7 +1321,7 @@ test_result_t host_realm_sea_unprotected(void)
 	}
 
 	/* get ESR set by Realm exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 1U, HOST_ARG2_INDEX);
+	esr = host_shared_data_get_realm_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG2_INDEX);
 	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_DABORT_CUR_EL)) {
 		ERROR("Rec1 incorrect ESR=0x%lx\n", esr);
 		goto destroy_realm;
@@ -1283,7 +1371,7 @@ test_result_t host_realm_enable_dit(void)
 	/* Enable FEAT_DIT on Host */
 	write_dit(DIT_BIT);
 	for (unsigned int i = 0; i < MAX_REC_COUNT; i++) {
-		host_shared_data_set_host_val(&realm, i, HOST_ARG1_INDEX, 10U);
+		host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, i, HOST_ARG1_INDEX, 10U);
 		ret1 = host_enter_realm_execute(&realm, REALM_DIT_CHECK_CMD,
 				RMI_EXIT_HOST_CALL, i);
 		if (!ret1) {
@@ -1747,8 +1835,8 @@ test_result_t host_realm_sea_adr_fault(void)
 	/* IPA outside Realm space */
 	base_ipa = base | (1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
 					realm.rmm_feat_reg0) + 1U));
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base_ipa);
-	host_shared_data_set_host_val(&realm, 1U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base_ipa);
 
 	INFO("base_ipa=0x%lx\n", base_ipa);
 
@@ -1764,7 +1852,7 @@ test_result_t host_realm_sea_adr_fault(void)
 	}
 
 	/* get ESR set by Realm exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 0U, HOST_ARG2_INDEX);
+	esr = host_shared_data_get_realm_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG2_INDEX);
 	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA)
 			|| (EC_BITS(esr) != EC_DABORT_CUR_EL)
 			|| ((esr & (1UL << ESR_ISS_EABORT_EA_BIT)) == 0U)) {
@@ -1784,7 +1872,7 @@ test_result_t host_realm_sea_adr_fault(void)
 	}
 
 	/* get ESR set by Realm exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 1U, HOST_ARG2_INDEX);
+	esr = host_shared_data_get_realm_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG2_INDEX);
 	if (((esr & ISS_DFSC_MASK) != IFSC_NO_WALK_SEA)
 			|| (EC_BITS(esr) != EC_IABORT_CUR_EL)
 			|| ((esr & (1UL << ESR_ISS_EABORT_EA_BIT)) == 0U)) {
@@ -1799,8 +1887,8 @@ test_result_t host_realm_sea_adr_fault(void)
 
 	INFO("base_ipa=0x%lx\n", base_ipa);
 
-	host_shared_data_set_host_val(&realm, 2U, HOST_ARG1_INDEX, base_ipa);
-	host_shared_data_set_host_val(&realm, 3U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 2U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 3U, HOST_ARG1_INDEX, base_ipa);
 
 	run = (struct rmi_rec_run *)realm.run[2];
 
@@ -1814,8 +1902,8 @@ test_result_t host_realm_sea_adr_fault(void)
 	}
 
 	/* get ESR set by Realm exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 2U, HOST_ARG2_INDEX);
-	if (((esr & ISS_DFSC_MASK) != DFSC_L0_ADR_SIZE_FAULT)
+	esr = host_shared_data_get_realm_val(&realm, PRIMARY_PLANE_ID, 2U, HOST_ARG2_INDEX);
+	if (((esr & ISS_DFSC_MASK) != FSC_L0_ADR_SIZE_FAULT)
 			|| (EC_BITS(esr) != EC_DABORT_CUR_EL)
 			|| ((esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
 		ERROR("Rec2 incorrect ESR=0x%lx\n", esr);
@@ -1834,8 +1922,8 @@ test_result_t host_realm_sea_adr_fault(void)
 	}
 
 	/* get ESR set by Realm exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 3U, HOST_ARG2_INDEX);
-	if (((esr & ISS_IFSC_MASK) != IFSC_L0_ADR_SIZE_FAULT)
+	esr = host_shared_data_get_realm_val(&realm, PRIMARY_PLANE_ID, 3U, HOST_ARG2_INDEX);
+	if (((esr & ISS_IFSC_MASK) != FSC_L0_ADR_SIZE_FAULT)
 			|| (EC_BITS(esr) != EC_IABORT_CUR_EL)
 			|| ((esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
 		ERROR("Rec3 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
@@ -2581,10 +2669,10 @@ test_result_t host_test_feat_doublefault2(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, 0U, 0U, HOST_ARG1_INDEX, base);
 
 	for (unsigned int i = 0U; i < 2U; i++) {
-		host_shared_data_set_host_val(&realm, 0U, HOST_ARG2_INDEX,
+		host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG2_INDEX,
 					      (unsigned long)i);
 
 		/* Rec0 expect IA due to SEA unassigned empty page */

@@ -787,7 +787,11 @@ struct rmi_rec_exit {
 		u_register_t far;				/* 0x108 */
 		/* Hypervisor IPA Fault Address register */
 		u_register_t hpfar;				/* 0x110 */
-	}, 0x100, 0x200);
+	}, 0x100, 0x118);
+	/* Index of RTT tree active at time of the exit */
+	SET_MEMBER(u_register_t rtt_tree, 0x118, 0x120);/* Offset 0x118 */
+	/* Level of requested RTT */
+	SET_MEMBER(u_register_t rtt_level, 0x120, 0x200);/* Offset 0x120 */
 	/* General-purpose registers */
 	SET_MEMBER(u_register_t gprs[REC_EXIT_NR_GPRS], 0x200, 0x300); /* 0x200 */
 	SET_MEMBER(struct {
@@ -817,7 +821,15 @@ struct rmi_rec_exit {
 		u_register_t ripas_size;			/* 0x508 */
 		/* RIPAS value of pending RIPAS change */
 		unsigned char ripas_value;			/* 0x510 */
-	}, 0x500, 0x600);
+	}, 0x500, 0x518);
+	/* Base PA of MMIO region, if RIPAS change
+	 * is pending due to exeception of RSI_RDEV_VALIDATE_IO
+	 */
+	SET_MEMBER(u_register_t ripas_io_pa, 0x518, 0x520);	/* Offset 0x518 */
+	/* Base address of target region for pending S2AP change */
+	SET_MEMBER(u_register_t s2ap_base, 0x520, 0x528);     /* Offset 0x520 */
+	/* Top address of target region for pending S2AP change */
+	SET_MEMBER(u_register_t s2ap_top, 0x528, 0x600);     /* Offset 0x528 */
 	/* Host call immediate value */
 	SET_MEMBER(unsigned int imm, 0x600, 0x700);		/* 0x600 */
 	/* PMU overflow status */

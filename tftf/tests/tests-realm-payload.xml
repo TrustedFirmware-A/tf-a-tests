@@ -8,6 +8,8 @@
 
 <testsuites>
   <testsuite name="Realm payload at EL1" description="Test Realm EL1 framework capabilities" >
+	  <testcase name="Realm Planes execution test"
+	  function="host_test_realm_create_planes_enter" />
 	  <testcase name="Realm EL1 creation and execution test"
 	  function="host_test_realm_create_enter" />
 	  <testcase name="Realm RTT fold unfold test Unassigned Empty"

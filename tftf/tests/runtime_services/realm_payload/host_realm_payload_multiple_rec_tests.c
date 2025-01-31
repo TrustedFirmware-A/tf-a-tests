@@ -55,7 +55,9 @@ test_result_t host_realm_multi_rec_single_cpu(void)
 	rec_num = (unsigned int)rand() % MAX_REC_COUNT;
 
 	for (unsigned int i = 0; i < MAX_REC_COUNT; i++) {
-		host_shared_data_set_host_val(&realm, rec_num, HOST_ARG1_INDEX, 10U);
+		host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID,
+				rec_num, HOST_ARG1_INDEX, 10U);
+
 		ret1 = host_enter_realm_execute(&realm, REALM_SLEEP_CMD,
 				RMI_EXIT_HOST_CALL, rec_num);
 		if (!ret1) {
@@ -368,7 +370,7 @@ test_result_t host_realm_multi_rec_multiple_cpu(void)
 	is_secondary_cpu_on = 0U;
 	init_spinlock(&secondary_cpu_lock);
 	my_mpidr = read_mpidr_el1() & MPID_MASK;
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, rec_count);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, rec_count);
 	ret1 = host_enter_realm_execute(&realm, REALM_MULTIPLE_REC_MULTIPLE_CPU_CMD,
 			RMI_EXIT_PSCI, 0U);
 	if (!ret1) {
@@ -510,7 +512,7 @@ test_result_t host_realm_multi_rec_multiple_cpu2(void)
 	}
 
 	/* Realm to request CPU_ON for rec 2 */
-	host_shared_data_set_host_val(&realm, 0U, HOST_ARG1_INDEX, 2U);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, 2U);
 	ret1 = host_enter_realm_execute(&realm, REALM_MULTIPLE_REC_MULTIPLE_CPU_CMD,
 			RMI_EXIT_PSCI, 0U);
 	if (!ret1) {
@@ -740,8 +742,11 @@ test_result_t host_realm_pmuv3_mul_rec(void)
 
 	/* Pass num of PMU counters programmed to realm */
 	for (unsigned int j = 0U; j < rec_count; j++) {
-		host_shared_data_set_host_val(&realm, j, HOST_ARG1_INDEX, num_cnts);
-		host_shared_data_set_host_val(&realm1, j, HOST_ARG1_INDEX, num_cnts - 1U);
+		host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, j,
+				HOST_ARG1_INDEX, num_cnts);
+
+		host_shared_data_set_host_val(&realm1, PRIMARY_PLANE_ID, j,
+				HOST_ARG1_INDEX, num_cnts - 1U);
 	}
 
 	/*

@@ -45,14 +45,14 @@ const char *rmi_exit[] = {
  * The function handler to print the Realm logged buffer,
  * executed by the secondary core
  */
-void realm_print_handler(struct realm *realm_ptr, unsigned int rec_num)
+void realm_print_handler(struct realm *realm_ptr, unsigned int plane_num, unsigned int rec_num)
 {
 	size_t str_len = 0UL;
 	host_shared_data_t *host_shared_data;
 	char *log_buffer;
 
 	assert(realm_ptr != NULL);
-	host_shared_data = host_get_shared_structure(realm_ptr, rec_num);
+	host_shared_data = host_get_shared_structure(realm_ptr, plane_num, rec_num);
 	log_buffer = (char *)host_shared_data->log_buffer;
 	str_len = strlen((const char *)log_buffer);
 
@@ -63,23 +63,9 @@ void realm_print_handler(struct realm *realm_ptr, unsigned int rec_num)
 	if (str_len != 0UL) {
 		/* Avoid memory overflow */
 		log_buffer[MAX_BUF_SIZE - 1] = 0U;
-		mp_printf("[VMID %u][Rec %u]: %s", realm_ptr->vmid, rec_num, log_buffer);
+		mp_printf("[VMID %u][Rec %u]: %s", plane_num == 0U ? realm_ptr->vmid :
+				realm_ptr->aux_vmid[plane_num - 1U], rec_num, log_buffer);
 		(void)memset((char *)log_buffer, 0, MAX_BUF_SIZE);
-	}
-}
-
-/*
- * Initialisation function which will clear the shared region,
- * and try to find another CPU other than the lead one to
- * handle the Realm message logging.
- */
-static void host_init_realm_print_buffer(struct realm *realm_ptr)
-{
-	host_shared_data_t *host_shared_data;
-
-	for (unsigned int i = 0U; i < realm_ptr->rec_count; i++) {
-		host_shared_data = host_get_shared_structure(realm_ptr, i);
-		(void)memset((char *)host_shared_data, 0, sizeof(host_shared_data_t));
 	}
 }
 
@@ -129,7 +115,6 @@ static bool host_create_shared_mem(struct realm *realm_ptr)
 	memset((void *)ns_shared_mem_adr, 0, (size_t)NS_REALM_SHARED_MEM_SIZE);
 	realm_ptr->host_shared_data = ns_shared_mem_adr;
 	realm_ptr->shared_mem_created = true;
-	host_init_realm_print_buffer(realm_ptr);
 
 	return true;
 }
@@ -433,7 +418,7 @@ bool host_enter_realm_execute(struct realm *realm_ptr,
 		ERROR("Invalid Rec Count\n");
 		return false;
 	}
-	host_shared_data_set_realm_cmd(realm_ptr, cmd, rec_num);
+	host_shared_data_set_realm_cmd(realm_ptr, cmd, PRIMARY_PLANE_ID, rec_num);
 	if (!host_enter_realm(realm_ptr, &realm_exit_reason, &host_call_result, rec_num)) {
 		return false;
 	}
@@ -499,4 +484,20 @@ void host_rec_send_sgi(struct realm *realm_ptr,
 	if (core_pos < PLATFORM_CORE_COUNT) {
 		tftf_send_sgi(sgi, core_pos);
 	}
+}
+
+/*
+ * Set Args for Aux Plane Enter
+ * Realm helpers copy the same realm image for each plane
+ * Entrypoint for aux plane = realm.par_base + (plane_num * realm..par_size)
+ */
+void host_realm_set_aux_plane_args(struct realm *realm_ptr,
+		unsigned int plane_num)
+{
+	/* Plane Index */
+	host_shared_data_set_host_val(realm_ptr, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, plane_num);
+
+	/* Plane entrypoint */
+	host_shared_data_set_host_val(realm_ptr, PRIMARY_PLANE_ID, 0U, HOST_ARG2_INDEX,
+			realm_ptr->par_base + (plane_num * realm_ptr->par_size));
 }

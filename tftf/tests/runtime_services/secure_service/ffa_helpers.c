@@ -142,6 +142,20 @@ struct ffa_value ffa_msg_send_direct_resp32(ffa_id_t source_id,
 	return ffa_service_call(&args);
 }
 
+struct ffa_value ffa_framework_msg_send_direct_resp(ffa_id_t source_id,
+					    ffa_id_t dest_id, uint32_t msg,
+					    uint32_t status_code)
+{
+	struct ffa_value args = {
+		.fid = FFA_MSG_SEND_DIRECT_RESP_SMC32,
+		.arg1 = ((uint32_t)(source_id << 16)) | (dest_id),
+		.arg2 = ((uint32_t)(1 << 31)) | (msg & 0xFF),
+		.arg3 = status_code,
+	};
+
+	return ffa_service_call(&args);
+}
+
 void ffa_memory_region_init_header(struct ffa_memory_region *memory_region,
 				   ffa_id_t sender,
 				   ffa_memory_attributes_t attributes,

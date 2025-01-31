@@ -102,6 +102,11 @@ static void __dead2 message_loop(ffa_id_t vm_id, struct mailbox_buffers *mb)
 			continue;
 		}
 
+		if (ffa_is_framework_msg(ffa_ret)) {
+			ffa_ret = cactus_handle_framework_msg(ffa_ret);
+			continue;
+		}
+
 		destination = ffa_dir_msg_dest(ffa_ret);
 		if (destination != vm_id) {
 			ERROR("%s(%u) invalid vm id 0x%x\n",

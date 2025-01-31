@@ -42,3 +42,5 @@ struct cactus_cmd_handler {
 
 bool cactus_handle_cmd(struct ffa_value *cmd_args, struct ffa_value *ret,
 		       struct mailbox_buffers *mb);
+
+struct ffa_value cactus_handle_framework_msg(struct ffa_value args);

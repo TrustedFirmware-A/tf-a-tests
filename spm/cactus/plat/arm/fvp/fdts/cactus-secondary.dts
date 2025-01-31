@@ -30,6 +30,7 @@
 	messaging-method = <3>; /* Direct messaging only */
 	ns-interrupts-action = <2>; /* Non secure interrupts are signaled. */
 	notification-support; /* Support receipt of notifications. */
+	power-management-messages = <1>; /* Support CPU_OFF power management message. */
 
 	rx_tx-info {
 		compatible = "arm,ffa-manifest-rx_tx-buffer";

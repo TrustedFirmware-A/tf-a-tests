@@ -12,6 +12,7 @@
 #include <events.h>
 #include <platform.h>
 #include <spm_helpers.h>
+#include <psci.h>
 
 /**
  * Counter of the number of handled requests, for each CPU. The number of
@@ -98,4 +99,50 @@ bool cactus_handle_cmd(struct ffa_value *cmd_args, struct ffa_value *ret,
 				 ffa_dir_msg_source(*cmd_args),
 				 CACTUS_ERROR_UNHANDLED);
 	return true;
+}
+
+struct ffa_value cactus_handle_framework_msg(struct ffa_value args)
+{
+	ffa_id_t source_id = ffa_dir_msg_source(args);
+	ffa_id_t destination_id = ffa_dir_msg_dest(args);
+	uint32_t status_code;
+	uint32_t framework_msg = ffa_get_framework_msg(args);
+	uint32_t psci_function = args.arg3;
+
+	/*
+	 * As of now, Cactus supports receiving only PSCI power management
+	 * request as framework message.
+	 */
+	if (framework_msg != FFA_FRAMEWORK_MSG_PSCI_REQ) {
+		ERROR("Unsupported framework message received by SP:%x\n",
+					destination_id);
+		status_code = PSCI_E_DENIED;
+		goto out;
+	}
+
+	/* Cactus only supports receiving CPU_OFF PSCI function as message. */
+	if (psci_function != SMC_PSCI_CPU_OFF) {
+		ERROR("Unsupported PSCI function(%x) received by SP:%x through "
+			"framework message\n", psci_function, destination_id);
+		status_code = PSCI_E_DENIED;
+		goto out;
+	}
+
+	/* Only SPMC can send the PSCI framework message. */
+	if (source_id != SPMC_ID) {
+		ERROR("Framework message source illegal %x\n", source_id);
+		status_code = PSCI_E_DENIED;
+		goto out;
+	}
+
+	status_code = PSCI_E_SUCCESS;
+	/*
+	 * Return successful status for PSCI power management request through
+	 * direct response Framework message.
+	 */
+	VERBOSE("PSCI power management request handled successfully by SP:%x\n",
+							destination_id);
+out:
+	return ffa_framework_msg_send_direct_resp(destination_id, source_id,
+				FFA_FRAMEWORK_MSG_PSCI_RESP, status_code);
 }

@@ -349,6 +349,33 @@ static inline uint16_t ffa_partition_info_regs_entry_size(
 	return (args.arg2 >> 48) & 0xFFFFU;
 }
 
+/**
+ * FF-A Framework message helpers
+ */
+#define FFA_FRAMEWORK_MSG_BIT (1U << 31)
+
+#define FFA_FRAMEWORK_MSG_MASK 0xFFU
+
+#define FFA_FRAMEWORK_MSG_PSCI_REQ 0U
+#define FFA_FRAMEWORK_MSG_PSCI_RESP 2U
+
+static inline uint32_t ffa_framework_msg_flags(struct ffa_value args)
+{
+	return (uint32_t)args.arg2;
+}
+
+static inline bool ffa_is_framework_msg(struct ffa_value args)
+{
+	return (ffa_func_id(args) == FFA_MSG_SEND_DIRECT_REQ_SMC32 ||
+		ffa_func_id(args) == FFA_MSG_SEND_DIRECT_REQ_SMC64) &&
+		((ffa_framework_msg_flags(args) & FFA_FRAMEWORK_MSG_BIT) != 0);
+}
+
+static inline uint32_t ffa_get_framework_msg(struct ffa_value args)
+{
+	return ffa_framework_msg_flags(args) & FFA_FRAMEWORK_MSG_MASK;
+}
+
 typedef uint64_t ffa_notification_bitmap_t;
 
 /**
@@ -932,6 +959,10 @@ struct ffa_value ffa_msg_send_direct_resp32(ffa_id_t source_id,
 					    ffa_id_t dest_id, uint32_t arg0,
 					    uint32_t arg1, uint32_t arg2,
 					    uint32_t arg3, uint32_t arg4);
+
+struct ffa_value ffa_framework_msg_send_direct_resp(ffa_id_t source_id,
+					    ffa_id_t dest_id, uint32_t msg,
+					    uint32_t status_code);
 
 struct ffa_value ffa_run(uint32_t dest_id, uint32_t vcpu_id);
 struct ffa_value ffa_version(uint32_t input_version);

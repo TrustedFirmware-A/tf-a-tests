@@ -1,0 +1,64 @@
+/*
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/dts-v1/;
+/ {
+	candidates {
+		bias = <1>;
+		sdei_pe_unmask_funcid {
+			bias = <30>;
+			functionname = "sdei_pe_unmask_funcid";
+		};
+		sdei_version_funcid {
+			bias = <30>;
+			functionname = "sdei_version_funcid";
+		};
+		sdei_interrupt_bind_funcid {
+			bias = <30>;
+			functionname = "sdei_interrupt_bind_funcid";
+		};
+		sdei_event_enable_funcid {
+			bias = <30>;
+			functionname = "sdei_event_enable_funcid";
+		};
+		sdei_interrupt_release_funcid {
+			bias = <30>;
+			functionname = "sdei_interrupt_release_funcid";
+		};
+		sdei_features_funcid {
+			bias = <30>;
+			functionname = "sdei_features_funcid";
+		};
+		sdei_private_reset_funcid {
+			bias = <30>;
+			functionname = "sdei_private_reset_funcid";
+		};
+		sdei_event_disable_funcid {
+			bias = <30>;
+			functionname = "sdei_event_disable_funcid";
+		};
+		sdei_event_status_funcid {
+			bias = <30>;
+			functionname = "sdei_event_status_funcid";
+		};
+		sdei_shared_reset_funcid {
+			bias = <30>;
+			functionname = "sdei_shared_reset_funcid";
+		};
+		sdei_event_routing_set_funcid {
+			bias = <30>;
+			functionname = "sdei_event_routing_set_funcid";
+		};
+		sdei_event_unregister_funcid {
+			bias = <30>;
+			functionname = "sdei_event_unregister_funcid";
+		};
+		sdei_pe_mask_funcid {
+			bias = <30>;
+			functionname = "sdei_pe_mask_funcid";
+		};
+	};
+};

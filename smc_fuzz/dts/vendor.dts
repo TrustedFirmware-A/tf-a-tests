@@ -1,0 +1,25 @@
+/*
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/dts-v1/;
+
+/ {
+	vendor_el3 {
+		bias = <1>;
+		uid {
+			bias = <30>;
+			functionname = "ven_el3_svc_uuid_funcid";
+		};
+		count {
+			bias = <30>;
+			functionname = "ven_el3_svc_count_funcid";
+		};
+		version {
+			 bias = <30>;
+			functionname = "ven_el3_svc_version_funcid";
+		};
+	};
+};

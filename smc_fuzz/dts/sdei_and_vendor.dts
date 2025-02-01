@@ -8,8 +8,24 @@
 
 / {
 
+	vendor_el3 {
+		bias = <1>;
+		uid {
+			bias = <30>;
+			functionname = "ven_el3_svc_uuid_funcid";
+		};
+		count {
+			bias = <30>;
+			functionname = "ven_el3_svc_count_funcid";
+		};
+		version {
+			bias = <30>;
+			functionname = "ven_el3_svc_version_funcid";
+		};
+	};
+
 	sdei {
-		bias = <30>;
+		bias = <0>;
 		sdei_version {
 			bias = <30>;
 			functionname = "sdei_version_funcid";
@@ -27,7 +43,7 @@
 			functionname = "sdei_event_status_funcid";
 		};
 		sdei_event_signal {
-			bias = <30>;
+			bias = <0>;
 			functionname = "sdei_event_signal_funcid";
 		};
 		sdei_private_reset {
@@ -39,7 +55,7 @@
 			functionname = "sdei_shared_reset_funcid";
 		};
 		sdei_interrupt_bind {
-			bias = <30>;
+			bias = <150>;
 			functionname = "sdei_interrupt_bind_funcid";
 		};
 		sdei_event_register {

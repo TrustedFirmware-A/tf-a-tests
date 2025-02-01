@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -76,6 +76,7 @@ int64_t sdei_event_register(int ev, sdei_handler_t *ep,
 	args.arg4 = flags;
 	args.arg5 = mpidr;
 	ret = tftf_smc(&args);
+
 	return ret.ret0;
 }
 
@@ -216,6 +217,29 @@ int64_t sdei_event_complete_and_resume(uint64_t addr)
 
 	args.fid = SDEI_EVENT_COMPLETE_AND_RESUME;
 	args.arg1 = addr;
+	ret = tftf_smc(&args);
+	return ret.ret0;
+}
+
+int64_t sdei_features(uint32_t feature)
+{
+	smc_args args = { 0 };
+	smc_ret_values ret;
+
+	args.fid = SDEI_FEATURES;
+	args.arg1 = feature;
+	ret = tftf_smc(&args);
+	return ret.ret0;
+}
+
+int64_t sdei_event_get_info(int32_t event, uint32_t info)
+{
+	smc_args args = { 0 };
+	smc_ret_values ret;
+
+	args.fid = SDEI_EVENT_GET_INFO;
+	args.arg1 = event;
+	args.arg2 = info;
 	ret = tftf_smc(&args);
 	return ret.ret0;
 }

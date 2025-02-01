@@ -1,0 +1,25 @@
+/*
+ * Copyright (c) 2024, Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/dts-v1/;
+
+/ {
+	experiment {
+		bias = <1>;
+		interrupt {
+			bias = <30>;
+			functionname = "test_funcid";
+		};
+		interrupt_release {
+			bias = <0>;
+			functionname = "sdei_event_signal_funcid";
+		};
+		event {
+			bias = <0>;
+			functionname = "sdei_event_register_funcid";
+		};
+	};
+};

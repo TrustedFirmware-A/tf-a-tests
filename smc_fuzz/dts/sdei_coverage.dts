@@ -39,9 +39,10 @@
 			functionname = "sdei_shared_reset_funcid";
 		};
 		sdei_interrupt_bind {
-			bias = <30>;
+			bias = <100>;
 			functionname = "sdei_interrupt_bind_funcid";
 		};
+		// added
 		sdei_event_register {
 			bias = <30>;
 			functionname = "sdei_event_register_funcid";
@@ -86,5 +87,14 @@
 			bias = <30>;
 			functionname = "sdei_interrupt_release_funcid";
 		};
+		sdei_routing_set_coverage {
+			bias = <30>;
+			functionname = "sdei_routing_set_coverage_funcid";
+		};
+		sdei_event_get_info_coverage {
+			bias = <30>;
+			functionname = "sdei_event_get_info_coverage_funcid";
+		};
 	};
+
 };

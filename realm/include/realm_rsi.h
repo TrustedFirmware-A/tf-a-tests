@@ -270,6 +270,12 @@ typedef struct {
  */
 #define RSI_PLANE_REG_READ	SMC_RSI_FID(0x1EU)
 
+u_register_t rsi_plane_reg_read(u_register_t plane_index, u_register_t register_encoding,
+		u_register_t *value);
+
+u_register_t rsi_plane_reg_write(u_register_t plane_index, u_register_t register_encoding,
+		u_register_t value);
+
 /*
  * arg1 == plane index
  * arg2 == register encoding

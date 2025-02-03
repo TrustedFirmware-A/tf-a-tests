@@ -19,7 +19,6 @@
 #define PMU_EVT_MEM_ACCESS	0x13
 
 #define NOP_REPETITIONS		50
-#define MAX_COUNTERS		32
 
 #define PRE_OVERFLOW		~(0xF)
 

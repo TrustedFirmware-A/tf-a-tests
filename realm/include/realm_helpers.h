@@ -34,6 +34,8 @@ bool realm_is_plane0(void);
 
 /* Function for initializing planes, called at Boot */
 void realm_plane_init(void);
+bool plane_common_init(u_register_t plane_index, u_register_t perm_index,
+		u_register_t base, rsi_plane_run *run);
 
 #endif /* REALM_HELPERS_H */
 

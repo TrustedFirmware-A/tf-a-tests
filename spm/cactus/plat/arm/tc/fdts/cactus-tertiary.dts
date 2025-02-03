@@ -22,7 +22,7 @@
 	exception-level = <2>; /* S-EL1 */
 	execution-state = <0>; /* AARCH64 */
 	load-address = <0xfe200000>;
-	entrypoint-offset = <0x00004000>;
+	entrypoint-offset = <0x00002000>;
 	xlat-granule = <0>; /* 4KiB */
 	boot-order = <2>;
 	messaging-method = <3>; /* Direct messaging only */

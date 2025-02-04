@@ -494,6 +494,9 @@ void realm_payload_main(void)
 		case REALM_ATTESTATION_FAULT:
 			test_succeed = test_realm_attestation_fault();
 			break;
+		case REALM_WRITE_BRBCR_EL1:
+			test_succeed = test_realm_write_brbcr_el1_reg();
+			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);
 			break;

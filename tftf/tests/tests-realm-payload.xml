@@ -153,5 +153,8 @@
 	  function="host_realm_hide_feat_mpam" />
 	  <testcase name="Test that access to FEAT_MPAM from Realm causes an undef abort taken to the Realm"
 	  function="host_realm_mpam_undef_abort" />
+	  <!-- Test case related to FEAT_BRBE -->
+	  <testcase name="Test if BRBE realted registers are preserved "
+	  function="host_realm_test_brbe_save_restore" />
   </testsuite>
 </testsuites>

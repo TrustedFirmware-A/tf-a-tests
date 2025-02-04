@@ -54,7 +54,6 @@ bool realm_sync_exception_handler(void)
 			     esr_el1, read_elr_el1());
 		realm_got_undef_abort++;
 	}
-
 	return true;
 }
 

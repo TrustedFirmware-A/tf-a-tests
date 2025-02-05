@@ -41,6 +41,7 @@ REALM_SOURCES:=								\
 	realm_rsi.c							\
 	realm_shared_data.c						\
 	realm_simd.c							\
+	realm_mpam.c							\
 	)
 
 REALM_SOURCES += lib/${ARCH}/cache_helpers.S				\

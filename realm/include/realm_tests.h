@@ -30,6 +30,7 @@ bool test_realm_sme_undef_abort(void);
 bool test_realm_sctlr2_ease(void);
 bool test_realm_attestation(void);
 bool test_realm_attestation_fault(void);
+bool test_realm_mpam_undef_abort(void);
 
 #endif /* REALM_TESTS_H */
 

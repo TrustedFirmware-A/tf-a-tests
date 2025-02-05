@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -12,6 +12,20 @@
 
 /* Generate 64-bit random number */
 unsigned long long realm_rand64(void);
+
+/* Reset the undefined aborts counter */
+void realm_reset_undef_abort_count(void);
+
+/* Return the undefined aborts counter value */
+unsigned int realm_get_undef_abort_count(void);
+
+/*
+ * Sync exception handler.
+ * If the exception is an undefined abort, it increases the value
+ * of the abort counter and returns 'true'. Otherwise, it returns 'false'
+ */
+bool realm_sync_exception_handler(void);
+
 /*
  * Function to enter Aux Plane from Primary Plane
  * arg1 == plane index

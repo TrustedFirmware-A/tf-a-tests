@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2023-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -36,8 +36,6 @@ struct pmu_registers {
 	unsigned long pmevcntr_el0[MAX_COUNTERS];
 	unsigned long pmevtyper_el0[MAX_COUNTERS];
 	unsigned long pmselr_el0;
-	unsigned long pmxevcntr_el0;
-	unsigned long pmxevtyper_el0;
 } __aligned(64);
 
 void host_set_pmu_state(struct pmu_registers *pmu_ptr);

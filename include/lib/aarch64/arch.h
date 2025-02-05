@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2024, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2025, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -1170,6 +1170,10 @@
 /* PMSELR_EL0 definitions */
 #define PMSELR_EL0_SEL_SHIFT		U(0)
 #define PMSELR_EL0_SEL_MASK		U(0x1f)
+
+/* PMINTENSET_EL1 definitions */
+#define PMINTENSET_EL1_C_BIT		(U(1) << 31)
+#define PMINTENSET_EL1_P_BIT(x)		(U(1) << x)
 
 /* PMU event counter ID definitions */
 #define PMU_EV_PC_WRITE_RETIRED		U(0x000C)

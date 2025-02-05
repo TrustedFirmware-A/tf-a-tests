@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -179,14 +179,9 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 		realm_ptr->rmm_feat_reg0 &= ~RMI_FEATURE_REGISTER_0_PMU_EN;
 		realm_ptr->pmu_num_ctrs = 0U;
 	} else {
-		value = EXTRACT(FEATURE_PMU_NUM_CTRS, feature_flag);
-		if (value != -1) {
-			realm_ptr->pmu_num_ctrs = (unsigned int)value;
-		} else {
-			realm_ptr->pmu_num_ctrs =
-				EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS,
-					realm_ptr->rmm_feat_reg0);
-		}
+		/* Requested number of event counters */
+		realm_ptr->pmu_num_ctrs = EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS,
+							feature_flag);
 	}
 
 	/* Disable SVE if not required */
@@ -194,11 +189,12 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 		realm_ptr->rmm_feat_reg0 &= ~RMI_FEATURE_REGISTER_0_SVE_EN;
 		realm_ptr->sve_vl = 0U;
 	} else {
-		realm_ptr->sve_vl = EXTRACT(FEATURE_SVE_VL, feature_flag);
+		realm_ptr->sve_vl = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL,
+						feature_flag);
 	}
 
 	/* Requested number of breakpoints */
-	value = EXTRACT(FEATURE_NUM_BPS, feature_flag);
+	value = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_BPS, feature_flag);
 	if (value != 0) {
 		realm_ptr->num_bps = (unsigned int)value;
 	} else {
@@ -207,7 +203,7 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 	}
 
 	/* Requested number of watchpoints */
-	value = EXTRACT(FEATURE_NUM_WPS, feature_flag);
+	value = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_WPS, feature_flag);
 	if (value != 0) {
 		realm_ptr->num_wps = (unsigned int)value;
 	} else {
@@ -422,7 +418,6 @@ bool host_enter_realm_execute(struct realm *realm_ptr,
 	if (!host_enter_realm(realm_ptr, &realm_exit_reason, &host_call_result, rec_num)) {
 		return false;
 	}
-
 
 	if (test_exit_reason == realm_exit_reason) {
 		if (realm_exit_reason != RMI_EXIT_HOST_CALL) {

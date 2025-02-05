@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2023-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -12,7 +12,7 @@ bool test_pmuv3_cycle_works_realm(void);
 bool test_pmuv3_counter(void);
 bool test_pmuv3_event_works_realm(void);
 bool test_pmuv3_rmm_preserves(void);
-bool test_pmuv3_overflow_interrupt(void);
+bool test_pmuv3_overflow_interrupt(bool cycle_cnt);
 bool test_realm_pauth_set_cmd(void);
 bool test_realm_pauth_check_cmd(void);
 bool test_realm_pauth_fault(void);

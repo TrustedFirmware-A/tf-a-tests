@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -433,8 +433,11 @@ void realm_payload_main(void)
 		case REALM_PMU_PRESERVE:
 			test_succeed = test_pmuv3_rmm_preserves();
 			break;
-		case REALM_PMU_INTERRUPT:
-			test_succeed = test_pmuv3_overflow_interrupt();
+		case REALM_PMU_CYCLE_INTERRUPT:
+			test_succeed = test_pmuv3_overflow_interrupt(true);
+			break;
+		case REALM_PMU_EVENT_INTERRUPT:
+			test_succeed = test_pmuv3_overflow_interrupt(false);
 			break;
 		case REALM_REQ_FPU_FILL_CMD:
 			fpu_state_write_rand(&rl_fpu_state_write);

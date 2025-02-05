@@ -33,7 +33,7 @@ test_result_t host_create_sve_realm_payload(struct realm *realm, bool sve_en,
 
 	if (sve_en) {
 		feature_flag |= RMI_FEATURE_REGISTER_0_SVE_EN |
-				INPLACE(FEATURE_SVE_VL, sve_vq);
+				INPLACE(RMI_FEATURE_REGISTER_0_SVE_VL, sve_vq);
 	}
 
 	/* Initialise Realm payload */

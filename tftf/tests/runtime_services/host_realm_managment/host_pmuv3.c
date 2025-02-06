@@ -163,22 +163,6 @@ void host_set_pmu_state(struct pmu_registers *pmu_ptr)
 
 	pmu_ptr->pmselr_el0 = val;
 	write_pmselr_el0(val);
-
-	/*
-	 * When PMSELR_EL0.SEL is greater than or equal to the number of
-	 * accessible event counters, then reads and writes of PMXEVCNTR_EL0
-	 * are CONSTRAINED UNPREDICTABLE.
-	 *
-	 * When PMSELR_EL0.SEL is not 31 and is greater than or equal to the
-	 * number of accessible event counters, then reads and writes of
-	 * PMXEVTYPER_EL0 are CONSTRAINED UNPREDICTABLE.
-	 */
-	if (val < num_cnts) {
-		pmu_ptr->pmxevcntr_el0 = read_pmxevcntr_el0();
-		pmu_ptr->pmxevtyper_el0 = read_pmxevtyper_el0();
-	} else if (val == 31UL) {
-		pmu_ptr->pmxevtyper_el0 = read_pmxevtyper_el0();
-	}
 }
 
 bool host_check_pmu_state(struct pmu_registers *pmu_ptr)
@@ -197,13 +181,6 @@ bool host_check_pmu_state(struct pmu_registers *pmu_ptr)
 	CHECK_PMREG(pmccfiltr_el0);
 	CHECK_PMREG(pmuserenr_el0);
 	CHECK_PMREG(pmselr_el0);
-
-	if (pmu_ptr->pmselr_el0 < num_cnts) {
-		CHECK_PMREG(pmxevcntr_el0);
-		CHECK_PMREG(pmxevtyper_el0);
-	} else if (pmu_ptr->pmselr_el0 == 31UL) {
-		CHECK_PMREG(pmxevtyper_el0);
-	}
 
 	/* Check number of event counters implemented */
 	if (num_cnts != 0UL) {

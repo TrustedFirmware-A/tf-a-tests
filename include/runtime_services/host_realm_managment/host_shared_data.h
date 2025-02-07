@@ -45,6 +45,7 @@ typedef host_shared_data_t (*host_shared_data_arr_t)[MAX_PLANE_COUNT][MAX_REC_CO
 enum realm_cmd {
 	REALM_SLEEP_CMD = 1U,
 	REALM_LOOP_CMD,
+	REALM_S2POE_ACCESS,
 	REALM_MPAM_ACCESS,
 	REALM_MPAM_PRESENT,
 	REALM_MULTIPLE_REC_PSCI_DENIED_CMD,

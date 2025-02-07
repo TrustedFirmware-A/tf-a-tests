@@ -144,6 +144,18 @@ static bool test_realm_enter_plane_n_reg_rw(void)
 	}
 }
 
+static bool test_realm_s2poe_undef_abort(void)
+{
+	realm_reset_undef_abort_count();
+
+	/* Install exception handler to catch undefined abort */
+	register_custom_sync_exception_handler(realm_sync_exception_handler);
+	write_s2por_el1(0UL);
+	unregister_custom_sync_exception_handler();
+
+	return (realm_get_undef_abort_count() != 0UL);
+}
+
 /*
  * This function requests RSI/ABI version from RMM.
  */
@@ -389,6 +401,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_PLANE_N_REG_RW_CMD:
 			test_succeed = test_realm_enter_plane_n_reg_rw();
+			break;
+		case REALM_S2POE_ACCESS:
+			test_succeed = test_realm_s2poe_undef_abort();
 			break;
 		case REALM_MPAM_ACCESS:
 			test_succeed = test_realm_mpam_undef_abort();

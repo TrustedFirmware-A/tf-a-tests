@@ -236,10 +236,7 @@ static void cactus_plat_configure_mmu(unsigned int vm_id)
 			(SP_RX_TX_SIZE / 2),
 			MT_RW_DATA);
 
-	/* Skip additional mapping for cactus StMM. */
-	if (vm_id != SP_ID(5)) {
-		mmap_add(cactus_mmap);
-	}
+	mmap_add(cactus_mmap);
 	init_xlat_tables();
 }
 
@@ -314,7 +311,7 @@ void __dead2 cactus_main(bool primary_cold_boot,
 		sp_handler_spin_lock_init();
 
 		if (boot_info_header != NULL) {
-			cactus_map_boot_info(boot_info_header, ffa_id == SP_ID(5));
+			cactus_map_boot_info(boot_info_header, ffa_id == SP_ID(3));
 		}
 	}
 
@@ -344,18 +341,18 @@ void __dead2 cactus_main(bool primary_cold_boot,
 	 * Print FF-A boot info if requested in manifest via FF-A boot info
 	 * protocol.
 	 */
-	if (ffa_id == SP_ID(1) || ffa_id == SP_ID(5)) {
+	if (ffa_id == SP_ID(1) || ffa_id == SP_ID(3)) {
 		cactus_print_boot_info(boot_info_header);
 	}
 
 	cactus_print_memory_layout(ffa_id);
 
 	/*
-	 * Cactus-tertiary and cactus-stmm make use of FFA_RXTX_MAP API
-	 * instead of specifying `rx_tx-info` in their manifests, as done by the
-	 * primary and secondary cactus partitions.
+	 * Cactus-tertiary makes use of FFA_RXTX_MAP API instead of specifying
+	 * `rx_tx-info` in its manifest, as done by the primary and secondary
+	 * cactus partitions.
 	 */
-	if (ffa_id == SP_ID(3) || ffa_id == SP_ID(5)) {
+	if (ffa_id == SP_ID(3)) {
 		VERBOSE("Mapping RXTX Region\n");
 		CONFIGURE_AND_MAP_MAILBOX(mb, PAGE_SIZE, ret);
 		if (ffa_func_id(ret) != FFA_SUCCESS_SMC32) {
@@ -369,7 +366,7 @@ void __dead2 cactus_main(bool primary_cold_boot,
 	ret = register_secondary_entrypoint();
 
 	/* FFA_SECONDARY_EP_REGISTER interface is not supported for UP SP. */
-	if (ffa_id == SP_ID(3) || ffa_id == SP_ID(5)) {
+	if (ffa_id == SP_ID(3)) {
 		EXPECT(ffa_func_id(ret), FFA_ERROR);
 		EXPECT(ffa_error_code(ret), FFA_ERROR_NOT_SUPPORTED);
 	} else {

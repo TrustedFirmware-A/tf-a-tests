@@ -155,6 +155,14 @@ Cactus SP Build Options
 - ``SPMC_AT_EL3``: This flag is required to match the feature set of Cactus SP that
    are implemented in TF-A EL3 SPMC. Default value is 0.
 
+-  ``CACTUS_PWR_MGMT_SUPPORT``: If a Cactus SP subscribes to receiving power
+   management framework message through its partition manifest, this flag
+   controls whether the SP supports handling the aforementioned message. This
+   option can take either 0 (unsupported) or 1 (supported). Default value is 1.
+
+   Note that a value of 0 is particularly useful in stress testing of power
+   management handling by the SPMC.
+
 Realm payload specific Build Options
 ------------------------------------
 

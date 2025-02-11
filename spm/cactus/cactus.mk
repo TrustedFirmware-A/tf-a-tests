@@ -100,6 +100,7 @@ $(eval $(call add_define,CACTUS_DEFINES,LOG_LEVEL))
 $(eval $(call add_define,CACTUS_DEFINES,PLAT_${PLAT}))
 $(eval $(call add_define,CACTUS_DEFINES,PLAT_XLAT_TABLES_DYNAMIC))
 $(eval $(call add_define,CACTUS_DEFINES,SPMC_AT_EL3))
+$(eval $(call add_define,CACTUS_DEFINES,CACTUS_PWR_MGMT_SUPPORT))
 
 $(CACTUS_DTB) : $(BUILD_PLAT)/cactus $(BUILD_PLAT)/cactus/cactus.elf
 $(CACTUS_DTB) : $(CACTUS_DTS)

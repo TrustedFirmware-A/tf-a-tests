@@ -106,6 +106,8 @@ struct ffa_value cactus_handle_framework_msg(struct ffa_value args)
 	ffa_id_t source_id = ffa_dir_msg_source(args);
 	ffa_id_t destination_id = ffa_dir_msg_dest(args);
 	uint32_t status_code;
+
+#if CACTUS_PWR_MGMT_SUPPORT == 1
 	uint32_t framework_msg = ffa_get_framework_msg(args);
 	uint32_t psci_function = args.arg3;
 
@@ -143,6 +145,9 @@ struct ffa_value cactus_handle_framework_msg(struct ffa_value args)
 	VERBOSE("PSCI power management request handled successfully by SP:%x\n",
 							destination_id);
 out:
+#else
+	status_code = PSCI_E_DENIED;
+#endif
 	return ffa_framework_msg_send_direct_resp(destination_id, source_id,
 				FFA_FRAMEWORK_MSG_PSCI_RESP, status_code);
 }

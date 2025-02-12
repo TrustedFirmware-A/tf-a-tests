@@ -25,4 +25,5 @@ TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	runtime_services/arm_arch_svc/smccc_arch_workaround_1.c		\
 	runtime_services/arm_arch_svc/smccc_arch_workaround_2.c		\
 	runtime_services/arm_arch_svc/smccc_arch_workaround_3.c		\
+	runtime_services/arm_arch_svc/smccc_arch_workaround_4.c		\
 )

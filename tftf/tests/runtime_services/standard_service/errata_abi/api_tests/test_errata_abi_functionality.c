@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2023-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -387,7 +387,23 @@ em_cpu_t cortex_A510_errata_list = {
 em_cpu_t cortex_X4_errata_list = {
 	.cpu_pn = 0xD82,
 	.cpu_errata = {
-		{2701112, 0x00, 0x00},
+		{2726228, 0x00, 0x01},
+		{2740089, 0x00, 0x01},
+		{2763018, 0x00, 0x01},
+		{2816013, 0x00, 0x01},
+		{2897503, 0x00, 0x01},
+		{2923985, 0x00, 0x01},
+		{2957258, 0x00, 0x01},
+		{3076789, 0x00, 0x01},
+		{-1}
+	},
+};
+
+em_cpu_t cortex_X925_errata_list = {
+	.cpu_pn = 0xD85,
+	.cpu_errata = {
+		{2963999, 0x00, 0x00},
+		{3701747, 0x00, 0x01},
 		{-1}
 	},
 };
@@ -629,6 +645,12 @@ test_result_t test_em_cpu_features(void)
 	{
 		VERBOSE("MIDR matches Cortex-X4 -> %x\n", midr_val);
 		cpu_ptr =  &cortex_X4_errata_list;
+		break;
+	}
+	case 0xD85:
+	{
+		VERBOSE("MIDR matches Cortex-X925 -> %x\n", midr_val);
+		cpu_ptr =  &cortex_X925_errata_list;
 		break;
 	}
 	case 0xD4E:

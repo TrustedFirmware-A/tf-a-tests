@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Arm Limited. All rights reserved.
+ * Copyright (c) 2019-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -31,6 +31,8 @@ struct cpu_context {
 void __dead2 print_exception(const struct cpu_context *ctx)
 {
 	u_register_t mpid = read_mpidr_el1();
+	uintptr_t elr = read_sysreg(elr);
+	uintptr_t lr = ctx->regs[30]; /* LR is x30 */
 
 	/*
 	 * The instruction barrier ensures we don't read stale values of system
@@ -38,13 +40,19 @@ void __dead2 print_exception(const struct cpu_context *ctx)
 	 */
 	isb();
 
+#if ENABLE_PAUTH
+	/* If PAUTH enabled then remove PAC from ELR and LR with xpaci. */
+	xpaci(elr);
+	xpaci(lr);
+#endif /* ENABLE_PAUTH */
+
 	printf("Unhandled exception on CPU%u.\n", platform_get_core_pos(mpid));
 
 	/* Dump some interesting system registers. */
 	printf("System registers:\n");
 	printf("  MPIDR=0x%lx\n", mpid);
 	printf("  ESR=0x%lx  ELR=0x%lx  FAR=0x%lx\n", read_sysreg(esr),
-	       read_sysreg(elr), read_sysreg(far));
+	       elr, read_sysreg(far));
 	printf("  SCTLR=0x%lx  SPSR=0x%lx  DAIF=0x%lx\n",
 	       read_sysreg(sctlr), read_sysreg(spsr), read_daif());
 
@@ -53,6 +61,7 @@ void __dead2 print_exception(const struct cpu_context *ctx)
 	for (int i = 0; i < GPREGS_CNT; ++i) {
 		printf("  x%u=0x%lx\n", i, ctx->regs[i]);
 	}
+	printf("  LR=0x%lx\n", lr);
 	printf("  SP=0x%lx\n", ctx->sp);
 
 	while (1)

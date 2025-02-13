@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2024, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2025, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -230,6 +230,8 @@ DEFINE_SYSOP_FUNC(isb)
 
 DEFINE_SYSOP_PARAM_FUNC(wfit)
 DEFINE_SYSOP_PARAM_FUNC(wfet)
+
+DEFINE_SYSOP_PARAM_FUNC(xpaci)
 
 DEFINE_RENAME_SYSREG_RW_FUNCS(sys_accdata_el1, SYS_ACCDATA_EL1)
 

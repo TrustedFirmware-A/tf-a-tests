@@ -201,4 +201,16 @@ struct pcie_info_table;
  */
 const struct pcie_info_table *plat_pcie_get_info_table(void);
 
+/*
+ * This function provides an address that is recognized as invalid for use
+ * as an entry point in the CPU_ON and CPU_SUSPEND calls on this platform.
+ * To be considered invalid, the address must fall within a range that is
+ * not accessible to the caller.
+ *
+ * Typically, most platforms designate address 0 for this purpose. However,
+ * on platforms where address 0 is a valid entry point, this function can
+ * be designed to return an alternative address.
+ */
+uintptr_t plat_get_invalid_addr(void);
+
 #endif /* __PLATFORM_H__ */

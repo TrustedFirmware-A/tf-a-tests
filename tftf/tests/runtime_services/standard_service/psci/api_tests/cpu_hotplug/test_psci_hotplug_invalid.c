@@ -164,7 +164,7 @@ test_result_t test_psci_cpu_hotplug_invalid_ep(void)
 		 * Entry point address argument can be any invalid address.
 		 */
 
-		psci_ret = tftf_psci_cpu_on(cpu_mpid, 0, 0);
+		psci_ret = tftf_psci_cpu_on(cpu_mpid, plat_get_invalid_addr(), 0);
 		if (psci_ret != PSCI_E_INVALID_ADDRESS) {
 			tftf_testcase_printf("CPU:0x%x Expected: %i Actual: %i\n",
 						cpu_mpid,

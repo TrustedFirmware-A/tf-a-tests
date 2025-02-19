@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -179,6 +179,13 @@ unsigned int tftf_get_parent_node_from_mpidr(unsigned int mpidr,
  * Return the MPID of this other CPU, or INVALID_MPID if none could be found.
  */
 unsigned int tftf_find_any_cpu_other_than(unsigned int exclude_mpid);
+
+/*
+ * Query the platform topology to find another CPU that is in a different
+ * cluster to the one specified as an argument.
+ * Return the MPID of this other CPU, or INVALID_MPID if none could be found.
+ */
+unsigned int tftf_find_any_cpu_in_other_cluster(unsigned int exclude_mpid);
 
 /*
  * Query the platform topology to find a random CPU other than the one specified

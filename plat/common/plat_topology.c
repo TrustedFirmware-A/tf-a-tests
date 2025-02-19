@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -359,6 +359,24 @@ unsigned int tftf_find_any_cpu_other_than(unsigned exclude_mpid)
 	for_each_cpu(cpu_node) {
 		mpidr = tftf_get_mpidr_from_node(cpu_node);
 		if (mpidr != exclude_mpid)
+			return mpidr;
+	}
+
+	return INVALID_MPID;
+}
+
+unsigned int tftf_find_any_cpu_in_other_cluster(unsigned exclude_mpid)
+{
+	unsigned int cpu_node, cluster_node, mpidr, exclude_cluster_node;
+
+	exclude_cluster_node = tftf_get_parent_node_from_mpidr(exclude_mpid,
+							       MPIDR_AFFLVL1);
+
+	for_each_cpu(cpu_node) {
+		mpidr = tftf_get_mpidr_from_node(cpu_node);
+		cluster_node = tftf_get_parent_node_from_mpidr(mpidr,
+							       MPIDR_AFFLVL1);
+		if (cluster_node != exclude_cluster_node)
 			return mpidr;
 	}
 

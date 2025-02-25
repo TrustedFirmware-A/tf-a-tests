@@ -1768,7 +1768,8 @@ static bool host_realm_handle_perm_fault(struct realm *realm, struct rmi_rec_run
 }
 
 /* Handle RSI_MEM_SET_PERM_INDEX by P0, return true to return to realm, false to return to host */
-static bool host_realm_handle_s2ap_change(struct realm *realm, struct rmi_rec_run *run)
+static bool host_realm_handle_s2ap_change(struct realm *realm, struct rmi_rec_run *run,
+		u_register_t rec_num)
 {
 
 
@@ -1779,7 +1780,7 @@ static bool host_realm_handle_s2ap_change(struct realm *realm, struct rmi_rec_ru
 
 	while (new_base != top) {
 		ret = host_rmi_rtt_set_s2ap(realm->rd,
-				    realm->rec[0U],
+				    realm->rec[rec_num],
 				    new_base,
 				    top, &new_base,
 				    &rtt_tree);
@@ -1896,7 +1897,7 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 		    is_adr_in_par(realm, run->exit.s2ap_base) &&
 		    (realm->num_aux_planes > 0U)) {
 
-			re_enter_rec = host_realm_handle_s2ap_change(realm, run);
+			re_enter_rec = host_realm_handle_s2ap_change(realm, run, rec_num);
 		}
 
 		if (ret != RMI_SUCCESS) {

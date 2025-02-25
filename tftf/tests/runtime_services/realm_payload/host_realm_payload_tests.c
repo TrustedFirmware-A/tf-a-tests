@@ -952,19 +952,20 @@ destroy_realm:
  * Host calls data_destroy, new state HIPAS=UNASSIGNED RIPAS=DESTROYED
  * Enter Realm, Rec0 executes from page, and Rec1 reads the page
  * Realm should trigger an Instr/Data abort, and will exit to Host.
- * The Host verifies exit reason is Instr/Data abort
+ * The Host verifies exit reason is Instr/Data abort.
+ * Repeat the test for Plane N.
  */
 test_result_t host_realm_abort_unassigned_destroyed(void)
 {
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, data, top;
+	u_register_t ret, data, top, num_aux_planes = 0UL;
 	struct realm realm;
 	struct rmi_rec_run *run;
 	struct rtt_entry rtt;
-	u_register_t feature_flag0 = 0UL;
+	u_register_t feature_flag0 = 0UL, feature_flag1 = 0UL;
 	long sl = RTT_MIN_LEVEL;
-	u_register_t rec_flag[2U] = {RMI_RUNNABLE, RMI_RUNNABLE}, base;
+	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, base;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -973,8 +974,19 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
+	/* This test is skipped if S2POE is not supported to keep test simple */
+	if (are_planes_supported() && is_single_rtt_supported()) {
+		num_aux_planes = 1UL;
+
+		/* use single RTT for all planes */
+		feature_flag0 |= INPLACE(RMI_FEATURE_REGISTER_0_PLANE_RTT,
+			RMI_PLANE_RTT_SINGLE);
+
+		feature_flag1 = RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+	}
+
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 2U, 0U)) {
+			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -999,8 +1011,8 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	}
 	INFO("Initial state base = 0x%lx rtt.state=0x%lx rtt.ripas=0x%lx\n",
 			base, rtt.state, rtt.ripas);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base);
 
 	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
 	if (ret != RMI_SUCCESS || data != base) {
@@ -1055,6 +1067,65 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	}
 	INFO("DA FAR=0x%lx, HPFAR=0x%lx ESR= 0x%lx\n", run->exit.far, run->exit.hpfar,
 			run->exit.esr);
+
+	if (num_aux_planes == 0U) {
+		res = TEST_RESULT_SUCCESS;
+		goto undelegate_destroy;
+	}
+
+	INFO("Running test on Plane 1\n");
+
+	/*
+	 * Arg used by Plane 1 Rec 2/3
+	 * Plane 1 will fetch base, access it and get an abort causing rec exit
+	 */
+	host_shared_data_set_host_val(&realm, 1U, 2U, HOST_ARG3_INDEX, base);
+	host_shared_data_set_host_val(&realm, 1U, 3U, HOST_ARG3_INDEX, base);
+
+	/* Arg for Plane0 instruction to enter Plane1 on Rec 2,3 */
+	host_realm_set_aux_plane_args(&realm, 1U, 2U);
+	host_realm_set_aux_plane_args(&realm, 1U, 3U);
+
+	/* Test cmd for Plane 1 Rec 2/3 */
+	host_shared_data_set_realm_cmd(&realm, REALM_INSTR_FETCH_CMD, 1U, 2U);
+	host_shared_data_set_realm_cmd(&realm, REALM_DATA_ACCESS_CMD, 1U, 3U);
+
+
+	run = (struct rmi_rec_run *)realm.run[2];
+
+	/* Rec2 expect rec exit due to Instr Abort unassigned destroyed page */
+	ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
+		RMI_EXIT_SYNC, 2U);
+
+	/* ESR.EC == 0b100000 Instruction Abort from a lower Exception level */
+	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
+			|| (EC_BITS(run->exit.esr) != EC_IABORT_LOWER_EL)
+			|| ((run->exit.esr & ISS_IFSC_MASK) < FSC_L0_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_IFSC_MASK) > FSC_L3_TRANS_FAULT)
+			|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
+		ERROR("Plane1 Rec2 did not fault ESR=0x%lx\n", run->exit.esr);
+		goto undelegate_destroy;
+	}
+	INFO("Plane1 IA FAR=0x%lx, HPFAR=0x%lx ESR=0x%lx\n", run->exit.far, run->exit.hpfar,
+			run->exit.esr);
+
+	run = (struct rmi_rec_run *)realm.run[3];
+
+	/* Rec3 expect rec exit due to Data Abort unassigned destroyed page */
+	ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
+			RMI_EXIT_SYNC, 3U);
+
+	/* ESR.EC == 0b100100 Data Abort exception from a lower Exception level */
+	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
+		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
+		ERROR("Plane1 Rec3 did not fault\n");
+		goto undelegate_destroy;
+	}
+	INFO("Plane1 DA FAR=0x%lx, HPFAR=0x%lx ESR= 0x%lx\n", run->exit.far, run->exit.hpfar,
+			run->exit.esr);
 	res = TEST_RESULT_SUCCESS;
 
 undelegate_destroy:
@@ -1079,18 +1150,19 @@ destroy_realm:
  * Enter Realm, REC0 executes from page, and REC1 reads the page
  * Realm should trigger an Instr/Data abort, and will exit to Host.
  * Host verifies exit reason is Instr/Data abort.
+ * Repeat the test for Plane N.
  */
 test_result_t host_realm_abort_unassigned_ram(void)
 {
 	bool ret1, ret2;
-	u_register_t ret, top;
+	u_register_t ret, top, num_aux_planes = 0UL;
 	struct realm realm;
 	struct rmi_rec_run *run;
 	struct rtt_entry rtt;
-	u_register_t feature_flag0 = 0UL;
+	u_register_t feature_flag0 = 0UL, feature_flag1 = 0UL;
 	long sl = RTT_MIN_LEVEL;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t rec_flag[2U] = {RMI_RUNNABLE, RMI_RUNNABLE}, base;
+	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, base;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -1099,8 +1171,19 @@ test_result_t host_realm_abort_unassigned_ram(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
+	/* Test is skipped if S2POE is not supported to keep test simple */
+	if (are_planes_supported() && is_single_rtt_supported()) {
+		num_aux_planes = 1UL;
+
+		/* use single RTT for all planes */
+		feature_flag0 |= INPLACE(RMI_FEATURE_REGISTER_0_PLANE_RTT,
+			RMI_PLANE_RTT_SINGLE);
+
+		feature_flag1 = RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+	}
+
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 2U, 0U)) {
+			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1111,6 +1194,20 @@ test_result_t host_realm_abort_unassigned_ram(void)
 
 	/* Set RIPAS of PAGE to RAM */
 	ret = host_rmi_rtt_init_ripas(realm.rd, base, base + PAGE_SIZE, &top);
+	if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
+		/* Create missing RTTs till L3 and retry */
+		int8_t level = RMI_RETURN_INDEX(ret);
+
+		ret = host_rmi_create_rtt_levels(&realm, base,
+				(u_register_t)level, 3U);
+		if (ret != RMI_SUCCESS) {
+			ERROR("host_rmi_create_rtt_levels failed\n");
+			goto destroy_realm;
+		}
+
+		ret = host_rmi_rtt_init_ripas(realm.rd, base, base + PAGE_SIZE, &top);
+	}
+
 	if (ret != RMI_SUCCESS) {
 		ERROR("%s() failed, ret=0x%lx line=%u\n",
 			"host_rmi_rtt_init_ripas", ret, __LINE__);
@@ -1129,8 +1226,8 @@ test_result_t host_realm_abort_unassigned_ram(void)
 	}
 	INFO("Initial state base = 0x%lx rtt.state=0x%lx rtt.ripas=0x%lx\n",
 			base, rtt.state, rtt.ripas);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base);
 
 	/* Rec0 expect rec exit due to Instr Abort unassigned ram page */
 	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
@@ -1164,6 +1261,65 @@ test_result_t host_realm_abort_unassigned_ram(void)
 	}
 	INFO("DA FAR=0x%lx, HPFAR=0x%lx ESR=0x%lx\n", run->exit.far, run->exit.hpfar,
 			run->exit.esr);
+
+	if (num_aux_planes == 0U) {
+		res = TEST_RESULT_SUCCESS;
+		goto destroy_realm;
+	}
+
+	INFO("Running test on Plane 1\n");
+
+	/*
+	 * Arg used by Plane 1 Rec 2/3
+	 * Plane 1 will access the base, causing rec exit due to abort
+	 */
+	host_shared_data_set_host_val(&realm, 1U, 2U, HOST_ARG3_INDEX, base);
+	host_shared_data_set_host_val(&realm, 1U, 3U, HOST_ARG3_INDEX, base);
+
+	/* Arg for Plane0 to enter Plane1 on Rec 2,3 */
+	host_realm_set_aux_plane_args(&realm, 1U, 2U);
+	host_realm_set_aux_plane_args(&realm, 1U, 3U);
+
+	/* Test cmd for Plane 1 Rec 2/3 */
+	host_shared_data_set_realm_cmd(&realm, REALM_INSTR_FETCH_CMD, 1U, 2U);
+	host_shared_data_set_realm_cmd(&realm, REALM_DATA_ACCESS_CMD, 1U, 3U);
+
+	/* Rec2 expect rec exit due to Instr Abort unassigned ram page */
+	ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
+			RMI_EXIT_SYNC, 2U);
+
+	run = (struct rmi_rec_run *)realm.run[2];
+
+	/* ESR.EC == 0b100000 Instruction Abort from a lower Exception level */
+	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
+			|| (EC_BITS(run->exit.esr) != EC_IABORT_LOWER_EL)
+			|| ((run->exit.esr & ISS_IFSC_MASK) < FSC_L0_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_IFSC_MASK) > FSC_L3_TRANS_FAULT)
+			|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
+		INFO("Plane1 Rec2 did not fault FAR=0x%lx, HPFAR=0x%lx ESR=0x%lx\n",
+				run->exit.far, run->exit.hpfar,	run->exit.esr);
+		goto destroy_realm;
+	}
+	INFO("Plane1 IA FAR=0x%lx, HPFAR=0x%lx ESR=0x%lx\n", run->exit.far, run->exit.hpfar,
+			run->exit.esr);
+
+	run = (struct rmi_rec_run *)realm.run[3];
+
+	/* Rec3 expect rec exit due to Data Abort unassigned ram page */
+	ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
+			RMI_EXIT_SYNC, 3U);
+
+	/* ESR.EC == 0b100100 Data Abort exception from a lower Exception level */
+	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
+		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
+		ERROR("Plane1 Rec3 did not fault ESR=0x%lx\n", run->exit.esr);
+		goto destroy_realm;
+	}
+	INFO("Plane1 DA FAR=0x%lx, HPFAR=0x%lx ESR=0x%lx\n", run->exit.far, run->exit.hpfar,
+			run->exit.esr);
 	res = TEST_RESULT_SUCCESS;
 
 destroy_realm:
@@ -1187,7 +1343,8 @@ destroy_realm:
  * Host calls data_create_unknown, new state HIPAS=ASSIGNED RIPAS=DESTROYED
  * Enter Realm, REC0 executes from page, and REC1 reads the page
  * Realm should trigger an Instr/Data abort, and will exit to Host.
- * The Host verifies exit reason is Instr/Data abort
+ * The Host verifies exit reason is Instr/Data abort.
+ * Repeat the test for Plane N.
  */
 test_result_t host_realm_abort_assigned_destroyed(void)
 {
@@ -1197,9 +1354,10 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	struct realm realm;
 	struct rmi_rec_run *run;
 	struct rtt_entry rtt;
-	u_register_t feature_flag0 = 0UL;
+	u_register_t feature_flag0 = 0UL, num_aux_planes = 0UL;
+	u_register_t feature_flag1 = 0UL;
 	long sl = RTT_MIN_LEVEL;
-	u_register_t rec_flag[2U] = {RMI_RUNNABLE, RMI_RUNNABLE}, base;
+	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, base;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -1208,8 +1366,19 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
+	/* Test is skipped if S2POE is not supported to keep test simple */
+	if (are_planes_supported() && is_single_rtt_supported()) {
+		num_aux_planes = 1UL;
+
+		/* use single RTT for all planes */
+		feature_flag0 |= INPLACE(RMI_FEATURE_REGISTER_0_PLANE_RTT,
+			RMI_PLANE_RTT_SINGLE);
+
+		feature_flag1 = RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+	}
+
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 2U, 0U)) {
+			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1231,8 +1400,8 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	}
 	INFO("Initial state base = 0x%lx rtt.state=0x%lx rtt.ripas=0x%lx\n",
 			base, rtt.state, rtt.ripas);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base);
 
 	if (host_realm_activate(&realm) != REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_realm_activate");
@@ -1297,6 +1466,63 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	}
 	INFO("DA FAR=0x%lx, HPFAR=0x%lx ESR=0x%lx\n", run->exit.far, run->exit.hpfar,
 				run->exit.esr);
+
+	if (num_aux_planes == 0U) {
+		res = TEST_RESULT_SUCCESS;
+		goto destroy_data;
+	}
+
+	INFO("Running test on Plane 1\n");
+
+	/*
+	 * Args used by Plane 1, Rec 2/3
+	 * Plane1 accesses base, causes rec exit due to abort
+	 */
+	host_shared_data_set_host_val(&realm, 1U, 2U, HOST_ARG3_INDEX, base);
+	host_shared_data_set_host_val(&realm, 1U, 3U, HOST_ARG3_INDEX, base);
+
+	/* Arg for Plane0 to enter Plane1 on Rec 2,3 */
+	host_realm_set_aux_plane_args(&realm, 1U, 2U);
+	host_realm_set_aux_plane_args(&realm, 1U, 3U);
+
+	/* Test cmd for Plane 1, Rec 2/3 */
+	host_shared_data_set_realm_cmd(&realm, REALM_INSTR_FETCH_CMD, 1U, 2U);
+	host_shared_data_set_realm_cmd(&realm, REALM_DATA_ACCESS_CMD, 1U, 3U);
+
+	run = (struct rmi_rec_run *)realm.run[2];
+
+	/* Rec2, expect rec exit due to Instr Abort assigned destroyed page */
+	ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
+		RMI_EXIT_SYNC, 2U);
+
+	/* ESR.EC == 0b100000 Instruction Abort from a lower Exception level */
+	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
+		|| (EC_BITS(run->exit.esr) != EC_IABORT_LOWER_EL)
+		|| ((run->exit.esr & ISS_IFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_IFSC_MASK) > FSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
+		ERROR("Plane1 Rec2 did not fault ESR=0x%lx\n", run->exit.esr);
+		goto destroy_data;
+	}
+	INFO("Plane1 IA FAR=0x%lx, HPFAR=0x%lx ESR=0x%lx\n", run->exit.far, run->exit.hpfar,
+				run->exit.esr);
+	run = (struct rmi_rec_run *)realm.run[3];
+
+	/* Rec3  expect rec exit due to Data Abort  assigned destroyed page */
+	ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
+			RMI_EXIT_SYNC, 3U);
+
+	/* ESR.EC == 0b100100 Data Abort exception from a lower Exception level */
+	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
+		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
+		ERROR("Plane1 Rec3 did not fault ESR=0x%lx\n", run->exit.esr);
+		goto destroy_data;
+	}
+	INFO("Plane1 DA FAR=0x%lx, HPFAR=0x%lx ESR=0x%lx\n", run->exit.far, run->exit.hpfar,
+				run->exit.esr);
 	res = TEST_RESULT_SUCCESS;
 
 destroy_data:
@@ -1356,10 +1582,10 @@ test_result_t host_realm_sea_empty(void)
 		ERROR("wrong initial state\n");
 		goto destroy_realm;
 	}
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 2U, HOST_ARG1_INDEX, base);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 3U, HOST_ARG1_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 2U, HOST_ARG3_INDEX, base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 3U, HOST_ARG3_INDEX, base);
 
 	/* Rec0 expect IA due to SEA unassigned empty page */
 	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
@@ -1503,8 +1729,8 @@ test_result_t host_realm_sea_unprotected(void)
 	}
 
 	run = (struct rmi_rec_run *)realm.run[0];
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base_ipa);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base_ipa);
 
 	/* Rec0 expect SEA in realm due to IA unprotected IPA page */
 	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
@@ -2065,8 +2291,8 @@ test_result_t host_realm_sea_adr_fault(void)
 	/* IPA outside Realm space */
 	base_ipa = base | (1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
 					realm.rmm_feat_reg0) + 1U));
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX, base_ipa);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base_ipa);
 
 	INFO("base_ipa=0x%lx\n", base_ipa);
 
@@ -2117,8 +2343,8 @@ test_result_t host_realm_sea_adr_fault(void)
 
 	INFO("base_ipa=0x%lx\n", base_ipa);
 
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 2U, HOST_ARG1_INDEX, base_ipa);
-	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 3U, HOST_ARG1_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 2U, HOST_ARG3_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 3U, HOST_ARG3_INDEX, base_ipa);
 
 	run = (struct rmi_rec_run *)realm.run[2];
 

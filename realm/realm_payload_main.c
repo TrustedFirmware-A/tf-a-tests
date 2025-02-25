@@ -271,7 +271,7 @@ static bool test_realm_instr_fetch_cmd(void)
 	void (*func_ptr)(void);
 	rsi_ripas_type ripas;
 
-	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	base = realm_shared_data_get_my_host_val(HOST_ARG3_INDEX);
 	rsi_ipa_state_get(base, base + PAGE_SIZE, &new_top, &ripas);
 	realm_printf("Initial ripas=%u\n", ripas);
 	/* Causes instruction abort */
@@ -286,7 +286,7 @@ static bool test_realm_data_access_cmd(void)
 {
 	u_register_t base, new_top;
 	rsi_ripas_type ripas;
-	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	base = realm_shared_data_get_my_host_val(HOST_ARG3_INDEX);
 	rsi_ipa_state_get(base, base + PAGE_SIZE, &new_top, &ripas);
 	realm_printf("Initial ripas=%u\n", ripas);
 	/* Causes data abort */
@@ -300,7 +300,7 @@ static bool realm_exception_handler(void)
 {
 	u_register_t base, far, esr, elr;
 
-	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	base = realm_shared_data_get_my_host_val(HOST_ARG3_INDEX);
 	far = read_far_el1();
 	esr = read_esr_el1();
 	elr = read_elr_el1();

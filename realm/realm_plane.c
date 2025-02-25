@@ -19,6 +19,7 @@
 
 static bool is_plane0;
 static unsigned int plane_num;
+static bool plane_init[MAX_PLANE_COUNT];
 
 bool realm_is_plane0(void)
 {
@@ -168,11 +169,16 @@ bool plane_common_init(u_register_t plane_index,
 	run->enter.pc = base;
 
 	/* Perm init */
+	if (plane_init[plane_index]) {
+		return true;
+	}
+
 	ret = rsi_mem_set_perm_value(plane_index, perm_index, PERM_LABEL_RW_upX);
 	if (ret != RSI_SUCCESS) {
 		ERROR("rsi_mem_set_perm_value failed %u\n", plane_index);
 		return false;
 	}
+	plane_init[plane_index] = true;
 	return true;
 }
 

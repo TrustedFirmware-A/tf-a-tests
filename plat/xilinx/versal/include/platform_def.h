@@ -39,6 +39,11 @@
 #define DRAM_BASE				U(0x0)
 #define DRAM_SIZE				U(0x80000000)
 
+/*******************************************************************************
+ * LOW DDR MAX defines
+ ******************************************************************************/
+#define PLAT_DDR_LOWMEM_MAX		U(0x80000000)
+
 /*
  * TFTF_NVM_OFFSET/SIZE correspond to the NVM partition in the partition
  * table

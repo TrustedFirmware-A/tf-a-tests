@@ -48,10 +48,10 @@ typedef struct {
 	uint32_t rp_bar32_value;
 } pcie_bar_init_t;
 
-#define PCIE_EXTRACT_BDF_SEG(bdf)	((bdf >> 24) & 0xFF)
-#define PCIE_EXTRACT_BDF_BUS(bdf)	((bdf >> 16) & 0xFF)
-#define PCIE_EXTRACT_BDF_DEV(bdf)	((bdf >> 8) & 0xFF)
-#define PCIE_EXTRACT_BDF_FUNC(bdf)	(bdf & 0xFF)
+#define PCIE_EXTRACT_BDF_SEG(bdf)	((bdf >> 16) & 0xFF)
+#define PCIE_EXTRACT_BDF_BUS(bdf)	((bdf >> 8) & 0xFF)
+#define PCIE_EXTRACT_BDF_DEV(bdf)	((bdf >> 3) & 0x1F)
+#define PCIE_EXTRACT_BDF_FUNC(bdf)	(bdf & 0x7)
 
 /* PCI-compatible region */
 #define PCI_CMP_CFG_SIZE	256
@@ -64,7 +64,7 @@ typedef struct {
 #define PCIE_MAX_FUNC		8
 
 #define PCIE_CREATE_BDF(Seg, Bus, Dev, Func)	\
-			((Seg << 24) | (Bus << 16) | (Dev << 8) | Func)
+			((Seg << 16) | (Bus << 8) | (Dev << 3) | Func)
 
 #define PCIE_SUCCESS		0x00000000  /* Operation completed successfully */
 #define PCIE_NO_MAPPING		0x10000001  /* A mapping to a Function does not exist */

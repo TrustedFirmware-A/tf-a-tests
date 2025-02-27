@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2020-2024, Arm Limited. All rights reserved.
+  Copyright (c) 2020-2025, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -12,6 +12,7 @@
      <testcase name="SDEI event handler state machine testing" function="test_sdei_state" />
      <testcase name="SDEI event handling on all cores in sequence" function="test_sdei_event_serial" />
      <testcase name="SDEI event handling on all cores in parallel" function="test_sdei_event_parallel" />
+     <testcase name="SDEI event signaling state: registered, enabled, unmasked" function="test_sdei_event_signal_state" />
      <testcase name="SDEI event signaling: each core signals itself" function="test_sdei_event_signal_serial" />
      <testcase name="SDEI event signaling: one core signals all others" function="test_sdei_event_signal_all" />
      <testcase name="SDEI event routing all: SPI events routed to all CPUs" function="test_sdei_routing_any" />

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -253,7 +253,7 @@ err0:
 	return TEST_RESULT_FAIL;
 }
 
-static test_result_t sdei_event_signal_self(void)
+static test_result_t sdei_event_signal_self(bool enable, bool unmask)
 {
 	long long ret;
 
@@ -265,16 +265,20 @@ static test_result_t sdei_event_signal_self(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	ret = sdei_event_enable(0);
-	if (ret < 0) {
-		tftf_testcase_printf("SDEI event enable failed: 0x%llx\n", ret);
-		goto err0;
+	if (enable) {
+		ret = sdei_event_enable(0);
+		if (ret < 0) {
+			tftf_testcase_printf("SDEI event enable failed: 0x%llx\n", ret);
+			goto err0;
+		}
 	}
 
-	ret = sdei_pe_unmask();
-	if (ret < 0) {
-		tftf_testcase_printf("SDEI pe unmask failed: 0x%llx\n", ret);
-		goto err1;
+	if (unmask) {
+		ret = sdei_pe_unmask();
+		if (ret < 0) {
+			tftf_testcase_printf("SDEI pe unmask failed: 0x%llx\n", ret);
+			goto err1;
+		}
 	}
 
 	ret = sdei_event_signal(read_mpidr_el1());
@@ -298,6 +302,11 @@ err0:
 	return TEST_RESULT_SUCCESS;
 }
 
+static test_result_t sdei_event_signal_self_all(void)
+{
+	return sdei_event_signal_self(true, true);
+}
+
 /* Each core signals itself using SDEI event signalling. */
 test_result_t test_sdei_event_signal_serial(void)
 {
@@ -319,9 +328,9 @@ test_result_t test_sdei_event_signal_serial(void)
 		if (lead_mpid == target_mpid)
 			continue;
 		ret = tftf_cpu_on(target_mpid,
-		    (uintptr_t)sdei_event_signal_self, 0);
+		    (uintptr_t)sdei_event_signal_self_all, 0);
 		if (ret != PSCI_E_SUCCESS) {
-			ERROR("CPU ON failed for 0x0x%llx\n",
+			ERROR("CPU ON failed for 0x%llx\n",
 			    (unsigned long long)target_mpid);
 			ret = -1;
 			goto err0;
@@ -331,7 +340,7 @@ test_result_t test_sdei_event_signal_serial(void)
 			continue;
 	}
 
-	if (sdei_event_signal_self() != TEST_RESULT_SUCCESS) {
+	if (sdei_event_signal_self_all() != TEST_RESULT_SUCCESS) {
 		ret = -1;
 		goto err0;
 	}
@@ -437,6 +446,65 @@ test_result_t test_sdei_event_signal_all(void)
 			ret = -1;
 			goto err0;
 		}
+	}
+
+err0:
+	enable_irq();
+	if (ret < 0)
+		return TEST_RESULT_FAIL;
+	return TEST_RESULT_SUCCESS;
+}
+
+/* SDEI event signaling state should be: registered, enabled, unmasked */
+test_result_t test_sdei_event_signal_state(void)
+{
+	long long ret;
+
+	ret = sdei_version();
+	if (ret != MAKE_SDEI_VERSION(1, 0, 0)) {
+		tftf_testcase_printf("Unexpected SDEI version: 0x%llx\n", ret);
+		return TEST_RESULT_SKIPPED;
+	}
+
+	disable_irq();
+	if (sdei_event_signal_self(true, true) == TEST_RESULT_FAIL) {
+		tftf_testcase_printf("UNEXPECTED: SDEI event signaling failed when "
+			"enabled and unmasked\n");
+		ret = -1;
+		goto err0;
+	} else {
+		tftf_testcase_printf("EXPECTED: SDEI event signaling succeeded when "
+			"enabled and unmasked\n");
+	}
+
+	if (sdei_event_signal_self(false, true) == TEST_RESULT_SUCCESS) {
+		tftf_testcase_printf("UNEXPECTED: SDEI event signaling succeeded when "
+			"disabled and unmasked\n");
+		ret = -1;
+		goto err0;
+	} else {
+		tftf_testcase_printf("EXPECTED: SDEI event signaling failed when "
+			"disabled and unmasked\n");
+	}
+
+	if (sdei_event_signal_self(true, false) == TEST_RESULT_SUCCESS) {
+		tftf_testcase_printf("UNEXPECTED: SDEI event signaling succeeded when "
+			"enabled and masked\n");
+		ret = -1;
+		goto err0;
+	} else {
+		tftf_testcase_printf("EXPECTED: SDEI event signaling failed when "
+			"enabled and masked\n");
+	}
+
+	if (sdei_event_signal_self(false, false) == TEST_RESULT_SUCCESS) {
+		tftf_testcase_printf("UNEXPECTED: SDEI event signaling succeeded when "
+			"disabled and masked\n");
+		ret = -1;
+		goto err0;
+	} else {
+		tftf_testcase_printf("EXPECTED: SDEI event signaling failed when "
+			"disabled and masked\n");
 	}
 
 err0:

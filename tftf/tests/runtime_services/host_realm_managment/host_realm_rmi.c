@@ -693,6 +693,16 @@ err:
 	return REALM_ERROR;
 }
 
+static u_register_t rtt_s2ap_set_pi_index(u_register_t s2tte, u_register_t pi_index)
+{
+	s2tte &= ~S2TTE_PI_INDEX_MASK;
+	s2tte |= INPLACE(S2TTE_PI_INDEX_BIT0, pi_index & 1) |
+		INPLACE(S2TTE_PI_INDEX_BIT1, (pi_index >> 1) & 1) |
+		INPLACE(S2TTE_PI_INDEX_BIT2, (pi_index >> 2) & 1) |
+		INPLACE(S2TTE_PI_INDEX_BIT3, (pi_index >> 3) & 1);
+	return s2tte;
+}
+
 u_register_t host_realm_map_unprotected(struct realm *realm,
 					u_register_t ns_pa,
 					u_register_t map_size)
@@ -733,7 +743,12 @@ u_register_t host_realm_map_unprotected(struct realm *realm,
 		desc = phys;
 	}
 
-	desc |= S2TTE_ATTR_FWB_WB_RW;
+	if (realm->rtt_s2ap_enc_indirect) {
+		desc |= S2TTE_MEMATTR_FWB_NORMAL_WB;
+		desc = rtt_s2ap_set_pi_index(desc, RMI_PERM_S2AP_RW_IDX);
+	} else {
+		desc |= S2TTE_ATTR_FWB_WB_RW;
+	}
 
 	ret = host_rmi_rtt_mapunprotected(rd, map_addr, map_level, desc);
 
@@ -925,7 +940,7 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 				u_register_t level1;
 
 				/* Unmap from all Aux RTT */
-				if (!realm->rtt_tree_single) {
+				if (!realm->rtt_s2ap_enc_indirect) {
 					for (unsigned int tree_index = 1U;
 						tree_index <= realm->num_aux_planes;
 						tree_index++) {
@@ -993,7 +1008,7 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 			}
 
 			/* RTT_AUX_DESTROY */
-			if (!realm->rtt_tree_single) {
+			if (!realm->rtt_s2ap_enc_indirect) {
 				ret = host_realm_destroy_free_aux_rtt(realm, map_addr,
 						level);
 
@@ -1191,8 +1206,13 @@ u_register_t host_realm_create(struct realm *realm)
 	params->rtt_num_start = 1U;
 
 	if (!realm->rtt_tree_single) {
-		params->flags1 = RMI_REALM_FLAGS1_RTT_TREE_PP;
+		params->flags1 |= RMI_REALM_FLAGS1_RTT_TREE_PP;
 	}
+
+	if (realm->rtt_s2ap_enc_indirect) {
+		params->flags1 |= RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+	}
+
 	params->num_aux_planes = realm->num_aux_planes;
 
 	/* Allocate VMID for all planes */
@@ -1366,8 +1386,8 @@ u_register_t host_realm_map_ns_shared(struct realm *realm,
 
 	/* AUX MAP NS buffer for all RTTs */
 	if (!realm->rtt_tree_single) {
-		for (unsigned int i = 0U; i < ns_shared_mem_size / PAGE_SIZE; i++) {
-			for (unsigned int j = 0U; j < realm->num_aux_planes; j++) {
+		for (unsigned int j = 0U; j < realm->num_aux_planes; j++) {
+			for (unsigned int i = 0U; i < ns_shared_mem_size / PAGE_SIZE; i++) {
 				u_register_t fail_index, level_pri, state;
 
 				ret = host_rmi_rtt_aux_map_unprotected(realm->rd,
@@ -1748,7 +1768,8 @@ static bool host_realm_handle_perm_fault(struct realm *realm, struct rmi_rec_run
 }
 
 /* Handle RSI_MEM_SET_PERM_INDEX by P0, return true to return to realm, false to return to host */
-static bool host_realm_handle_s2ap_change(struct realm *realm, struct rmi_rec_run *run)
+static bool host_realm_handle_s2ap_change(struct realm *realm, struct rmi_rec_run *run,
+		u_register_t rec_num)
 {
 
 
@@ -1759,7 +1780,7 @@ static bool host_realm_handle_s2ap_change(struct realm *realm, struct rmi_rec_ru
 
 	while (new_base != top) {
 		ret = host_rmi_rtt_set_s2ap(realm->rd,
-				    realm->rec[0U],
+				    realm->rec[rec_num],
 				    new_base,
 				    top, &new_base,
 				    &rtt_tree);
@@ -1862,7 +1883,7 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 		     (((((run->exit.esr & ISS_FSC_MASK) >= FSC_L0_TRANS_FAULT) &&
 		     ((run->exit.esr & ISS_FSC_MASK) <= FSC_L3_TRANS_FAULT)) ||
 		     ((run->exit.esr & ISS_FSC_MASK) == FSC_L_MINUS1_TRANS_FAULT))) &&
-		     !realm->rtt_tree_single &&
+		     !realm->rtt_s2ap_enc_indirect &&
 		     (realm->num_aux_planes > 0U)) {
 
 			re_enter_rec = host_realm_handle_perm_fault(realm, run);
@@ -1876,7 +1897,7 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 		    is_adr_in_par(realm, run->exit.s2ap_base) &&
 		    (realm->num_aux_planes > 0U)) {
 
-			re_enter_rec = host_realm_handle_s2ap_change(realm, run);
+			re_enter_rec = host_realm_handle_s2ap_change(realm, run, rec_num);
 		}
 
 		if (ret != RMI_SUCCESS) {

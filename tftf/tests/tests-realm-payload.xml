@@ -8,8 +8,10 @@
 
 <testsuites>
   <testsuite name="Realm payload at EL1" description="Test Realm EL1 framework capabilities" >
-	  <testcase name="Realm Planes execution test"
-	  function="host_test_realm_create_planes_enter" />
+	  <testcase name="Realm Planes execution test with multiple RTTs"
+	  function="host_test_realm_create_planes_enter_multiple_rtt" />
+	  <testcase name="Realm Planes execution test with S2POE/single RTT"
+	  function="host_test_realm_create_planes_enter_single_rtt" />
 	  <testcase name="Realm Planes register read/write test"
 	  function="host_test_realm_create_planes_register_rw" />
 	  <testcase name="Realm EL1 creation and execution test"

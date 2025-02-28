@@ -15,7 +15,7 @@ static test_result_t realm_test_feat_mpam(enum realm_cmd cmd)
 	bool ret1, ret2;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
 	struct realm realm;
-	u_register_t feature_flag = 0UL;
+	u_register_t feature_flag0 = 0UL;
 	long sl = RTT_MIN_LEVEL;
 
 	assert((cmd >= REALM_MPAM_ACCESS) && (cmd <= REALM_MPAM_PRESENT));
@@ -24,12 +24,12 @@ static test_result_t realm_test_feat_mpam(enum realm_cmd cmd)
 	SKIP_TEST_IF_FEAT_MPAM_NOT_SUPPORTED();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag, sl, rec_flag, 1U, 0U)) {
+			feature_flag0, 0UL, sl, rec_flag, 1U, 0U)) {
 		return TEST_RESULT_FAIL;
 	}
 

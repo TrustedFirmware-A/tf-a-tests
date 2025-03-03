@@ -265,6 +265,46 @@ bool test_realm_dit_check_cmd(void)
 	return false;
 }
 
+static bool test_plane_exception_cmd(void)
+{
+	u_register_t base, plane_index, perm_index, flags = 0U;
+	bool ret1;
+
+	plane_index = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	base = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
+	perm_index = plane_index + 1U;
+
+	ret1 = plane_common_init(plane_index, perm_index, base, &run);
+	if (!ret1) {
+		return ret1;
+	}
+
+	realm_printf("Entering plane %ld, ep=0x%lx run=0x%lx\n", plane_index, base, &run);
+	ret1 = realm_plane_enter(plane_index, perm_index, base, flags, &run);
+
+	realm_printf("Plane exit reason=0x%lx\n", run.exit.exit_reason);
+
+	/*
+	 * @TODO- P0 can inject SEA back to PN,
+	 * if capability is added in future.
+	 */
+	if (ret1 && (run.exit.exit_reason == RSI_EXIT_SYNC)) {
+		u_register_t far, esr, elr;
+
+		far = run.exit.far;
+		esr = run.exit.esr;
+		elr = run.exit.elr;
+
+		/* Return ESR FAR to Host */
+		realm_shared_data_set_my_realm_val(HOST_ARG2_INDEX, esr);
+		realm_shared_data_set_my_realm_val(HOST_ARG3_INDEX, far);
+		realm_printf("Plane exit FAR=0x%lx ESR=0x%lx ELR=0x%lx\n",
+			far, esr, elr);
+		rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
+	}
+	return false;
+}
+
 static bool test_realm_instr_fetch_cmd(void)
 {
 	u_register_t base, new_top;
@@ -275,7 +315,7 @@ static bool test_realm_instr_fetch_cmd(void)
 	rsi_ipa_state_get(base, base + PAGE_SIZE, &new_top, &ripas);
 	realm_printf("Initial ripas=%u\n", ripas);
 	/* Causes instruction abort */
-	realm_printf("Generate Instruction Abort\n");
+	realm_printf("Generate Instruction Abort base=0x%lx\n", base);
 	func_ptr = (void (*)(void))base;
 	func_ptr();
 	/* Should not return */
@@ -290,7 +330,7 @@ static bool test_realm_data_access_cmd(void)
 	rsi_ipa_state_get(base, base + PAGE_SIZE, &new_top, &ripas);
 	realm_printf("Initial ripas=%u\n", ripas);
 	/* Causes data abort */
-	realm_printf("Generate Data Abort\n");
+	realm_printf("Generate Data Abort base=0x%lx\n", base);
 	*((volatile uint64_t *)base);
 
 	return false;
@@ -430,6 +470,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_DATA_ACCESS_CMD:
 			test_succeed = test_realm_data_access_cmd();
+			break;
+		case REALM_PLANE_N_EXCEPTION_CMD:
+			test_succeed = test_plane_exception_cmd();
 			break;
 		case REALM_PAUTH_SET_CMD:
 			test_succeed = test_realm_pauth_set_cmd();

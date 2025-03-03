@@ -35,7 +35,7 @@ ASFLAGS		+=	-Iplat/${PLAT}/ -I.
 
 LDFLAGS		+=	$(call ld_option,--no-warn-rwx-segments)
 
-PLAT_BUILD_DIR	:=	build/${PLAT}
+PLAT_BUILD_DIR	:=	${BUILD_PLAT}/el3_payload
 SOURCES		:=	entrypoint.S spin.S uart.S plat/${PLAT}/platform.S
 OBJS		:=	$(patsubst %,$(PLAT_BUILD_DIR)/%,$(notdir $(SOURCES:.S=.o)))
 

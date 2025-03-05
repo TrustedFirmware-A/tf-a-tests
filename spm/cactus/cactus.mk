@@ -23,6 +23,7 @@ CACTUS_INCLUDES :=					\
 	-Iinclude/common/${ARCH}			\
 	-Iinclude/lib					\
 	-Iinclude/lib/extensions			\
+	-Iinclude/lib/hob				\
 	-Iinclude/lib/${ARCH}				\
 	-Iinclude/lib/utils				\
 	-Iinclude/lib/xlat_tables			\
@@ -74,6 +75,8 @@ CACTUS_SOURCES	+= 	drivers/arm/pl011/${ARCH}/pl011_console.S	\
 			drivers/arm/sp805/sp805.c			\
 			lib/${ARCH}/cache_helpers.S			\
 			lib/${ARCH}/misc_helpers.S			\
+			lib/hob/hob.c					\
+			lib/utils/uuid.c					\
 			lib/smc/${ARCH}/asm_smc.S			\
 			lib/smc/${ARCH}/smc.c				\
 			lib/smc/${ARCH}/hvc.c				\

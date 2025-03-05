@@ -12,6 +12,7 @@
 #include <drivers/arm/pl011.h>
 #include <drivers/console.h>
 #include <lib/aarch64/arch_helpers.h>
+#include <lib/hob/hob.h>
 #include <lib/tftf_lib.h>
 #include <lib/xlat_tables/xlat_mmu_helpers.h>
 #include <lib/xlat_tables/xlat_tables_v2.h>
@@ -155,6 +156,15 @@ static void cactus_print_memory_layout(unsigned int vm_id)
 		(void *)get_sp_tx_end(vm_id));
 }
 
+static void cactus_print_hob_list(uint64_t hob_content_addr, size_t size)
+{
+	INFO("SP Hob List Contents: 0x%llx, size 0x%lx\n", hob_content_addr, size);
+	struct efi_hob_handoff_info_table *hob_list = (struct
+			efi_hob_handoff_info_table *) hob_content_addr;
+
+	dump_hob_list(hob_list);
+}
+
 static void cactus_print_boot_info(struct ffa_boot_info_header *boot_info_header)
 {
 	struct ffa_boot_info_desc *boot_info_desc;
@@ -191,6 +201,9 @@ static void cactus_print_boot_info(struct ffa_boot_info_header *boot_info_header
 				ffa_boot_info_content_format(&boot_info_desc[i]));
 		VERBOSE("      Size: %u\n", boot_info_desc[i].size);
 		VERBOSE("      Value: %llx\n", boot_info_desc[i].content);
+		if (ffa_boot_info_type_id(&boot_info_desc[i]) == 1) {
+			cactus_print_hob_list(boot_info_desc[i].content, boot_info_desc[i].size);
+		}
 	}
 }
 
@@ -237,6 +250,36 @@ static struct ffa_value register_secondary_entrypoint(void)
 	return ffa_service_call(&args);
 }
 
+static void cactus_map_boot_info(struct ffa_boot_info_header *boot_info_header,
+		bool do_desc_access)
+{
+	struct ffa_boot_info_desc *boot_info_desc;
+
+	assert(boot_info_header != NULL);
+
+	boot_info_desc = boot_info_header->boot_info;
+	/*
+	 * TODO: Currently just validating that cactus can
+	 * access the boot info descriptors. By default, allocate one page
+	 * for boot info. In case we want to use the boot info contents, we should check the
+	 * blob and remap if the size is bigger than one page.
+	 * Only then access the contents.
+	 */
+	mmap_add_dynamic_region(
+		(unsigned long long)boot_info_header,
+		(uintptr_t)boot_info_header,
+		PAGE_SIZE, MT_RO_DATA);
+
+	if (do_desc_access) {
+		for (uint32_t i = 0; i < boot_info_header->desc_count; i++) {
+			mmap_add_dynamic_region(
+				(unsigned long long)boot_info_desc[i].content,
+				(uintptr_t)boot_info_desc[i].content,
+				PAGE_SIZE, MT_RO_DATA);
+		}
+	}
+}
+
 void __dead2 cactus_main(bool primary_cold_boot,
 			 struct ffa_boot_info_header *boot_info_header)
 {
@@ -268,17 +311,7 @@ void __dead2 cactus_main(bool primary_cold_boot,
 		sp_handler_spin_lock_init();
 
 		if (boot_info_header != NULL) {
-			/*
-			 * TODO: Currently just validating that cactus can
-			 * access the boot info descriptors. In case we want to
-			 * use the boot info contents, we should check the
-			 * blob and remap if the size is bigger than one page.
-			 * Only then access the contents.
-			 */
-			mmap_add_dynamic_region(
-				(unsigned long long)boot_info_header,
-				(uintptr_t)boot_info_header,
-				PAGE_SIZE, MT_RO_DATA);
+			cactus_map_boot_info(boot_info_header, ffa_id == SP_ID(3));
 		}
 	}
 
@@ -304,11 +337,22 @@ void __dead2 cactus_main(bool primary_cold_boot,
 	NOTICE("Booting Secure Partition (ID: %x)\n%s\n%s\n",
 		ffa_id, build_message, version_string);
 
-	if (ffa_id == SP_ID(1)) {
+	/*
+	 * Print FF-A boot info if requested in manifest via FF-A boot info
+	 * protocol.
+	 */
+	if (ffa_id == SP_ID(1) || ffa_id == SP_ID(3)) {
 		cactus_print_boot_info(boot_info_header);
 	}
 
-	if (ffa_id == (SPM_VM_ID_FIRST + 2)) {
+	cactus_print_memory_layout(ffa_id);
+
+	/*
+	 * Cactus-tertiary makes use of FFA_RXTX_MAP API instead of specifying
+	 * `rx_tx-info` in its manifest, as done by the primary and secondary
+	 * cactus partitions.
+	 */
+	if (ffa_id == SP_ID(3)) {
 		VERBOSE("Mapping RXTX Region\n");
 		CONFIGURE_AND_MAP_MAILBOX(mb, PAGE_SIZE, ret);
 		if (ffa_func_id(ret) != FFA_SUCCESS_SMC32) {
@@ -318,12 +362,11 @@ void __dead2 cactus_main(bool primary_cold_boot,
 		}
 	}
 
-	cactus_print_memory_layout(ffa_id);
 
 	ret = register_secondary_entrypoint();
 
 	/* FFA_SECONDARY_EP_REGISTER interface is not supported for UP SP. */
-	if (ffa_id == (SPM_VM_ID_FIRST + 2)) {
+	if (ffa_id == SP_ID(3)) {
 		EXPECT(ffa_func_id(ret), FFA_ERROR);
 		EXPECT(ffa_error_code(ret), FFA_ERROR_NOT_SUPPORTED);
 	} else {

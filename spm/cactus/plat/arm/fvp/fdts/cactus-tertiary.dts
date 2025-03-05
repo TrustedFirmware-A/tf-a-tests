@@ -24,13 +24,23 @@
 	exception-level = <2>; /* S-EL1 */
 	execution-state = <0>; /* AARCH64 */
 	load-address = <0x7200000>;
-	entrypoint-offset = <0x00002000>;
+	image-size = <0x300000>;
+	entrypoint-offset = <0x00003000>; /*Image after manifest and HOB list. */
 	xlat-granule = <0>; /* 4KiB */
 	boot-order = <2>;
 	notification-support;
 	messaging-method = <3>; /* Direct messaging only */
 	managed-exit; /* Managed exit is supported */
 	managed-exit-virq;
+
+	/* Boot protocol */
+	gp-register-num = <0>;
+
+	/* Boot Info */
+	boot-info {
+		compatible = "arm,ffa-manifest-boot-info";
+		hob_list;
+	};
 
 	memory-regions {
 		compatible = "arm,ffa-manifest-memory-regions";
@@ -49,6 +59,38 @@
 			pages-count = <1>;
 			base-address = <0x00008800 0x80001000>;
 			attributes = <0xb>; /* NS / read-write */
+		};
+
+		/* StMM-specific region used for HOB list testing. */
+		rx-tx-buffers {
+			description = "shared-buff";
+			base-address = <0x0 0xfd500000>;
+			pages-count = <0x100>;
+			attributes = <0x3>;
+		};
+
+		/* StMM-specific region used for HOB list testing. */
+		ns_comm_buffer {
+			/*
+			 * Description is needed for StMM to identify
+			 * ns-communication buffer.
+			 */
+			description = "ns-comm";
+			base-address = <0x80000000>;
+			pages-count = <0x1>;
+			attributes = <0xB>;
+		};
+
+		/* StMM-specific region used for HOB list testing. */
+		heap {
+			/*
+			 * Description is needed for StMM to identify
+			 * heap buffer.
+			 */
+			description = "heap";
+			base-address = <0x0 0xff100000>;
+			pages-count = <0x7>;
+			attributes = <0x3>;
 		};
 	};
 };

@@ -13,6 +13,8 @@
 #include <fuzz_names.h>
 #include <sdei_fuzz_helper.h>
 
+#ifdef SDEI_INCLUDE
+
 int stbev = 0;
 
 #define MIN_PPI_ID		U(16)
@@ -785,3 +787,5 @@ void run_sdei_fuzz(int funcid, struct memmod *mmod, bool inrange, int cntid)
 		}
 	}
 }
+
+#endif

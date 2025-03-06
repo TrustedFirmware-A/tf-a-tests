@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <arg_struct_def.h>
 #include <sdei_fuzz_helper.h>
 #include "smcmalloc.h"
 #include <tsp_fuzz_helper.h>
@@ -19,10 +20,13 @@ void runtestfunction(int funcid, struct memmod *mmod)
 {
 	bool inrange = (cntid >= SMC_FUZZ_CALL_START) && (cntid < SMC_FUZZ_CALL_END);
 	inrange = inrange && (funcid != EXCLUDE_FUNCID);
-
+#ifdef SDEI_INCLUDE
 	run_sdei_fuzz(funcid, mmod, inrange, cntid);
+#endif
 	run_tsp_fuzz(funcid);
+#ifdef VEN_INCLUDE
 	run_ven_el3_fuzz(funcid, mmod);
+#endif
 
 	cntid++;
 }

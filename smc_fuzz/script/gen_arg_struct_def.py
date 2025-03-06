@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+import re
+
 def gen_arg_struct_def(asdname,argfieldname,arglst,argnumfield):
 	asdfile = open(asdname, "w")
 	hline = "/*\n"
@@ -18,6 +20,18 @@ def gen_arg_struct_def(asdname,argfieldname,arglst,argnumfield):
 	asdfile.write(hline)
 	smccount = 0
 	argcount = 0
+	featset = {}
+	hline = ""
+	for sn in argfieldname:
+		featdes = re.search(r'^([A-Z]+)_.+',sn)
+		if featdes:
+			if featdes.group(1) not in featset:
+				hline += "#define "
+				hline += featdes.group(1) + "_INCLUDE" + " 1\n"
+				featset[featdes.group(1)] = 1
+	hline += "\n"
+	asdfile.write(hline)
+	hline = ""
 	for sn in argfieldname:
 		hline = "#define "
 		hline += sn

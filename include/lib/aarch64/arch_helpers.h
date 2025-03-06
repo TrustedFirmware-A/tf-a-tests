@@ -231,6 +231,8 @@ DEFINE_SYSOP_FUNC(isb)
 DEFINE_SYSOP_PARAM_FUNC(wfit)
 DEFINE_SYSOP_PARAM_FUNC(wfet)
 
+DEFINE_SYSOP_PARAM_FUNC(xpaci)
+
 DEFINE_RENAME_SYSREG_RW_FUNCS(sys_accdata_el1, SYS_ACCDATA_EL1)
 
 static inline void enable_irq(void)

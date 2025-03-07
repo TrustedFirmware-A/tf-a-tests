@@ -14,6 +14,8 @@
 	  function="host_test_realm_create_planes_enter_single_rtt" />
 	  <testcase name="Realm Planes register read/write test"
 	  function="host_test_realm_create_planes_register_rw" />
+	  <testcase name="Realm payload Planes multi rec multiple cpu"
+	  function="host_realm_multi_planes_multi_rec_multiple_cpu" />
 	  <testcase name="Realm EL1 creation and execution test"
 	  function="host_test_realm_create_enter" />
 	  <testcase name="Realm RTT fold unfold test Unassigned Empty"

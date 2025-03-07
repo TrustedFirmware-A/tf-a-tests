@@ -65,6 +65,8 @@ typedef enum {
 	RSI_ERROR_COUNT
 } rsi_status_t;
 
+#define RSI_EXIT_SYNC	0U
+
 /* Size of Realm Personalization Value */
 #define RSI_RPV_SIZE			64U
 

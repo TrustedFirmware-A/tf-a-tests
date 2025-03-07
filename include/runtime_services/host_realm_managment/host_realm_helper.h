@@ -61,8 +61,29 @@ bool host_ipa_is_ns(u_register_t addr, u_register_t rmm_feat_reg0);
  * This functions sets the shared data args needed for entering aux plane,
  * using REALM_ENTER_PLANE_N_CMD
  */
-void host_realm_set_aux_plane_args(struct realm *realm_ptr, unsigned int plane_num);
+void host_realm_set_aux_plane_args(struct realm *realm_ptr,
+		unsigned int plane_num, unsigned int rec_num);
 
+
+/* Function to check if Planes feature is supoprted */
+static inline bool are_planes_supported(void)
+{
+	u_register_t feature_flag;
+
+	/* Read Realm Feature Reg 0 */
+	if (host_rmi_features(0UL, &feature_flag) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_rmi_features");
+		return false;
+	}
+
+	if (EXTRACT(RMI_FEATURE_REGISTER_0_MAX_NUM_AUX_PLANES, feature_flag) > 0UL) {
+		return true;
+	}
+
+	return false;
+}
+
+/* Function to check if S2POE feature/ Single RTT is supported for multiple planes */
 static inline bool is_single_rtt_supported(void)
 {
 	u_register_t feature_flag;

@@ -11,12 +11,15 @@
 #include <debug.h>
 
 #include <host_realm_helper.h>
+#include <psci.h>
+#include <realm_psci.h>
 #include <realm_psi.h>
 #include <realm_rsi.h>
 #include <sync.h>
 
 static bool is_plane0;
 static unsigned int plane_num;
+static bool plane_init[MAX_PLANE_COUNT];
 
 bool realm_is_plane0(void)
 {
@@ -102,10 +105,30 @@ u_register_t handle_plane_exit(u_register_t plane_index,
 
 	/* Disallow SMC from Plane N */
 	if (ec == EC_AARCH64_SMC) {
-		/* TODO Support PSCI in future */
+		u_register_t smc_id = run->exit.gprs[0];
+
 		restore_plane_context(run);
-		run->enter.gprs[0] = RSI_ERROR_STATE;
-		return PSI_RETURN_TO_PN;
+		switch (smc_id) {
+		case SMC_PSCI_CPU_ON_AARCH64:
+			assert(run->exit.gprs[1] < MAX_REC_COUNT);
+			assert(run->exit.gprs[1] != 0U);
+			/* Let P0 handle CPU ON */
+			return PSI_RETURN_TO_P0;
+		case SMC_PSCI_CPU_OFF:
+			realm_cpu_off();
+			/* Does not return. */
+			return PSI_RETURN_TO_PN;
+		case SMC_PSCI_FEATURES:
+			run->enter.gprs[0] = realm_psci_features(run->exit.gprs[1U]);
+			return PSI_RETURN_TO_PN;
+		case SMC_PSCI_AFFINITY_INFO:
+			run->enter.gprs[0] = realm_psci_affinity_info(run->exit.gprs[1U],
+					run->exit.gprs[2U]);
+			return PSI_RETURN_TO_PN;
+		default:
+			run->enter.gprs[0] = RSI_ERROR_STATE;
+			return PSI_RETURN_TO_PN;
+		}
 	}
 
 	/* Handle PSI HVC call from Plane N */
@@ -146,11 +169,16 @@ bool plane_common_init(u_register_t plane_index,
 	run->enter.pc = base;
 
 	/* Perm init */
+	if (plane_init[plane_index]) {
+		return true;
+	}
+
 	ret = rsi_mem_set_perm_value(plane_index, perm_index, PERM_LABEL_RW_upX);
 	if (ret != RSI_SUCCESS) {
 		ERROR("rsi_mem_set_perm_value failed %u\n", plane_index);
 		return false;
 	}
+	plane_init[plane_index] = true;
 	return true;
 }
 

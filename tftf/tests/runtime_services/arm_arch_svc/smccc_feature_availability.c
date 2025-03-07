@@ -79,12 +79,13 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(is_feat_tcr2_supported,			SCR_TCR2EN_BIT);
 	CHECK_BIT_SET(is_feat_the_supported,			SCR_RCWMASKEn_BIT);
 	CHECK_BIT_SET(is_feat_sme_supported,			SCR_ENTP2_BIT);
-	CHECK_BIT_SET(is_feat_rng_trap_present,			SCR_TRNDR_BIT);
+	CHECK_BIT_SET(is_feat_rng_present,			SCR_TRNDR_BIT);
 	CHECK_BIT_SET(is_feat_gcs_present,			SCR_GCSEn_BIT);
 	CHECK_BIT_SET(get_feat_hcx_support,			SCR_HXEn_BIT);
 	CHECK_BIT_SET(is_feat_ls64_accdata_present,		SCR_ADEn_BIT);
 	CHECK_BIT_SET(is_feat_ls64_accdata_present,		SCR_EnAS0_BIT);
 	CHECK_BIT_SET(is_feat_amuv1p1_present,			SCR_AMVOFFEN_BIT);
+	CHECK_BIT_SET(is_feat_twed_present,			SCR_TWEDEn_BIT);
 	CHECK_BIT_SET(get_armv8_6_ecv_support,			SCR_ECVEN_BIT);
 	CHECK_BIT_SET(is_armv8_6_fgt_present,			SCR_FGTEN_BIT);
 	CHECK_BIT_SET(is_feat_mte2_present,			SCR_ATA_BIT);
@@ -108,6 +109,7 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(is_feat_trbe_present,			MDCR_NSTB(1));
 	CHECK_BIT_SET(get_armv8_4_trf_support,			MDCR_TTRF_BIT);
 	CHECK_BIT_SET(is_feat_spe_supported,			MDCR_NSPB(1));
+	CHECK_BIT_SET(is_feat_pmuv3p9_present,			MDCR_EnPM2_BIT);
 	CHECK_BIT_SET(is_feat_doublelock_present,		MDCR_TDOSA_BIT);
 	CHECK_BIT_SET(always_present,				MDCR_TDA_BIT);
 	CHECK_BIT_SET(get_feat_pmuv3_supported,			MDCR_TPM_BIT);

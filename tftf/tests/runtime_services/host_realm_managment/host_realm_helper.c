@@ -325,8 +325,12 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 			goto destroy_realm;
 		}
 
+		/*
+		 * Realm tests only access the region between TFTF_BASE and Realm Pool,
+		 * Change RIPAS of this region to RAM.
+		 */
 		if (host_realm_init_ipa_state(realm_ptr, realm_ptr->start_level,
-					      0U, 1ULL << 32) != RMI_SUCCESS) {
+					      TFTF_BASE, PAGE_POOL_END) != RMI_SUCCESS) {
 			ERROR("%s() failed\n", "host_realm_init_ipa_state");
 			goto destroy_realm;
 		}

@@ -19,6 +19,7 @@ TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	extensions/mte/test_mte.c					\
 	extensions/pauth/test_pauth.c					\
 	extensions/pmuv3/test_pmuv3.c					\
+	extensions/ras/test_ras.c					\
 	extensions/sctlr2/test_sctlr2.c					\
 	extensions/sme/test_sme.c					\
 	extensions/sme/test_sme2.c					\

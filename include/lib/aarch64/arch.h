@@ -837,6 +837,35 @@
 #define DISABLE_INTERRUPTS	(DAIF_FIQ_BIT | DAIF_IRQ_BIT)
 
 /*
+ * BRBCR_EL2/EL1 definitions
+ */
+#define BRBCR_EL1_EXCEPTION_EN	(U(1) << 23)
+#define BRBCR_EL1_ERTN_EN	(U(1) << 22)
+#define BRBCR_EL1_MPRED_EN	(U(1) << 4)
+#define BRBCR_EL1_CC_EN		(U(1) << 3)
+#define BRBCR_EL1_CC_SHIFT	3
+#define BRBCR_EL1_CC_WIDTH	U(1)
+#define BRBCR_EL1_E1BRE_EN	(U(1) << 1)
+#define BRBCR_EL1_E0BRE_EN	(U(1) << 0)
+#define BRBCR_EL1_INIT		(BRBCR_EL1_EXCEPTION_EN | BRBCR_EL1_ERTN_EN | \
+				 BRBCR_EL1_MPRED_EN | BRBCR_EL1_CC_EN | BRBCR_EL1_E1BRE_EN | \
+				 BRBCR_EL1_E0BRE_EN)
+
+#define BRBCR_EL1_E0BRE_SHIFT	U(0)
+#define BRBCR_EL1_E0BRE_WIDTH	U(1)
+#define BRBCR_EL1_E1BRE_SHIFT	U(1)
+#define BRBCR_EL1_E1BRE_WIDTH	U(1)
+#define BRBCR_EL2_E0HBRE_SHIFT	U(0)
+
+#define BRBCR_EL2_E2BRE_ENABLE		(U(1) << 1)
+#define BRBCR_EL2_CC_ENABLE		(U(1) << 3)
+#define BRBCR_EL2_MPRED_ENABLE		(U(1) << 4)
+#define BRBCR_EL2_ERTN_ENABLE		(U(1) << 22)
+#define BRBCR_EL2_EXCEPTION_ENABLE	(U(1) << 23)
+#define BRBCR_EL2_INIT			(BRBCR_EL2_E2BRE_ENABLE | BRBCR_EL2_CC_ENABLE | \
+					BRBCR_EL2_MPRED_ENABLE | BRBCR_EL2_ERTN_ENABLE | \
+					BRBCR_EL2_EXCEPTION_ENABLE)
+/*
  * RMR_EL3 definitions
  */
 #define RMR_EL3_RR_BIT		(U(1) << 1)
@@ -1549,14 +1578,17 @@
  * FEAT_BRBE - Branch Record Buffer Extension System Registers
  ******************************************************************************/
 
-#define BRBCR_EL1	S2_1_C9_C0_0
-#define BRBCR_EL2	S2_4_C9_C0_0
-#define BRBFCR_EL1	S2_1_C9_C0_1
-#define BRBTS_EL1	S2_1_C9_C0_2
-#define BRBINFINJ_EL1	S2_1_C9_C1_0
-#define BRBSRCINJ_EL1	S2_1_C9_C1_1
-#define BRBTGTINJ_EL1	S2_1_C9_C1_2
-#define BRBIDR0_EL1	S2_1_C9_C2_0
+#define BRBCR_EL1		S2_1_C9_C0_0
+#define BRBCR_EL2		S2_4_C9_C0_0
+#define BRBFCR_EL1		S2_1_C9_C0_1
+#define BRBTS_EL1		S2_1_C9_C0_2
+#define BRBINFINJ_EL1		S2_1_C9_C1_0
+#define BRBSRCINJ_EL1		S2_1_C9_C1_1
+#define BRBTGTINJ_EL1		S2_1_C9_C1_2
+#define BRBIDR0_EL1		S2_1_C9_C2_0
+#define BRBINF15_EL1		S2_1_C8_C15_0
+#define BRBSRC11_EL1		S2_1_C8_C11_1
+#define BRBTGT0_EL1		S2_1_C8_C0_2
 
 /*******************************************************************************
  * FEAT_TCR2 - Extended Translation Control Registers

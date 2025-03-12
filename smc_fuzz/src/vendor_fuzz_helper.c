@@ -14,6 +14,8 @@
 #include <smccc.h>
 #include <uuid_utils.h>
 
+#ifdef VEN_INCLUDE
+
 /*
  * Vendor-Specific EL3 UUID as returned by the implementation in the Trusted
  * Firmware.
@@ -109,3 +111,5 @@ void run_ven_el3_fuzz(int funcid, struct memmod *mmod)
 		}
 	}
 }
+
+#endif

@@ -1,0 +1,132 @@
+#
+# Copyright (c) 2025 Arm Limited. All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+
+smc: FFA_PARTITION_INFO_GET_REGS_CALL
+        arg1:uuid_lo
+		field:uuid_lo:[0,63] = 0
+        arg2:uuid_hi
+		field:uuid_hi:[0,63] = 0
+        arg3:start_idx_and_tag
+                field:start:[0,15] = 0
+		field:tag:[16,31] = 0
+	arg4-arg17 = 0
+smc: FFA_VERSION_CALL
+	arg1:input_version_number
+		field:mbz:[31,31] = 0
+		field:major:[16,30] = 1
+		field:minor:[0,15] = 2
+	arg2-arg17 = 0
+smc: FFA_MSG_SEND_DIRECT_REQ_64_CALL
+	arg1:sender_reciever
+		field:sender_id:[16,31] = 0
+		field:receiver_id:[0,15] = 0
+	arg2:flags
+		field:message_type:[31,31] = 0
+		field:frmwk_msg_type:[0,7] = 0
+	arg3:msg_0
+		field:msg_0:[0,63] = 0x12121212
+	arg4:msg_1
+		field:msg_1:[0,63] = 0x34343434
+	arg5:msg_2
+		field:msg_2:[0,63] = 0x56565656
+	arg6:msg_3
+		field:msg_3:[0,63] = 0x78787878
+	arg7:msg_4
+		field:msg_4:[0,63] = 0x9a9a9a9a
+	arg8-arg17 = 0
+smc: FFA_MSG_SEND_DIRECT_RESP_64_CALL
+	arg1:sender_reciever
+		field:sender_id:[16,31] = 0
+		field:receiver_id:[0,15] = 0
+	arg2:flags
+		field:message_type:[31,31] = 0
+		field:frmwk_msg_type:[0,7] = 0
+	arg3:msg_0
+		field:msg_0:[0,63] = 0x12121212
+	arg4:msg_1
+		field:msg_1:[0,63] = 0x34343434
+	arg5:msg_2
+		field:msg_2:[0,63] = 0x56565656
+	arg6:msg_3
+		field:msg_3:[0,63] = 0x78787878
+	arg7:msg_4
+		field:msg_4:[0,63] = 0x9a9a9a9a
+	arg8-arg17 = 0
+smc: FFA_MSG_SEND_DIRECT_REQ_32_CALL
+	arg1:sender_reciever
+		field:sender_id:[16,31] = 0
+		field:receiver_id:[0,15] = 0
+	arg2:flags
+		field:message_type:[31,31] = 0
+		field:frmwk_msg_type:[0,7] = 0
+	arg3:msg_0
+		field:msg_0:[0,31] = 0x1212
+	arg4:msg_1
+		field:msg_1:[0,31] = 0x3434
+	arg5:msg_2
+		field:msg_2:[0,31] = 0x5656
+	arg6:msg_3
+		field:msg_3:[0,31] = 0x7878
+	arg7:msg_4
+		field:msg_4:[0,31] = 0x9a9a
+	arg8-arg17 = 0
+smc: FFA_MSG_SEND_DIRECT_RESP_32_CALL
+	arg1:sender_reciever
+		field:sender_id:[16,31] = 0
+		field:receiver_id:[0,15] = 0
+	arg2:flags
+		field:message_type:[31,31] = 0
+		field:frmwk_msg_type:[0,7] = 0
+	arg3:msg_0
+		field:msg_0:[0,31] = 0x1212
+	arg4:msg_1
+		field:msg_1:[0,31] = 0x3434
+	arg5:msg_2
+		field:msg_2:[0,31] = 0x5656
+	arg6:msg_3
+		field:msg_3:[0,31] = 0x7878
+	arg7:msg_4
+		field:msg_4:[0,31] = 0x9a9a
+	arg8-arg17 = 0
+smc: FFA_FEATURES_FEAT_ID_CALL
+	arg1:ffa_func_or_feat_id
+		field:w1_is_ffa_func_id:[31,31] = 0
+		field:feat_id:[0,7] = 0x1
+	arg2:input_properties
+		field:input_properties:[0,63] = 0
+	arg3-arg17 = 0
+smc: FFA_FEATURES_FUNC_ID_CALL
+	arg1:ffa_func_or_feat_id
+		field:func_id:[0,31] = 0x84000064
+	arg2:input_properties
+		field:input_properties:[0,63] = 0x0
+	arg3-arg17 = 0
+smc: FFA_RUN_CALL
+	arg1:target_information
+		field:target_vm_id:[16,31] = 0
+		field:target_vcpu_id:[0,15] = 0
+	arg2-arg17 = 0
+smc: FFA_NOTIFICATION_BITMAP_CREATE_CALL
+	arg1:vm_id
+		field:vm_id:[0,15] = 1
+	arg2:n_vcpus
+		field:n_vcpus:[0,63] = 1
+	arg3-arg17 = 0
+smc: FFA_NOTIFICATION_BIND_CALL
+	arg1:sender_reciever
+		field:sender_id:[16,31] = 0
+		field:receiver_id:[0,15] = 0
+	arg2:flags
+		field:per_vcpu_notifications:[0,0] = 0
+	arg3:notification_bitmap_lo
+		field:bitmap:[0,31] = 0xAAAA
+	arg4:notification_bitmap_hi
+		field:bitmap:[0,31] = 0x5555
+	arg5-arg17 = 0
+smc: FFA_NOTIFICATION_BITMAP_DESTROY_CALL
+	arg1:vm_id
+		field:vm_id:[0,15] = 1
+	arg2-arg17 = 0

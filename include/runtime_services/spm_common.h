@@ -101,6 +101,9 @@ bool is_expected_cactus_response(struct ffa_value ret, uint32_t expected_resp,
 				 uint32_t arg);
 void dump_ffa_value(struct ffa_value ret);
 
+uint64_t ffa_get_uuid_lo(const struct ffa_uuid uuid);
+uint64_t ffa_get_uuid_hi(const struct ffa_uuid uuid);
+
 bool check_spmc_execution_level(void);
 
 unsigned int get_ffa_feature_test_target(
@@ -152,6 +155,9 @@ bool ffa_partition_info_helper(struct mailbox_buffers *mb,
 bool enable_trusted_wdog_interrupt(ffa_id_t source, ffa_id_t dest);
 bool disable_trusted_wdog_interrupt(ffa_id_t source, ffa_id_t dest);
 
+bool ffa_partition_info_regs_get_part_info(
+	struct ffa_value *args, uint8_t idx,
+	struct ffa_partition_info *partition_info);
 bool ffa_partition_info_regs_helper(const struct ffa_uuid uuid,
 		       const struct ffa_partition_info *expected,
 		       const uint16_t expected_size);

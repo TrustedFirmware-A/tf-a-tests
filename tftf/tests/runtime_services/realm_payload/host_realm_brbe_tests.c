@@ -30,6 +30,11 @@ test_result_t host_realm_test_brbe_save_restore(void)
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 	SKIP_TEST_IF_BRBE_NOT_SUPPORTED();
 
+	if (is_feat_52b_on_4k_2_supported()) {
+		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 						feature_flag, feature_flag1, sl, rec_flag, 1U, 0U)) {
 		return TEST_RESULT_FAIL;

@@ -1335,6 +1335,7 @@
  * Definitions for system register interface to MPAM
  ******************************************************************************/
 #define MPAMIDR_EL1		S3_0_C10_C4_4
+#define MPAMSM_EL1		S3_0_C10_C5_3
 #define MPAM2_EL2		S3_4_C10_C5_0
 #define MPAMHCR_EL2		S3_4_C10_C4_0
 #define MPAM3_EL3		S3_6_C10_C5_0

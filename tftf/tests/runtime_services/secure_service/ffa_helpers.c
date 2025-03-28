@@ -156,6 +156,15 @@ struct ffa_value ffa_framework_msg_send_direct_resp(ffa_id_t source_id,
 	return ffa_service_call(&args);
 }
 
+struct ffa_value ffa_yield(void)
+{
+	struct ffa_value args = {
+		.fid = FFA_MSG_YIELD,
+	};
+
+	return ffa_service_call(&args);
+}
+
 void ffa_memory_region_init_header(struct ffa_memory_region *memory_region,
 				   ffa_id_t sender,
 				   ffa_memory_attributes_t attributes,

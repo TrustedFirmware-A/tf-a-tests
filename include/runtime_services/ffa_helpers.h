@@ -965,6 +965,7 @@ struct ffa_value ffa_framework_msg_send_direct_resp(ffa_id_t source_id,
 					    uint32_t status_code);
 
 struct ffa_value ffa_run(uint32_t dest_id, uint32_t vcpu_id);
+struct ffa_value ffa_yield(void);
 struct ffa_value ffa_version(uint32_t input_version);
 struct ffa_value ffa_id_get(void);
 struct ffa_value ffa_spm_id_get(void);

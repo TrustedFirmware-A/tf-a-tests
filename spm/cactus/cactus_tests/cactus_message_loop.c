@@ -11,6 +11,7 @@
 #include <ffa_helpers.h>
 #include <events.h>
 #include <platform.h>
+#include <sp_helpers.h>
 #include <spm_helpers.h>
 #include <psci.h>
 
@@ -110,6 +111,7 @@ struct ffa_value cactus_handle_framework_msg(struct ffa_value args)
 #if CACTUS_PWR_MGMT_SUPPORT == 1
 	uint32_t framework_msg = ffa_get_framework_msg(args);
 	uint32_t psci_function = args.arg3;
+	struct ffa_value ret;
 
 	/*
 	 * As of now, Cactus supports receiving only PSCI power management
@@ -138,6 +140,38 @@ struct ffa_value cactus_handle_framework_msg(struct ffa_value args)
 	}
 
 	status_code = PSCI_E_SUCCESS;
+
+	/*
+	 * FF-A spec states that SPs are prohibited from invoking Direct
+	 * request, FFA_RUN and FFA_YIELD interfaces while handling power
+	 * management framework message. Make the Cactus SP intentionally
+	 * invoke prohibited interfaces and attest that SPMC should deny such
+	 * invocations.
+	 */
+	ret = cactus_success_resp(destination_id, source_id, status_code);
+
+	/* Non-framework direct response must be denied. */
+	EXPECT(ffa_func_id(ret), FFA_ERROR);
+	EXPECT(ffa_error_code(ret), FFA_ERROR_DENIED);
+
+	ret = cactus_echo_send_cmd(destination_id, SP_ID(4), 0x9999);
+
+	/* Direct request message must be denied. */
+	EXPECT(ffa_func_id(ret), FFA_ERROR);
+	EXPECT(ffa_error_code(ret), FFA_ERROR_DENIED);
+
+	ret = ffa_run(SP_ID(4), 0);
+
+	/* FFA_RUN invocation must be denied. */
+	EXPECT(ffa_func_id(ret), FFA_ERROR);
+	EXPECT(ffa_error_code(ret), FFA_ERROR_DENIED);
+
+	ret = ffa_yield();
+
+	/* FFA_YIELD invocation must be denied. */
+	EXPECT(ffa_func_id(ret), FFA_ERROR);
+	EXPECT(ffa_error_code(ret), FFA_ERROR_DENIED);
+
 	/*
 	 * Return successful status for PSCI power management request through
 	 * direct response Framework message.

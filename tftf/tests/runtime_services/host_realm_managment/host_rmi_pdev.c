@@ -615,3 +615,41 @@ test_result_t host_test_rmi_pdev_calls(void)
 
 	return TEST_RESULT_SUCCESS;
 }
+
+
+/*
+ * This function invokes PDEV_CREATE on TRP and tries to test
+ * the EL3 RMM-EL3 IDE KM interface. Will be skipped on TF-RMM.
+ */
+test_result_t host_realm_test_root_port_key_management(void)
+{
+	struct host_tdi *tdi;
+	int ret;
+
+	if (host_rmi_version(RMI_ABI_VERSION_VAL) != 0U) {
+		tftf_testcase_printf("RMM is not TRP\n");
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/* Initialize Host NS heap memory */
+	ret = page_pool_init((u_register_t)PAGE_POOL_BASE,
+				(u_register_t)PAGE_POOL_MAX_SIZE);
+	if (ret != HEAP_INIT_SUCCESS) {
+		ERROR("Failed to init heap pool %d\n", ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	tdi = &g_tdi;
+
+	/*
+	 * Call rmi_pdev_create with invalid pdev, expect an error
+	 * to be returned from TRP.
+	 */
+	ret = host_tdi_pdev_create(tdi);
+	if (ret != 0) {
+		return TEST_RESULT_SUCCESS;
+	}
+
+	ERROR("RMI_PDEV_CREATE did not return error as expected\n");
+	return TEST_RESULT_FAIL;
+}

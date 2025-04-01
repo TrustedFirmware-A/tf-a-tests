@@ -378,6 +378,10 @@ static int host_tdi_pdev_setup(struct host_tdi *tdi)
 
 	/* Allocate granule for PDEV and delegate */
 	tdi->pdev = page_alloc(PAGE_SIZE);
+	if (tdi->pdev == NULL) {
+		return -1;
+	}
+
 	memset(tdi->pdev, 0, GRANULE_SIZE);
 	ret = host_rmi_granule_delegate((u_register_t)tdi->pdev);
 	if (ret != RMI_SUCCESS) {
@@ -393,48 +397,67 @@ static int host_tdi_pdev_setup(struct host_tdi *tdi)
 	ret = host_rmi_pdev_aux_count(tdi->pdev_flags, &count);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_pdev_aux_count() failed 0x%lx\n", ret);
-		return -1;
+		goto err_undelegate_pdev;
 	}
 	tdi->pdev_aux_num = count;
 
 	/* Allocate aux granules for PDEV and delegate */
 	INFO("PDEV create requires %u aux pages\n", tdi->pdev_aux_num);
 	for (i = 0; i < tdi->pdev_aux_num; i++) {
-		tdi->pdev_aux[i] = page_alloc(PAGE_SIZE);
-		ret = host_rmi_granule_delegate((u_register_t)tdi->pdev_aux[i]);
+		void *pdev_aux = page_alloc(PAGE_SIZE);
+
+		if (pdev_aux == NULL) {
+			goto err_undelegate_pdev_aux;
+		}
+
+		ret = host_rmi_granule_delegate((u_register_t)pdev_aux);
 		if (ret != RMI_SUCCESS) {
 			ERROR("Aux granule delegate failed 0x%lx\n", ret);
-			return -1;
+			goto err_undelegate_pdev_aux;
 		}
+
+		tdi->pdev_aux[i] = pdev_aux;
 	}
 
 	/* Allocate dev_comm_data and send/recv buffer for Dev communication */
 	tdi->dev_comm_data = (struct rmi_dev_comm_data *)page_alloc(PAGE_SIZE);
+	if (tdi->dev_comm_data == NULL) {
+		goto err_undelegate_pdev_aux;
+	}
+
 	memset(tdi->dev_comm_data, 0, sizeof(struct rmi_dev_comm_data));
+
 	tdi->dev_comm_data->enter.req_addr = (unsigned long)
 		page_alloc(PAGE_SIZE);
+	if (tdi->dev_comm_data->enter.req_addr == 0UL) {
+		goto err_undelegate_pdev_aux;
+	}
+
 	tdi->dev_comm_data->enter.resp_addr = (unsigned long)
 		page_alloc(PAGE_SIZE);
+	if (tdi->dev_comm_data->enter.resp_addr == 0UL) {
+		goto err_undelegate_pdev_aux;
+	}
 
 	/* Allocate buffer to cache device certificate */
 	tdi->cert_slot_id = 0;
 	tdi->cert_chain = (uint8_t *)page_alloc(HOST_PDEV_CERT_LEN_MAX);
 	tdi->cert_chain_len = 0;
 	if (tdi->cert_chain == NULL) {
-		return -1;
+		goto err_undelegate_pdev_aux;
 	}
 
 	/* Allocate buffer to store extracted public key */
 	tdi->public_key = (void *)page_alloc(PAGE_SIZE);
 	if (tdi->public_key == NULL) {
-		return -1;
+		goto err_undelegate_pdev_aux;
 	}
 	tdi->public_key_len = PAGE_SIZE;
 
 	/* Allocate buffer to store public key metadata */
 	tdi->public_key_metadata = (void *)page_alloc(PAGE_SIZE);
 	if (tdi->public_key_metadata == NULL) {
-		return -1;
+		goto err_undelegate_pdev_aux;
 	}
 	tdi->public_key_metadata_len = PAGE_SIZE;
 
@@ -442,13 +465,27 @@ static int host_tdi_pdev_setup(struct host_tdi *tdi)
 	tdi->meas = (uint8_t *)page_alloc(HOST_PDEV_MEAS_LEN_MAX);
 	tdi->meas_len = 0;
 	if (tdi->meas == NULL) {
-		return -1;
+		goto err_undelegate_pdev_aux;
 	}
 
 	/* Set algorithm to use for device digests */
 	tdi->pdev_hash_algo = RMI_HASH_SHA_512;
 
 	return 0;
+
+err_undelegate_pdev_aux:
+	/* Undelegate all the delegated pages */
+	for (int i = 0; i < tdi->pdev_aux_num; i++) {
+		if (tdi->pdev_aux[i]) {
+			host_rmi_granule_undelegate((u_register_t)
+						    tdi->pdev_aux[i]);
+		}
+	}
+
+err_undelegate_pdev:
+	host_rmi_granule_undelegate((u_register_t)tdi->pdev);
+
+	return -1;
 }
 
 /*

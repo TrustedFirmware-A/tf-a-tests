@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2022-2025, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -26,6 +26,7 @@
 #define TTC_IER_OFFSET			U(0x60) /* Interrupt Enable Reg, RW */
 
 #define TTC_CNT_CNTRL_DISABLE_MASK	BIT(0)
+#define TTC_ISR_INTERVAL_BIT		BIT_32(0)
 
 #define TTC_CLK_SEL_MASK		GENMASK(1, 0)
 
@@ -68,12 +69,22 @@ static uint32_t timer_read_32(uint32_t offset)
 
 static int cancel_timer(void)
 {
+	uint32_t status;
+	uint32_t reg;
+
+	status = timer_read_32(TTC_ISR_OFFSET);
+	if (status & TTC_ISR_INTERVAL_BIT) {
+		VERBOSE("Timer Interval Interrupt Event! %x\n", status);
+	} else {
+		INFO("Its not a Timer Interval Interrupt Event %d\n", status);
+	}
 	/* Disable Interrupt */
 	timer_write_32(TTC_IER_OFFSET, 0);
 
 	/* Disable Counter */
-	timer_write_32(TTC_CLK_CNTRL_OFFSET, !CLK_CNTRL_PRESCALE_EN);
-	timer_write_32(TTC_CNT_CNTRL_OFFSET, !CLK_CNTRL_PRESCALE_EN);
+	reg = timer_read_32(TTC_CNT_CNTRL_OFFSET);
+	reg |= TTC_CNT_CNTRL_DISABLE_MASK;
+	timer_write_32(TTC_CNT_CNTRL_OFFSET, reg);
 
 	return RET_SUCCESS;
 }

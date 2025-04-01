@@ -99,7 +99,7 @@
 #define IRQ_NS_SGI_7				7
 
 /* Per-CPU Hypervisor Timer Interrupt ID */
-#define IRQ_PCPU_HP_TIMER			U(29)
+#define IRQ_PCPU_HP_TIMER			U(26)
 /* Datasheet: TIME00 event*/
 #define IRQ_CNTPSIRQ1				U(29)
 

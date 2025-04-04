@@ -30,6 +30,7 @@
 	messaging-method = <7>; /* Indirect Messaging and direct messaging. */
 	ns-interrupts-action = <1>; /* Managed exit is supported */
 	notification-support; /* Support receipt of notifications. */
+	power-management-messages = <1>; /* Support CPU_OFF power management message. */
 
 	/* Boot protocol */
 	gp-register-num = <0>;

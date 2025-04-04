@@ -40,7 +40,7 @@ Install the required packages to build TF-A Tests with the following command:
 Note that at least Python 3.8 is required.
 
 Download and install the GNU cross-toolchain from Arm. The TF-A Tests have
-been tested with version 13.3.Rel1 (gcc 13.3):
+been tested with version 14.2.Rel1 (GCC 14.2):
 
 -  `GCC cross-toolchain`_
 
@@ -53,4 +53,4 @@ In addition, the following optional packages and tools may be needed:
 
 --------------
 
-*Copyright (c) 2019-2024, Arm Limited. All rights reserved.*
+*Copyright (c) 2019-2025, Arm Limited. All rights reserved.*

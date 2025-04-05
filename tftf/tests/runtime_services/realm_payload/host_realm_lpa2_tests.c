@@ -22,7 +22,7 @@ test_result_t host_test_realm_no_lpa2_invalid_sl(void)
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			0UL, 0UL, RTT_MIN_LEVEL_LPA2, rec_flag, 1U, 0U)) {
+			0UL, 0UL, RTT_MIN_LEVEL_LPA2, rec_flag, 1U, 0U, TEST_MECID1)) {
 		return TEST_RESULT_SUCCESS;
 	}
 
@@ -41,7 +41,7 @@ test_result_t host_test_realm_no_lpa2_invalid_s2sz(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 50UL), 0UL,
-			RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
+			RTT_MIN_LEVEL, rec_flag, 1U, 0U, TEST_MECID1)) {
 		return TEST_RESULT_SUCCESS;
 	}
 
@@ -67,7 +67,7 @@ test_result_t host_test_non_lpa2_realm_on_lpa2plat(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL), 0UL,
-			RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
+			RTT_MIN_LEVEL, rec_flag, 1U, 0U, TEST_MECID1)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -99,7 +99,7 @@ test_result_t host_test_data_bound_non_lpa2_realm_on_lpa2plat(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL), 0UL,
-			RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
+			RTT_MIN_LEVEL, rec_flag, 1U, 0U, TEST_MECID1)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -155,7 +155,8 @@ test_result_t host_test_lpa2_realm_on_non_lpa2plat(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0UL, RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
+			feature_flag0, 0UL, RTT_MIN_LEVEL, rec_flag, 1U, 0U,
+			TEST_MECID1)) {
 		return TEST_RESULT_SUCCESS;
 	}
 

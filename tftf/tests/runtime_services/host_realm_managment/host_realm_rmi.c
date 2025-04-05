@@ -1212,6 +1212,7 @@ u_register_t host_realm_create(struct realm *realm)
 	params->rtt_level_start = realm->start_level;
 	params->algorithm = RMI_HASH_SHA_256;
 	params->vmid = vmid++;
+	params->mecid = realm->mecid;
 	params->rtt_base = realm->rtt_addr;
 	params->rtt_num_start = 1U;
 

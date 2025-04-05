@@ -583,4 +583,10 @@ static inline bool is_feat_doublelock_present(void)
 	return EXTRACT(ID_AA64DFR0_DOUBLELOCK, read_id_aa64dfr0_el1())
 			>= DOUBLELOCK_IMPLEMENTED;
 }
+
+static inline bool is_feat_mec_supported(void)
+{
+	return EXTRACT(ID_AA64MMFR3_EL1_MEC, read_id_aa64mmfr3_el1())
+		== ID_AA64MMFR3_EL1_MEC_SUPPORTED;
+}
 #endif /* ARCH_FEATURES_H */

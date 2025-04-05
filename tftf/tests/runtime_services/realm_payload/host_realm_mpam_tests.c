@@ -29,7 +29,7 @@ static test_result_t realm_test_feat_mpam(enum realm_cmd cmd)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0UL, sl, rec_flag, 1U, 0U)) {
+			feature_flag0, 0UL, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
 		return TEST_RESULT_FAIL;
 	}
 

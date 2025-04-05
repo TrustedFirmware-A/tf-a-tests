@@ -1363,6 +1363,7 @@ struct realm {
 	u_register_t     host_mpidr[MAX_REC_COUNT];
 	u_register_t     num_aux;
 	u_register_t     rmm_feat_reg0;
+	u_register_t     rmm_feat_reg1;
 	u_register_t     ipa_ns_buffer;
 	u_register_t     ns_buffer_size;
 	u_register_t     aux_pages_all_rec[MAX_REC_COUNT][REC_PARAMS_AUX_GRANULES];
@@ -1375,6 +1376,7 @@ struct realm {
 	bool             rtt_tree_single;
 	bool		 rtt_s2ap_enc_indirect;
 	unsigned short   vmid;
+	unsigned short   mecid;
 	enum realm_state state;
 	long start_level;
 	u_register_t     aux_rtt_addr[MAX_AUX_PLANE_COUNT];

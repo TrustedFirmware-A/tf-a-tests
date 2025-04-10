@@ -20,8 +20,15 @@ test_result_t test_handoff_header(void)
 {
 	struct transfer_list_header *tl = (struct transfer_list_header *)ns_tl;
 
-	assert(tl_signature ==
-		TRANSFER_LIST_HANDOFF_X1_VALUE(TRANSFER_LIST_VERSION));
+#if __aarch64__
+	uint64_t signature = TRANSFER_LIST_HANDOFF_X1_VALUE(TRANSFER_LIST_VERSION);
+#else
+	uint32_t signature = TRANSFER_LIST_HANDOFF_R1_VALUE(TRANSFER_LIST_VERSION);
+#endif /* __aarch64__ */
+
+	if (signature != tl_signature) {
+		return TEST_RESULT_FAIL;
+	}
 
 	if (transfer_list_check_header(tl) == TL_OPS_NON) {
 		return TEST_RESULT_FAIL;

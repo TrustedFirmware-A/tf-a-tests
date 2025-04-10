@@ -130,6 +130,9 @@ func __tftf_cpu_resume_ep
 	msr	ttbr0_el2, x3
 	msr	tcr_el2, x4
 	msr	vbar_el2, x5
+
+	/* make sure whatever just got turned on is in effect */
+	isb
         /*
 	 * Check if the processor supports SME
 	 */

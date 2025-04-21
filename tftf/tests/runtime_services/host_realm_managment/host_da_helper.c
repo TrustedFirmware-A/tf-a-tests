@@ -6,16 +6,17 @@
  */
 
 #include <stdint.h>
-
 #include <arch_features.h>
 #include <debug.h>
 #include <heap/page_alloc.h>
 #include <host_da_helper.h>
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
+#include <pcie_spec.h>
 #include <pcie_doe.h>
 
-extern struct host_pdev gbl_host_pdev;
+extern int gbl_host_pdev_count;
+extern struct host_pdev gbl_host_pdevs[32];
 extern struct host_vdev gbl_host_vdev;
 
 static const char * const pdev_state_str[] = {
@@ -28,7 +29,7 @@ static const char * const pdev_state_str[] = {
 	"RMI_PDEV_STATE_ERROR"
 };
 
-struct host_vdev *find_host_vdev_from_id(unsigned long vdev_id)
+static struct host_vdev *find_host_vdev_from_id(unsigned long vdev_id)
 {
 	struct host_vdev *h_vdev = &gbl_host_vdev;
 
@@ -39,18 +40,23 @@ struct host_vdev *find_host_vdev_from_id(unsigned long vdev_id)
 	return NULL;
 }
 
-struct host_pdev *find_host_pdev_from_pdev_ptr(unsigned long pdev_ptr)
+static struct host_pdev *find_host_pdev_from_pdev_ptr(unsigned long pdev_ptr)
 {
-	struct host_pdev *h_pdev = &gbl_host_pdev;
+	uint32_t i;
+	struct host_pdev *h_pdev;
 
-	if (h_pdev->pdev == (void *)pdev_ptr) {
-		return h_pdev;
+	for (i = 0; i < gbl_host_pdev_count; i++) {
+		h_pdev = &gbl_host_pdevs[i];
+
+		if (h_pdev->pdev == (void *)pdev_ptr) {
+			return h_pdev;
+		}
 	}
 
 	return NULL;
 }
 
-struct host_vdev *find_host_vdev_from_vdev_ptr(unsigned long vdev_ptr)
+static struct host_vdev *find_host_vdev_from_vdev_ptr(unsigned long vdev_ptr)
 {
 	struct host_vdev *h_vdev = &gbl_host_vdev;
 
@@ -122,9 +128,11 @@ int host_pdev_create(struct host_pdev *h_pdev)
 
 	pdev_params->flags = h_pdev->pdev_flags;
 	pdev_params->cert_id = h_pdev->cert_slot_id;
-	pdev_params->pdev_id = h_pdev->bdf;
+	pdev_params->pdev_id = h_pdev->dev->bdf;
 	pdev_params->num_aux = h_pdev->pdev_aux_num;
 	pdev_params->hash_algo = h_pdev->pdev_hash_algo;
+	pdev_params->root_id = h_pdev->dev->rp_dev->bdf;
+	pdev_params->ecam_addr = h_pdev->dev->ecam_base;
 	for (i = 0; i < h_pdev->pdev_aux_num; i++) {
 		pdev_params->aux[i] = (uintptr_t)h_pdev->pdev_aux[i];
 	}
@@ -340,7 +348,8 @@ static int host_pdev_doe_communicate(struct host_pdev *h_pdev,
 	}
 
 	resp_len = 0UL;
-	rc = pcie_doe_communicate(doe_header, h_pdev->bdf, h_pdev->doe_cap_base,
+	rc = pcie_doe_communicate(doe_header, h_pdev->dev->bdf,
+				  h_pdev->dev->doe_cap_base,
 				  (void *)dcomm_enter->req_addr,
 				  dcomm_exit->req_len,
 				  (void *)dcomm_enter->resp_addr, &resp_len);
@@ -493,7 +502,10 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 	u_register_t ret, count;
 	int i;
 
-	memset(h_pdev, 0, sizeof(struct host_pdev));
+	/* RCiEP devices not supported by RMM */
+	if (h_pdev->dev->dp_type == RCiEP) {
+		return -1;
+	}
 
 	/* Allocate granule for PDEV and delegate */
 	h_pdev->pdev = page_alloc(PAGE_SIZE);
@@ -512,10 +524,20 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 	 * Off chip PCIe device - set flags as non coherent device protected by
 	 * end to end IDE, with SPDM.
 	 */
-	h_pdev->pdev_flags = (INPLACE(RMI_PDEV_FLAGS_SPDM, RMI_PDEV_SPDM_TRUE) |
-			   INPLACE(RMI_PDEV_FLAGS_IDE, RMI_PDEV_IDE_TRUE) |
-			   INPLACE(RMI_PDEV_FLAGS_COHERENT,
-				   RMI_PDEV_COHERENT_FALSE));
+	h_pdev->pdev_flags = 0;
+
+	/* Set IDE based on device capability */
+	if (pcie_dev_has_ide(h_pdev->dev)) {
+		h_pdev->pdev_flags |= INPLACE(RMI_PDEV_FLAGS_IDE,
+					      RMI_PDEV_IDE_TRUE);
+	}
+
+	/* Supports SPDM */
+	h_pdev->pdev_flags |= INPLACE(RMI_PDEV_FLAGS_SPDM, RMI_PDEV_SPDM_TRUE);
+
+	/* Not a coherent device */
+	h_pdev->pdev_flags |= INPLACE(RMI_PDEV_FLAGS_COHERENT,
+				      RMI_PDEV_COHERENT_FALSE);
 
 	/* Get num of aux granules required for this PDEV */
 	ret = host_rmi_pdev_aux_count(h_pdev->pdev_flags, &count);
@@ -606,7 +628,6 @@ err_undelegate_pdev:
 	return -1;
 }
 
-
 /*
  * Stop PDEV and ternimate secure session and call PDEV destroy
  */
@@ -642,10 +663,13 @@ int host_pdev_reclaim(struct host_pdev *h_pdev)
 			ERROR("Aux granule undelegate failed 0x%lx\n", ret);
 			result = -1;
 		}
+
+		h_pdev->pdev_aux[i] = NULL;
 	}
 
 	/* Undelegate PDEV granule */
 	ret = host_rmi_granule_undelegate((u_register_t)h_pdev->pdev);
+	h_pdev->pdev = NULL;
 	if (ret != RMI_SUCCESS) {
 		ERROR("PDEV undelegate failed 0x%lx\n", ret);
 		result = -1;
@@ -683,7 +707,8 @@ int host_create_realm_with_feat_da(struct realm *realm)
  * response buffer, VDEV AUX granules and memory required to device
  * measurements, interface report.
  */
-static int host_vdev_setup(struct host_pdev *h_pdev, struct host_vdev *h_vdev)
+static int host_vdev_setup(struct host_vdev *h_vdev, unsigned long tdi_id,
+			   void *pdev_ptr)
 {
 	u_register_t ret;
 
@@ -694,9 +719,9 @@ static int host_vdev_setup(struct host_pdev *h_pdev, struct host_vdev *h_vdev)
 	 * the VMM view of vdev_id and Realm view of device_id must match.
 	 */
 	h_vdev->vdev_id = 0UL;
-	h_vdev->tdi_id = h_pdev->bdf;
+	h_vdev->tdi_id = tdi_id;
 	h_vdev->flags = 0UL;
-	h_vdev->pdev_ptr = h_pdev->pdev;
+	h_vdev->pdev_ptr = pdev_ptr;
 
 	/* Allocate granule for VDEV and delegate */
 	h_vdev->vdev_ptr = (void *)page_alloc(PAGE_SIZE);
@@ -751,15 +776,14 @@ err_undel_vdev:
 	return -1;
 }
 
-int host_assign_vdev_to_realm(struct realm *realm,
-				struct host_pdev *h_pdev,
-				struct host_vdev *h_vdev)
+int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
+			      unsigned long tdi_id, void *pdev_ptr)
 {
 	struct rmi_vdev_params *vdev_params;
 	u_register_t ret;
 	int rc;
 
-	rc = host_vdev_setup(h_pdev, h_vdev);
+	rc = host_vdev_setup(h_vdev, tdi_id, pdev_ptr);
 	if (rc != 0) {
 		return rc;
 	}
@@ -778,12 +802,12 @@ int host_assign_vdev_to_realm(struct realm *realm,
 	 * This is TDI id, this must be same as PDEV ID for assigning the whole
 	 * device.
 	 */
-	vdev_params->tdi_id = h_pdev->bdf;
+	vdev_params->tdi_id = tdi_id;
 
 	vdev_params->flags = h_vdev->flags;
 	vdev_params->num_aux = 0UL;
 
-	ret = host_rmi_vdev_create(realm->rd, (u_register_t)h_pdev->pdev,
+	ret = host_rmi_vdev_create(realm->rd, (u_register_t)pdev_ptr,
 				  (u_register_t)h_vdev->vdev_ptr,
 				  (u_register_t)vdev_params);
 	if (ret != RMI_SUCCESS) {
@@ -794,10 +818,9 @@ int host_assign_vdev_to_realm(struct realm *realm,
 	return 0;
 }
 
-int host_unassign_vdev_from_realm(struct realm *realm,
-				  struct host_pdev *h_pdev,
-				  struct host_vdev *h_vdev)
+int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev)
 {
+	struct host_pdev *h_pdev;
 	u_register_t ret, state;
 	int rc;
 
@@ -818,6 +841,9 @@ int host_unassign_vdev_from_realm(struct realm *realm,
 		return -1;
 	}
 
+	h_pdev = find_host_pdev_from_pdev_ptr((unsigned long)h_vdev->pdev_ptr);
+	assert(h_pdev);
+
 	/* Do VDEV communicate to move VDEV from STOPPING to STOPPED state */
 	rc = host_dev_communicate(h_pdev, h_vdev, RMI_VDEV_STATE_STOPPED);
 	if (rc != 0) {
@@ -825,14 +851,15 @@ int host_unassign_vdev_from_realm(struct realm *realm,
 		return rc;
 	}
 
-	ret = host_rmi_vdev_destroy(realm->rd, (u_register_t)h_pdev->pdev,
-				   (u_register_t)h_vdev->vdev_ptr);
+	ret = host_rmi_vdev_destroy(realm->rd,
+				    (u_register_t)h_vdev->pdev_ptr,
+				    (u_register_t)h_vdev->vdev_ptr);
 	if (ret != RMI_SUCCESS) {
 		ERROR("VDEV destroy failed\n");
 		return -1;
 	}
 
-	ret = host_rmi_granule_undelegate((u_register_t)(u_register_t)h_vdev->vdev_ptr);
+	ret = host_rmi_granule_undelegate((u_register_t)h_vdev->vdev_ptr);
 	if (ret != RMI_SUCCESS) {
 		ERROR("VDEV undelegate failed\n");
 		return -1;
@@ -920,4 +947,84 @@ u_register_t host_dev_mem_map(struct realm *realm, u_register_t dev_pa,
 
 	*dev_ipa = map_addr;
 	return REALM_SUCCESS;
+}
+
+bool is_host_pdev_independently_attested(struct host_pdev *h_pdev)
+{
+	assert(h_pdev);
+	assert(h_pdev->dev);
+
+	if ((pcie_dev_has_doe(h_pdev->dev)) &&
+	    (pcie_dev_has_ide(h_pdev->dev)) &&
+	    (h_pdev->dev->rp_dev != NULL) &&
+	    (pcie_dev_has_ide(h_pdev->dev->rp_dev)) &&
+	    (pcie_dev_has_dvsec_rmeda(h_pdev->dev->rp_dev))) {
+		return true;
+	}
+
+	return false;
+}
+
+/*
+ * Find all PCIe off-chip devices that confimrs to TEE-IO standards
+ * Devices that supports DOE, IDE, TDISP with RootPort that supports
+ * RME DA are initlized in host_pdevs[]
+ */
+void host_pdevs_init(void)
+{
+	static bool gbl_host_pdevs_init_done;
+	pcie_device_bdf_table_t *bdf_table;
+	pcie_dev_t *dev;
+	uint32_t i;
+	uint32_t cnt = 0;
+
+	if (gbl_host_pdevs_init_done) {
+		return;
+	}
+
+	/* When called for the first time this does PCIe enumeration */
+	pcie_init();
+
+	INFO("Initializing host_pdevs\n");
+	bdf_table = pcie_get_bdf_table();
+	if ((bdf_table == NULL) || (bdf_table->num_entries == 0)) {
+		goto out_init;
+	}
+
+	for (i = 0; i < bdf_table->num_entries; i++) {
+		dev = &bdf_table->device[i];
+
+		if ((dev->dp_type != EP) && (dev->dp_type != RCiEP)) {
+			continue;
+		}
+
+		if ((dev->dp_type == EP) && (dev->rp_dev == NULL)) {
+			INFO("No RP found for Device %x:%x.%x\n",
+			     PCIE_EXTRACT_BDF_BUS(dev->bdf),
+			     PCIE_EXTRACT_BDF_DEV(dev->bdf),
+			     PCIE_EXTRACT_BDF_FUNC(dev->bdf));
+			continue;
+		}
+
+		/*
+		 * Skip VF in multi function device as it can't be treated as
+		 * PDEV
+		 */
+		if (PCIE_EXTRACT_BDF_FUNC(dev->bdf) != 0) {
+			continue;
+		}
+
+		/* Initialize host_pdev */
+		gbl_host_pdevs[cnt].dev = dev;
+		cnt++;
+
+		if (cnt == HOST_PDEV_MAX) {
+			WARN("Max host_pdev count reached.\n");
+			break;
+		}
+	}
+
+out_init:
+	gbl_host_pdevs_init_done = true;
+	gbl_host_pdev_count = cnt;
 }

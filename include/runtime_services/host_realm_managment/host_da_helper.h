@@ -8,6 +8,7 @@
 #define HOST_DA_HELPER_H
 
 #include <host_realm_rmi.h>
+#include <pcie.h>
 
 /*
  * Skip DA test if any of the below check is true
@@ -34,6 +35,9 @@
 
 /* SPDM_MAX_CERTIFICATE_CHAIN_SIZE is 64KB */
 #define HOST_PDEV_CERT_LEN_MAX		(64 * 1024)
+
+/* todo: This macro can come from platform layer */
+#define HOST_PDEV_MAX		32
 
 /*
  * Measurement max supported is 4KB.
@@ -68,9 +72,11 @@ struct host_pdev {
 	size_t public_key_metadata_len;
 	unsigned char public_key_sig_algo;
 
-	/* PCIe details: bdf, DOE, Stream id, IO range */
-	uint32_t bdf;
-	uint32_t doe_cap_base;
+	/* Is this device connected to TSM */
+	bool is_connected_to_tsm;
+
+	/* The PCIe device for this host_pdev */
+	pcie_dev_t *dev;
 };
 
 struct host_vdev {
@@ -105,16 +111,18 @@ struct host_vdev {
 	size_t ifc_report_len;
 };
 
+void host_pdevs_init(void);
+bool is_host_pdev_independently_attested(struct host_pdev *h_pdev);
 int host_create_realm_with_feat_da(struct realm *realm);
 int host_pdev_create(struct host_pdev *h_pdev);
 int host_pdev_reclaim(struct host_pdev *h_pdev);
 int host_pdev_setup(struct host_pdev *h_pdev);
 int host_pdev_transition(struct host_pdev *h_pdev, unsigned char to_state);
 
-int host_assign_vdev_to_realm(struct realm *realm, struct host_pdev *h_pdev,
-			      struct host_vdev *h_vdev);
-int host_unassign_vdev_from_realm(struct realm *realm, struct host_pdev *h_pdev,
-				  struct host_vdev *h_vdev);
+int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
+			      unsigned long tdi_id, void *pdev_ptr);
+int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev);
+
 u_register_t host_dev_mem_map(struct realm *realm, u_register_t dev_pa,
 				long map_level, u_register_t *dev_ipa);
 

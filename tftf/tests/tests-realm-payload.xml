@@ -158,5 +158,8 @@
 	  <!-- Test case related to FEAT_BRBE -->
 	  <testcase name="Test if BRBE realted registers are preserved "
 	  function="host_realm_test_brbe_save_restore" />
+	 <!-- Test case for EL3-RMM IDE KM Interface -->
+	  <testcase name="Test for Root Port Key management interface"
+	  function="host_realm_test_root_port_key_management" />
   </testsuite>
 </testsuites>

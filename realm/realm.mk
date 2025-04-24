@@ -27,10 +27,14 @@ REALM_SOURCES:=								\
 	aarch64/realm_entrypoint.S					\
 	aarch64/realm_exceptions.S					\
 	realm_attestation.c						\
-	realm_exception_report.c					\
+	realm_brbe_tests.c						\
+	realm_da.c							\
+	realm_da_helpers.c						\
 	realm_debug.c							\
+	realm_exception_report.c					\
 	realm_helpers.c							\
 	realm_interrupt.c						\
+	realm_mpam.c							\
 	realm_multiple_rec.c						\
 	realm_pauth.c							\
 	realm_payload_main.c						\
@@ -41,9 +45,6 @@ REALM_SOURCES:=								\
 	realm_rsi.c							\
 	realm_shared_data.c						\
 	realm_simd.c							\
-	realm_mpam.c							\
-	realm_brbe_tests.c						\
-	realm_da.c							\
 	)
 
 REALM_SOURCES += lib/${ARCH}/cache_helpers.S				\

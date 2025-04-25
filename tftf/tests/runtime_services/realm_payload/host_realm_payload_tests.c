@@ -96,6 +96,7 @@ test_result_t host_test_realm_create_planes_register_rw(void)
 	}
 	return host_cmp_result();
 }
+
 /*
  * @Test_Aim@ Test realm payload creation with 3 Aux Planes, enter all Planes
  * Host cannot enter Aux Planes directly,
@@ -301,6 +302,146 @@ destroy_realm:
 	if (!ret1 || !ret2) {
 		ERROR("%s(): enter=%d destroy=%d\n",
 		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+	return host_cmp_result();
+}
+
+/*
+ * @Test_Aim@ Test that an access from Pn to an unprotected IPA ouside the PAR
+ * causes an undefined abort taken to P0.
+ */
+test_result_t host_test_realm_pn_access_outside_par(void)
+{
+	struct realm realm;
+	u_register_t feature_flag0;
+	u_register_t feature_reg0;
+	u_register_t esr, far;
+	u_register_t test_ipa;
+	unsigned long s2sz;
+	struct rmi_rec_run *run;
+	bool iaccess_pass = false, daccess_pass = false;
+	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE};
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	/* Test is skipped if S2POE is not supported so to keep it simpler */
+	if (!(are_planes_supported() && is_single_rtt_supported())) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/* Read Realm Feature Reg 0 */
+	if (host_rmi_features(0UL, &feature_reg0) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_rmi_features");
+		return TEST_RESULT_FAIL;
+	}
+
+	/*
+	 * Calculate the IPA range for the realm. This would be below the
+	 * maximum supported by the architecture.
+	 */
+	s2sz = EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feature_reg0);
+	feature_flag0 = INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, s2sz - 5U);
+
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			feature_flag0, 0U, RTT_MIN_LEVEL, rec_flag, 2U, 1U)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Generate IPA ouside the PAR to test */
+	test_ipa = TFTF_BASE | (1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
+						realm.rmm_feat_reg0) + 1U));
+
+	/* Instruct Plane0 to enter Plane1 on REC 0 */
+	host_realm_set_aux_plane_args(&realm, 1U, 0U);
+
+	/* Instruct Plane1 on Rec0 to execute REALM_DATA_ACCESS_CMD */
+	host_shared_data_set_realm_cmd(&realm, REALM_DATA_ACCESS_CMD, 1U, 0U);
+
+	/*
+	 * Argument for REALM_DATA_ACCESS_CMD on Plane 1: Try to do a data
+	 * access to the address @test_ipa.
+	 */
+	host_shared_data_set_host_val(&realm, 1U, 0U, HOST_ARG3_INDEX, test_ipa);
+
+	run = (struct rmi_rec_run *)realm.run[0U];
+
+	daccess_pass = host_enter_realm_execute(&realm,
+						REALM_PLANE_N_EXCEPTION_CMD,
+						RMI_EXIT_HOST_CALL, 0U);
+
+	if (!daccess_pass) {
+		ERROR("Couldn't enter to REC0\n");
+		goto destroy_realm;
+	}
+
+	/*
+	 * Data access from Plane N outside of the PAR causes an exception
+	 * taken to Plane N.
+	 *
+	 * Upon exception, Plane N will return back to Plane 0 passing esr
+	 * and far values, which in turn will be forwarded to the host for
+	 * further validation.
+	 */
+	esr = host_shared_data_get_realm_val(&realm, 1U, 0U, HOST_ARG2_INDEX);
+	far = host_shared_data_get_realm_val(&realm, 1U, 0U, HOST_ARG3_INDEX);
+
+	if (run->exit.exit_reason != RMI_EXIT_HOST_CALL) {
+		ERROR("Rec0 error exit=0x%lx HPFAR=0x%lx \
+				esr=0x%lx far=0x%lx\n",
+				run->exit.exit_reason,
+				run->exit.hpfar,
+				esr, far);
+		daccess_pass = false;
+		goto destroy_realm;
+	}
+
+	if ((EC_BITS(esr) != EC_DABORT_CUR_EL) || (far != test_ipa)) {
+		ERROR("Rec0, Plane 1: incorrect ESR=0x%lx FAR=0x%lx\n", esr, far);
+		daccess_pass = false;
+		goto destroy_realm;
+	}
+	INFO("Rec0 ESR=0x%lx\n", esr);
+
+	/*
+	 * Instruct Plane0 to enter Plane1 on REC 1.
+	 * We use REC 1 for convenience, as this avoids the need to
+	 * reboot REC 0, simplifying the test.
+	 */
+	host_realm_set_aux_plane_args(&realm, 1U, 1U);
+
+	/* Instruct Plane1 on Rec1 to execute REALM_INSTR_FETCH_CMD */
+	host_shared_data_set_realm_cmd(&realm, REALM_INSTR_FETCH_CMD, 1U, 1U);
+
+	/*
+	 * Argument for REALM_INSTR_FETCH_CMD on Plane 1: Address where to
+	 * attempt the instruction fetch.
+	 */
+	host_shared_data_set_host_val(&realm, 1U, 1U, HOST_ARG3_INDEX, test_ipa);
+
+	/*
+	 * Argument for REALM_PLANE_N_INST_FETCH_ABORT on Plane 0.
+	 *
+	 * An instruction fetch outside PAR from Plane N causes a Plane exit
+	 * due to instruction abort. We pass here the expected address at
+	 * which the attempted fetch took place so that Plane 0 can match it
+	 * against the address reported at run.exit.far.
+	 */
+	host_shared_data_set_host_val(&realm, 0U, 1U, HOST_ARG2_INDEX, test_ipa);
+
+	run = (struct rmi_rec_run *)realm.run[0U];
+
+	iaccess_pass = host_enter_realm_execute(&realm,
+						REALM_PLANE_N_INST_FETCH_ABORT,
+						RMI_EXIT_HOST_CALL, 1U);
+
+	if (!iaccess_pass) {
+		ERROR("Failed to cause instruction abort on Plane N\n");
+	}
+
+destroy_realm:
+
+	if (!host_destroy_realm(&realm) || !daccess_pass || !iaccess_pass) {
 		return TEST_RESULT_FAIL;
 	}
 	return host_cmp_result();

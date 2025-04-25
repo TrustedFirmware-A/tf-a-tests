@@ -230,6 +230,13 @@ static inline bool get_feat_wfxt_present(void)
 		ID_AA64ISAR2_WFXT_MASK) == ID_AA64ISAR2_WFXT_SUPPORTED);
 }
 
+static inline bool is_feat_rng_present(void)
+{
+	return (((read_id_aa64isar0_el1() >> ID_AA64ISAR0_RNDR_SHIFT) &
+			ID_AA64ISAR0_RNDR_MASK)
+			>= ID_AA64ISAR0_RNDR_SUPPORTED);
+}
+
 static inline bool is_feat_rng_trap_present(void)
 {
 	return (((read_id_aa64pfr1_el1() >> ID_AA64PFR1_EL1_RNDR_TRAP_SHIFT) &
@@ -271,6 +278,12 @@ static inline bool get_feat_pmuv3_supported(void)
 {
 	return (((read_id_aa64dfr0_el1() >> ID_AA64DFR0_PMUVER_SHIFT) &
 		ID_AA64DFR0_PMUVER_MASK) != ID_AA64DFR0_PMUVER_NOT_SUPPORTED);
+}
+
+static inline bool is_feat_pmuv3p9_present(void)
+{
+	return (((read_id_aa64dfr0_el1() >> ID_AA64DFR0_PMUVER_SHIFT) &
+		ID_AA64DFR0_PMUVER_MASK) >= ID_AA64DFR0_PMUVER_V3P9_SUPPORTED);
 }
 
 static inline bool get_feat_hpmn0_supported(void)
@@ -475,6 +488,12 @@ static inline bool is_feat_amuv1_present(void)
 static inline bool is_feat_amuv1p1_present(void)
 {
 	return amu_get_version() >= ID_AA64PFR0_AMU_V1P1;
+}
+
+static inline bool is_feat_twed_present(void)
+{
+	return EXTRACT(ID_AA64MMFR1_EL1_TWED, read_id_aa64mmfr1_el1())
+		>= ID_AA64MMFR1_EL1_TWED_SUPPORTED;
 }
 
 static inline bool is_feat_trbe_present(void)

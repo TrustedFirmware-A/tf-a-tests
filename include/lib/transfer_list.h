@@ -48,6 +48,7 @@ enum transfer_list_tag_id {
 	TL_TAG_HOB_BLOCK = 2,
 	TL_TAG_HOB_LIST = 3,
 	TL_TAG_ACPI_TABLE_AGGREGATE = 4,
+	TL_TAG_TPM_EVLOG = 5,
 };
 
 enum transfer_list_ops {
@@ -90,6 +91,10 @@ struct transfer_list_entry {
 	 * uint8_t	data[ROUNDUP(data_size, 8)];
 	 */
 };
+
+struct transfer_list_entry *
+transfer_list_next(struct transfer_list_header *tl,
+		   struct transfer_list_entry *last);
 
 bool transfer_list_verify_checksum(const struct transfer_list_header *tl);
 

@@ -6,8 +6,12 @@
 
 ifeq (${TRANSFER_LIST}, 1)
 
+include lib/event_log/event_log.mk
+
 TESTS_SOURCES	+=	$(addprefix tftf/tests/misc_tests/,		\
 	test_firmware_handoff.c						\
 )
+
+TESTS_SOURCES	+=	${EVENT_LOG_SOURCES}
 
 endif

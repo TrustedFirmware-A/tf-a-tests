@@ -55,6 +55,7 @@ FRAMEWORK_SOURCES	+=						\
 	lib/${ARCH}/misc_helpers.S					\
 	lib/delay/delay.c						\
 	lib/events/events.c						\
+	${EVENT_LOG_SOURCES}						\
 	lib/extensions/amu/${ARCH}/amu.c				\
 	lib/extensions/amu/${ARCH}/amu_helpers.S			\
 	lib/exceptions/irq.c						\

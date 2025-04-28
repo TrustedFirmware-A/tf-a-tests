@@ -8,13 +8,63 @@
 
 #include <transfer_list.h>
 
+/*******************************************************************************
+ * Search for an existing transfer entry with the specified tag id from a
+ * transfer list
+ * Return pointer to the found transfer entry or NULL on error
+ ******************************************************************************/
 struct transfer_list_entry *transfer_list_find(struct transfer_list_header *tl,
 					       uint16_t tag_id)
 {
-	struct transfer_list_entry *te = (void *)tl + tl->hdr_size;
+	struct transfer_list_entry *te = NULL;
 
-	while (te->tag_id != tag_id) {
-		te += round_up(te->hdr_size + te->data_size, tl->alignment);
+	do {
+		te = transfer_list_next(tl, te);
+	} while (te && (te->tag_id != tag_id));
+
+	return te;
+}
+
+/*******************************************************************************
+ * Enumerate the next transfer entry
+ * Return pointer to the next transfer entry or NULL on error
+ ******************************************************************************/
+struct transfer_list_entry *transfer_list_next(struct transfer_list_header *tl,
+					       struct transfer_list_entry *last)
+{
+	struct transfer_list_entry *te = NULL;
+	uintptr_t tl_ev = 0;
+	uintptr_t va = 0;
+	uintptr_t ev = 0;
+	size_t sz = 0;
+
+	if (!tl) {
+		return NULL;
+	}
+
+	tl_ev = (uintptr_t)tl + tl->size;
+
+	if (last) {
+		va = (uintptr_t)last;
+		/* check if the total size overflow */
+		if (add_overflow(last->hdr_size, last->data_size, &sz)) {
+			return NULL;
+		}
+		/* roundup to the next entry */
+		if (add_with_round_up_overflow(va, sz, TRANSFER_LIST_GRANULE,
+					       &va)) {
+			return NULL;
+		}
+	} else {
+		va = (uintptr_t)tl + tl->hdr_size;
+	}
+
+	te = (struct transfer_list_entry *)va;
+
+	if (va + sizeof(*te) > tl_ev || te->hdr_size < sizeof(*te) ||
+	    add_overflow(te->hdr_size, te->data_size, &sz) ||
+	    add_overflow(va, sz, &ev) || ev > tl_ev) {
+		return NULL;
 	}
 
 	return te;

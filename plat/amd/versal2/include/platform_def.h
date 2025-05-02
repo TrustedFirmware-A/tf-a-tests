@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2024-2025, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -12,7 +12,7 @@
 #define PLATFORM_LINKER_FORMAT			"elf64-littleaarch64"
 #define PLATFORM_LINKER_ARCH			aarch64
 
-#define TFTF_BASE				U(0x8000000)
+#define TFTF_BASE				U(0x40000000)
 
 #define CACHE_WRITEBACK_GRANULE			U(0x40)
 
@@ -77,13 +77,14 @@
 
 /* ARM PL011 UART */
 #define PL011_UART0_BASE			U(0xf1920000)
+#define PL011_UART1_BASE			U(0xf1930000)
 #define PL011_BAUDRATE				U(115200)
 #define PL011_UART_CLK_IN_HZ			U(100000000)
 
-#define PLAT_ARM_UART_BASE                      PL011_UART0_BASE
+#define PLAT_ARM_UART_BASE                      PL011_UART1_BASE
 #define PLAT_ARM_UART_SIZE                      U(0x1000)
 
-#define CRASH_CONSOLE_BASE			PL011_UART0_BASE
+#define CRASH_CONSOLE_BASE			PL011_UART1_BASE
 #define CRASH_CONSOLE_SIZE			PLAT_ARM_UART_SIZE
 
 /*******************************************************************************

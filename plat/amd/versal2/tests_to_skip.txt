@@ -33,6 +33,7 @@ FF-A Memory Sharing/Lend memory, clear flag set
 SIMD,SVE Registers context/Check that SIMD registers context is preserved
 FF-A Interrupt
 FF-A Notifications
+FF-A Group0 interrupts/FF-A Group0 normal world
 
 #TESTS: AMD-Xilinx tests
 AMD-Xilinx tests
@@ -47,10 +48,12 @@ PSCI CPU Suspend/CPU suspend to standby at level 1
 PSCI CPU Suspend/CPU suspend to standby at level 2
 PSCI CPU Suspend in OSI mode/CPU suspend to powerdown at level 0 in OSI mode
 PSCI CPU Suspend in OSI mode/CPU suspend to powerdown at level 1 in OSI mode
+CPU Hotplug/Invalid entry point
 PSCI System Suspend Validation/System suspend multiple times
 PSCI System Suspend Validation/system suspend from all cores
 PSCI System Suspend Validation/Validate suspend to RAM functionality
 PSCI System Suspend Validation/Validate PSCI System Suspend API
+PSCI System Suspend Validation/Suspend system with cores in suspend
 
 #PSCI
 PSCI Features

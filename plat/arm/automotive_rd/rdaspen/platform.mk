@@ -5,7 +5,8 @@
 #
 
 RDASPEN_PATH = plat/arm/automotive_rd/rdaspen
-PLAT_INCLUDES	:=	-I ${RDASPEN_PATH}/include
+PLAT_INCLUDES	:=	-I ${RDASPEN_PATH}/include 				\
+			-I ${RDASPEN_PATH}/ras/include
 
 
 PLAT_SOURCES	:=	drivers/arm/timer/private_timer.c			\

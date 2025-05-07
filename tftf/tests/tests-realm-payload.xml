@@ -160,6 +160,9 @@
 	  <!-- Test case related to FEAT_BRBE -->
 	  <testcase name="Test if BRBE realted registers are preserved "
 	  function="host_realm_test_brbe_save_restore" />
+	  <!-- Test cases related to FEAT_MEC -->
+	  <testcase name="Test Realms with different MECIDs" function="host_realm_test_mecid" />
+	  <testcase name="Test Realms with the same MECID" function="host_realm_test_mecid_fault" />
 	 <!-- Test case for EL3-RMM IDE KM Interface -->
 	  <testcase name="Test for Root Port Key management interface"
 	  function="host_realm_test_root_port_key_management" />

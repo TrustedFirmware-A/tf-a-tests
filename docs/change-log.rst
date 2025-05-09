@@ -7,6 +7,148 @@ Firmware-A version for simplicity. At any point in time, TF-A Tests version
 Tests are not guaranteed to be compatible. This also means that a version
 upgrade on the TF-A-Tests side might not necessarily introduce any new feature.
 
+Version 2.13
+------------
+
+New features
+^^^^^^^^^^^^
+
+More features and tests are introduced in this release to enhance validation and
+support in the following areas:
+
+- Realm Management Extension
+- FF-A and SPM Testing
+- Fuzzing Framework
+- System Functionality Tests (e.g., PointerAuth, RAS registers, SMCCC feature
+  availability, FPMR access)
+- Firmware Handoff
+- Platform Enhancements
+
+Realm Management Extension
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    - Added and updated tests for `FEAT_MPAM` on Realms.
+    - Added AUX RTT support for planes.
+    - Added MbedTLS as a submodule.
+    - Added PCIe helpers.
+    - Added support for planes shared buffer.
+    - Added support for RSI Planes ABI.
+    - Added support for s2poe/pie for planes.
+    - Added test for multi REC planes.
+    - Added test for RSI_PLANE_REG_READ/WRITE command.
+    - Added test for validating RTT calls.
+    - Added test case to enter all planes.
+    - Added tests for realm attestation.
+    - Allocated memory for multiple planes.
+    - Called `RMI_PDEV` ABIs from host realm management.
+    - Enhanced Realm memory exception tests for planes.
+    - Extended RIPAS tests for planes.
+    - Fixed `rmi_realm_params` structure not being zeroed upon realm creation.
+    - Fixed bug in `RMI_RTT_SET_S2AP` command helper.
+    - Fixed multi REC PMU tests.
+    - Fixed PMU save/restore registers.
+    - Fixed position of `RTT_S2AP_INDIRECT` bit in `RmiFeatureRegister0`.
+    - Fixed Realm PMU tests.
+    - Fixed Realm tests marking all memory as RAM.
+    - Fixed the LPA2 flag setting for BRBE test.
+    - Handled permission fault for planes.
+    - Made PCIe tests default for testing.
+    - Undelegated PDEV granules upon DA ABI failure so later tests do not fail.
+    - Validated NS EL1/EL2 context is preserved by RMM.
+
+TFTF
+^^^^
+
+- SPM/FF-A Testing:
+
+    - Added a second instance of the Cactus S-EL1 partition to validate HOB generation.
+    - Added support for PPI timer interrupts.
+    - Added v1.2 fields to RXTX header.
+    - Fixed indirect messaging tests by adding ME handling.
+    - Introduced an enum type for FF-A errors.
+    - Refilled TX buffer after undelegation.
+    - Skipped CPU cycle allocation for SP vCPU to reach message loop.
+    - Skipped enabling/disabling SRI physical interrupts in TFTF.
+    - Specify the secure partition package for an SP
+
+- New Tests
+
+    - Fuzzing Enhancements
+
+        - Added fuzzing for vendor EL3 SMCCC calls.
+        - Enabled capability for randomized fuzzing inputs.
+        - Fixed single-feature testing behaviour.
+        - Introduced support for all SDEI calls, and the FF-A interface.
+
+    - Functionality Tests
+
+        - Added RAS system registers access test.
+        - Added test for `SMCCC_ARCH_WORKAROUND_4`.
+        - Added test for ARMv8.3 PointerAuth instructions.
+        - Added test for FPMR register access.
+        - Added tests for `SMCCC_ARCH_FEATURE_AVAILABILITY`.
+        - Added two new features and fixed TRNDR handling in availability tests
+        - Check SCTLR2, THE and D128 sysregs read/writes work as expected.
+        - Denied prohibited ABIs during `CPU_OFF` PSCI message handling.
+        - Evaluated EL3–RMM IDE KM interface in TRP.
+        - Validated `psci_is_last_cpu_to_idle_at_pwrlvl`.
+        - Verified save/restore logic for `BRBCR_EL1`.
+
+    - Firmware Handoff
+
+        - Added AArch32 handoff tests.
+        - Imported Measured Boot drivers from TF-A to support event log testing.
+        - Added tests for validating an event log received from a Transfer List.
+
+- Platforms:
+
+    - Versal NET
+
+        - Provided fix to prevent continuous interrupts by properly cleaning up
+          TTC timer in cancel routine.
+
+    - Versal
+
+        - Added platform specific function to return custom entry address.
+        - Updated Versal-2 test skip list.
+        - Updated Versal-2 TFTF and UART base address.
+
+    - Neoverse-RD
+
+        - Added TFTF support for RD-V3 platform.
+        - Deprecated and remove NRD1, RD-N1-Edge, RD-V1, SGI-575 platform
+          variants.
+
+- Miscellaneous
+
+    - Added `bdf` macro.
+    - Added `xpaci` instruction to exception report.
+    - Added build flag to control support for CPU_OFF PSCI message.
+    - Added Cortex-X925 and updated Cortex-X4 to Errata ABI.
+    - Added HOB definitions to TFTF.
+    - Added MbedTLS support and updated version to v3.6.3.
+    - Added new interface to get an invalid entrypoint address.
+    - Added register definitions needed for SMCCC_ARCH_FEATURE_AVAILABILITY
+    - Added split workaround check in Errata ABI test.
+    - Added support for SMC calls with no ret vals in x8.
+    - Updated ARM GCC toolchain requirements to 14.2.Rel1.
+    - Updated Cortex-A710 errata list.
+
+Cactus (Secure-EL1 FF-A test partition)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - Added boot-time prints for Cactus-StMM HOB list.
+    - Added support for receiving PSCI messages through direct request framework message.
+    - Added mapping for boot information regions.
+    - Moved StMM to Cactus tertiary.
+
+Issues resolved since last release
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    - Applied fix to synchronize SME context before it is used.
+    - Fixed reporting of BRBE support with later revisions.
+    - Fixed compile error in `test_irq_spurious_gicv2.c`.
+
 Version 2.12
 ------------
 
@@ -1996,7 +2138,7 @@ All test images
 
 --------------
 
-*Copyright (c) 2018-2022, Arm Limited. All rights reserved.*
+*Copyright (c) 2018-2025, Arm Limited. All rights reserved.*
 
 .. _Arm Neoverse Reference Design N1 Edge (RD-N1-Edge): https://developer.arm.com/products/system-design/reference-design/neoverse-reference-design
 .. _Arm SGI-575: https://developer.arm.com/products/system-design/fixed-virtual-platforms

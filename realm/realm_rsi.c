@@ -68,7 +68,7 @@ u_register_t rsi_ipa_state_set(u_register_t base,
 			       rsi_ripas_type ripas,
 			       u_register_t flag,
 			       u_register_t *new_base,
-			       rsi_ripas_respose_type *response)
+			       rsi_response_type *response)
 {
 	smc_ret_values res = {};
 

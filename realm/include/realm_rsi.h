@@ -376,7 +376,7 @@ typedef enum {
 typedef enum {
 	RSI_ACCEPT = 0U,
 	RSI_REJECT
-} rsi_ripas_respose_type;
+} rsi_response_type;
 
 /*
  * RsiRipasChangeDestroyed:
@@ -666,13 +666,13 @@ u_register_t rsi_mem_set_perm_index(u_register_t base,
 	u_register_t *response,
 	u_register_t *new_cookie);
 
-/* Request RIPAS of a target IPA range to be changed to a specified value. */
+/* Request RIPAS of a target IPA range to be changed to a specified value */
 u_register_t rsi_ipa_state_set(u_register_t base,
 				u_register_t top,
 				rsi_ripas_type ripas,
 				u_register_t flag,
 				u_register_t *new_base,
-				rsi_ripas_respose_type *response);
+				rsi_response_type *response);
 
 /* Request RIPAS of a target IPA range */
 u_register_t rsi_ipa_state_get(u_register_t base,

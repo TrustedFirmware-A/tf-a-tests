@@ -70,7 +70,6 @@ FRAMEWORK_SOURCES	+=						\
 	lib/smc/${ARCH}/smc.c						\
 	lib/trng/trng.c							\
         lib/errata_abi/errata_abi.c                                     \
-	lib/transfer_list/transfer_list.c				\
 	lib/trusted_os/trusted_os.c					\
 	lib/utils/mp_printf.c						\
 	lib/utils/uuid.c						\

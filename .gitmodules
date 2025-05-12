@@ -1,3 +1,7 @@
 [submodule "ext/mbedtls"]
 	path = ext/mbedtls
 	url = https://github.com/Mbed-TLS/mbedtls.git
+[submodule "libtl"]
+	path = contrib/libtl
+	url = https://review.trustedfirmware.org/shared/transfer-list-library
+	shallow = true

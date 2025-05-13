@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2025, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+
+  <testsuite name="neg scenario test" description="Validate firmware update failure in a scenario where BL2 is corrupted, triggering a firmware update that fails due to a BL2U size corruption.">
+     <testcase name="FWU imageSize Failure" function="test_fwu_image_size" />
+  </testsuite>
+
+</testsuites>

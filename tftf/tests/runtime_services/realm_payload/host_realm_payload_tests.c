@@ -2724,7 +2724,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_empty(void)
 	/* RTT Fold */
 	ret = host_realm_fold_rtt(realm.rd, base, 3L);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_fold failed ret=0x%lx\n", ret);
+		ERROR("host_realm_fold_rtt failed ret=0x%lx\n", ret);
 		goto destroy_realm;
 	}
 
@@ -2732,7 +2732,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_empty(void)
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.walk_level != 2L || rtt.state != RMI_UNASSIGNED
 			|| (rtt.ripas != RMI_EMPTY)) {
-		ERROR("host_rmi_fold_rtt failed ret=0x%lx rtt.state=0x%lx"
+		ERROR("host_rmi_rtt_readentry failed ret=0x%lx rtt.state=0x%lx"
 				" rtt.walk_level=0x%lx rtt.out_addr=0x%llx\n",
 				ret, rtt.state, rtt.walk_level, rtt.out_addr);
 		goto destroy_realm;
@@ -2743,7 +2743,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_empty(void)
 	/* RTT Fold */
 	ret = host_realm_fold_rtt(realm.rd, base, 2L);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_fold failed ret=0x%lx\n", ret);
+		ERROR("host_realm_fold_rtt failed ret=0x%lx\n", ret);
 		goto destroy_realm;
 	}
 
@@ -2751,7 +2751,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_empty(void)
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.walk_level != 1L || rtt.state != RMI_UNASSIGNED
 			|| (rtt.ripas != RMI_EMPTY)) {
-		ERROR("host_rmi_fold_rtt failed ret=0x%lx rtt.state=0x%lx"
+		ERROR("host_rmi_rtt_readentry failed ret=0x%lx rtt.state=0x%lx"
 				" rtt.walk_level=0x%lx rtt.out_addr=0x%llx\n",
 				ret, rtt.state, rtt.walk_level, rtt.out_addr);
 		goto destroy_realm;
@@ -2762,7 +2762,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_empty(void)
 	/* RTT Fold */
 	ret = host_realm_fold_rtt(realm.rd, base, 1L);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_fold failed ret=0x%lx\n", ret);
+		ERROR("host_realm_fold_rtt failed ret=0x%lx\n", ret);
 		goto destroy_realm;
 	}
 
@@ -2770,7 +2770,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_empty(void)
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.walk_level != 0L || rtt.state != RMI_UNASSIGNED
 			|| (rtt.ripas != RMI_EMPTY)) {
-		ERROR("host_rmi_fold_rtt failed ret=0x%lx rtt.state=0x%lx"
+		ERROR("host_rmi_rtt_readentry failed ret=0x%lx rtt.state=0x%lx"
 				" rtt.walk_level=0x%lx rtt.out_addr=0x%llx\n",
 				ret, rtt.state, rtt.walk_level, rtt.out_addr);
 		goto destroy_realm;
@@ -2900,7 +2900,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_ram(void)
 	/* RTT Fold */
 	ret = host_realm_fold_rtt(realm.rd, base, 3L);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_fold failed ret=0x%lx\n", ret);
+		ERROR("host_realm_fold_rtt failed ret=0x%lx\n", ret);
 		goto destroy_realm;
 	}
 
@@ -2908,7 +2908,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_ram(void)
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.walk_level != 2L || rtt.state != RMI_UNASSIGNED
 			|| (rtt.ripas != RMI_RAM)) {
-		ERROR("host_rmi_fold_rtt failed ret=0x%lx rtt.state=0x%lx"
+		ERROR("host_rmi_rtt_readentry failed ret=0x%lx rtt.state=0x%lx"
 				" rtt.walk_level=0x%lx rtt.out_addr=0x%llx\n",
 				ret, rtt.state, rtt.walk_level, rtt.out_addr);
 		goto destroy_realm;
@@ -2919,7 +2919,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_ram(void)
 	/* RTT Fold */
 	ret = host_realm_fold_rtt(realm.rd, base, 2L);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_fold failed ret=0x%lx\n", ret);
+		ERROR("host_realm_fold_rtt failed ret=0x%lx\n", ret);
 		goto destroy_realm;
 	}
 
@@ -2927,7 +2927,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_ram(void)
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.walk_level != 1L || rtt.state != RMI_UNASSIGNED
 			|| (rtt.ripas != RMI_RAM)) {
-		ERROR("host_rmi_fold_rtt failed ret=0x%lx rtt.state=0x%lx"
+		ERROR("host_rmi_rtt_readentry failed ret=0x%lx rtt.state=0x%lx"
 				" rtt.walk_level=0x%lx rtt.out_addr=0x%llx\n",
 				ret, rtt.state, rtt.walk_level, rtt.out_addr);
 		goto destroy_realm;
@@ -2938,7 +2938,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_ram(void)
 	/* RTT Fold */
 	ret = host_realm_fold_rtt(realm.rd, base, 1L);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_fold failed ret=0x%lx\n", ret);
+		ERROR("host_realm_fold_rtt failed ret=0x%lx\n", ret);
 		goto destroy_realm;
 	}
 
@@ -2946,7 +2946,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_ram(void)
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.walk_level != 0L || rtt.state != RMI_UNASSIGNED
 			|| (rtt.ripas != RMI_RAM)) {
-		ERROR("host_rmi_fold_rtt failed ret=0x%lx rtt.state=0x%lx"
+		ERROR("host_rmi_rtt_readentry failed ret=0x%lx rtt.state=0x%lx"
 				" rtt.walk_level=0x%lx rtt.out_addr=0x%llx\n",
 				ret, rtt.state, rtt.walk_level, rtt.out_addr);
 		goto destroy_realm;
@@ -3066,14 +3066,14 @@ test_result_t host_test_rtt_fold_unfold_assigned_ns(void)
 	/* RTT Fold */
 	ret = host_realm_fold_rtt(realm.rd, ns_ipa, 2L);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_fold failed ret=0x%lx\n", ret);
+		ERROR("host_realm_fold_rtt failed ret=0x%lx\n", ret);
 		goto destroy_realm;
 	}
 
 	/* Walk should terminate at L1 */
 	ret = host_rmi_rtt_readentry(realm.rd, ns_ipa, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.walk_level != 1L || rtt.state != RMI_ASSIGNED) {
-		ERROR("host_rmi_fold_rtt failed ret=0x%lx rtt.state=0x%lx"
+		ERROR("host_rmi_rtt_readentry failed ret=0x%lx rtt.state=0x%lx"
 				" rtt.walk_level=0x%lx rtt.out_addr=0x%llx\n",
 				ret, rtt.state, rtt.walk_level, rtt.out_addr);
 		goto destroy_realm;
@@ -3160,7 +3160,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_empty(void)
 	/* RTT Fold */
 	ret = host_realm_fold_rtt(realm.rd, base, 3U);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_fold failed ret=0x%lx\n", ret);
+		ERROR("host_realm_fold_rtt failed ret=0x%lx\n", ret);
 		goto undelegate_destroy;
 	}
 
@@ -3168,7 +3168,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_empty(void)
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.walk_level != 2L || rtt.state != RMI_ASSIGNED ||
 			rtt.ripas != RMI_EMPTY) {
-		ERROR("host_rmi_fold_rtt failed ret=0x%lx rtt.state=0x%lx"
+		ERROR("host_rmi_rtt_readentry failed ret=0x%lx rtt.state=0x%lx"
 				" rtt.walk_level=0x%lx rtt.out_addr=0x%llx\n",
 				ret, rtt.state, rtt.walk_level, rtt.out_addr);
 		goto undelegate_destroy;
@@ -3276,7 +3276,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_ram(void)
 	/* RTT Fold */
 	ret = host_realm_fold_rtt(realm.rd, base, 3L);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_fold failed ret=0x%lx\n", ret);
+		ERROR("host_realm_fold_rtt failed ret=0x%lx\n", ret);
 		goto undelegate_destroy;
 	}
 
@@ -3284,7 +3284,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_ram(void)
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.walk_level != 2L || rtt.state != RMI_ASSIGNED ||
 			rtt.ripas != RMI_RAM) {
-		ERROR("host_rmi_fold_rtt failed ret=0x%lx rtt.state=0x%lx"
+		ERROR("host_rmi_rtt_readentry failed ret=0x%lx rtt.state=0x%lx"
 			" rtt.walk_level=0x%lx rtt.out_addr=0x%llx ripas=0x%lx\n",
 				ret, rtt.state, rtt.walk_level, rtt.out_addr, rtt.ripas);
 		goto undelegate_destroy;

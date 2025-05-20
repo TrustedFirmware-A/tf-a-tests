@@ -243,7 +243,7 @@ bool test_realm_reject_set_ripas(void)
 		} else {
 			realm_printf("rsi_ipa_state_get failed top=0x%lx",
 					"new_top=0x%lx ripas=%u ret=0x%lx\n",
-					ripas);
+					top, new_top, ripas, ret);
 			return false;
 		}
 	}

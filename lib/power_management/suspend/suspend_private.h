@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -25,6 +25,7 @@
 #define	SUSPEND_CTX_TTBR0_OFFSET	16
 #define	SUSPEND_CTX_VBAR_OFFSET		32
 #define	SUSPEND_CTX_HCR_OFFSET		48
+#define	SUSPEND_CTX_SMCR_OFFSET		56
 #define	SUSPEND_CTX_APIAKEY_OFFSET	64
 
 #define SUSPEND_CTX_SP_OFFSET (8 * NR_CTX_REGS)

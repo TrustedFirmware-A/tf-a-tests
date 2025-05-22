@@ -359,12 +359,12 @@ struct rsi_host_call {
 /*
  * FID: 0xC40001AE
  */
-#define SMC_RSI_PLANE_REG_READ		SMC64_RSI_FID(U(0x1E))
+#define SMC_RSI_PLANE_SYSREG_READ	SMC64_RSI_FID(U(0x1E))
 
 /*
  * FID: 0xC40001AF
  */
-#define SMC_RSI_PLANE_REG_WRITE		SMC64_RSI_FID(U(0x1F))
+#define SMC_RSI_PLANE_SYSREG_WRITE	SMC64_RSI_FID(U(0x1F))
 
 typedef enum {
 	RSI_EMPTY = 0U,
@@ -609,37 +609,11 @@ typedef struct {
 	SET_MEMBER(struct rsi_plane_exit exit, 0x800, 0x1000);/* 0x800 */
 } rsi_plane_run;
 
-/*
- * arg1 == plane index
- * arg2 == run pointer
- *
- * ret0 == status
- */
-#define RSI_PLANE_ENTER		SMC_RSI_FID(0x13U)
+u_register_t rsi_plane_sysreg_read(u_register_t plane_index, u_register_t register_encoding,
+		u_register_t *value_lo, u_register_t *value_hi);
 
-/*
- * arg1 == plane index
- * arg2 == register encoding
- *
- * ret0 == status
- * ret1 = register value
- */
-#define RSI_PLANE_REG_READ	SMC_RSI_FID(0x1EU)
-
-u_register_t rsi_plane_reg_read(u_register_t plane_index, u_register_t register_encoding,
-		u_register_t *value);
-
-u_register_t rsi_plane_reg_write(u_register_t plane_index, u_register_t register_encoding,
-		u_register_t value);
-
-/*
- * arg1 == plane index
- * arg2 == register encoding
- * arg3 == register value
- *
- * ret0 == status
- */
-#define RSI_PLANE_REG_WRITE	SMC_RSI_FID(0x1FU)
+u_register_t rsi_plane_sysreg_write(u_register_t plane_index, u_register_t register_encoding,
+		u_register_t value_lo, u_register_t value_hi);
 
 /*
  * Function to set overlay permission value for a specified

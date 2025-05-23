@@ -16,6 +16,18 @@ distribution. We have performed tests using Ubuntu 22.04 LTS (64-bit), but other
 distributions should also work fine, provided that the tools and libraries
 can be installed.
 
+Dependencies
+------------
+
+This section lists the dependencies for TF-A-Tests which are added as
+as a git submodule.
+
+======================== =====================
+        Name             Version
+======================== =====================
+Mbed TLS                 3.6.3
+======================== =====================
+
 Toolchain
 ---------
 

@@ -172,6 +172,15 @@
 	(((reg) & MASK(regfield)) >> (regfield##_SHIFT))
 
 /*
+ * Generates an unsigned long long (64-bit) value where the bits @_msb
+ * through @_lsb (inclusive) are set to one and all other bits are zero.  The
+ * parameters can hold values from 0 through 63 and if _msb == _lsb a single
+ * bit is set at that location.
+ */
+#define BIT_MASK_ULL(_msb, _lsb) \
+	((~ULL(0) >> (63UL - (_msb))) & (~ULL(0) << (_lsb)))
+
+/*
  * Defines member of structure and reserves space
  * for the next member with specified offset.
  */

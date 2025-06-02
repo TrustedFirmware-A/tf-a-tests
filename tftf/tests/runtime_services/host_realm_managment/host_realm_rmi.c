@@ -40,6 +40,21 @@ static unsigned short vmid;
 static spinlock_t pool_lock;
 static unsigned int pool_counter;
 
+/*
+ * Return an IPA mask @level
+ */
+static unsigned long tte_ipa_lvl_mask(long level, bool lpa2)
+{
+	unsigned long mask;
+	unsigned long levels = (unsigned long)(TT_PAGE_LEVEL - level);
+	unsigned long lsb = (levels * TTE_STRIDE) + GRANULE_SHIFT;
+	unsigned long oa_bits = (lpa2 == true) ? MAX_IPA_BITS_LPA2 : MAX_IPA_BITS;
+
+	mask = BIT_MASK_ULL((oa_bits - 1U), lsb);
+
+	return mask;
+}
+
 static smc_ret_values host_rmi_handler(smc_args *args, unsigned int in_reg)
 {
 	u_register_t regs[8];
@@ -325,18 +340,12 @@ u_register_t host_rmi_rtt_mapunprotected(u_register_t rd,
 
 u_register_t host_rmi_rtt_aux_map_unprotected(u_register_t rd,
 					      u_register_t map_addr,
-					      u_register_t tree_index,
-					      u_register_t *fail_index,
-					      u_register_t *level_pri,
-					      u_register_t *state)
+					      u_register_t tree_index)
 {
 	smc_ret_values rets;
 
 	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_AUX_MAP_UNPROTECTED,
 				rd, map_addr, tree_index}, 4U);
-	*fail_index = rets.ret1;
-	*level_pri = rets.ret2;
-	*state = rets.ret3;
 	return rets.ret0;
 }
 
@@ -391,15 +400,13 @@ u_register_t host_rmi_rtt_unmap_unprotected(u_register_t rd,
 u_register_t host_rmi_rtt_aux_unmap_unprotected(u_register_t rd,
 					  u_register_t map_addr,
 					  u_register_t tree_index,
-					  u_register_t *top,
-					  u_register_t *level)
+					  u_register_t *top)
 {
 	smc_ret_values rets;
 
 	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_AUX_UNMAP_UNPROTECTED,
 					rd, map_addr, tree_index}, 4U);
 	*top = rets.ret1;
-	*level = rets.ret2;
 	return rets.ret0;
 }
 
@@ -612,6 +619,7 @@ u_register_t host_realm_aux_unmap_protected_data(struct realm *realm,
 		}
 		map_addr += PAGE_SIZE;
 	}
+
 	return REALM_SUCCESS;
 }
 
@@ -887,6 +895,7 @@ static u_register_t host_realm_destroy_undelegate_range(struct realm *realm,
 					ipa, ret, tree_index);
 				}
 			}
+
 			/* Retry DATA_DESTROY */
 			continue;
 		}
@@ -911,6 +920,31 @@ static u_register_t host_realm_destroy_undelegate_range(struct realm *realm,
 		size -= PAGE_SIZE;
 	}
 	return REALM_SUCCESS;
+}
+
+
+static u_register_t host_realm_aux_unmap_unprotected(struct realm *realm,
+						     u_register_t unmap_addr)
+{
+	u_register_t ret = RMI_SUCCESS;
+	__unused u_register_t top;
+
+	for (unsigned int tree_index = 1U;
+	     tree_index <= realm->num_aux_planes; tree_index++) {
+		bool lpa2 = (realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_LPA2);
+		unsigned long unmap_ns_addr = unmap_addr &
+						tte_ipa_lvl_mask(realm->start_level, lpa2);
+
+		ret = host_rmi_rtt_aux_unmap_unprotected(realm->rd,
+							 unmap_ns_addr,
+							 tree_index, &top);
+
+		if (ret != RMI_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return ret;
 }
 
 static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
@@ -939,26 +973,17 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 		switch (rtt.state) {
 		case RMI_ASSIGNED:
 			if (host_ipa_is_ns(map_addr, realm->rmm_feat_reg0)) {
-
-				u_register_t level1;
-
 				/* Unmap from all Aux RTT */
 				if (!realm->rtt_s2ap_enc_indirect) {
-					for (unsigned int tree_index = 1U;
-						tree_index <= realm->num_aux_planes;
-						tree_index++) {
 
-						ret = host_rmi_rtt_aux_unmap_unprotected(
-								rd,
-								map_addr,
-								tree_index,
-								&top, &level1);
+					u_register_t ret =
+						host_realm_aux_unmap_unprotected(
+							realm, map_addr);
 
-						if (ret != RMI_SUCCESS) {
-							ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
+					if (ret != RMI_SUCCESS) {
+						ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
 							"host_rmi_rtt_unmap_unprotected",
 							map_addr, ret);
-						}
 					}
 				}
 
@@ -1398,47 +1423,31 @@ u_register_t host_realm_map_ns_shared(struct realm *realm,
 	/* AUX MAP NS buffer for all RTTs */
 	if (!realm->rtt_tree_single) {
 		for (unsigned int j = 0U; j < realm->num_aux_planes; j++) {
-			for (unsigned int i = 0U; i < ns_shared_mem_size / PAGE_SIZE; i++) {
-				u_register_t fail_index, level_pri, state;
-
+			bool lpa2 = (realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_LPA2);
+			unsigned long sl_map_size = tte_map_size(realm->start_level);
+			unsigned long map_ns_addr = realm->ipa_ns_buffer &
+						tte_ipa_lvl_mask(realm->start_level, lpa2);
+			do {
 				ret = host_rmi_rtt_aux_map_unprotected(realm->rd,
-						realm->ipa_ns_buffer + (i * PAGE_SIZE),
-						j + 1, &fail_index, &level_pri, &state);
+								       map_ns_addr, j + 1U);
 
-				if (ret == RMI_SUCCESS) {
-					continue;
-				} else if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT_AUX) {
-
-					/* Create Level and retry */
+				if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
 					int8_t ulevel = RMI_RETURN_INDEX(ret);
 					long level = (long)ulevel;
 
-					ret = host_realm_create_rtt_aux_levels(realm,
-							realm->ipa_ns_buffer +
-							(i * PAGE_SIZE),
-							level, 3, j + 1);
-
-					if (ret != RMI_SUCCESS) {
-						return REALM_ERROR;
-					}
-
-					ret = host_rmi_rtt_aux_map_unprotected(realm->rd,
-							realm->ipa_ns_buffer +
-							(i * PAGE_SIZE),
-							j + 1, &fail_index,
-							&level_pri, &state);
-
-					if (ret == RMI_SUCCESS) {
-						continue;
-					}
+					ERROR("%s() failed, walk_pri.level = %ld\n",
+					      "host_realm_map_unprotected", level);
+					return REALM_ERROR;
 				}
 
-				ERROR("%s() failed, par_base=0x%lx ret=0x%lx\n",
-						"host_realm_aux_map_unprotected",
-						(ns_shared_mem_adr), ret);
-				return REALM_ERROR;
+				if (ret != RMI_SUCCESS) {
+					ERROR("%s() failed\n", "host_realm_map_unprotected");
+					return REALM_ERROR;
+				}
 
-			}
+				map_ns_addr += sl_map_size;
+			} while (map_ns_addr < (realm->ipa_ns_buffer +
+						realm->ns_buffer_size));
 		}
 	}
 

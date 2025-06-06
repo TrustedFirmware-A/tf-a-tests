@@ -497,11 +497,15 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 
 	/* Allocate granule for PDEV and delegate */
 	h_pdev->pdev = page_alloc(PAGE_SIZE);
+	if (h_pdev->pdev == NULL) {
+		return -1;
+	}
+
 	memset(h_pdev->pdev, 0, GRANULE_SIZE);
 	ret = host_rmi_granule_delegate((u_register_t)h_pdev->pdev);
 	if (ret != RMI_SUCCESS) {
 		ERROR("PDEV delegate failed 0x%lx\n", ret);
-		return -1;
+		goto err_undelegate_pdev;
 	}
 
 	/*
@@ -524,49 +528,84 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 	/* Allocate aux granules for PDEV and delegate */
 	INFO("PDEV create requires %u aux pages\n", h_pdev->pdev_aux_num);
 	for (i = 0; i < h_pdev->pdev_aux_num; i++) {
-		h_pdev->pdev_aux[i] = page_alloc(PAGE_SIZE);
-		ret = host_rmi_granule_delegate((u_register_t)h_pdev->pdev_aux[i]);
+		void *pdev_aux = page_alloc(PAGE_SIZE);
+
+		if (pdev_aux == NULL) {
+			goto err_undelegate_pdev_aux;
+		}
+
+		ret = host_rmi_granule_delegate((u_register_t)pdev_aux);
 		if (ret != RMI_SUCCESS) {
 			ERROR("Aux granule delegate failed 0x%lx\n", ret);
-			return -1;
+			goto err_undelegate_pdev;
 		}
+
+		h_pdev->pdev_aux[i] = pdev_aux;
 	}
 
 	/* Allocate dev_comm_data and send/recv buffer for Dev communication */
 	h_pdev->dev_comm_data = (struct rmi_dev_comm_data *)page_alloc(PAGE_SIZE);
+	if (h_pdev->dev_comm_data == NULL) {
+		goto err_undelegate_pdev_aux;
+	}
+
 	memset(h_pdev->dev_comm_data, 0, sizeof(struct rmi_dev_comm_data));
+
 	h_pdev->dev_comm_data->enter.req_addr = (unsigned long)
 		page_alloc(PAGE_SIZE);
+	if (h_pdev->dev_comm_data->enter.req_addr == 0UL) {
+		goto err_undelegate_pdev_aux;
+	}
+
 	h_pdev->dev_comm_data->enter.resp_addr = (unsigned long)
 		page_alloc(PAGE_SIZE);
+	if (h_pdev->dev_comm_data->enter.resp_addr == 0UL) {
+		goto err_undelegate_pdev_aux;
+	}
 
 	/* Allocate buffer to cache device certificate */
 	h_pdev->cert_slot_id = 0;
 	h_pdev->cert_chain = (uint8_t *)page_alloc(HOST_PDEV_CERT_LEN_MAX);
 	h_pdev->cert_chain_len = 0;
 	if (h_pdev->cert_chain == NULL) {
-		return -1;
+		goto err_undelegate_pdev_aux;
 	}
 
 	/* Allocate buffer to store extracted public key */
 	h_pdev->public_key = (void *)page_alloc(PAGE_SIZE);
 	if (h_pdev->public_key == NULL) {
-		return -1;
+		goto err_undelegate_pdev_aux;
 	}
 	h_pdev->public_key_len = PAGE_SIZE;
 
 	/* Allocate buffer to store public key metadata */
 	h_pdev->public_key_metadata = (void *)page_alloc(PAGE_SIZE);
 	if (h_pdev->public_key_metadata == NULL) {
-		return -1;
+		goto err_undelegate_pdev_aux;
 	}
+
 	h_pdev->public_key_metadata_len = PAGE_SIZE;
 
 	/* Set algorithm to use for device digests */
 	h_pdev->pdev_hash_algo = RMI_HASH_SHA_512;
 
 	return 0;
+
+err_undelegate_pdev_aux:
+	/* Undelegate all the delegated pages */
+	for (int i = 0; i < h_pdev->pdev_aux_num; i++) {
+		if (h_pdev->pdev_aux[i]) {
+			host_rmi_granule_undelegate((u_register_t)
+						    h_pdev->pdev_aux[i]);
+		}
+	}
+
+err_undelegate_pdev:
+	host_rmi_granule_undelegate((u_register_t)h_pdev->pdev);
+
+	return -1;
 }
+
 
 /*
  * Stop PDEV and ternimate secure session and call PDEV destroy
@@ -574,26 +613,26 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 int host_pdev_reclaim(struct host_pdev *h_pdev)
 {
 	u_register_t ret;
-	int rc;
+	int rc, result = 0;
 
 	/* Move the device to STOPPING state */
 	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_STOPPING);
 	if (rc != 0) {
 		ERROR("PDEV transition: to PDEV_STATE_STOPPING failed\n");
-		return rc;
+		result = -1;
 	}
 
 	/* Do pdev_communicate to terminate secure session */
 	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_STOPPED);
 	if (rc != 0) {
 		ERROR("PDEV transition: to PDEV_STATE_STOPPED failed\n");
-		return rc;
+		result = -1;
 	}
 
 	rc = host_pdev_destroy(h_pdev);
 	if (rc != 0) {
 		ERROR("PDEV transition: to STATE_NULL failed\n");
-		return rc;
+		result = -1;
 	}
 
 	/* Undelegate all aux granules */
@@ -601,7 +640,7 @@ int host_pdev_reclaim(struct host_pdev *h_pdev)
 		ret = host_rmi_granule_undelegate((u_register_t)h_pdev->pdev_aux[i]);
 		if (ret != RMI_SUCCESS) {
 			ERROR("Aux granule undelegate failed 0x%lx\n", ret);
-			return -1;
+			result = -1;
 		}
 	}
 
@@ -609,10 +648,10 @@ int host_pdev_reclaim(struct host_pdev *h_pdev)
 	ret = host_rmi_granule_undelegate((u_register_t)h_pdev->pdev);
 	if (ret != RMI_SUCCESS) {
 		ERROR("PDEV undelegate failed 0x%lx\n", ret);
-		return -1;
+		result = -1;
 	}
 
-	return 0;
+	return result;
 }
 
 int host_create_realm_with_feat_da(struct realm *realm)
@@ -661,6 +700,10 @@ static int host_vdev_setup(struct host_pdev *h_pdev, struct host_vdev *h_vdev)
 
 	/* Allocate granule for VDEV and delegate */
 	h_vdev->vdev_ptr = (void *)page_alloc(PAGE_SIZE);
+	if (h_vdev->vdev_ptr == NULL) {
+		return -1;
+	}
+
 	memset(h_vdev->vdev_ptr, 0, GRANULE_SIZE);
 	ret = host_rmi_granule_delegate((u_register_t)h_vdev->vdev_ptr);
 	if (ret != RMI_SUCCESS) {
@@ -670,27 +713,42 @@ static int host_vdev_setup(struct host_pdev *h_pdev, struct host_vdev *h_vdev)
 
 	/* Allocate dev_comm_data and send/recv buffer for Dev communication */
 	h_vdev->dev_comm_data = (struct rmi_dev_comm_data *)page_alloc(PAGE_SIZE);
+	if (h_vdev->dev_comm_data == NULL) {
+		goto err_undel_vdev;
+	}
 	memset(h_vdev->dev_comm_data, 0, sizeof(struct rmi_dev_comm_data));
 	h_vdev->dev_comm_data->enter.req_addr = (unsigned long)
 		page_alloc(PAGE_SIZE);
+	if (h_vdev->dev_comm_data->enter.req_addr == 0UL) {
+		goto err_undel_vdev;
+	}
+
 	h_vdev->dev_comm_data->enter.resp_addr = (unsigned long)
 		page_alloc(PAGE_SIZE);
+	if (h_vdev->dev_comm_data->enter.resp_addr == 0UL) {
+		goto err_undel_vdev;
+	}
 
 	/* Allocate buffer to cache device measurements */
 	h_vdev->meas = (uint8_t *)page_alloc(HOST_VDEV_MEAS_LEN_MAX);
-	h_vdev->meas_len = 0;
 	if (h_vdev->meas == NULL) {
-		return -1;
+		goto err_undel_vdev;
 	}
+
+	h_vdev->meas_len = 0;
 
 	/* Allocate buffer to cache device interface report */
 	h_vdev->ifc_report = (uint8_t *)page_alloc(HOST_VDEV_IFC_REPORT_LEN_MAX);
 	h_vdev->ifc_report_len = 0;
 	if (h_vdev->ifc_report == NULL) {
-		return -1;
+		goto err_undel_vdev;
 	}
 
 	return 0;
+
+err_undel_vdev:
+	host_rmi_granule_undelegate((u_register_t)h_vdev->vdev_ptr);
+	return -1;
 }
 
 int host_assign_vdev_to_realm(struct realm *realm,

@@ -44,7 +44,7 @@ test_result_t host_invoke_rmi_da_flow(void)
 	struct host_pdev *h_pdev;
 	struct host_vdev *h_vdev;
 	uint8_t public_key_algo;
-	int ret, rc;
+	int rc;
 	bool realm_rc;
 	struct realm realm;
 
@@ -53,18 +53,10 @@ test_result_t host_invoke_rmi_da_flow(void)
 
 	INFO("DA on bdf: 0x%x, doe_cap_base: 0x%x\n", pdev_bdf, doe_cap_base);
 
-	/* Initialize Host NS heap memory */
-	ret = page_pool_init((u_register_t)PAGE_POOL_BASE,
-				(u_register_t)PAGE_POOL_MAX_SIZE);
-	if (ret != HEAP_INIT_SUCCESS) {
-		ERROR("Failed to init heap pool %d\n", ret);
-		return TEST_RESULT_FAIL;
-	}
-
 	/*
-	 * 2. Create a Realm with DA feature enabled
+	 * Create a Realm with DA feature enabled
 	 *
-	 * todo: creating this after host_pdev_setup cases Realm create to
+	 * todo: creating this after host_pdev_setup causes Realm create to
 	 * fail.
 	 */
 	rc = host_create_realm_with_feat_da(&realm);
@@ -81,8 +73,9 @@ test_result_t host_invoke_rmi_da_flow(void)
 	/* Allocate granules. Skip DA ABIs if host_pdev_setup fails */
 	rc = host_pdev_setup(h_pdev);
 	if (rc == -1) {
-		INFO("host_pdev_setup failed. skipping DA ABIs...\n");
-		return TEST_RESULT_SKIPPED;
+		INFO("host_pdev_setup failed.\n");
+		(void)host_destroy_realm(&realm);
+		return TEST_RESULT_FAIL;
 	}
 
 	/* todo: move to tdi_pdev_setup */
@@ -93,14 +86,14 @@ test_result_t host_invoke_rmi_da_flow(void)
 	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_NEW);
 	if (rc != 0) {
 		ERROR("PDEV transition: NULL -> STATE_NEW failed\n");
-		return TEST_RESULT_FAIL;
+		goto err_pdev_reclaim;
 	}
 
 	/* Call rmi_pdev_communicate to transition PDEV to NEEDS_KEY */
 	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_NEEDS_KEY);
 	if (rc != 0) {
 		ERROR("PDEV transition: PDEV_NEW -> PDEV_NEEDS_KEY failed\n");
-		return TEST_RESULT_FAIL;
+		goto err_pdev_reclaim;
 	}
 
 	/* Get public key. Verifying cert_chain not done by host but by Realm? */
@@ -113,7 +106,7 @@ test_result_t host_invoke_rmi_da_flow(void)
 						 &public_key_algo);
 	if (rc != 0) {
 		ERROR("Get public key failed\n");
-		return TEST_RESULT_FAIL;
+		goto err_pdev_reclaim;
 	}
 
 	if (public_key_algo == PUBLIC_KEY_ALGO_ECDSA_ECC_NIST_P256) {
@@ -130,14 +123,14 @@ test_result_t host_invoke_rmi_da_flow(void)
 	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_HAS_KEY);
 	if (rc != 0) {
 		INFO("PDEV transition: PDEV_NEEDS_KEY -> PDEV_HAS_KEY failed\n");
-		return TEST_RESULT_FAIL;
+		goto err_pdev_reclaim;
 	}
 
 	/* Call rmi_pdev_comminucate to transition PDEV to READY state */
 	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_READY);
 	if (rc != 0) {
 		INFO("PDEV transition: PDEV_HAS_KEY -> PDEV_READY failed\n");
-		return TEST_RESULT_FAIL;
+		goto err_pdev_reclaim;
 	}
 
 
@@ -147,7 +140,7 @@ test_result_t host_invoke_rmi_da_flow(void)
 	rc = host_assign_vdev_to_realm(&realm, h_pdev, h_vdev);
 	if (rc != 0) {
 		INFO("VDEV assign to realm failed\n");
-		return TEST_RESULT_FAIL;
+		goto err_pdev_reclaim;
 	}
 
 	/*
@@ -157,7 +150,7 @@ test_result_t host_invoke_rmi_da_flow(void)
 					    RMI_EXIT_HOST_CALL, 0U);
 	if (!realm_rc) {
 		INFO("Realm DA_RSI_CALLS failed\n");
-		return TEST_RESULT_FAIL;
+		goto err_pdev_reclaim;
 	}
 
 	/*
@@ -166,7 +159,7 @@ test_result_t host_invoke_rmi_da_flow(void)
 	rc = host_unassign_vdev_from_realm(&realm, h_pdev, h_vdev);
 	if (rc != 0) {
 		INFO("VDEV unassign to realm failed\n");
-		return TEST_RESULT_FAIL;
+		goto err_pdev_reclaim;
 	}
 
 	/*
@@ -174,6 +167,7 @@ test_result_t host_invoke_rmi_da_flow(void)
 	 */
 	if (!host_destroy_realm(&realm)) {
 		INFO("Realm destroy failed\n");
+		(void)host_pdev_reclaim(h_pdev);
 		return TEST_RESULT_FAIL;
 	}
 
@@ -187,6 +181,11 @@ test_result_t host_invoke_rmi_da_flow(void)
 	}
 
 	return TEST_RESULT_SUCCESS;
+
+err_pdev_reclaim:
+	(void)host_destroy_realm(&realm);
+	(void)host_pdev_reclaim(h_pdev);
+	return TEST_RESULT_FAIL;
 }
 
 /*

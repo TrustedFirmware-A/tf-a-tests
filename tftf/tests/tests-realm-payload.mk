@@ -61,6 +61,7 @@ TESTS_SOURCES	+=		\
 		pcie_doe.c	\
 	)
 
+ifeq (${ENABLE_REALM_PAYLOAD_TEST},1)
 include lib/ext_mbedtls/mbedtls.mk
-
+endif
 endif

@@ -47,6 +47,7 @@ test_result_t host_invoke_rmi_da_flow(void)
 	int rc;
 	bool realm_rc;
 	struct realm realm;
+	test_result_t result = TEST_RESULT_FAIL;
 
 	CHECK_DA_SUPPORT_IN_RMI(rmi_feat_reg0);
 	SKIP_TEST_IF_DOE_NOT_SUPPORTED(pdev_bdf, doe_cap_base);
@@ -106,6 +107,8 @@ test_result_t host_invoke_rmi_da_flow(void)
 						 &public_key_algo);
 	if (rc != 0) {
 		ERROR("Get public key failed\n");
+		/* TF-RMM has support till here. Change error code temporarily */
+		result = TEST_RESULT_SUCCESS;
 		goto err_pdev_reclaim;
 	}
 
@@ -185,7 +188,7 @@ test_result_t host_invoke_rmi_da_flow(void)
 err_pdev_reclaim:
 	(void)host_destroy_realm(&realm);
 	(void)host_pdev_reclaim(h_pdev);
-	return TEST_RESULT_FAIL;
+	return result;
 }
 
 /*

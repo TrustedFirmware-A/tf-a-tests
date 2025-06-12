@@ -91,6 +91,8 @@
 	  function="host_test_feat_doublefault2" />
 	  <testcase name="Realm Plane N accessing outside PAR"
 	  function="host_test_realm_pn_access_outside_par" />
+	  <testcase name="Realm FEAT_TCR2"
+	  function="host_realm_feat_tcr2" />
 	  <!-- Test case related to SVE support and SIMD state -->
 	  <testcase name="Check RMI reports proper SVE VL"
 	  function="host_check_rmi_reports_proper_sve_vl" />

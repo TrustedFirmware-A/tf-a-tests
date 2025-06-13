@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -23,6 +23,13 @@
 		for (var = 0; var <= PLAT_MAX_PWR_LEVEL; var++)			\
 			array_name[var] = PWR_STATE_INIT_INDEX;			\
 	} while (0)
+
+/*
+ * Represents whether a device memory location is within the system coherent
+ * memory space.
+ */
+#define DEV_MEM_NON_COHERENT			0
+#define DEV_MEM_COHERENT			1
 
 /*
  * The platform structure to represent the valid local power state
@@ -212,5 +219,11 @@ const struct pcie_info_table *plat_pcie_get_info_table(void);
  * be designed to return an alternative address.
  */
 uintptr_t plat_get_invalid_addr(void);
+
+/*
+ * Retrieve platform PCIe memory region
+ */
+int plat_get_dev_region(uint64_t *dev_base, size_t *dev_size,
+			uint32_t dev_type, uint32_t dev_idx);
 
 #endif /* __PLATFORM_H__ */

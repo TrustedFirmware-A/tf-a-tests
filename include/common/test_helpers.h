@@ -391,7 +391,7 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 	do {									\
 		u_register_t retrmm = 0U;					\
 										\
-		if (!get_armv9_2_feat_rme_support()) {				\
+		if (get_armv9_2_feat_rme_support() == 0U) {			\
 			tftf_testcase_printf("FEAT_RME not supported\n");	\
 			return TEST_RESULT_SKIPPED;				\
 		}								\

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -26,6 +26,7 @@
 #pragma weak plat_get_prot_regions
 #pragma weak plat_pcie_get_info_table
 #pragma weak plat_get_invalid_addr
+#pragma weak plat_get_dev_region
 
 #if IMAGE_TFTF
 
@@ -159,4 +160,10 @@ const struct pcie_info_table *plat_pcie_get_info_table(void)
 uintptr_t plat_get_invalid_addr(void)
 {
 	return (uintptr_t)0x0;
+}
+
+int plat_get_dev_region(uint64_t *dev_base, size_t *dev_size,
+			uint32_t dev_type, uint32_t dev_idx)
+{
+	return -1;
 }

@@ -483,8 +483,8 @@ static inline void write_pmevtypern_el0(int ctr_num, u_register_t val)
 }
 
 /* Armv8.5 FEAT_RNG Registers */
-DEFINE_SYSREG_READ_FUNC(rndr)
-DEFINE_SYSREG_READ_FUNC(rndrrs)
+DEFINE_RENAME_SYSREG_READ_FUNC(rndr, RNDR)
+DEFINE_RENAME_SYSREG_READ_FUNC(rndrrs, RNDRRS)
 
 /* GICv3 System Registers */
 DEFINE_RENAME_SYSREG_RW_FUNCS(icc_sre_el1, ICC_SRE_EL1)

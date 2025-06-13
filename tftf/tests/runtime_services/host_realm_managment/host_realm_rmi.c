@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -1980,4 +1980,29 @@ u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr)
 {
 	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_DESTROY, pdev_ptr},
 				2U).ret0;
+}
+
+u_register_t host_rmi_dev_mem_map(u_register_t rd,
+				  u_register_t map_addr,
+				  u_register_t level,
+				  u_register_t dev_mem_addr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_DEV_MEM_MAP, rd,
+					map_addr, level, dev_mem_addr}, 5U).ret0;
+}
+
+u_register_t host_rmi_dev_mem_unmap(u_register_t rd,
+				    u_register_t map_addr,
+				    u_register_t level,
+				    u_register_t *pa,
+				    u_register_t *top)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_DEV_MEM_UNMAP, rd, map_addr,
+				level, (u_register_t)&rets}, 5U);
+
+	*pa = rets.ret1;
+	*top = rets.ret2;
+	return rets.ret0;
 }

@@ -55,9 +55,12 @@
 #define PCIE_MEM_1_BASE			0x50000000
 #define PCIE_MEM_1_SIZE			SZ_256M
 
-/* PCIe memory region #2 256GB */
+/*
+ * PCIe memory region #2 size is 256GB, but only 3GB
+ * are currently supported by GPT library
+ */
 #define PCIE_MEM_2_BASE			0x4000000000
-#define PCIE_MEM_2_SIZE			(SZ_1G * 256)
+#define PCIE_MEM_2_SIZE			(SZ_1G * 3U)
 
 /*******************************************************************************
  * GIC-400 & interrupt handling related constants

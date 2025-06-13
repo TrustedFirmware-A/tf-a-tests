@@ -441,6 +441,42 @@ static void test_realm_feat_doublefault2(void)
 	(void)test_realm_data_access_cmd();
 }
 
+static bool test_realm_feat_tcr2(void)
+{
+	/*
+	 * TCR2_EL1.PIE (bit 1) and TCR2_EL1.E0POE (bit 2) only make
+	 * effect when using stage 1 translation, which is not used by
+	 * this test, hence it is safe to write to them.
+	 */
+	u_register_t tcr2_el1_val = (1UL << 1U);
+
+	if (is_feat_tcr2_supported()) {
+		for (unsigned int i = 0U; i < 2U; i++) {
+			write_tcr2_el1(tcr2_el1_val);
+			realm_printf("Testing TCR2_EL1 = 0x%lx\n", read_tcr2_el1());
+
+			/* Test if TCR2_EL1 is preserved after HOST_CALL */
+			if (read_tcr2_el1() != tcr2_el1_val) {
+				return false;
+			}
+
+			tcr2_el1_val <<= 1U;
+		}
+
+		return true;
+	}
+
+	/* Fall back in case FEAT_TCR2 is not implemented */
+	realm_reset_undef_abort_count();
+
+	/* Install exception handler to catch undefined abort */
+	register_custom_sync_exception_handler(realm_sync_exception_handler);
+	write_tcr2_el1(tcr2_el1_val);
+	unregister_custom_sync_exception_handler();
+
+	return (realm_get_undef_abort_count() != 0UL);
+}
+
 /*
  * This is the entry function for Realm payload, it first requests the shared buffer
  * IPA address from Host using HOST_CALL/RSI, it reads the command to be executed,
@@ -596,6 +632,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_PLANE_N_INST_FETCH_ABORT:
 			test_succeed = test_realm_plane_n_inst_fetch();
+			break;
+		case REALM_TEST_FEAT_TCR2:
+			test_succeed = test_realm_feat_tcr2();
 			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);

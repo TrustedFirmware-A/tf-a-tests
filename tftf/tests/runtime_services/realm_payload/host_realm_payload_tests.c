@@ -3619,3 +3619,80 @@ test_result_t host_realm_test_attestation_fault(void)
 
 	return TEST_RESULT_SUCCESS;
 }
+
+/*
+ * @Test_Aim@ Test to check if FEAT_TCR2
+ */
+test_result_t host_realm_feat_tcr2(void)
+{
+	bool ret1, ret2;
+	struct realm realm;
+	u_register_t feature_flag0 = 0UL;
+	long sl = RTT_MIN_LEVEL;
+	u_register_t rec_flag[MAX_REC_COUNT], tcr2_el1_val;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (is_feat_52b_on_4k_2_supported()) {
+		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	/*
+	 * If FEAT_TCR2 is implemented, the test will write on bits
+	 * TCR2_EL1.PIE and TCR2_EL1.E0POE, so we also need FEAT_S1POE and
+	 * FEAT_S1PIE to be implemented
+	 */
+	if (is_feat_tcr2_supported() &&
+		!(is_feat_s1pie_present() && is_feat_s1poe_present())) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/* Enable 2 RECs to run the test */
+	for (unsigned int i = 0U; i < 2; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
+	}
+
+	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
+			feature_flag0, 0U, sl, rec_flag, 2, 0U)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if (is_feat_tcr2_supported()) {
+		/*
+		 * Initialize TCR_EL2 with a starting value.
+		 * TCR2_EL1.PIE (bit 1) and TCR2_EL1.E0POE (bit 2) settings are only
+		 * used for stage 1 translations, which are not used by this test, hence
+		 * it is safe to set those bits here.
+		 */
+		tcr2_el1_val = ((1UL << 1U) | (1UL << 2U));
+		write_tcr2_el1(tcr2_el1_val);
+	}
+
+	for (unsigned int i = 0; i < 2; i++) {
+		ret1 = host_enter_realm_execute(&realm, REALM_TEST_FEAT_TCR2,
+				RMI_EXIT_HOST_CALL, i);
+		if (!ret1) {
+			break;
+		}
+	}
+
+	ret2 = host_destroy_realm(&realm);
+
+	if (is_feat_tcr2_supported()) {
+		if (read_tcr2_el1() != tcr2_el1_val) {
+			ERROR("Host TCR2_EL1 not preserved\n");
+			return TEST_RESULT_FAIL;
+		}
+
+		write_tcr2_el1(0UL);
+	}
+
+	if (!ret1 || !ret2) {
+		ERROR("%s(): enter=%d destroy=%d\n",
+		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}

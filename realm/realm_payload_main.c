@@ -336,6 +336,29 @@ static bool test_realm_data_access_cmd(void)
 	return false;
 }
 
+static bool test_realm_plane_n_inst_fetch(void)
+{
+	u_register_t esr, far, test_ipa;
+
+	bool ret = test_realm_enter_plane_n();
+
+	if (!ret) {
+		ERROR("Failed to enter Plane N\n");
+		return false;
+	}
+
+	esr = run.exit.esr;
+	far = run.exit.far;
+	test_ipa = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
+
+	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) || (far != test_ipa)) {
+		ERROR("Plane N: incorrect ESR=0x%lx FAR=0x%lx\n", esr, far);
+		return false;
+	}
+
+	return true;
+}
+
 static bool realm_exception_handler(void)
 {
 	u_register_t base, far, esr, elr;
@@ -348,11 +371,24 @@ static bool realm_exception_handler(void)
 	if (far == base) {
 		/* Return ESR to Host */
 		realm_shared_data_set_my_realm_val(HOST_ARG2_INDEX, esr);
-		rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
+		if (realm_is_plane0()) {
+			rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
+		} else {
+			realm_shared_data_set_my_realm_val(HOST_ARG3_INDEX, far);
+			psi_exit_to_plane0(PSI_CALL_EXIT_SUCCESS_CMD,
+					0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL);
+		}
 	}
+
 	realm_printf("Realm Abort fail incorrect FAR=0x%lx ESR=0x%lx ELR=0x%lx\n",
 			far, esr, elr);
-	rsi_exit_to_host(HOST_CALL_EXIT_FAILED_CMD);
+
+	if (realm_is_plane0()) {
+		rsi_exit_to_host(HOST_CALL_EXIT_FAILED_CMD);
+	} else {
+		psi_exit_to_plane0(PSI_CALL_EXIT_FAILED_CMD,
+				0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL);
+	}
 
 	/* Should not return */
 	return false;
@@ -557,6 +593,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_WRITE_BRBCR_EL1:
 			test_succeed = test_realm_write_brbcr_el1_reg();
+			break;
+		case REALM_PLANE_N_INST_FETCH_ABORT:
+			test_succeed = test_realm_plane_n_inst_fetch();
 			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);

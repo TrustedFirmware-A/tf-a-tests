@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include <common_def.h>
 #ifdef MBEDTLS_CONFIG_FILE
 #include <mbedtls/asn1.h>
 #include <mbedtls/bignum.h>

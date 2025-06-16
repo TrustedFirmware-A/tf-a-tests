@@ -64,7 +64,7 @@ static u_register_t realm_exit_to_host_as_plane_n(enum host_call_cmd exit_code,
 	host_cal.imm = exit_code;
 	host_cal.gprs[0] = plane_num;
 	host_cal.gprs[1] = read_mpidr_el1();
-	res = tftf_smc(&(smc_args) {RSI_HOST_CALL, (u_register_t)&host_cal,
+	res = tftf_smc(&(smc_args) {SMC_RSI_HOST_CALL, (u_register_t)&host_cal,
 		0UL, 0UL, 0UL, 0UL, 0UL, 0UL});
 	return res.ret0;
 }

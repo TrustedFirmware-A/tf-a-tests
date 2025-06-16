@@ -33,6 +33,6 @@ bool test_realm_attestation(void);
 bool test_realm_attestation_fault(void);
 bool test_realm_mpam_undef_abort(void);
 bool test_realm_write_brbcr_el1_reg(void);
+bool test_realm_da_rsi_calls(void);
 
 #endif /* REALM_TESTS_H */
-

@@ -180,7 +180,7 @@ static bool realm_get_rsi_version(void)
 bool test_realm_set_ripas(void)
 {
 	u_register_t ret, base, new_base, top, new_top;
-	rsi_ripas_respose_type response;
+	rsi_response_type response;
 	rsi_ripas_type ripas;
 
 	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
@@ -222,7 +222,7 @@ bool test_realm_set_ripas(void)
 bool test_realm_reject_set_ripas(void)
 {
 	u_register_t ret, base, top, new_base, new_top;
-	rsi_ripas_respose_type response;
+	rsi_response_type response;
 	rsi_ripas_type ripas;
 
 	base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
@@ -629,6 +629,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_WRITE_BRBCR_EL1:
 			test_succeed = test_realm_write_brbcr_el1_reg();
+			break;
+		case REALM_DA_RSI_CALLS:
+			test_succeed = test_realm_da_rsi_calls();
 			break;
 		case REALM_PLANE_N_INST_FETCH_ABORT:
 			test_succeed = test_realm_plane_n_inst_fetch();

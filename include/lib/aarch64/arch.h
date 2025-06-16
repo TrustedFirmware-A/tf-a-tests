@@ -148,6 +148,20 @@
 #define ICC_PPI_PRIORITYR14	S3_0_C12_C15_6
 #define ICC_PPI_PRIORITYR15	S3_0_C12_C15_7
 
+#define ICC_CR0_EL1_EN_BIT			BIT(0)
+#define ICC_ICSR_EL1_F_BIT			BIT(0)
+#define ICC_ICSR_EL1_PENDING_BIT		BIT(2)
+#define ICC_PPI_PRIORITYR_FIELD_NUM		8UL
+#define ICC_PPI_PRIORITYR_FIELD_MASK		GENMASK(7, 0)
+#define ICC_PPI_ENABLER_FIELD_NUM		64UL
+#define ICC_PPI_XPENDR_FIELD_NUM		64UL
+
+#define GICCDAFF_IAFFID_SHIFT			32UL
+#define GICCDPRI_PRIORITY_SHIFT			35UL
+#define GICCDPRI_PRIORITY_WIDTH			5UL
+#define GICCDPEND_PENDING_BIT			BIT(32)
+#define GICRCDIA_VALID_BIT			BIT(32)
+
 /*******************************************************************************
  * Definitions for EL2 system registers.
  ******************************************************************************/
@@ -605,6 +619,11 @@
 #define ID_AA64PFR2_EL1_FPMR_MASK		ULL(0xf)
 #define ID_AA64PFR2_EL1_FPMR_WIDTH		U(4)
 #define ID_AA64PFR2_EL1_FPMR_SUPPORTED		ULL(0x1)
+
+#define ID_AA64PFR2_EL1_GCIE_SHIFT		U(12)
+#define ID_AA64PFR2_EL1_GCIE_MASK		ULL(0xf)
+#define ID_AA64PFR2_EL1_GCIE_WIDTH		U(4)
+#define ID_AA64PFR2_EL1_GCIE_SUPPORTED		ULL(0x1)
 
 /* ID_PFR1_EL1 definitions */
 #define ID_PFR1_VIRTEXT_SHIFT	U(12)

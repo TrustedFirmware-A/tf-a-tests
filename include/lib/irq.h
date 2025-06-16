@@ -16,6 +16,7 @@
  * timer fires off
  */
 #define IRQ_WAKE_SGI		IRQ_NS_SGI_7
+#define IRQ_NUM_SGIS		(IRQ_NS_SGI_7 + 1)
 
 #ifndef __ASSEMBLY__
 

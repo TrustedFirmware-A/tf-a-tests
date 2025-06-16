@@ -71,4 +71,10 @@ static inline bool is_feat_gic_supported(void)
 	return EXTRACT(ID_PFR1_GIC, read_id_pfr1()) >= 1;
 }
 
+static inline bool is_feat_gcie_supported(void)
+{
+	/* v9 only, we can't have AArch32 in EL2 */
+	return 0;
+}
+
 #endif /* ARCH_FEATURES_H */

@@ -564,6 +564,8 @@ void __dead2 tftf_cold_boot_main(void)
 	pauth_init_enable();
 #endif /* ENABLE_PAUTH */
 
+	arm_gic_probe();
+
 	tftf_platform_setup();
 	tftf_init_topology();
 

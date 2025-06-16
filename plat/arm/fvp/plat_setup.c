@@ -52,5 +52,9 @@ const mmap_region_t *tftf_platform_get_mmap(void)
 
 void plat_arm_gic_init(void)
 {
-	arm_gic_init(GICC_BASE, GICD_BASE, GICR_BASE);
+	if (arm_gic_get_version() != 5) {
+		arm_gic_init(GICC_BASE, GICD_BASE, GICR_BASE);
+	} else {
+		arm_gic_init(0, IRS_BASE, 0);
+	}
 }

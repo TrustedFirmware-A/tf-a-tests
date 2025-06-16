@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -36,6 +36,9 @@
 #define GIC_HIGHEST_NS_PRIORITY	0
 #define GIC_LOWEST_NS_PRIORITY	254 /* 255 would disable an interrupt */
 #define GIC_SPURIOUS_INTERRUPT	1023
+
+/* return the GIC version detected */
+int arm_gic_get_version(void);
 
 /******************************************************************************
  * Setup the global GIC interface. In case of GICv2, it would be the GIC
@@ -119,6 +122,11 @@ unsigned int arm_gic_is_intr_pending(unsigned int num);
  * Clear the pending status of the interrupt with ID `num` at the GIC.
  *****************************************************************************/
 void arm_gic_intr_clear(unsigned int num);
+
+/******************************************************************************
+ * Discover the GIC version in use.
+ *****************************************************************************/
+void arm_gic_probe(void);
 
 /******************************************************************************
  * Initialize the GIC Driver. This function will detect the GIC Architecture

@@ -5,6 +5,7 @@
  */
 
 #include <arch.h>
+#include <arch_features.h>
 #include <arch_helpers.h>
 #include <assert.h>
 #include <debug.h>
@@ -477,12 +478,8 @@ void gicv3_setup_distif(void)
 	assert(gicd_base_addr);
 
 	/* Check for system register support */
-#ifdef __aarch64__
-	assert(read_id_aa64pfr0_el1() &
-			(ID_AA64PFR0_GIC_MASK << ID_AA64PFR0_GIC_SHIFT));
-#else
-	assert(read_id_pfr1() & (ID_PFR1_GIC_MASK << ID_PFR1_GIC_SHIFT));
-#endif
+
+	assert(is_feat_gic_supported());
 
 	/* Assert that system register access is enabled */
 	assert(is_sre_enabled());

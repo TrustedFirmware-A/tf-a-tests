@@ -595,4 +595,10 @@ static inline bool is_feat_mec_supported(void)
 	return EXTRACT(ID_AA64MMFR3_EL1_MEC, read_id_aa64mmfr3_el1())
 		== ID_AA64MMFR3_EL1_MEC_SUPPORTED;
 }
+
+static inline bool is_feat_gic_supported(void)
+{
+	return EXTRACT(ID_AA64PFR0_GIC, read_id_aa64pfr0_el1())
+			>= ID_AA64PFR0_GICV3_GICV4_SUPPORTED;
+}
 #endif /* ARCH_FEATURES_H */

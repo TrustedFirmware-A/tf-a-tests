@@ -20,11 +20,11 @@
 
 static test_result_t host_multi_cpu_payload_dev_del_undel(void);
 
-/* Test 2MB of PCIe memory region 2 */
-#define PCIE_MEM_2_TEST_SIZE	SZ_2M
+/* Test 2MB of PCIe memory region */
+#define PCIE_MEM_TEST_SIZE	SZ_2M
 
 /* Number of dev granules to test */
-#define NUM_DEV_GRANULES	((PCIE_MEM_2_TEST_SIZE / GRANULE_SIZE) / \
+#define NUM_DEV_GRANULES	((PCIE_MEM_TEST_SIZE / GRANULE_SIZE) / \
 					PLATFORM_CORE_COUNT)
 
 /* Buffer to delegate and undelegate */
@@ -43,22 +43,27 @@ static char bufferstate[NUM_DEV_GRANULES * PLATFORM_CORE_COUNT];
  * attempting to perform a delegation on the same dev granule
  * twice and then testing a misaligned address.
  */
-static test_result_t host_init_buffer_dev_del(void)
+test_result_t host_init_buffer_dev_del(unsigned int num_reg)
 {
-	__unused size_t dev_size;
+	size_t dev_size;
 
-	host_rmi_init_cmp_result();
+	/* Retrieve platform PCIe memory region */
+	int res = plat_get_dev_region((uint64_t *)&bufferdelegate, &dev_size,
+					DEV_MEM_NON_COHERENT, num_reg);
 
-	/* Retrieve platform PCIe memory region 2 */
-	if (plat_get_dev_region((uint64_t *)&bufferdelegate, &dev_size,
-				DEV_MEM_NON_COHERENT, 1U) != 0) {
-		tftf_testcase_printf("Cannot retrieve PCIe memory region 2\n");
+	if ((res != 0) || (dev_size < PCIE_MEM_TEST_SIZE)) {
 		return TEST_RESULT_SKIPPED;
 	}
 
-	assert(dev_size >= PCIE_MEM_2_TEST_SIZE);
+	tftf_testcase_printf("Testing PCIe memory region %u 0x%lx-0x%lx\n",
+				num_reg, (uintptr_t)bufferdelegate,
+				(uintptr_t)bufferdelegate + PCIE_MEM_TEST_SIZE - 1UL);
 
-	for (uint32_t i = 0; i < (NUM_DEV_GRANULES * PLATFORM_CORE_COUNT) ; i++) {
+	/* Seed the random number generator */
+	assert(is_feat_rng_present());
+	srand((unsigned int)read_rndr());
+
+	for (unsigned int i = 0; i < (NUM_DEV_GRANULES * PLATFORM_CORE_COUNT) ; i++) {
 		if ((rand() & 1) == 0) {
 			u_register_t retrmm = host_rmi_granule_delegate(
 					(u_register_t)&bufferdelegate[i * GRANULE_SIZE]);
@@ -74,44 +79,61 @@ static test_result_t host_init_buffer_dev_del(void)
 		}
 	}
 
-	return host_cmp_result();
+	return TEST_RESULT_SUCCESS;
 }
 
 /*
- * Delegate and Undelegate Non-Secure Dev Granule
+ * Delegate and Undelegate Non-Secure Device Granules
  */
 test_result_t host_dev_mem_delegate_undelegate(void)
 {
-	__unused size_t dev_size;
-	u_register_t retrmm, rmi_feat_reg0;
+	u_register_t rmi_feat_reg0;
+	unsigned int num_reg = 0U;
 
 	CHECK_DA_SUPPORT_IN_RMI(rmi_feat_reg0);
 
 	host_rmi_init_cmp_result();
 
-	/* Retrieve platform PCIe memory region 2 */
-	if (plat_get_dev_region((uint64_t *)&bufferdelegate, &dev_size,
-				DEV_MEM_NON_COHERENT, 1U) != 0) {
-		tftf_testcase_printf("Cannot retrieve PCIe memory region 2\n");
+	while (true) {
+		size_t dev_size;
+		u_register_t retrmm;
+
+		/* Retrieve platform PCIe memory region */
+		int res = plat_get_dev_region((uint64_t *)&bufferdelegate,
+						&dev_size, DEV_MEM_NON_COHERENT,
+						num_reg);
+
+		if ((res != 0) || (dev_size < PCIE_MEM_TEST_SIZE)) {
+			break;
+		}
+
+		tftf_testcase_printf("Testing PCIe memory region %u 0x%lx-0x%lx\n",
+					num_reg, (uintptr_t)bufferdelegate,
+					(uintptr_t)bufferdelegate + PCIE_MEM_TEST_SIZE - 1UL);
+
+		retrmm = host_rmi_granule_delegate((u_register_t)bufferdelegate);
+		if (retrmm != RMI_SUCCESS) {
+			tftf_testcase_printf("Delegate operation returns 0x%lx\n",
+						retrmm);
+			return TEST_RESULT_FAIL;
+		}
+
+		retrmm = host_rmi_granule_undelegate((u_register_t)bufferdelegate);
+		if (retrmm != RMI_SUCCESS) {
+			tftf_testcase_printf("Undelegate operation returns 0x%lx\n",
+						retrmm);
+			return TEST_RESULT_FAIL;
+		}
+		tftf_testcase_printf("Delegate and undelegate of buffer 0x%lx succeeded\n",
+					(u_register_t)bufferdelegate);
+
+		++num_reg;
+	}
+
+	/* No memory regions for test found */
+	if (num_reg == 0U) {
 		return TEST_RESULT_SKIPPED;
 	}
-
-	assert(dev_size >= PCIE_MEM_2_TEST_SIZE);
-
-	retrmm = host_rmi_granule_delegate((u_register_t)bufferdelegate);
-	if (retrmm != RMI_SUCCESS) {
-		tftf_testcase_printf("Delegate operation returns 0x%lx\n",
-					retrmm);
-		return TEST_RESULT_FAIL;
-	}
-	retrmm = host_rmi_granule_undelegate((u_register_t)bufferdelegate);
-	if (retrmm != RMI_SUCCESS) {
-		tftf_testcase_printf("Undelegate operation returns 0x%lx\n",
-					retrmm);
-		return TEST_RESULT_FAIL;
-	}
-	tftf_testcase_printf("Delegate and undelegate of buffer 0x%lx succeeded\n",
-				(u_register_t)bufferdelegate);
 
 	return host_cmp_result();
 }
@@ -122,9 +144,8 @@ test_result_t host_dev_mem_delegate_undelegate(void)
  */
 test_result_t host_dev_mem_delundel_multi_cpu(void)
 {
-	u_register_t lead_mpid, target_mpid, retrmm, rmi_feat_reg0;
-	int32_t ret;
-	unsigned int cpu_node;
+	u_register_t rmi_feat_reg0, lead_mpid;
+	unsigned int num_reg = 0U;
 
 	CHECK_DA_SUPPORT_IN_RMI(rmi_feat_reg0);
 
@@ -132,55 +153,69 @@ test_result_t host_dev_mem_delundel_multi_cpu(void)
 
 	host_rmi_init_cmp_result();
 
-	retrmm = host_init_buffer_dev_del();
-	if (retrmm != TEST_RESULT_SUCCESS) {
-		return retrmm;
-	}
+	while (true) {
+		u_register_t target_mpid, retrmm;
+		unsigned int cpu_node;
 
-	for_each_cpu(cpu_node) {
-		target_mpid = (u_register_t)tftf_get_mpidr_from_node(cpu_node) & MPID_MASK;
-
-		if (lead_mpid == target_mpid) {
-			continue;
-		}
-
-		ret = tftf_cpu_on(target_mpid,
-			(uintptr_t)host_multi_cpu_payload_dev_del_undel, 0UL);
-
-		if (ret != PSCI_E_SUCCESS) {
-			ERROR("CPU ON failed for 0x%lx\n", target_mpid);
+		retrmm = host_init_buffer_dev_del(num_reg);
+		if (retrmm == TEST_RESULT_SKIPPED) {
+			break;
+		} else if (retrmm == TEST_RESULT_FAIL) {
 			return TEST_RESULT_FAIL;
 		}
 
-	}
+		for_each_cpu(cpu_node) {
+			int32_t ret;
 
-	for_each_cpu(cpu_node) {
-		target_mpid = (u_register_t)tftf_get_mpidr_from_node(cpu_node) & MPID_MASK;
+			target_mpid = (u_register_t)tftf_get_mpidr_from_node(cpu_node) & MPID_MASK;
 
-		if (lead_mpid == target_mpid) {
-			continue;
-		}
+			if (lead_mpid == target_mpid) {
+				continue;
+			}
 
-		while (tftf_psci_affinity_info(target_mpid, MPIDR_AFFLVL0) !=
-				PSCI_STATE_OFF) {
-			continue;
-		}
-	}
-
-	/*
-	 * Cleanup to set all dev granules back to undelegated
-	 */
-	for (unsigned int i = 0U; i < (NUM_DEV_GRANULES * PLATFORM_CORE_COUNT) ; i++) {
-		if (bufferstate[i] == B_DELEGATED) {
-			retrmm = host_rmi_granule_undelegate(
-				(u_register_t)&bufferdelegate[i * GRANULE_SIZE]);
-			if (retrmm != RMI_SUCCESS) {
-				tftf_testcase_printf("Undelegate operation returns 0x%lx\n",
-						retrmm);
+			ret = tftf_cpu_on(target_mpid,
+				(uintptr_t)host_multi_cpu_payload_dev_del_undel, 0UL);
+			if (ret != PSCI_E_SUCCESS) {
+				ERROR("CPU ON failed for 0x%lx\n", target_mpid);
 				return TEST_RESULT_FAIL;
 			}
-			bufferstate[i] = B_UNDELEGATED;
 		}
+
+		for_each_cpu(cpu_node) {
+			target_mpid = (u_register_t)tftf_get_mpidr_from_node(cpu_node) & MPID_MASK;
+
+			if (lead_mpid == target_mpid) {
+				continue;
+			}
+
+			while (tftf_psci_affinity_info(target_mpid, MPIDR_AFFLVL0) !=
+					PSCI_STATE_OFF) {
+				continue;
+			}
+		}
+
+		/*
+		 * Cleanup to set all dev granules back to undelegated
+		 */
+		for (unsigned int i = 0U; i < (NUM_DEV_GRANULES * PLATFORM_CORE_COUNT) ; i++) {
+			if (bufferstate[i] == B_DELEGATED) {
+				retrmm = host_rmi_granule_undelegate(
+					(u_register_t)&bufferdelegate[i * GRANULE_SIZE]);
+				if (retrmm != RMI_SUCCESS) {
+					tftf_testcase_printf("Undelegate operation returns 0x%lx\n",
+							retrmm);
+					return TEST_RESULT_FAIL;
+				}
+				bufferstate[i] = B_UNDELEGATED;
+			}
+		}
+
+		++num_reg;
+	}
+
+	/* No memory regions for test found */
+	if (num_reg == 0U) {
+		return TEST_RESULT_SKIPPED;
 	}
 
 	return host_cmp_result();
@@ -195,24 +230,15 @@ test_result_t host_dev_mem_delundel_multi_cpu(void)
  */
 static test_result_t host_multi_cpu_payload_dev_del_undel(void)
 {
-	__unused size_t dev_size;
-	u_register_t retrmm;
 	unsigned int cpu_node;
-
-	/* Retrieve platform PCIe memory region 2 */
-	if (plat_get_dev_region((uint64_t *)&bufferdelegate, &dev_size,
-				DEV_MEM_NON_COHERENT, 1U) != 0) {
-		tftf_testcase_printf("Cannot retrieve PCIe memory region 2\n");
-		return TEST_RESULT_SKIPPED;
-	}
-
-	assert(dev_size >= PCIE_MEM_2_TEST_SIZE);
 
 	cpu_node = platform_get_core_pos(read_mpidr_el1() & MPID_MASK);
 
 	host_rmi_init_cmp_result();
 
 	for (unsigned int i = 0U; i < NUM_DEV_GRANULES; i++) {
+		u_register_t retrmm;
+
 		if (bufferstate[((cpu_node * NUM_DEV_GRANULES) + i)] == B_UNDELEGATED) {
 			retrmm = host_rmi_granule_delegate((u_register_t)
 				&bufferdelegate[((cpu_node * NUM_DEV_GRANULES) + i) *
@@ -246,51 +272,68 @@ static test_result_t host_multi_cpu_payload_dev_del_undel(void)
  */
 test_result_t host_fail_dev_mem_del(void)
 {
-	__unused size_t dev_size;
-	u_register_t retrmm, rmi_feat_reg0;
+	u_register_t rmi_feat_reg0;
+	unsigned int num_reg = 0U;
 
 	CHECK_DA_SUPPORT_IN_RMI(rmi_feat_reg0);
 
-	/* Retrieve platform PCIe memory region 2 */
-	if (plat_get_dev_region((uint64_t *)&bufferdelegate, &dev_size,
-				DEV_MEM_NON_COHERENT, 1U) != 0) {
-		tftf_testcase_printf("Cannot retrieve PCIe memory region 2\n");
-		return TEST_RESULT_SKIPPED;
-	}
-
-	assert(dev_size >= PCIE_MEM_2_TEST_SIZE);
-
 	host_rmi_init_cmp_result();
 
-	retrmm = host_rmi_granule_delegate((u_register_t)&bufferdelegate[0]);
-	if (retrmm != RMI_SUCCESS) {
-		tftf_testcase_printf
-			("Delegate operation does not pass as expected for double delegation,"
+	while (true) {
+		size_t dev_size;
+		u_register_t retrmm;
+
+		/* Retrieve platform PCIe memory region */
+		int res = plat_get_dev_region((uint64_t *)&bufferdelegate, &dev_size,
+						DEV_MEM_NON_COHERENT, num_reg);
+
+		if ((res != 0) || (dev_size < PCIE_MEM_TEST_SIZE)) {
+			break;
+		}
+
+		tftf_testcase_printf("Testing PCIe memory region %u 0x%lx-0x%lx\n",
+					num_reg, (uintptr_t)bufferdelegate,
+					(uintptr_t)bufferdelegate + PCIE_MEM_TEST_SIZE - 1UL);
+
+		retrmm = host_rmi_granule_delegate((u_register_t)&bufferdelegate[0]);
+		if (retrmm != RMI_SUCCESS) {
+			tftf_testcase_printf(
+				"Delegate operation does not pass as"
+				"expected for double delegation, 0x%lx\n",
+				retrmm);
+			return TEST_RESULT_FAIL;
+		}
+
+		retrmm = host_rmi_granule_delegate((u_register_t)&bufferdelegate[0]);
+		if (retrmm == RMI_SUCCESS) {
+			tftf_testcase_printf(
+				"Delegate operation does not fail as"
+				"expected for double delegation, 0x%lx\n",
+				retrmm);
+			return TEST_RESULT_FAIL;
+		}
+
+		retrmm = host_rmi_granule_undelegate((u_register_t)&bufferdelegate[1]);
+		if (retrmm == RMI_SUCCESS) {
+			tftf_testcase_printf(
+				"Undelegate operation does not fail for misaligned address,"
 				" 0x%lx\n", retrmm);
-		return TEST_RESULT_FAIL;
+			return TEST_RESULT_FAIL;
+		}
+
+		retrmm = host_rmi_granule_undelegate((u_register_t)&bufferdelegate[0]);
+		if (retrmm != RMI_SUCCESS) {
+			tftf_testcase_printf(
+				"Undelegate operation fails for cleanup, 0x%lx\n", retrmm);
+			return TEST_RESULT_FAIL;
+		}
+
+		++num_reg;
 	}
 
-	retrmm = host_rmi_granule_delegate((u_register_t)&bufferdelegate[0]);
-	if (retrmm == RMI_SUCCESS) {
-		tftf_testcase_printf
-			("Delegate operation does not fail as expected for double delegation,"
-				" 0x%lx\n", retrmm);
-		return TEST_RESULT_FAIL;
-	}
-
-	retrmm = host_rmi_granule_undelegate((u_register_t)&bufferdelegate[1]);
-	if (retrmm == RMI_SUCCESS) {
-		tftf_testcase_printf
-			("Undelegate operation does not return fail for misaligned address,"
-				" 0x%lx\n", retrmm);
-		return TEST_RESULT_FAIL;
-	}
-
-	retrmm = host_rmi_granule_undelegate((u_register_t)&bufferdelegate[0]);
-	if (retrmm != RMI_SUCCESS) {
-		tftf_testcase_printf
-			("Undelegate operation returns fail for cleanup, 0x%lx\n", retrmm);
-		return TEST_RESULT_FAIL;
+	/* No memory regions for test found */
+	if (num_reg == 0U) {
+		return TEST_RESULT_SKIPPED;
 	}
 
 	return host_cmp_result();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <debug.h>
 #include <drivers/arm/arm_gic.h>
-#include <drivers/arm/gic_common.h>
+#include <drivers/arm/gic_v2v3_common.h>
 #include <drivers/arm/gic_v3.h>
 #include <mmio.h>
 #include <platform.h>

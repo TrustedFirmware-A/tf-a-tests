@@ -1,12 +1,12 @@
 #
-# Copyright (c) 2018, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2025, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
 PLAT_INCLUDES	+=	-Iinclude/plat/arm/common/
 
-PLAT_SOURCES	+=	drivers/arm/gic/gic_common.c			\
+PLAT_SOURCES	+=	drivers/arm/gic/gic_v2v3_common.c		\
 			drivers/arm/pl011/${ARCH}/pl011_console.S	\
 			drivers/console/console.c			\
 			plat/arm/common/arm_setup.c			\

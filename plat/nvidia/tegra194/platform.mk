@@ -7,7 +7,7 @@
 PLAT_INCLUDES		:=	-Iplat/nvidia/tegra194/include/
 
 PLAT_SOURCES		:=	drivers/arm/gic/arm_gic_v2.c			\
-				drivers/arm/gic/gic_common.c			\
+				drivers/arm/gic/gic_v2v3_common.c		\
 				drivers/arm/gic/gic_v2.c			\
 				drivers/arm/timer/private_timer.c		\
 				drivers/ti/uart/aarch64/16550_console.S		\

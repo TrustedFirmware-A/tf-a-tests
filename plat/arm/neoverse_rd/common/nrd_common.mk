@@ -1,12 +1,12 @@
 #
-# Copyright (c) 2018-2024, Arm Limited and Contributors. All rights reserved.
+# Copyright (c) 2018-2025, Arm Limited and Contributors. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
 PLAT_INCLUDES	:=	-Iplat/arm/neoverse_rd/common/include/
 
-PLAT_SOURCES	:=	drivers/arm/gic/arm_gic_v2v3.c			\
+PLAT_SOURCES	:=	drivers/arm/gic/arm_gic.c			\
 			drivers/arm/gic/gic_v2.c			\
 			drivers/arm/gic/gic_v3.c			\
 			drivers/arm/sp805/sp805.c			\

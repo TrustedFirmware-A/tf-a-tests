@@ -6,7 +6,7 @@
 
 #include <debug.h>
 #include <drivers/console.h>
-#include <drivers/arm/gic_common.h>
+#include <drivers/arm/gic_v2v3_common.h>
 #include <drivers/arm/gic_v2.h>
 #include <platform.h>
 #include <platform_def.h>

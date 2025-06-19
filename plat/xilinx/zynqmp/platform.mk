@@ -10,7 +10,7 @@ ZYNQMP_PATH     :=      plat/xilinx/zynqmp
 PLAT_INCLUDES	+=	-Iplat/xilinx/zynqmp/include/
 
 PLAT_SOURCES	:=	drivers/arm/gic/arm_gic_v2.c                    \
-			drivers/arm/gic/gic_common.c                    \
+			drivers/arm/gic/gic_v2v3_common.c               \
 			drivers/arm/gic/gic_v2.c			\
 			drivers/arm/timer/private_timer.c               \
 			drivers/cadence/uart/aarch64/cdns_console.S	\

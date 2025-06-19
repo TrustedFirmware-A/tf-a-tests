@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -14,16 +14,35 @@
 #include <pcie_doe.h>
 #include <pcie_spec.h>
 #include <platform.h>
+#include <plat_pcie_enum.h>
 #include <tftf_lib.h>
 
 #define PCIE_DEBUG	VERBOSE
 
 const struct pcie_info_table *g_pcie_info_table;
-pcie_device_bdf_table_t *g_pcie_bdf_table;
+static pcie_device_bdf_table_t *g_pcie_bdf_table;
 
-pcie_device_bdf_table_t pcie_bdf_table[PCIE_DEVICE_BDF_TABLE_SZ];
+static pcie_device_bdf_table_t pcie_bdf_table[PCIE_DEVICE_BDF_TABLE_SZ];
 
-uintptr_t pcie_cfg_addr(uint32_t bdf)
+static uint32_t g_pcie_index;
+static uint32_t g_enumerate;
+
+/* 64-bit address initialisation */
+static uint64_t g_bar64_p_start;
+static uint64_t g_rp_bar64_value;
+static uint64_t g_bar64_p_max;
+static uint32_t g_64_bus, g_bar64_size;
+
+/* 32-bit address initialisation */
+static uint32_t g_bar32_np_start;
+static uint32_t g_bar32_p_start;
+static uint32_t g_rp_bar32_value;
+static uint32_t g_bar32_np_max;
+static uint32_t g_bar32_p_max;
+static uint32_t g_np_bar_size, g_p_bar_size;
+static uint32_t g_np_bus, g_p_bus;
+
+static uintptr_t pcie_cfg_addr(uint32_t bdf)
 {
 	uint32_t bus = PCIE_EXTRACT_BDF_BUS(bdf);
 	uint32_t dev = PCIE_EXTRACT_BDF_DEV(bdf);
@@ -102,7 +121,7 @@ void pcie_write_cfg(uint32_t bdf, uint32_t offset, uint32_t data)
  * @param   bdf - Function's Segment/Bus/Dev/Func in PCIE_CREATE_BDF format
  * @return  false If not a Host Bridge, true If it's a Host Bridge.
  */
-bool pcie_is_host_bridge(uint32_t bdf)
+static bool pcie_is_host_bridge(uint32_t bdf)
 {
 	uint32_t reg_value = pcie_read_cfg(bdf, TYPE01_RIDR);
 
@@ -168,7 +187,7 @@ uint32_t pcie_find_capability(uint32_t bdf, uint32_t cid_type, uint32_t cid,
  * @param  bdf
  * @return true if bdf is valid else false
  */
-bool pcie_check_device_valid(uint32_t bdf)
+static bool pcie_check_device_valid(uint32_t bdf)
 {
 	(void) bdf;
 	/*
@@ -185,7 +204,7 @@ bool pcie_check_device_valid(uint32_t bdf)
  * @return Returns TRUE if the Function is on-chip peripheral, FALSE if it is
  *	   not an on-chip peripheral
  */
-bool pcie_is_onchip_peripheral(uint32_t bdf)
+static bool pcie_is_onchip_peripheral(uint32_t bdf)
 {
 	(void)bdf;
 	return false;
@@ -200,7 +219,7 @@ bool pcie_is_onchip_peripheral(uint32_t bdf)
  *		   (1 << 0b1100) for iEP_EP, (1 << 0b1011) for iEP_RP,
  *		   (1 << PCIECR[7:4]) for any other device type.
  */
-uint32_t pcie_device_port_type(uint32_t bdf)
+static uint32_t pcie_device_port_type(uint32_t bdf)
 {
 	uint32_t pciecs_base, reg_value, dp_type;
 
@@ -236,7 +255,7 @@ uint32_t pcie_device_port_type(uint32_t bdf)
  * @param  usrp_bdf  - Upstream Rootport bdf in PCIE_CREATE_BDF format
  * @return 0 for success, 1 for failure.
  */
-uint32_t pcie_get_rootport(uint32_t bdf, uint32_t *rp_bdf)
+static uint32_t pcie_get_rootport(uint32_t bdf, uint32_t *rp_bdf)
 {
 	uint32_t seg_num, sec_bus, sub_bus;
 	uint32_t reg_value, dp_type, index = 0;
@@ -334,7 +353,7 @@ pcie_device_bdf_table_t *pcie_get_bdf_table(void)
  *
  * @return  None
  */
-void pcie_create_device_bdf_table(void)
+static void pcie_create_device_bdf_table(void)
 {
 	uint32_t seg_num, start_bus, end_bus;
 	uint32_t bus_index, dev_index, func_index, ecam_index;
@@ -404,7 +423,7 @@ void pcie_create_device_bdf_table(void)
  * @return TYPE0_HEADER for functions with Type 0 config space header,
  *         TYPE1_HEADER for functions with Type 1 config space header,
  */
-uint32_t pcie_function_header_type(uint32_t bdf)
+static uint32_t pcie_function_header_type(uint32_t bdf)
 {
 	/* Read four bytes of config space starting from cache line size register */
 	uint32_t reg_value = pcie_read_cfg(bdf, TYPE01_CLSR);
@@ -422,7 +441,7 @@ uint32_t pcie_function_header_type(uint32_t bdf)
  * @param  bdf   - Segment/Bus/Dev/Func in PCIE_CREATE_BDF format
  * @return ECAM address if success, else NULL address
  */
-uintptr_t pcie_get_ecam_base(uint32_t bdf)
+static uintptr_t pcie_get_ecam_base(uint32_t bdf)
 {
 	uint8_t ecam_index = 0, sec_bus = 0, sub_bus;
 	uint16_t seg_num = (uint16_t)PCIE_EXTRACT_BDF_SEG(bdf);
@@ -466,7 +485,7 @@ uintptr_t pcie_get_ecam_base(uint32_t bdf)
  * @param   None
  * @return  None
  */
-void pcie_print_device_info(void)
+static void pcie_print_device_info(void)
 {
 	uint32_t bdf, dp_type;
 	uint32_t tbl_index = 0;
@@ -596,18 +615,11 @@ void pcie_print_device_info(void)
  * @param	void
  * @return	void
  */
-void pcie_create_info_table(void)
+static void pcie_create_info_table(void)
 {
 	unsigned int num_ecam;
 
 	INFO("Creating PCIe info table\n");
-
-	g_pcie_info_table = plat_pcie_get_info_table();
-	if (g_pcie_info_table == NULL) {
-		ERROR("PCIe info not returned by platform\n");
-		panic();
-	}
-
 	g_pcie_bdf_table = pcie_bdf_table;
 
 	num_ecam = g_pcie_info_table->num_entries;
@@ -620,12 +632,611 @@ void pcie_create_info_table(void)
 	pcie_print_device_info();
 }
 
+static void pal_pci_cfg_write(uint32_t bus, uint32_t dev, uint32_t func,
+			      uint32_t offset, uint32_t data)
+{
+	pcie_write_cfg(PCIE_CREATE_BDF(0, bus, dev, func), offset, data);
+}
+
+static void pal_pci_cfg_read(uint32_t bus, uint32_t dev, uint32_t func,
+			     uint32_t offset, uint32_t *value)
+{
+	*value = pcie_read_cfg(PCIE_CREATE_BDF(0, bus, dev, func), offset);
+}
+
+/*
+ * This API programs the Memory Base and Memeory limit register of the Bus,
+ * Device and Function of Type1 Header
+ */
+static void get_resource_base_32(uint32_t bus, uint32_t dev, uint32_t func,
+				 uint32_t bar32_p_base, uint32_t bar32_np_base,
+				 uint32_t bar32_p_limit, uint32_t bar32_np_limit)
+{
+	uint32_t mem_bar_np;
+	uint32_t mem_bar_p;
+
+	/* Update the 32 bit NP-BAR start address for the next iteration */
+	if (bar32_np_base != g_bar32_np_start) {
+		if ((g_bar32_np_start << 12) != 0) {
+			g_bar32_np_start = (g_bar32_np_start &
+					    MEM_BASE32_LIM_MASK) + BAR_INCREMENT;
+		}
+
+		if (bar32_np_limit == g_bar32_np_start) {
+			bar32_np_limit = bar32_np_limit - BAR_INCREMENT;
+		}
+
+		pal_pci_cfg_read(bus, dev, func, NON_PRE_FET_OFFSET,
+				 &mem_bar_np);
+		mem_bar_np = ((bar32_np_limit & MEM_BASE32_LIM_MASK) |
+			      mem_bar_np);
+		pal_pci_cfg_write(bus, dev, func, NON_PRE_FET_OFFSET,
+				  mem_bar_np);
+	}
+
+	/* Update the 32 bit P-BAR start address for the next iteration */
+	if (bar32_p_base != g_bar32_p_start) {
+		if ((g_bar32_p_start  << 12) != 0) {
+			g_bar32_p_start  = (g_bar32_p_start &
+					    MEM_BASE32_LIM_MASK) + BAR_INCREMENT;
+		}
+
+		if (bar32_p_limit == g_bar32_p_start) {
+			bar32_p_limit = bar32_p_limit - BAR_INCREMENT;
+		}
+
+		pal_pci_cfg_read(bus, dev, func, PRE_FET_OFFSET, &mem_bar_p);
+		mem_bar_p = ((bar32_p_limit & MEM_BASE32_LIM_MASK) | mem_bar_p);
+		pal_pci_cfg_write(bus, dev, func, PRE_FET_OFFSET, mem_bar_p);
+	}
+}
+
+/*
+ * This API programs the Memory Base and Memeory limit register of the Bus,
+ * Device and Function of Type1 Header
+ */
+static void get_resource_base_64(uint32_t bus, uint32_t dev, uint32_t func,
+				 uint64_t bar64_p_base, uint64_t g_bar64_p_max)
+{
+	uint32_t bar64_p_lower32_base = (uint32_t)bar64_p_base;
+	uint32_t bar64_p_upper32_base = (uint32_t)(bar64_p_base >> 32);
+	uint32_t bar64_p_lower32_limit = (uint32_t)g_bar64_p_max;
+	uint32_t bar64_p_upper32_limit = (uint32_t)(g_bar64_p_max >> 32);
+
+	/* Obtain the memory base and memory limit */
+	bar64_p_lower32_base = REG_MASK_SHIFT(bar64_p_lower32_base);
+	bar64_p_lower32_limit = REG_MASK_SHIFT(bar64_p_lower32_limit);
+	uint32_t mem_bar_p = ((bar64_p_lower32_limit << 16) |
+			      bar64_p_lower32_base);
+
+	/* Configure Memory base and Memory limit register */
+	if ((bar64_p_base != g_bar64_p_max) && (g_bar64_p_start <=
+						g_bar64_p_max)) {
+		if ((g_bar64_p_start  << 12) != 0) {
+			g_bar64_p_start = (g_bar64_p_start &
+					   MEM_BASE64_LIM_MASK) + BAR_INCREMENT;
+		}
+
+		if (bar64_p_lower32_limit == g_bar64_p_start) {
+			bar64_p_lower32_limit = bar64_p_lower32_limit -
+				BAR_INCREMENT;
+		}
+
+		g_bar64_p_start = (g_bar64_p_start & MEM_BASE64_LIM_MASK) +
+			BAR_INCREMENT;
+
+		pal_pci_cfg_write(bus, dev, func, PRE_FET_OFFSET, mem_bar_p);
+		pal_pci_cfg_write(bus, dev, func, PRE_FET_OFFSET + 4,
+				  bar64_p_upper32_base);
+		pal_pci_cfg_write(bus, dev, func, PRE_FET_OFFSET + 8,
+				  bar64_p_upper32_limit);
+	}
+}
+
+static void pcie_rp_program_bar(uint32_t bus, uint32_t dev, uint32_t func)
+{
+	uint64_t bar_size, bar_upper_bits;
+	uint32_t offset = BAR0_OFFSET;
+	uint32_t bar_reg_value, bar_lower_bits;
+
+	while (offset <= TYPE1_BAR_MAX_OFF) {
+		pal_pci_cfg_read(bus, dev, func, offset, &bar_reg_value);
+
+		if (BAR_REG(bar_reg_value) == BAR_64_BIT) {
+			/*
+			 * BAR supports 64-bit address therefore, write all 1's
+			 * to BARn and BARn+1 and identify the size requested
+			 */
+			pal_pci_cfg_write(bus, dev, func, offset, 0xFFFFFFF0);
+			pal_pci_cfg_write(bus, dev, func, offset + 4,
+					  0xFFFFFFFF);
+			pal_pci_cfg_read(bus, dev, func, offset,
+					 &bar_lower_bits);
+			bar_size = bar_lower_bits & BAR_MASK;
+
+			pal_pci_cfg_read(bus, dev, func, offset + 4,
+					 &bar_reg_value);
+			bar_upper_bits = bar_reg_value;
+			bar_size = bar_size | (bar_upper_bits << 32);
+
+			bar_size = ~bar_size + 1;
+
+			/*
+			 * If BAR size is 0, then BAR not implemented, move to
+			 * next BAR
+			 */
+			if (bar_size == 0) {
+				offset = offset + 8;
+				continue;
+			}
+
+			pal_pci_cfg_write(bus, dev, func, offset,
+					  (uint32_t)g_rp_bar64_value);
+			pal_pci_cfg_write(bus, dev, func, offset + 4,
+					  (uint32_t)(g_rp_bar64_value >> 32));
+			offset = offset + 8;
+		} else {
+			/*
+			 * BAR supports 32-bit address. Write all 1's to BARn
+			 * and identify the size requested
+			 */
+			pal_pci_cfg_write(bus, dev, func, offset, 0xFFFFFFF0);
+			pal_pci_cfg_read(bus, dev, func, offset,
+					 &bar_lower_bits);
+			bar_reg_value = bar_lower_bits & BAR_MASK;
+			bar_size = ~bar_reg_value + 1;
+
+			/*
+			 * If BAR size is 0, then BAR not implemented, move to
+			 * next BAR
+			 */
+			if (bar_size == 0) {
+				offset = offset + 4;
+				continue;
+			}
+
+			pal_pci_cfg_write(bus, dev, func, offset,
+					  g_rp_bar32_value);
+			g_rp_bar32_value = g_rp_bar32_value + (uint32_t)bar_size;
+			offset = offset + 4;
+		}
+	}
+}
+
+/*
+ * This API programs all the BAR register in PCIe config space pointed by Bus,
+ *  Device and Function for an End Point PCIe device
+ */
+static void pcie_program_bar_reg(uint32_t bus, uint32_t dev, uint32_t func)
+{
+	uint64_t bar_size, bar_upper_bits;
+	uint32_t bar_reg_value, bar_lower_bits;
+	uint32_t offset = BAR0_OFFSET;
+	uint32_t np_bar_size = 0;
+	uint32_t p_bar_size = 0, p_bar64_size = 0;
+
+	while (offset <= TYPE0_BAR_MAX_OFF) {
+		pal_pci_cfg_read(bus, dev, func, offset, &bar_reg_value);
+
+		if (BAR_MEM(bar_reg_value) == BAR_PRE_MEM) {
+			if (BAR_REG(bar_reg_value) == BAR_64_BIT) {
+				/*
+				 * BAR supports 64-bit address therefore,
+				 * write all 1's to BARn and BARn+1 and identify
+				 * the size requested
+				 */
+
+				pal_pci_cfg_write(bus, dev, func, offset,
+						  0xFFFFFFF0);
+				pal_pci_cfg_write(bus, dev, func, offset + 4,
+						  0xFFFFFFFF);
+				pal_pci_cfg_read(bus, dev, func, offset,
+						 &bar_lower_bits);
+				bar_size = bar_lower_bits & BAR_MASK;
+
+				pal_pci_cfg_read(bus, dev, func, offset + 4,
+						 &bar_reg_value);
+				bar_upper_bits = bar_reg_value;
+				bar_size = bar_size | (bar_upper_bits << 32);
+
+				bar_size = ~bar_size + 1;
+
+				/*
+				 * If BAR size is 0, then BAR not implemented,
+				 * move to next BAR
+				 */
+				if (bar_size == 0) {
+					offset = offset + 8;
+					continue;
+				}
+
+				/*
+				 * If p_bar64_size = 0 and bus number is same as
+				 * bus of previous bus number, then check if the
+				 * current PCIe Device BAR size is greater than
+				 * the previous BAR size, if yes then add current
+				 * BAR size to the updated start address else
+				 * add the previous BAR size to the updated
+				 * start address
+				 */
+				if ((p_bar64_size == 0) && ((g_64_bus == bus))) {
+					if (g_bar64_size < bar_size) {
+						g_bar64_p_start =
+							g_bar64_p_start +
+							bar_size;
+					} else {
+						g_bar64_p_start =
+							g_bar64_p_start +
+							g_bar64_size;
+					}
+				} else if ((g_bar64_size < bar_size) &&
+					   (p_bar64_size != 0)) {
+					g_bar64_p_start = g_bar64_p_start +
+						bar_size;
+				} else {
+					g_bar64_p_start = g_bar64_p_start +
+						p_bar64_size;
+				}
+
+				pal_pci_cfg_write(bus, dev, func, offset,
+						  (uint32_t)g_bar64_p_start);
+				pal_pci_cfg_write(bus, dev, func, offset + 4,
+						  (uint32_t)(g_bar64_p_start >>
+							     32));
+
+				p_bar64_size = (uint32_t)bar_size;
+				g_bar64_size = (uint32_t)bar_size;
+				g_64_bus = bus;
+				offset = offset + 8;
+			} else {
+				/*
+				 * BAR supports 32-bit address. Write all 1's
+				 * to BARn and identify the size requested
+				 */
+				pal_pci_cfg_write(bus, dev, func, offset,
+						  0xFFFFFFF0);
+				pal_pci_cfg_read(bus, dev, func, offset,
+						 &bar_lower_bits);
+				bar_reg_value = bar_lower_bits & BAR_MASK;
+				bar_size = ~bar_reg_value + 1;
+
+				/*
+				 * If BAR size is 0, then BAR not implemented,
+				 * move to next BAR
+				 */
+				if (bar_size == 0) {
+					offset = offset + 4;
+					continue;
+				}
+
+				/*
+				 * If p_bar_size = 0 and bus number is same as
+				 * bus of previous bus number, then check if the
+				 * current PCIe Device BAR size is greater than
+				 * the previous BAR size, if yes then add
+				 * current BAR size to the updated start
+				 * address else add the previous BAR size to the
+				 * updated start address
+				 */
+				if ((p_bar_size == 0) && ((g_p_bus == bus))) {
+					if (g_p_bar_size < bar_size) {
+						g_bar32_p_start =
+							g_bar32_p_start +
+							(uint32_t)bar_size;
+					} else {
+						g_bar32_p_start =
+							g_bar32_p_start +
+							g_p_bar_size;
+					}
+				} else if ((g_p_bar_size < bar_size) &&
+					   (p_bar_size != 0)) {
+					g_bar32_p_start = g_bar32_p_start +
+						(uint32_t)bar_size;
+				} else {
+					g_bar32_p_start = g_bar32_p_start +
+						p_bar_size;
+				}
+
+				pal_pci_cfg_write(bus, dev, func, offset,
+						  g_bar32_p_start);
+				p_bar_size = (uint32_t)bar_size;
+				g_p_bar_size = (uint32_t)bar_size;
+				g_p_bus = bus;
+
+				offset = offset + 4;
+			}
+		} else {
+			/*
+			 * BAR supports 32-bit address. Write all 1's to BARn
+			 * and identify the size requested
+			 */
+			pal_pci_cfg_write(bus, dev, func, offset, 0xFFFFFFF0);
+			pal_pci_cfg_read(bus, dev, func, offset,
+					 &bar_lower_bits);
+			bar_reg_value = bar_lower_bits & BAR_MASK;
+			bar_size = ~bar_reg_value + 1;
+
+			/*
+			 * If BAR size is 0, then BAR not implemented, move to
+			 * next BAR
+			 */
+			if (bar_size == 0) {
+				if (BAR_REG(bar_lower_bits) == BAR_64_BIT) {
+					offset = offset + 8;
+				}
+
+				if (BAR_REG(bar_lower_bits) == BAR_32_BIT) {
+					offset = offset + 4;
+				}
+
+				continue;
+			}
+
+			/*
+			 * If np_bar_size = 0 and bus number is same as bus of
+			 * previous bus number, then check if the current PCIe
+			 * Device BAR size is greater than the previous BAR
+			 * size, if yes then add current BAR size to the
+			 * updated start address else add the previous BAR size
+			 * to the updated start address
+			 */
+			if ((np_bar_size == 0) && ((g_np_bus == bus))) {
+				if (g_np_bar_size < bar_size) {
+					g_bar32_np_start = g_bar32_np_start +
+						(uint32_t)bar_size;
+				} else {
+					g_bar32_np_start = g_bar32_np_start +
+						g_np_bar_size;
+				}
+			} else if ((g_np_bar_size < bar_size) &&
+				   (np_bar_size != 0)) {
+				g_bar32_np_start = g_bar32_np_start +
+					(uint32_t)bar_size;
+			} else {
+				g_bar32_np_start = g_bar32_np_start +
+					np_bar_size;
+			}
+
+			pal_pci_cfg_write(bus, dev, func, offset,
+					  g_bar32_np_start);
+			np_bar_size = (uint32_t)bar_size;
+			g_np_bar_size = (uint32_t)bar_size;
+			g_np_bus = bus;
+
+			pal_pci_cfg_read(bus, dev, func, offset, &bar_reg_value);
+			if (BAR_REG(bar_reg_value) == BAR_64_BIT) {
+				pal_pci_cfg_write(bus, dev, func,
+						  offset + 4, 0);
+				offset = offset + 8;
+			}
+
+			if (BAR_REG(bar_reg_value) == BAR_32_BIT) {
+				offset = offset + 4;
+			}
+		}
+
+		g_bar32_p_max = g_bar32_p_start;
+		g_bar32_np_max = g_bar32_np_start;
+		g_bar64_p_max =  g_bar64_p_start;
+	}
+}
+
+/*
+ * This API performs the PCIe bus enumeration
+ *
+ * bus,sec_bus - Bus(8-bits), secondary bus (8-bits)
+ * sub_bus - Subordinate bus
+ */
+static uint32_t pcie_enumerate_device(uint32_t bus, uint32_t sec_bus)
+{
+	uint32_t vendor_id = 0;
+	uint32_t header_value;
+	uint32_t sub_bus = bus;
+	uint32_t dev;
+	uint32_t func;
+	uint32_t class_code;
+	uint32_t com_reg_value;
+	uint32_t bar32_p_limit;
+	uint32_t bar32_np_limit;
+	uint32_t bar32_p_base = g_bar32_p_start;
+	uint32_t bar32_np_base = g_bar32_np_start;
+	uint64_t bar64_p_base = g_bar64_p_start;
+
+	if (bus == ((g_pcie_info_table->block[g_pcie_index].end_bus_num) + 1)) {
+		return sub_bus;
+	}
+
+	for (dev = 0; dev < PCIE_MAX_DEV; dev++) {
+		for (func = 0; func < PCIE_MAX_FUNC; func++) {
+			pal_pci_cfg_read(bus, dev, func, 0, &vendor_id);
+
+			if ((vendor_id == 0x0) || (vendor_id == 0xFFFFFFFF)) {
+				continue;
+			}
+
+			/* Skip Hostbridge configuration */
+			pal_pci_cfg_read(bus, dev, func, TYPE01_RIDR,
+					 &class_code);
+
+			if ((((class_code >> CC_BASE_SHIFT) & CC_BASE_MASK) ==
+			     HB_BASE_CLASS) &&
+			    (((class_code >> CC_SUB_SHIFT) & CC_SUB_MASK)) ==
+			    HB_SUB_CLASS) {
+				continue;
+			}
+
+			pal_pci_cfg_read(bus, dev, func, HEADER_OFFSET,
+					 &header_value);
+			if (PCIE_HEADER_TYPE(header_value) == TYPE1_HEADER) {
+				/*
+				 * Enable memory access, Bus master enable and
+				 * I/O access
+				 */
+				pal_pci_cfg_read(bus, dev, func,
+						 COMMAND_REG_OFFSET,
+						 &com_reg_value);
+
+				pal_pci_cfg_write(bus, dev, func,
+						  COMMAND_REG_OFFSET,
+						  (com_reg_value |
+						   REG_ACC_DATA));
+
+				pal_pci_cfg_write(bus, dev, func,
+						  BUS_NUM_REG_OFFSET,
+						  BUS_NUM_REG_CFG(0xFF, sec_bus,
+								  bus));
+
+				pal_pci_cfg_write(bus, dev, func,
+						  NON_PRE_FET_OFFSET,
+						  ((g_bar32_np_start >> 16) &
+						   0xFFF0));
+
+				pal_pci_cfg_write(bus, dev, func,
+						  PRE_FET_OFFSET,
+						  ((g_bar32_p_start >> 16) &
+						   0xFFF0));
+
+				sub_bus = pcie_enumerate_device(sec_bus,
+								(sec_bus + 1));
+				pal_pci_cfg_write(bus, dev, func,
+						  BUS_NUM_REG_OFFSET,
+						  BUS_NUM_REG_CFG(sub_bus,
+								  sec_bus, bus));
+				sec_bus = sub_bus + 1;
+
+				/*
+				 * Obtain the start memory base address & the
+				 * final memory base address of 32 bit BAR
+				 */
+				bar32_p_limit = g_bar32_p_max;
+				bar32_np_limit = g_bar32_np_max;
+
+				get_resource_base_32(bus, dev, func,
+						     bar32_p_base,
+						     bar32_np_base,
+						     bar32_p_limit,
+						     bar32_np_limit);
+
+				/*
+				 * Obtain the start memory base address & the
+				 * final memory base address of 64 bit BAR
+				 */
+				get_resource_base_64(bus, dev, func,
+						     bar64_p_base,
+						     g_bar64_p_max);
+
+				/* Update the BAR values of Type 1 Devices */
+				pcie_rp_program_bar(bus, dev, func);
+
+				/* Update the base and limit values */
+				bar32_p_base = g_bar32_p_start;
+				bar32_np_base = g_bar32_np_start;
+				bar64_p_base = g_bar64_p_start;
+			}
+
+			if (PCIE_HEADER_TYPE(header_value) == TYPE0_HEADER) {
+				pcie_program_bar_reg(bus, dev, func);
+				sub_bus = sec_bus - 1;
+			}
+		}
+	}
+
+	return sub_bus;
+}
+
+/*
+ * This API clears the primary bus number configured in the Type1 Header.
+ * Note: This is done to make sure the hardware is compatible
+ * with Linux enumeration.
+ */
+static void pcie_clear_pri_bus(void)
+{
+	uint32_t bus;
+	uint32_t dev;
+	uint32_t func;
+	uint32_t bus_value;
+	uint32_t header_value;
+	uint32_t vendor_id;
+
+	for (bus = 0; bus <= g_pcie_info_table->block[g_pcie_index].end_bus_num;
+	     bus++) {
+		for (dev = 0; dev < PCIE_MAX_DEV; dev++) {
+			for (func = 0; func < PCIE_MAX_FUNC; func++) {
+				pal_pci_cfg_read(bus, dev, func, 0, &vendor_id);
+
+				if ((vendor_id == 0x0) ||
+				    (vendor_id == 0xFFFFFFFF)) {
+					continue;
+				}
+
+				pal_pci_cfg_read(bus, dev, func, HEADER_OFFSET,
+						 &header_value);
+				if (PCIE_HEADER_TYPE(header_value) ==
+				    TYPE1_HEADER) {
+					pal_pci_cfg_read(bus, dev, func,
+							 BUS_NUM_REG_OFFSET,
+							 &bus_value);
+
+					bus_value = bus_value &
+						PRI_BUS_CLEAR_MASK;
+
+					pal_pci_cfg_write(bus, dev, func,
+							  BUS_NUM_REG_OFFSET,
+							  bus_value);
+				}
+			}
+		}
+	}
+}
+
+static void pcie_enumerate_devices(void)
+{
+	uint32_t pri_bus, sec_bus;
+	int rc;
+
+	g_pcie_info_table = plat_pcie_get_info_table();
+	if (g_pcie_info_table == NULL) {
+		ERROR("PCIe info not returned by platform\n");
+		panic();
+	}
+
+	if (g_pcie_info_table->num_entries == 0) {
+		INFO("Skipping Enumeration\n");
+		return;
+	}
+
+	/* Get platform specific bar config parameters */
+	rc = plat_pcie_get_bar_config(&g_bar64_p_start, &g_rp_bar64_value,
+				      &g_bar32_np_start, &g_bar32_p_start,
+				      &g_rp_bar32_value);
+	if (rc != 0) {
+		ERROR("PCIe bar config parameters not returned by platform\n");
+		panic();
+	}
+
+	INFO("Starting Enumeration\n");
+	while (g_pcie_index < g_pcie_info_table->num_entries) {
+		pri_bus = g_pcie_info_table->block[g_pcie_index].start_bus_num;
+
+		sec_bus = pri_bus + 1;
+
+		pcie_enumerate_device(pri_bus, sec_bus);
+		pcie_clear_pri_bus();
+
+		g_pcie_index++;
+	}
+	g_enumerate = 0;
+	g_pcie_index = 0;
+}
+
 void pcie_init(void)
 {
 	static bool is_init;
 
 	/* Create PCIe table and enumeration */
 	if (!is_init) {
+		pcie_enumerate_devices();
+
 		pcie_create_info_table();
 		is_init = true;
 	}

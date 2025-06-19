@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -100,7 +100,7 @@ typedef enum {
 #define CC_BASE_SHIFT	24
 
 void pcie_init(void);
-void pcie_create_info_table(void);
+
 pcie_device_bdf_table_t *pcie_get_bdf_table(void);
 uint32_t pcie_find_capability(uint32_t bdf, uint32_t cid_type, uint32_t cid,
 				uint32_t *cid_offset);

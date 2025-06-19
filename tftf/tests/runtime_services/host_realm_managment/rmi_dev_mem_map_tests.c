@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include <arch_features.h>
+#include <cassert.h>
 #include <host_da_helper.h>
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
@@ -15,6 +16,8 @@
 #include <plat_topology.h>
 #include <platform.h>
 #include <test_helpers.h>
+
+CASSERT(RTT_MIN_DEV_BLOCK_LEVEL == 2L, min_dev_block_level_mismatch);
 
 /* Maximum number of dev memory regions to test */
 #define MAX_DEV_REGIONS		32U
@@ -26,9 +29,15 @@
 
 struct dev_mem_info {
 	uintptr_t base_pa;		/* Dev memory region PA */
+	size_t min_size;		/* Dev memory region size required */
 	long map_level;			/* RTT level */
 	size_t map_size;		/* RTT level mapping size */
 	unsigned int num_regions;	/* Number of granule/level 2 block regions */
+};
+
+struct dev_mem_region {
+	uintptr_t base;			/* Dev memory region base */
+	size_t size;			/* Dev memory region size */
 };
 
 /*
@@ -51,53 +60,96 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	long sl = RTT_MIN_LEVEL;
 	struct realm realm;
 	struct rtt_entry rtt;
+	struct dev_mem_region mem_region[2];
 	struct dev_mem_info mem_info[NUM_INFO_TESTS] = {
-		/* PCIe memory region 1 */
-		{0UL, RTT_MAX_LEVEL,
-			RTT_MAP_SIZE(RTT_MAX_LEVEL), NUM_L3_REGIONS},
-		/* PCIe memory region 2 */
-		{0UL, RTT_MAX_LEVEL,
-			RTT_MAP_SIZE(RTT_MAX_LEVEL), NUM_L3_REGIONS},
-		/* PCIe memory region 2 */
-		{0UL, RTT_MIN_DEV_BLOCK_LEVEL,
-			RTT_MAP_SIZE(RTT_MIN_DEV_BLOCK_LEVEL), NUM_L2_REGIONS}
+		/* Test region 1 */
+		{0UL, 2 * RTT_L2_BLOCK_SIZE, RTT_MAX_LEVEL,
+		 RTT_MAP_SIZE(RTT_MAX_LEVEL), NUM_L3_REGIONS},
+
+		/* Test region 2 */
+		{0UL, 2 * RTT_L2_BLOCK_SIZE, RTT_MAX_LEVEL,
+		 RTT_MAP_SIZE(RTT_MAX_LEVEL), NUM_L3_REGIONS},
+
+		/* Test region 2 */
+		{0UL, 2 * RTT_L1_BLOCK_SIZE, RTT_MIN_DEV_BLOCK_LEVEL,
+		 RTT_MAP_SIZE(RTT_MIN_DEV_BLOCK_LEVEL), NUM_L2_REGIONS}
 	};
 	unsigned int num[NUM_INFO_TESTS];
-	unsigned int offset, i, j;
+	unsigned int num_reg, offset, i, j;
 
 	CHECK_DA_SUPPORT_IN_RMI(rmi_features);
 
 	/* Initialise memory test structures */
 
-	/*
-	 * TODO: the test depends on 2 PCIe regions of suitable size and alignment.
-	 * The test can be made more flexible and not depend on 2 PCIe regions.
-	 */
-	/* Retrieve platform PCIe memory region 1 */
-	if (plat_get_dev_region((uint64_t *)&mem_info[0].base_pa, &dev_size,
-				DEV_MEM_NON_COHERENT, 0U) != 0) {
-		tftf_testcase_printf("Cannot retrieve PCIe memory region 0\n");
+	/* Retrieve platform PCIe memory regions */
+	for (num_reg = 0U; num_reg < 2U; num_reg++) {
+		if (plat_get_dev_region((uint64_t *)&mem_region[num_reg].base,
+					&mem_region[num_reg].size,
+					DEV_MEM_NON_COHERENT, num_reg) != 0) {
+			break;
+		}
+
+		INFO("PCIe memory region %u 0x%lx-0x%lx\n",
+			num_reg, mem_region[num_reg].base,
+			mem_region[num_reg].base +
+			mem_region[num_reg].size - 1UL);
+	}
+
+	if (num_reg == 0U) {
+		INFO("Cannot retrieve PCIe memory regions\n");
 		return TEST_RESULT_SKIPPED;
 	}
 
-	if (dev_size < mem_info[0].num_regions * mem_info[0].map_size) {
-		tftf_testcase_printf("PCIe memory region 0 too small\n");
-		return TEST_RESULT_SKIPPED;
-	}
+	if (num_reg == 1U) {
+		/* Found 1 PCIe memory region */
+		if (mem_region[0].size < mem_info[0].min_size) {
+			INFO("PCIe memory region 0 too small\n");
+			return TEST_RESULT_SKIPPED;
+		}
 
-	/* Retrieve platform PCIe memory region 2 */
-	if (plat_get_dev_region((uint64_t *)&mem_info[1].base_pa, &dev_size,
-				DEV_MEM_NON_COHERENT, 1U) != 0) {
-		tftf_testcase_printf("Cannot retrieve PCIe memory region 1\n");
-		return TEST_RESULT_SKIPPED;
-	}
+		if (mem_region[0].size <
+		    mem_info[1].min_size + mem_info[2].min_size) {
+			/* Setup test region 1 */
+			mem_info[0].base_pa = mem_region[0].base;
+		} else {
+			/* Setup test region 2 */
+			mem_info[1].base_pa = mem_region[0].base;
+			mem_info[2].base_pa = mem_region[0].base;
+		}
+	} else {
+		/* Found 2 PCIe memory regions */
+		unsigned int reg_s, reg_b;
 
-	mem_info[2].base_pa = mem_info[1].base_pa;
+		/* Find smaller and bigger region */
+		reg_s = (mem_region[0].size < mem_region[1].size) ? 0U : 1U;
+		reg_b = reg_s ^ 1U;
 
-	if ((dev_size < mem_info[1].num_regions * mem_info[1].map_size) ||
-	      (dev_size < mem_info[2].num_regions * mem_info[2].map_size)) {
-		tftf_testcase_printf("PCIe memory region 1 too small\n");
-		return TEST_RESULT_SKIPPED;
+		if (mem_region[reg_b].size < mem_info[0].min_size) {
+			INFO("PCIe memory regions too small\n");
+			return TEST_RESULT_SKIPPED;
+		}
+
+		if (mem_region[reg_s].size >= mem_info[0].min_size) {
+			/* Setup test region 1 to the smaller region */
+			mem_info[0].base_pa = mem_region[reg_s].base;
+
+			if (mem_region[reg_b].size >=
+			    mem_info[1].min_size + mem_info[2].min_size) {
+				/* Setup test region 2 to the bigger region */
+				mem_info[1].base_pa = mem_region[reg_b].base;
+				mem_info[2].base_pa = mem_region[reg_b].base;
+			}
+		} else {
+			if (mem_region[reg_b].size <
+			    mem_info[1].min_size + mem_info[2].min_size) {
+				/* Setup test region 1 to the bigger region */
+				mem_info[0].base_pa = mem_region[reg_b].base;
+			} else {
+				/* Setup test region 2 to the bigger region */
+				mem_info[1].base_pa = mem_region[reg_b].base;
+				mem_info[2].base_pa = mem_region[reg_b].base;
+			}
+		}
 	}
 
 	host_rmi_init_cmp_result();
@@ -110,7 +162,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	if (!host_create_activate_realm_payload(&realm,
 						(u_register_t)REALM_IMAGE_BASE,
 						feature_flag, 0U, sl, rec_flag, 1U, 0U)) {
-		tftf_testcase_printf("Realm creation failed\n");
+		ERROR("Realm creation failed\n");
 		return TEST_RESULT_FAIL;
 	}
 
@@ -122,37 +174,45 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	 * To use two 2MB blocks with level 3 mapping calculate
 	 * random offset from the start of the 1st 2MB block.
 	 */
-	offset = (RTT_L2_BLOCK_SIZE / GRANULE_SIZE) -
-			((unsigned int)rand() % (NUM_L3_REGIONS - 1U));
+	if (mem_info[0].base_pa != 0UL) {
+		offset = (RTT_L2_BLOCK_SIZE / GRANULE_SIZE) -
+			 ((unsigned int)rand() % (NUM_L3_REGIONS - 1U));
+		mem_info[0].base_pa += offset * GRANULE_SIZE;
+	}
 
-	mem_info[0].base_pa += offset * GRANULE_SIZE;
-
-	offset = (RTT_L2_BLOCK_SIZE / GRANULE_SIZE) -
-			((unsigned int)rand() % (NUM_L3_REGIONS - 1U));
-
-	mem_info[1].base_pa += offset * GRANULE_SIZE;
+	if (mem_info[1].base_pa != 0UL) {
+		offset = (RTT_L2_BLOCK_SIZE / GRANULE_SIZE) -
+			 ((unsigned int)rand() % (NUM_L3_REGIONS - 1U));
+		mem_info[1].base_pa += offset * GRANULE_SIZE;
+	}
 
 	/*
 	 * To use two 1GB blocks with level 2 mapping calculate
 	 * random offset from the start of the 1st 1GB block.
 	 */
-	offset = (RTT_MAP_SIZE(1) / RTT_L2_BLOCK_SIZE) -
-			((unsigned int)rand() % (NUM_L2_REGIONS - 1U));
-
-	mem_info[2].base_pa += offset * RTT_L2_BLOCK_SIZE;
+	if (mem_info[2].base_pa != 0UL) {
+		offset = (RTT_L1_BLOCK_SIZE / RTT_L2_BLOCK_SIZE) -
+			 ((unsigned int)rand() % (NUM_L2_REGIONS - 1U));
+		mem_info[2].base_pa += offset * RTT_L2_BLOCK_SIZE;
+	}
 
 	/* Delegate device granules */
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
-		/* Number of granules */
-		unsigned int num_granules = (mem_info[i].map_size / GRANULE_SIZE) *
+		unsigned int num_granules;	/* number of granules */
+
+		/* Skip non-initialised test region */
+		if (mem_info[i].base_pa == 0UL) {
+			continue;
+		}
+
+		num_granules = (mem_info[i].map_size / GRANULE_SIZE) *
 							mem_info[i].num_regions;
 
 		for (num[i] = 0U; num[i] < num_granules; num[i]++) {
 			res = host_rmi_granule_delegate(mem_info[i].base_pa +
 							num[i] * GRANULE_SIZE);
 			if (res != RMI_SUCCESS) {
-				tftf_testcase_printf(
-					"%s() for 0x%lx failed, 0x%lx\n",
+				ERROR("%s() for 0x%lx failed, 0x%lx\n",
 					"host_rmi_granule_delegate",
 					(mem_info[i].base_pa + num[i] * GRANULE_SIZE),
 					res);
@@ -163,12 +223,17 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 
 	/* Map device memory */
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
+		/* Skip non-initialised test region */
+		if (mem_info[i].base_pa == 0UL) {
+			continue;
+		}
+
 		for (j = 0U; j < mem_info[i].num_regions; j++) {
 			res = host_dev_mem_map(&realm,
 					mem_info[i].base_pa + j * mem_info[i].map_size,
 					mem_info[i].map_level, &map_addr[i][j]);
 			if (res != REALM_SUCCESS) {
-				tftf_testcase_printf("%s() for 0x%lx failed, 0x%lx\n",
+				ERROR("%s() for 0x%lx failed, 0x%lx\n",
 					"host_realm_dev_mem_map",
 					mem_info[i].base_pa + j * mem_info[i].map_size,
 					res);
@@ -179,11 +244,16 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 
 	/* Check RTT entries */
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
+		/* Skip non-initialised test region */
+		if (mem_info[i].base_pa == 0UL) {
+			continue;
+		}
+
 		for (j = 0U; j < mem_info[i].num_regions; j++) {
 			res = host_rmi_rtt_readentry(realm.rd, map_addr[i][j],
 						mem_info[i].map_level, &rtt);
 			if (res != RMI_SUCCESS) {
-				tftf_testcase_printf("%s() for 0x%lx failed, 0x%lx\n",
+				ERROR("%s() for 0x%lx failed, 0x%lx\n",
 					"host_rmi_rtt_readentry",
 					map_addr[i][j], res);
 				goto undelegate_granules;
@@ -193,13 +263,11 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 				(rtt.ripas != RMI_EMPTY) ||
 				(rtt.walk_level != mem_info[i].map_level) ||
 				(rtt.out_addr != map_addr[i][j])) {
-				tftf_testcase_printf("RTT entry for 0x%lx:\n", map_addr[i][j]);
-				tftf_testcase_printf(
-					"%s level:%ld addr:0x%lx state:%lu ripas:%lu\n",
+				ERROR("RTT entry for 0x%lx:\n", map_addr[i][j]);
+				ERROR("%s level:%ld addr:0x%lx state:%lu ripas:%lu\n",
 					"Expected", mem_info[i].map_level, map_addr[i][j],
 					RMI_ASSIGNED_DEV, RMI_EMPTY);
-				tftf_testcase_printf(
-					"%s level:%ld addr:0x%lx state:%lu ripas:%lu\n",
+				ERROR("%s level:%ld addr:0x%lx state:%lu ripas:%lu\n",
 					"Read    ", rtt.walk_level,
 					(unsigned long)rtt.out_addr, rtt.state, rtt.ripas);
 				goto undelegate_granules;
@@ -209,6 +277,11 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 
 	/* Unmap device memory */
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
+		/* Skip non-initialised test region */
+		if (mem_info[i].base_pa == 0UL) {
+			continue;
+		}
+
 		for (j = 0U; j < mem_info[i].num_regions; j++) {
 			u_register_t pa, pa_exp, top, top_exp;
 
@@ -216,9 +289,9 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 							mem_info[i].map_level,
 							&pa, &top);
 			if (res != RMI_SUCCESS) {
-				tftf_testcase_printf("%s() for 0x%lx failed, 0x%lx\n",
-							"host_rmi_dev_mem_unmap",
-							map_addr[i][j], res);
+				ERROR("%s() for 0x%lx failed, 0x%lx\n",
+					"host_rmi_dev_mem_unmap",
+					map_addr[i][j], res);
 				goto undelegate_granules;
 			}
 
@@ -229,10 +302,10 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 
 			/* Check PA of the device memory region which was unmapped. */
 			if (pa != pa_exp) {
-				tftf_testcase_printf("%s() for 0x%lx failed, "
-						"expected pa 0x%lx, returned 0x%lx\n",
-						"host_rmi_dev_mem_unmap",
-						map_addr[i][j], pa_exp, pa);
+				ERROR("%s() for 0x%lx failed, "
+					"expected pa 0x%lx, returned 0x%lx\n",
+					"host_rmi_dev_mem_unmap",
+					map_addr[i][j], pa_exp, pa);
 				goto undelegate_granules;
 			}
 
@@ -251,10 +324,10 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 			}
 
 			if (top != top_exp) {
-				tftf_testcase_printf("%s() for 0x%lx failed, "
-						"expected top 0x%lx, returned 0x%lx\n",
-						"host_rmi_dev_mem_unmap",
-						map_addr[i][j], top_exp, top);
+				ERROR("%s() for 0x%lx failed, "
+					"expected top 0x%lx, returned 0x%lx\n",
+					"host_rmi_dev_mem_unmap",
+					map_addr[i][j], top_exp, top);
 				goto undelegate_granules;
 			}
 		}
@@ -262,11 +335,16 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 
 	/* Check RTT entries */
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
+		/* Skip non-initialised test region */
+		if (mem_info[i].base_pa == 0UL) {
+			continue;
+		}
+
 		for (j = 0U; j < mem_info[i].num_regions; j++) {
 			res = host_rmi_rtt_readentry(realm.rd, map_addr[i][j],
 						mem_info[i].map_level, &rtt);
 			if (res != RMI_SUCCESS) {
-				tftf_testcase_printf("%s() for 0x%lx failed, 0x%lx\n",
+				ERROR("%s() for 0x%lx failed, 0x%lx\n",
 					"host_rmi_rtt_readentry",
 					map_addr[i][j], res);
 				goto undelegate_granules;
@@ -274,7 +352,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 
 			if ((rtt.state != RMI_UNASSIGNED) ||
 				(rtt.ripas != RMI_EMPTY)) {
-				tftf_testcase_printf("%s() for 0x%lx failed, "
+				ERROR("%s() for 0x%lx failed, "
 					"expected state %lu ripas %lu, read %lu %lu",
 					"host_rmi_rtt_readentry",
 					map_addr[i][j], RMI_UNASSIGNED, RMI_EMPTY,
@@ -288,13 +366,18 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 
 undelegate_granules:
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
+		/* Skip non-initialised test region */
+		if (mem_info[i].base_pa == 0UL) {
+			continue;
+		}
+
 		for (j = 0U; j < num[i]; j++) {
 			res = host_rmi_granule_undelegate(mem_info[i].base_pa + j * GRANULE_SIZE);
 			if (res != RMI_SUCCESS) {
-				tftf_testcase_printf("%s for 0x%lx failed, 0x%lx\n",
-							"host_rmi_granule_undelegate",
-							(mem_info[i].base_pa + j * GRANULE_SIZE),
-							res);
+				ERROR("%s for 0x%lx failed, 0x%lx\n",
+					"host_rmi_granule_undelegate",
+					(mem_info[i].base_pa + j * GRANULE_SIZE),
+					res);
 				ret = TEST_RESULT_FAIL;
 				break;
 			}
@@ -302,7 +385,7 @@ undelegate_granules:
 	}
 
 	if (!host_destroy_realm(&realm)) {
-		tftf_testcase_printf("host_destroy_realm() failed\n");
+		ERROR("host_destroy_realm() failed\n");
 		return TEST_RESULT_FAIL;
 	}
 

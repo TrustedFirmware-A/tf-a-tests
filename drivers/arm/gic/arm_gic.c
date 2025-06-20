@@ -198,14 +198,12 @@ void arm_gic_init(uintptr_t gicc_base,
 
 bool arm_gic_is_espi_supported(void)
 {
-	unsigned int typer_reg = gicv3_get_gicd_typer();
-
 	if (!gicv3_detected) {
 		return false;
 	}
 
 	/* Check if extended SPI range is implemented. */
-	if ((typer_reg & TYPER_ESPI) != 0U) {
+	if ((gicv3_get_gicd_typer() & TYPER_ESPI) != 0U) {
 		return true;
 	}
 

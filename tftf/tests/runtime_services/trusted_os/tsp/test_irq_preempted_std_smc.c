@@ -14,7 +14,6 @@
 #include <plat_topology.h>
 #include <platform.h>
 #include <power_management.h>
-#include <sgi.h>
 #include <smccc.h>
 #include <string.h>
 #include <test_helpers.h>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,7 +13,6 @@
 #include <platform.h>
 #include <platform_def.h>
 #include <power_management.h>
-#include <sgi.h>
 #include <spinlock.h>
 #include <string.h>
 #include <tftf.h>
@@ -166,7 +165,6 @@ int tftf_irq_handler_dispatcher(void)
 {
 	unsigned int raw_iar;
 	unsigned int irq_num;
-	sgi_data_t sgi_data;
 	irq_handler_t *handler;
 	void *irq_data = NULL;
 	int rc = 0;
@@ -175,14 +173,7 @@ int tftf_irq_handler_dispatcher(void)
 	irq_num = arm_gic_intr_ack(&raw_iar);
 
 	handler = get_irq_handler(irq_num);
-	if (IS_PLAT_SPI(irq_num)) {
-		irq_data = &irq_num;
-	} else if (IS_PPI(irq_num)) {
-		irq_data = &irq_num;
-	} else if (IS_SGI(irq_num)) {
-		sgi_data.irq_id = irq_num;
-		irq_data = &sgi_data;
-	}
+	irq_data = &irq_num;
 
 	if (*handler != NULL)
 		rc = (*handler)(irq_data);

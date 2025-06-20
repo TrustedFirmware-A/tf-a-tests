@@ -19,7 +19,6 @@
 #include <plat_topology.h>
 #include <power_management.h>
 #include <realm_def.h>
-#include <sgi.h>
 #include <test_helpers.h>
 #include <xlat_tables_v2.h>
 

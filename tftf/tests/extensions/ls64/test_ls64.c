@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -54,8 +54,8 @@ test_result_t test_ls64_instructions(void)
 	ls64_load(store_address, ls64_output_buffer);
 
 	for (uint8_t i = 0U; i < LS64_ARRAYSIZE; i++) {
-		VERBOSE("Input Buffer[%lld]=%lld\n", i, ls64_input_buffer[i]);
-		VERBOSE("Output Buffer[%lld]=%lld\n", i, ls64_output_buffer[i]);
+		VERBOSE("Input Buffer[%d]=%lld\n", i, ls64_input_buffer[i]);
+		VERBOSE("Output Buffer[%d]=%lld\n", i, ls64_output_buffer[i]);
 
 		if (ls64_input_buffer[i] != ls64_output_buffer[i]) {
 			return TEST_RESULT_FAIL;

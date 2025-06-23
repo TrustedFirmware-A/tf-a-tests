@@ -68,6 +68,12 @@ void arm_gic_enable_interrupts_local(void);
 void arm_gic_send_sgi(unsigned int sgi_id, unsigned int core_pos);
 
 /******************************************************************************
+ * Get the INTID for an SGI with number `seq_id` for a core with index
+ * `core_pos`.
+ *****************************************************************************/
+unsigned int arm_gic_get_sgi_num(unsigned int seq_id, unsigned int core_pos);
+
+/******************************************************************************
  * Set the interrupt target of interrupt ID `num` to a core with index
  * `core_pos`
  *****************************************************************************/

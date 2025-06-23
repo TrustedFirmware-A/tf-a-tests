@@ -354,7 +354,7 @@ static test_result_t suspend_to_powerdown(void)
 	 * Enable reception of SGI 0 on the calling CPU.
 	 * SGI 0 will serve as the wake-up event to come out of suspend.
 	 */
-	tftf_irq_enable(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
 
 	expected_return_val = tftf_psci_make_composite_state_id(
 			PSTATE_AFF_LVL_0, PSTATE_TYPE_POWERDOWN, &stateid);
@@ -377,7 +377,7 @@ static test_result_t suspend_to_powerdown(void)
 
 	psci_ret = tftf_cpu_suspend(power_state);
 
-	tftf_irq_disable(IRQ_NS_SGI_0);
+	tftf_irq_disable_sgi(IRQ_NS_SGI_0);
 
 	if (psci_ret != PSCI_E_SUCCESS) {
 		tftf_testcase_printf("Failed to suspend (%i)\n", psci_ret);

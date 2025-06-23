@@ -64,7 +64,7 @@ static test_result_t preempt_tsp_via_SGI(const smc_args *tsp_svc_params,
 		shared_data.wait_for_fiq = 1;
 
 	/* Register Handler for the interrupt. SGIs #0 - #6 are available. */
-	rc = tftf_irq_register_handler(IRQ_NS_SGI_0, sgi_handler);
+	rc = tftf_irq_register_handler_sgi(IRQ_NS_SGI_0, sgi_handler);
 	if (rc != 0) {
 		tftf_testcase_printf("Failed to register SGI handler. "
 				"Error code = %d\n", rc);
@@ -72,7 +72,7 @@ static test_result_t preempt_tsp_via_SGI(const smc_args *tsp_svc_params,
 	}
 
 	/* Enable SGI #0 */
-	tftf_irq_enable(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
 
 	/* Set PSTATE.I to 0. */
 	disable_irq();
@@ -99,10 +99,10 @@ static test_result_t preempt_tsp_via_SGI(const smc_args *tsp_svc_params,
 	enable_irq();
 
 	/* Disable SGI #0 */
-	tftf_irq_disable(IRQ_NS_SGI_0);
+	tftf_irq_disable_sgi(IRQ_NS_SGI_0);
 
 	/* Unregister handler */
-	rc = tftf_irq_unregister_handler(IRQ_NS_SGI_0);
+	rc = tftf_irq_unregister_handler_sgi(IRQ_NS_SGI_0);
 	if (rc != 0) {
 		tftf_testcase_printf("Failed to unregister IRQ handler. "
 				     "Error code = %d\n", rc);

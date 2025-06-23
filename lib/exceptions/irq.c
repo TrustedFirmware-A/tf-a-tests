@@ -61,6 +61,12 @@ static irq_handler_t *get_irq_handler(unsigned int irq_num)
 	return &spurious_desc_handler;
 }
 
+unsigned int tftf_irq_get_my_sgi_num(unsigned int seq_id)
+{
+	unsigned int core_pos = platform_get_core_pos(read_mpidr_el1());
+	return arm_gic_get_sgi_num(seq_id, core_pos);
+}
+
 void tftf_send_sgi(unsigned int sgi_id, unsigned int core_pos)
 {
 	assert(IS_SGI(sgi_id));
@@ -100,12 +106,26 @@ void tftf_irq_enable(unsigned int irq_num, uint8_t irq_priority)
 	VERBOSE("Enabled IRQ #%u\n", irq_num);
 }
 
+void tftf_irq_enable_sgi(unsigned int sgi_id, uint8_t irq_priority)
+{
+	unsigned int irq_num = tftf_irq_get_my_sgi_num(sgi_id);
+
+	tftf_irq_enable(irq_num, irq_priority);
+}
+
 void tftf_irq_disable(unsigned int irq_num)
 {
 	/* Disable the interrupt */
 	arm_gic_intr_disable(irq_num);
 
 	VERBOSE("Disabled IRQ #%u\n", irq_num);
+}
+
+void tftf_irq_disable_sgi(unsigned int sgi_id)
+{
+	unsigned int irq_num = tftf_irq_get_my_sgi_num(sgi_id);
+
+	tftf_irq_disable(irq_num);
 }
 
 #define HANDLER_VALID(handler, expect_handler)		\
@@ -150,6 +170,12 @@ int tftf_irq_register_handler(unsigned int irq_num, irq_handler_t irq_handler)
 	return ret;
 }
 
+int tftf_irq_register_handler_sgi(unsigned int sgi_id, irq_handler_t irq_handler)
+{
+	unsigned int irq_num = tftf_irq_get_my_sgi_num(sgi_id);
+	return tftf_irq_register_handler(irq_num, irq_handler);
+}
+
 int tftf_irq_unregister_handler(unsigned int irq_num)
 {
 	int ret;
@@ -159,6 +185,12 @@ int tftf_irq_unregister_handler(unsigned int irq_num)
 		INFO("Unregistered IRQ handler for IRQ #%u\n", irq_num);
 
 	return ret;
+}
+
+int tftf_irq_unregister_handler_sgi(unsigned int sgi_id)
+{
+	unsigned int irq_num = tftf_irq_get_my_sgi_num(sgi_id);
+	return tftf_irq_unregister_handler(irq_num);
 }
 
 int tftf_irq_handler_dispatcher(void)

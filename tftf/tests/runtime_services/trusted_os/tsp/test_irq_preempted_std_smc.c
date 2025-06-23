@@ -66,7 +66,7 @@ static int register_and_enable_test_sgi_handler(unsigned int core_pos)
 {
 	/* SGIs #0 - #6 are freely available. */
 
-	int ret = tftf_irq_register_handler(IRQ_NS_SGI_0, test_handler);
+	int ret = tftf_irq_register_handler_sgi(IRQ_NS_SGI_0, test_handler);
 
 	if (ret != 0) {
 		tftf_testcase_printf(
@@ -75,7 +75,7 @@ static int register_and_enable_test_sgi_handler(unsigned int core_pos)
 		return -1;
 	}
 
-	tftf_irq_enable(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
 
 	return 0;
 }
@@ -83,9 +83,9 @@ static int register_and_enable_test_sgi_handler(unsigned int core_pos)
 /* Disable and unregister the dummy handler for SGI #0. */
 static void unregister_and_disable_test_sgi_handler(void)
 {
-	tftf_irq_disable(IRQ_NS_SGI_0);
+	tftf_irq_disable_sgi(IRQ_NS_SGI_0);
 
-	tftf_irq_unregister_handler(IRQ_NS_SGI_0);
+	tftf_irq_unregister_handler_sgi(IRQ_NS_SGI_0);
 }
 
 /*

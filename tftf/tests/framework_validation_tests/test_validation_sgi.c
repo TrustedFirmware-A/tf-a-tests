@@ -45,17 +45,18 @@ test_result_t test_validation_sgi(void)
 	unsigned int mpid = read_mpidr_el1();
 	unsigned int core_pos = platform_get_core_pos(mpid);
 	const unsigned int sgi_id = IRQ_NS_SGI_0;
+	const unsigned int sgi_irq = tftf_irq_get_my_sgi_num(sgi_id);
 	test_result_t test_res = TEST_RESULT_SUCCESS;
 	int ret;
 
 	/* Register the local IRQ handler for the SGI */
-	ret = tftf_irq_register_handler(sgi_id, sgi_handler);
+	ret = tftf_irq_register_handler_sgi(sgi_id, sgi_handler);
 	if (ret != 0) {
 		tftf_testcase_printf("Failed to register IRQ %u (%d)",
 				sgi_id, ret);
 		return TEST_RESULT_FAIL;
 	}
-	tftf_irq_enable(sgi_id, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(sgi_id, GIC_HIGHEST_NS_PRIORITY);
 
 	/* Send the SGI to the lead CPU */
 	tftf_send_sgi(sgi_id, core_pos);
@@ -68,14 +69,14 @@ test_result_t test_validation_sgi(void)
 		continue;
 
 	/* Verify the data received in the SGI handler */
-	if (sgi_data != sgi_id) {
+	if (sgi_data != sgi_irq) {
 		tftf_testcase_printf("Wrong IRQ ID, expected %u, got %u\n",
-			sgi_id, sgi_data);
+			sgi_irq, sgi_data);
 		test_res = TEST_RESULT_FAIL;
 	}
 
-	tftf_irq_disable(sgi_id);
-	tftf_irq_unregister_handler(sgi_id);
+	tftf_irq_disable_sgi(sgi_id);
+	tftf_irq_unregister_handler_sgi(sgi_id);
 
 	return test_res;
 }

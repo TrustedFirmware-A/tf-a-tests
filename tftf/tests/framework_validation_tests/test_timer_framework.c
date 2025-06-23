@@ -48,7 +48,7 @@ static int requested_irq_handler(void *data)
 	unsigned int core_pos = platform_get_core_pos(read_mpidr_el1());
 	unsigned int irq_id = *(unsigned int *) data;
 
-	assert(irq_id == IRQ_WAKE_SGI || irq_id == tftf_get_timer_irq());
+	assert(irq_id == tftf_irq_get_my_sgi_num(IRQ_WAKE_SGI) || irq_id == tftf_get_timer_irq());
 	assert(requested_irq_received[core_pos] == 0);
 
 	if (irq_id == tftf_get_timer_irq()) {
@@ -71,10 +71,10 @@ static int multiple_timer_handler(void *data)
 	unsigned int core_pos = platform_get_core_pos(read_mpidr_el1());
 	unsigned int irq_id = *(unsigned int *) data;
 
-	assert(irq_id == IRQ_WAKE_SGI || irq_id == tftf_get_timer_irq());
+	assert(irq_id == tftf_irq_get_my_sgi_num(IRQ_WAKE_SGI) || irq_id == tftf_get_timer_irq());
 	assert(requested_irq_received[core_pos] == 0);
 
-	if (irq_id == IRQ_WAKE_SGI) {
+	if (irq_id == tftf_irq_get_my_sgi_num(IRQ_WAKE_SGI)) {
 		spin_lock(&irq_handler_lock);
 		multiple_timer_count++;
 		spin_unlock(&irq_handler_lock);

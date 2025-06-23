@@ -143,6 +143,15 @@ void arm_gic_set_intr_priority(unsigned int num,
 		gicv2_gicd_set_ipriorityr(num, priority);
 }
 
+uint32_t arm_gic_get_sgi_num(uint32_t seq_id, unsigned int core_pos)
+{
+	if (gicv5_detected) {
+		return gicv5_get_sgi_num(seq_id, core_pos);
+	} else {
+		return gicv2v3_get_sgi_num(seq_id, core_pos);
+	}
+}
+
 void arm_gic_send_sgi(unsigned int sgi_id, unsigned int core_pos)
 {
 	if (gicv3_detected)

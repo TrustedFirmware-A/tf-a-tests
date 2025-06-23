@@ -490,7 +490,7 @@ int tftf_timer_register_handler(irq_handler_t irq_handler)
 	 * Also register same handler to IRQ_WAKE_SGI, as it can be waken
 	 * by it.
 	 */
-	ret = tftf_irq_register_handler(IRQ_WAKE_SGI, irq_handler);
+	ret = tftf_irq_register_handler_sgi(IRQ_WAKE_SGI, irq_handler);
 	assert(!ret);
 
 	return ret;
@@ -504,7 +504,7 @@ int tftf_timer_unregister_handler(void)
 	/*
 	 * Unregister the handler for IRQ_WAKE_SGI also
 	 */
-	ret = tftf_irq_unregister_handler(IRQ_WAKE_SGI);
+	ret = tftf_irq_unregister_handler_sgi(IRQ_WAKE_SGI);
 	assert(!ret);
 	/* Validate a handler is registered */
 	assert(timer_handler[core_pos]);

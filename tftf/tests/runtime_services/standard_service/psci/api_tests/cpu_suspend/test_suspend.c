@@ -49,7 +49,7 @@ static int requested_irq_handler(void *data)
 	unsigned int irq_id = *(unsigned int *) data;
 #endif
 
-	assert(irq_id == IRQ_WAKE_SGI || irq_id == tftf_get_timer_irq());
+	assert(irq_id == tftf_irq_get_my_sgi_num(IRQ_WAKE_SGI) || irq_id == tftf_get_timer_irq());
 	assert(requested_irq_received[core_pos] == 0);
 
 	requested_irq_received[core_pos] = 1;

@@ -284,12 +284,12 @@ test_result_t host_realm_multi_rec_exit_irq(void)
 	}
 
 destroy_realm:
-	tftf_irq_enable(IRQ_NS_SGI_7, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(IRQ_NS_SGI_7, GIC_HIGHEST_NS_PRIORITY);
 	for (unsigned int i = 1U; i < rec_count; i++) {
 		INFO("Raising NS IRQ for rec %u\n", i);
 		host_rec_send_sgi(&realm, IRQ_NS_SGI_7, i);
 	}
-	tftf_irq_disable(IRQ_NS_SGI_7);
+	tftf_irq_disable_sgi(IRQ_NS_SGI_7);
 	ret2 = host_destroy_realm(&realm);
 	if (!ret1 || !ret2) {
 		ERROR("%s(): enter=%d destroy=%d\n",

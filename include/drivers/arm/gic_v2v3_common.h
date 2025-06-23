@@ -91,6 +91,13 @@ void gicd_set_icactiver(uintptr_t base, unsigned int interrupt_id);
 void gicd_set_ipriorityr(uintptr_t base, unsigned int interrupt_id,
 					unsigned int priority);
 
+static inline unsigned int gicv2v3_get_sgi_num(unsigned int irq_num,
+						unsigned int core_pos)
+{
+	/* the SGI index is the INTID */
+	return irq_num;
+}
+
 /*******************************************************************************
  * Private GIC Distributor interface accessors for reading and writing
  * entire registers

@@ -182,7 +182,7 @@ static unsigned long long profile_cpu_suspend(u_register_t (*read_cntr_f)(void))
 	power_state = tftf_make_psci_pstate(MPIDR_AFFLVL0,
 					    PSTATE_TYPE_STANDBY, stateid);
 
-	tftf_irq_enable(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
 
 	/*
 	 * Mask IRQ to prevent the interrupt handler being invoked
@@ -203,7 +203,7 @@ static unsigned long long profile_cpu_suspend(u_register_t (*read_cntr_f)(void))
 	enable_irq();
 	isb();
 
-	tftf_irq_disable(IRQ_NS_SGI_0);
+	tftf_irq_disable_sgi(IRQ_NS_SGI_0);
 
 	return evt_cnt;
 }
@@ -241,7 +241,7 @@ static void measure_event(u_register_t (*read_cntr_func)(void),
 
 		cnt_sum += evt_cnt;
 
-		tftf_irq_disable(IRQ_NS_SGI_0);
+		tftf_irq_disable_sgi(IRQ_NS_SGI_0);
 	}
 
 	avg_cnt = cnt_sum / ITERATIONS_CNT;

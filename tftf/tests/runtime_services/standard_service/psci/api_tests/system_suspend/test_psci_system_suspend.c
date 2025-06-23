@@ -323,14 +323,14 @@ static test_result_t non_lead_cpu_sgi_test(void)
 	int sgi_ret;
 
 	/* Register the local IRQ handler for the SGI */
-	sgi_ret = tftf_irq_register_handler(sgi_id, sgi_handler);
+	sgi_ret = tftf_irq_register_handler_sgi(sgi_id, sgi_handler);
 	if (sgi_ret != 0) {
 		tftf_testcase_printf("Failed to register IRQ %u (%d)",
 				sgi_id, sgi_ret);
 		return TEST_RESULT_FAIL;
 	}
 	/* Enable SGI */
-	tftf_irq_enable(sgi_id, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(sgi_id, GIC_HIGHEST_NS_PRIORITY);
 
 	/* Signal to the lead CPU that we are ready to receive SGI */
 	tftf_send_event(&cpu_ready[core_pos]);
@@ -342,8 +342,8 @@ static test_result_t non_lead_cpu_sgi_test(void)
 	tftf_send_event(&sgi_received[core_pos]);
 
 	/* Unregister SGI handler */
-	tftf_irq_disable(sgi_id);
-	tftf_irq_unregister_handler(sgi_id);
+	tftf_irq_disable_sgi(sgi_id);
+	tftf_irq_unregister_handler_sgi(sgi_id);
 	return TEST_RESULT_SUCCESS;
 }
 
@@ -458,6 +458,7 @@ test_result_t test_psci_sys_susp_pending_irq(void)
 {
 	unsigned int core_pos = platform_get_core_pos(read_mpidr_el1());
 	const unsigned int sgi_id = IRQ_NS_SGI_0;
+	const unsigned int sgi_irq = tftf_irq_get_my_sgi_num(sgi_id);
 	int sgi_ret;
 	int psci_ret;
 	test_result_t ret = TEST_RESULT_SUCCESS;
@@ -473,7 +474,7 @@ test_result_t test_psci_sys_susp_pending_irq(void)
 	wakeup_irq_rcvd[core_pos] = 0;
 
 	/* Register the local IRQ handler for the SGI */
-	sgi_ret = tftf_irq_register_handler(sgi_id, sgi_handler);
+	sgi_ret = tftf_irq_register_handler_sgi(sgi_id, sgi_handler);
 	if (sgi_ret != 0) {
 		tftf_testcase_printf("Failed to register IRQ %u (%d)",
 				sgi_id, sgi_ret);
@@ -489,7 +490,7 @@ test_result_t test_psci_sys_susp_pending_irq(void)
 	 */
 	tftf_program_timer(SUSPEND_TIME_3_SECS);
 
-	tftf_irq_enable(sgi_id, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(sgi_id, GIC_HIGHEST_NS_PRIORITY);
 	disable_irq();
 
 	/* Send the SGI to the lead CPU */
@@ -517,9 +518,9 @@ test_result_t test_psci_sys_susp_pending_irq(void)
 		;
 
 	/* Verify the sgi data received by the SGI handler */
-	if (sgi_data != sgi_id) {
+	if (sgi_data != sgi_irq) {
 		tftf_testcase_printf("Wrong IRQ ID, expected %u, got %u\n",
-				sgi_id, sgi_data);
+				sgi_irq, sgi_data);
 		ret = TEST_RESULT_FAIL;
 	}
 
@@ -531,8 +532,8 @@ test_result_t test_psci_sys_susp_pending_irq(void)
 	tftf_cancel_timer();
 
 	/* Unregister SGI handler */
-	tftf_irq_disable(sgi_id);
-	tftf_irq_unregister_handler(sgi_id);
+	tftf_irq_disable_sgi(sgi_id);
+	tftf_irq_unregister_handler_sgi(sgi_id);
 
 	return ret;
 }
@@ -662,13 +663,13 @@ static test_result_t suspend_non_lead_cpu(void)
 	unsigned int core_pos = platform_get_core_pos(mpid);
 	int ret;
 
-	tftf_irq_enable(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
 
 	/* Tell the lead CPU that the calling CPU is about to suspend itself */
 	tftf_send_event(&cpu_ready[core_pos]);
 
 	ret = tftf_cpu_suspend(deepest_power_state);
-	tftf_irq_disable(IRQ_NS_SGI_0);
+	tftf_irq_disable_sgi(IRQ_NS_SGI_0);
 
 	if (ret) {
 		ERROR(" CPU suspend failed with error %x\n", ret);

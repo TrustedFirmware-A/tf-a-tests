@@ -269,7 +269,7 @@ void tftf_detect_psci_pstate_format(void)
 		return;
 	}
 
-	tftf_irq_enable(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
 
 	/*
 	 * Mask IRQ to prevent the interrupt handler being invoked
@@ -298,7 +298,7 @@ void tftf_detect_psci_pstate_format(void)
 	enable_irq();
 	isb();
 
-	tftf_irq_disable(IRQ_NS_SGI_0);
+	tftf_irq_disable_sgi(IRQ_NS_SGI_0);
 
 	/*
 	 * The NULL State-ID returned SUCCESS. Hence State-ID is NULL

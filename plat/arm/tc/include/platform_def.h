@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -128,10 +128,6 @@
  ******************************************************************************/
 #define CACHE_WRITEBACK_SHIFT  		 6
 #define CACHE_WRITEBACK_GRANULE		 (1 << CACHE_WRITEBACK_SHIFT)
-
-/* Non-Secure Software Generated Interupts IDs */
-#define IRQ_NS_SGI_0			0
-#define IRQ_NS_SGI_7			7
 
 /* AP UART1 interrupt is considered as the maximum SPI */
 #define PLAT_MAX_SPI_OFFSET_ID		64

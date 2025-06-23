@@ -34,9 +34,6 @@
 
 #ifndef __ASSEMBLY__
 
-/* Prototype of a handler function for an IRQ */
-typedef int (*irq_handler_t)(void *data);
-
 /* Keep track of the IRQ handler registered for a given SPI */
 typedef struct {
 	irq_handler_t handler;

@@ -351,6 +351,11 @@ void gicv3_set_intr_route(unsigned int interrupt_id,
 	assert(core_pos < PLATFORM_CORE_COUNT);
 	assert(mpidr_list[core_pos] != UINT64_MAX);
 
+	/* only relevant for SPIs */
+	if (!IS_PLAT_SPI(interrupt_id)) {
+		return;
+	}
+
 	/* Routing information can be set only for SPIs */
 	assert(IS_SPI(interrupt_id));
 	route_affinity = mpidr_list[core_pos];
@@ -501,6 +506,8 @@ void gicv3_init(uintptr_t gicr_base, uintptr_t gicd_base)
 
 	gicr_base_addr = gicr_base;
 	gicd_base_addr = gicd_base;
+
+	gicv2v3_irq_setup();
 }
 
 unsigned int gicv3_get_gicd_typer(void)

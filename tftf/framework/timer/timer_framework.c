@@ -97,7 +97,7 @@ int tftf_initialise_timer(void)
 
 void tftf_initialise_timer_secondary_core(void)
 {
-	if (!IS_SPI(TIMER_IRQ)) {
+	if (!arm_gic_is_irq_shared(TIMER_IRQ)) {
 		arm_gic_set_intr_priority(TIMER_IRQ, GIC_HIGHEST_NS_PRIORITY);
 		arm_gic_intr_enable(TIMER_IRQ);
 	}
@@ -186,7 +186,7 @@ int tftf_program_timer(unsigned long time_out_ms)
 	if ((!get_current_prog_time()) || (interrupt_req_time[core_pos] <
 				(get_current_prog_time() - TIMER_STEP_VALUE))) {
 
-		if (IS_SPI(TIMER_IRQ)) {
+		if (arm_gic_is_irq_shared(TIMER_IRQ)) {
 			arm_gic_set_intr_target(TIMER_IRQ, core_pos);
 		}
 

@@ -11,6 +11,7 @@
 #include <drivers/arm/gic_v2v3_common.h>
 #include <drivers/arm/gic_v3.h>
 #include <mmio.h>
+#include <platform.h>
 
 /*******************************************************************************
  * GIC Distributor interface accessors for reading entire registers
@@ -196,4 +197,47 @@ bool is_gicv3_mode(void)
 
 	/* Check whether the system register interface is enabled */
 	return !!is_sre_enabled();
+}
+
+bool gicv2v3_is_irq_spi(unsigned int irq_num)
+{
+	return IS_PLAT_SPI(irq_num);
+}
+
+static spi_desc spi_desc_table[PLAT_MAX_SPI_OFFSET_ID + 1];
+static ppi_desc ppi_desc_table[PLATFORM_CORE_COUNT][
+				(MAX_PPI_ID + 1) - MIN_PPI_ID];
+static sgi_desc sgi_desc_table[PLATFORM_CORE_COUNT][MAX_SGI_ID + 1];
+static spurious_desc spurious_desc_handler;
+
+void gicv2v3_irq_setup(void)
+{
+	memset(spi_desc_table, 0, sizeof(spi_desc_table));
+	memset(ppi_desc_table, 0, sizeof(ppi_desc_table));
+	memset(sgi_desc_table, 0, sizeof(sgi_desc_table));
+	memset(&spurious_desc_handler, 0, sizeof(spurious_desc_handler));
+}
+
+irq_handler_t *gicv2v3_get_irq_handler(unsigned int irq_num)
+{
+	if (IS_PLAT_SPI(irq_num)) {
+		return &spi_desc_table[irq_num - MIN_SPI_ID].handler;
+	}
+
+	unsigned int linear_id = platform_get_core_pos(read_mpidr_el1());
+
+	if (IS_PPI(irq_num)) {
+		return &ppi_desc_table[linear_id][irq_num - MIN_PPI_ID].handler;
+	}
+
+	if (IS_SGI(irq_num)) {
+		return &sgi_desc_table[linear_id][irq_num - MIN_SGI_ID].handler;
+	}
+
+	/*
+	 * The only possibility is for it to be a spurious
+	 * interrupt.
+	 */
+	assert(irq_num == GIC_SPURIOUS_INTERRUPT);
+	return &spurious_desc_handler;
 }

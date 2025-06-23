@@ -293,3 +293,21 @@ bool arm_gic_is_espi_supported(void)
 
 	return false;
 }
+
+irq_handler_t *arm_gic_get_irq_handler(unsigned int irq_num)
+{
+	if (gicv5_detected) {
+		return gicv5_get_irq_handler(irq_num);
+	} else {
+		return gicv2v3_get_irq_handler(irq_num);
+	}
+}
+
+bool arm_gic_is_irq_shared(unsigned int irq_num)
+{
+	if (gicv5_detected) {
+		return gicv5_is_irq_spi(irq_num);
+	} else {
+		return gicv2v3_is_irq_spi(irq_num);
+	}
+}

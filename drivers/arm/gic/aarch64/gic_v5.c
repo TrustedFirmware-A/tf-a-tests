@@ -36,6 +36,10 @@ static uint16_t iaffids[PLATFORM_CORE_COUNT];
 /* the IST is a power of 2 since that's what goes in IRS_IST_CFGR.LPI_ID_BITS */
 struct l2_iste ist[next_power_of_2(PLATFORM_CORE_COUNT) * IRQ_NUM_SGIS];
 
+static ppi_desc ppi_desc_table[PLATFORM_CORE_COUNT][GICV5_MAX_PPI_ID];
+static spi_desc spi_desc_table[PLAT_MAX_SPI_OFFSET_ID];
+static spi_desc lpi_desc_table[PLATFORM_CORE_COUNT * IRQ_NUM_SGIS];
+
 static inline uint8_t log2(uint32_t num)
 {
 	return (31 - __builtin_clz(num));
@@ -410,7 +414,32 @@ uint32_t gicv5_get_sgi_num(uint32_t index, unsigned int core_pos)
 	return (core_pos * IRQ_NUM_SGIS + index) | INPLACE(INT_TYPE, INT_LPI);
 }
 
+irq_handler_t *gicv5_get_irq_handler(unsigned int irq_num)
+{
+	unsigned int linear_id;
+
+	if (EXTRACT(INT_TYPE, irq_num) == INT_PPI) {
+		linear_id = platform_get_core_pos(read_mpidr_el1());
+		return &ppi_desc_table[linear_id][EXTRACT(INT_ID, irq_num)].handler;
+	}
+
+	if (EXTRACT(INT_TYPE, irq_num) == INT_LPI) {
+		return &lpi_desc_table[EXTRACT(INT_ID, irq_num)].handler;
+	}
+
+	if (EXTRACT(INT_TYPE, irq_num) == INT_SPI) {
+		return &spi_desc_table[EXTRACT(INT_ID, irq_num)].handler;
+	}
+
+	/* Interrupt should have been handled */
+	panic();
+	return NULL;
+}
+
 void gicv5_init(uintptr_t irs_base_addr)
 {
 	irs_base = irs_base_addr;
+	memset(ppi_desc_table, 0, sizeof(ppi_desc_table));
+	memset(spi_desc_table, 0, sizeof(spi_desc_table));
+	memset(lpi_desc_table, 0, sizeof(lpi_desc_table));
 }

@@ -18,16 +18,6 @@
 #include <tftf.h>
 #include <tftf_lib.h>
 
-#define IS_PLAT_SPI(irq_num)						\
-	(((irq_num) >= MIN_SPI_ID) &&					\
-	 ((irq_num) <= MIN_SPI_ID + PLAT_MAX_SPI_OFFSET_ID))
-
-static spi_desc spi_desc_table[PLAT_MAX_SPI_OFFSET_ID + 1];
-static ppi_desc ppi_desc_table[PLATFORM_CORE_COUNT][
-				(MAX_PPI_ID + 1) - MIN_PPI_ID];
-static sgi_desc sgi_desc_table[PLATFORM_CORE_COUNT][MAX_SGI_ID + 1];
-static spurious_desc spurious_desc_handler;
-
 /*
  * For a given SPI, the associated IRQ handler is common to all CPUs.
  * Therefore, we need a lock to prevent simultaneous updates.
@@ -37,29 +27,8 @@ static spurious_desc spurious_desc_handler;
  * saves memory. Updating an SPI handler shouldn't occur that often anyway so we
  * shouldn't suffer from this restriction too much.
  */
-static spinlock_t spi_lock;
+static spinlock_t shared_irq_lock;
 
-static irq_handler_t *get_irq_handler(unsigned int irq_num)
-{
-	if (IS_PLAT_SPI(irq_num))
-		return &spi_desc_table[irq_num - MIN_SPI_ID].handler;
-
-	unsigned int mpid = read_mpidr_el1();
-	unsigned int linear_id = platform_get_core_pos(mpid);
-
-	if (IS_PPI(irq_num))
-		return &ppi_desc_table[linear_id][irq_num - MIN_PPI_ID].handler;
-
-	if (IS_SGI(irq_num))
-		return &sgi_desc_table[linear_id][irq_num - MIN_SGI_ID].handler;
-
-	/*
-	 * The only possibility is for it to be a spurious
-	 * interrupt.
-	 */
-	assert(irq_num == GIC_SPURIOUS_INTERRUPT);
-	return &spurious_desc_handler;
-}
 
 unsigned int tftf_irq_get_my_sgi_num(unsigned int seq_id)
 {
@@ -69,8 +38,6 @@ unsigned int tftf_irq_get_my_sgi_num(unsigned int seq_id)
 
 void tftf_send_sgi(unsigned int sgi_id, unsigned int core_pos)
 {
-	assert(IS_SGI(sgi_id));
-
 	/*
 	 * Ensure that all memory accesses prior to sending the SGI are
 	 * completed.
@@ -92,14 +59,7 @@ void tftf_send_sgi(unsigned int sgi_id, unsigned int core_pos)
 
 void tftf_irq_enable(unsigned int irq_num, uint8_t irq_priority)
 {
-	if (IS_PLAT_SPI(irq_num)) {
-		/*
-		 * Instruct the GIC Distributor to forward the interrupt to
-		 * the calling core
-		 */
-		arm_gic_set_intr_target(irq_num, platform_get_core_pos(read_mpidr_el1()));
-	}
-
+	arm_gic_set_intr_target(irq_num, platform_get_core_pos(read_mpidr_el1()));
 	arm_gic_set_intr_priority(irq_num, irq_priority);
 	arm_gic_intr_enable(irq_num);
 
@@ -138,9 +98,9 @@ static int tftf_irq_update_handler(unsigned int irq_num,
 	irq_handler_t *cur_handler;
 	int ret = -1;
 
-	cur_handler = get_irq_handler(irq_num);
-	if (IS_PLAT_SPI(irq_num))
-		spin_lock(&spi_lock);
+	cur_handler = arm_gic_get_irq_handler(irq_num);
+	if (arm_gic_is_irq_shared(irq_num))
+		spin_lock(&shared_irq_lock);
 
 	/*
 	 * Update the IRQ handler, if the current handler is in the expected
@@ -152,8 +112,8 @@ static int tftf_irq_update_handler(unsigned int irq_num,
 		ret = 0;
 	}
 
-	if (IS_PLAT_SPI(irq_num))
-		spin_unlock(&spi_lock);
+	if (arm_gic_is_irq_shared(irq_num))
+		spin_unlock(&shared_irq_lock);
 
 	return ret;
 }
@@ -204,7 +164,7 @@ int tftf_irq_handler_dispatcher(void)
 	/* Acknowledge the interrupt */
 	irq_num = arm_gic_intr_ack(&raw_iar);
 
-	handler = get_irq_handler(irq_num);
+	handler = arm_gic_get_irq_handler(irq_num);
 	irq_data = &irq_num;
 
 	if (*handler != NULL)
@@ -219,9 +179,5 @@ int tftf_irq_handler_dispatcher(void)
 
 void tftf_irq_setup(void)
 {
-	memset(spi_desc_table, 0, sizeof(spi_desc_table));
-	memset(ppi_desc_table, 0, sizeof(ppi_desc_table));
-	memset(sgi_desc_table, 0, sizeof(sgi_desc_table));
-	memset(&spurious_desc_handler, 0, sizeof(spurious_desc_handler));
-	init_spinlock(&spi_lock);
+	init_spinlock(&shared_irq_lock);
 }

@@ -10,32 +10,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/***************************************************************************
- * Defines and prototypes for ARM GIC driver.
- **************************************************************************/
-#define MAX_SGIS		16
-#define MIN_SGI_ID		0
-#define MAX_SGI_ID		15
-#define MIN_PPI_ID		16
-#define MAX_PPI_ID		31
-#define MIN_SPI_ID		32
-#define MAX_SPI_ID		1019
-
-#define IS_SGI(irq_num)							\
-	(((irq_num) >= MIN_SGI_ID) && ((irq_num) <= MAX_SGI_ID))
-
-#define IS_PPI(irq_num)							\
-	(((irq_num) >= MIN_PPI_ID) && ((irq_num) <= MAX_PPI_ID))
-
-#define IS_SPI(irq_num)							\
-	(((irq_num) >= MIN_SPI_ID) && ((irq_num) <= MAX_SPI_ID))
-
-#define IS_VALID_INTR_ID(irq_num)					\
-	(((irq_num) >= MIN_SGI_ID) && ((irq_num) <= MAX_SPI_ID))
-
 #define GIC_HIGHEST_NS_PRIORITY	0
 #define GIC_LOWEST_NS_PRIORITY	254 /* 255 would disable an interrupt */
 #define GIC_SPURIOUS_INTERRUPT	1023
+
+/* Prototype of a handler function for an IRQ */
+typedef int (*irq_handler_t)(void *data);
 
 /* return the GIC version detected */
 int arm_gic_get_version(void);
@@ -169,5 +149,16 @@ void arm_gic_restore_context_global(void);
  * Check if extended SPI range is implemented by GIC.
  *****************************************************************************/
 bool arm_gic_is_espi_supported(void);
+
+/******************************************************************************
+ * Gets the handler for an interrupt
+ *****************************************************************************/
+irq_handler_t *arm_gic_get_irq_handler(unsigned int irq_num);
+
+/******************************************************************************
+ * Returns true if the IRQ number is shared between cores (as opposed to
+ * individual or banked for each).
+ *****************************************************************************/
+bool arm_gic_is_irq_shared(unsigned int irq_num);
 
 #endif /* __ARM_GIC_H__ */

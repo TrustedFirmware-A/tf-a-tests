@@ -9,6 +9,34 @@
 
 #include <stdbool.h>
 
+#include <drivers/arm/arm_gic.h>
+
+/***************************************************************************
+ * Defines and prototypes for ARM GIC driver.
+ **************************************************************************/
+#define MIN_SGI_ID		0
+#define MAX_SGI_ID		15
+#define MIN_PPI_ID		16
+#define MAX_PPI_ID		31
+#define MIN_SPI_ID		32
+#define MAX_SPI_ID		1019
+
+#define IS_SGI(irq_num)							\
+	(((irq_num) >= MIN_SGI_ID) && ((irq_num) <= MAX_SGI_ID))
+
+#define IS_PPI(irq_num)							\
+	(((irq_num) >= MIN_PPI_ID) && ((irq_num) <= MAX_PPI_ID))
+
+#define IS_SPI(irq_num)							\
+	(((irq_num) >= MIN_SPI_ID) && ((irq_num) <= MAX_SPI_ID))
+
+#define IS_PLAT_SPI(irq_num)						\
+	(((irq_num) >= MIN_SPI_ID) &&					\
+	 ((irq_num) <= MIN_SPI_ID + PLAT_MAX_SPI_OFFSET_ID))
+
+#define IS_VALID_INTR_ID(irq_num)					\
+	(((irq_num) >= MIN_SGI_ID) && ((irq_num) <= MAX_SPI_ID))
+
 /***************************************************************************
  * Defines and prototypes common to GIC v2 and v3 drivers.
  **************************************************************************/
@@ -90,6 +118,9 @@ void gicd_set_isactiver(uintptr_t base, unsigned int interrupt_id);
 void gicd_set_icactiver(uintptr_t base, unsigned int interrupt_id);
 void gicd_set_ipriorityr(uintptr_t base, unsigned int interrupt_id,
 					unsigned int priority);
+bool gicv2v3_is_irq_spi(unsigned int irq_num);
+void gicv2v3_irq_setup(void);
+irq_handler_t *gicv2v3_get_irq_handler(unsigned int irq_num);
 
 static inline unsigned int gicv2v3_get_sgi_num(unsigned int irq_num,
 						unsigned int core_pos)

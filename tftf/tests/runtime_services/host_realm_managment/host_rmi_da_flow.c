@@ -107,8 +107,6 @@ test_result_t host_invoke_rmi_da_flow(void)
 						 &public_key_algo);
 	if (rc != 0) {
 		ERROR("Get public key failed\n");
-		/* TF-RMM has support till here. Change error code temporarily */
-		result = TEST_RESULT_SUCCESS;
 		goto err_pdev_reclaim;
 	}
 
@@ -143,6 +141,8 @@ test_result_t host_invoke_rmi_da_flow(void)
 	rc = host_assign_vdev_to_realm(&realm, h_pdev, h_vdev);
 	if (rc != 0) {
 		INFO("VDEV assign to realm failed\n");
+		/* TF-RMM has support till here. Change error code temporarily */
+		result = TEST_RESULT_SUCCESS;
 		goto err_pdev_reclaim;
 	}
 

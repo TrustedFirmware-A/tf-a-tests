@@ -160,7 +160,7 @@
  * Base address and limit for NS_BL2U image.
  ******************************************************************************/
 #define NS_BL2U_BASE		DRAM_BASE
-#define NS_BL2U_LIMIT		(NS_BL2U_BASE + 0x4E000)
+#define NS_BL2U_LIMIT		(NS_BL2U_BASE + 0x50000)
 
 /******************************************************************************
  * Memory mapped Generic timer interfaces

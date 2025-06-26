@@ -13,6 +13,7 @@
 #include <pcie.h>
 #include <pcie_doe.h>
 #include <pcie_spec.h>
+#include <pcie_dvsec_rmeda.h>
 #include <platform.h>
 #include <plat_pcie_enum.h>
 #include <tftf_lib.h>
@@ -21,8 +22,7 @@
 
 const struct pcie_info_table *g_pcie_info_table;
 static pcie_device_bdf_table_t *g_pcie_bdf_table;
-
-static pcie_device_bdf_table_t pcie_bdf_table[PCIE_DEVICE_BDF_TABLE_SZ];
+static pcie_device_bdf_table_t pcie_bdf_table;
 
 static uint32_t g_pcie_index;
 static uint32_t g_enumerate;
@@ -252,13 +252,13 @@ static uint32_t pcie_device_port_type(uint32_t bdf)
  * @brief  Returns BDF of the upstream Root Port of a pcie device function.
  *
  * @param  bdf	     - Function's Segment/Bus/Dev/Func in PCIE_CREATE_BDF format
- * @param  usrp_bdf  - Upstream Rootport bdf in PCIE_CREATE_BDF format
- * @return 0 for success, 1 for failure.
+ * @return pcie_dev for success, NULL for failure.
  */
-static uint32_t pcie_get_rootport(uint32_t bdf, uint32_t *rp_bdf)
+static pcie_dev_t *pcie_get_rootport(uint32_t bdf)
 {
 	uint32_t seg_num, sec_bus, sub_bus;
 	uint32_t reg_value, dp_type, index = 0;
+	uint32_t rp_bdf;
 
 	dp_type = pcie_device_port_type(bdf);
 
@@ -266,43 +266,43 @@ static uint32_t pcie_get_rootport(uint32_t bdf, uint32_t *rp_bdf)
 
 	/* If the device is RP or iEP_RP, set its rootport value to same */
 	if ((dp_type == RP) || (dp_type == iEP_RP)) {
-		*rp_bdf = bdf;
-		return 0;
+		return NULL;
 	}
 
 	/* If the device is RCiEP and RCEC, set RP as 0xff */
 	if ((dp_type == RCiEP) || (dp_type == RCEC)) {
-		*rp_bdf = 0xffffffff;
-		return 1;
+		return NULL;
 	}
 
 	assert(g_pcie_bdf_table != NULL);
 
 	while (index < g_pcie_bdf_table->num_entries) {
-		*rp_bdf = g_pcie_bdf_table->device[index++].bdf;
+		rp_bdf = g_pcie_bdf_table->device[index].bdf;
 
 		/*
 		 * Extract Secondary and Subordinate Bus numbers of the
 		 * upstream Root port and check if the input function's
 		 * bus number falls within that range.
 		 */
-		reg_value = pcie_read_cfg(*rp_bdf, TYPE1_PBN);
-		seg_num = PCIE_EXTRACT_BDF_SEG(*rp_bdf);
+		reg_value = pcie_read_cfg(rp_bdf, TYPE1_PBN);
+		seg_num = PCIE_EXTRACT_BDF_SEG(rp_bdf);
 		sec_bus = ((reg_value >> SECBN_SHIFT) & SECBN_MASK);
 		sub_bus = ((reg_value >> SUBBN_SHIFT) & SUBBN_MASK);
-		dp_type = pcie_device_port_type(*rp_bdf);
+		dp_type = pcie_device_port_type(rp_bdf);
 
 		if (((dp_type == RP) || (dp_type == iEP_RP)) &&
-			(sec_bus <= PCIE_EXTRACT_BDF_BUS(bdf)) &&
-			(sub_bus >= PCIE_EXTRACT_BDF_BUS(bdf)) &&
-			(seg_num == PCIE_EXTRACT_BDF_SEG(bdf)))
-			return 0;
+		    (sec_bus <= PCIE_EXTRACT_BDF_BUS(bdf)) &&
+		    (sub_bus >= PCIE_EXTRACT_BDF_BUS(bdf)) &&
+		    (seg_num == PCIE_EXTRACT_BDF_SEG(bdf))) {
+			return &g_pcie_bdf_table->device[index];
 		}
 
-		/* Return failure */
-		ERROR("PCIe Hierarchy fail: RP of bdf 0x%x not found\n", bdf);
-		*rp_bdf = 0;
-		return 1;
+		index++;
+	}
+
+	/* Return failure */
+	ERROR("PCIe Hierarchy fail: RP of bdf 0x%x not found\n", bdf);
+	return NULL;
 }
 
 /*
@@ -313,8 +313,9 @@ static uint32_t pcie_get_rootport(uint32_t bdf, uint32_t *rp_bdf)
  */
 static uint32_t pcie_populate_device_rootport(void)
 {
-	uint32_t bdf, rp_bdf;
+	uint32_t bdf;
 	pcie_device_bdf_table_t *bdf_tbl_ptr = g_pcie_bdf_table;
+	pcie_dev_t *rp_dev;
 
 	assert(bdf_tbl_ptr != NULL);
 
@@ -323,13 +324,122 @@ static uint32_t pcie_populate_device_rootport(void)
 		bdf = bdf_tbl_ptr->device[tbl_index].bdf;
 
 		/* Checks if the BDF has RootPort */
-		pcie_get_rootport(bdf, &rp_bdf);
+		rp_dev = pcie_get_rootport(bdf);
 
-		bdf_tbl_ptr->device[tbl_index].rp_bdf = rp_bdf;
-		PCIE_DEBUG("Dev bdf: 0x%x RP bdf: 0x%x\n", bdf, rp_bdf);
+		bdf_tbl_ptr->device[tbl_index].rp_dev = rp_dev;
+
+		if (rp_dev != NULL) {
+			INFO("Dev bdf: 0x%x RP bdf: 0x%x\n", bdf,
+			     rp_dev->bdf);
+		} else {
+			INFO("Dev bdf: 0x%x RP bdf: none\n", bdf);
+		}
 	}
 
 	return 0;
+}
+
+/*
+ * @brief  Returns the header type of the input pcie device function
+ *
+ * @param  bdf   - Segment/Bus/Dev/Func in the format of PCIE_CREATE_BDF
+ * @return TYPE0_HEADER for functions with Type 0 config space header,
+ *         TYPE1_HEADER for functions with Type 1 config space header,
+ */
+static uint32_t pcie_function_header_type(uint32_t bdf)
+{
+	/* Read four bytes of config space starting from cache line size register */
+	uint32_t reg_value = pcie_read_cfg(bdf, TYPE01_CLSR);
+
+	/* Extract header type register value */
+	reg_value = ((reg_value >> TYPE01_HTR_SHIFT) & TYPE01_HTR_MASK);
+
+	/* Header layout bits within header type register indicate the header type */
+	return ((reg_value >> HTR_HL_SHIFT) & HTR_HL_MASK);
+}
+
+/*
+ * @brief  Returns the ECAM address of the input PCIe function
+ *
+ * @param  bdf   - Segment/Bus/Dev/Func in PCIE_CREATE_BDF format
+ * @return ECAM address if success, else NULL address
+ */
+static uintptr_t pcie_get_ecam_base(uint32_t bdf)
+{
+	uint8_t ecam_index = 0, sec_bus = 0, sub_bus;
+	uint16_t seg_num = (uint16_t)PCIE_EXTRACT_BDF_SEG(bdf);
+	uint32_t reg_value;
+	uintptr_t ecam_base = 0;
+
+	assert(g_pcie_info_table != NULL);
+
+	while (ecam_index < g_pcie_info_table->num_entries) {
+		/* Derive ECAM specific information */
+		const pcie_info_block_t *block = &g_pcie_info_table->block[ecam_index];
+
+		if (seg_num == block->segment_num) {
+			if (pcie_function_header_type(bdf) == TYPE0_HEADER) {
+				/* Return ecam_base if Type0 Header */
+				ecam_base = block->ecam_base;
+				break;
+			}
+
+			/* Check for Secondary/Subordinate bus if Type1 Header */
+			reg_value = pcie_read_cfg(bdf, TYPE1_PBN);
+			sec_bus = ((reg_value >> SECBN_SHIFT) & SECBN_MASK);
+			sub_bus = ((reg_value >> SUBBN_SHIFT) & SUBBN_MASK);
+
+			if ((sec_bus >= block->start_bus_num) &&
+			    (sub_bus <= block->end_bus_num)) {
+				ecam_base = block->ecam_base;
+				break;
+			}
+		}
+		ecam_index++;
+	}
+
+	return ecam_base;
+}
+
+static void pcie_devices_init_fields(void)
+{
+	pcie_device_bdf_table_t *bdf_tbl_ptr = g_pcie_bdf_table;
+	pcie_dev_t *pcie_dev;
+	uint32_t status;
+	uint32_t base;
+	uint32_t bdf;
+
+	assert(bdf_tbl_ptr != NULL);
+
+	for (uint32_t i = 0; i < bdf_tbl_ptr->num_entries; i++) {
+		pcie_dev = &bdf_tbl_ptr->device[i];
+		bdf = pcie_dev->bdf;
+
+		pcie_dev->dp_type = pcie_device_port_type(bdf);
+		pcie_dev->ecam_base = pcie_get_ecam_base(bdf);
+
+		/* Has DOE? */
+		status = pcie_find_capability(bdf, PCIE_ECAP, ECID_DOE, &base);
+		if (status == PCIE_SUCCESS) {
+			pcie_dev->cflags |= PCIE_DEV_CFLAG_DOE;
+			pcie_dev->doe_cap_base = base;
+		}
+
+		/* Has IDE? */
+		status = pcie_find_capability(bdf, PCIE_ECAP, ECID_IDE, &base);
+		if (status == PCIE_SUCCESS) {
+			pcie_dev->cflags |= PCIE_DEV_CFLAG_IDE;
+			pcie_dev->ide_cap_base = base;
+		}
+
+		if (pcie_dev->dp_type == RP) {
+			status = pcie_find_rmeda_capability(bdf, &base);
+			if (status == PCIE_SUCCESS) {
+				pcie_dev->cflags |= PCIE_DEV_CFLAG_DVSEC_RMEDA;
+				pcie_dev->dvsec_rmeda_cap_base = base;
+			}
+		}
+	}
 }
 
 /*
@@ -405,6 +515,8 @@ static void pcie_create_device_bdf_table(void)
 
 						g_pcie_bdf_table->device[
 							g_pcie_bdf_table->num_entries++].bdf = bdf;
+
+						assert(g_pcie_bdf_table->num_entries < PCIE_DEVICES_MAX);
 					}
 				}
 			}
@@ -413,69 +525,14 @@ static void pcie_create_device_bdf_table(void)
 
 	/* Sanity Check : Confirm all EP (normal, integrated) have a rootport */
 	pcie_populate_device_rootport();
+
+	/*
+	 * Once devices are enumerated and rootports are assigned, initialize
+	 * the rest of pcie_dev fields
+	 */
+	pcie_devices_init_fields();
+
 	INFO("Number of BDFs found     : %u\n", g_pcie_bdf_table->num_entries);
-}
-
-/*
- * @brief  Returns the header type of the input pcie device function
- *
- * @param  bdf   - Segment/Bus/Dev/Func in the format of PCIE_CREATE_BDF
- * @return TYPE0_HEADER for functions with Type 0 config space header,
- *         TYPE1_HEADER for functions with Type 1 config space header,
- */
-static uint32_t pcie_function_header_type(uint32_t bdf)
-{
-	/* Read four bytes of config space starting from cache line size register */
-	uint32_t reg_value = pcie_read_cfg(bdf, TYPE01_CLSR);
-
-	/* Extract header type register value */
-	reg_value = ((reg_value >> TYPE01_HTR_SHIFT) & TYPE01_HTR_MASK);
-
-	/* Header layout bits within header type register indicate the header type */
-	return ((reg_value >> HTR_HL_SHIFT) & HTR_HL_MASK);
-}
-
-/*
- * @brief  Returns the ECAM address of the input PCIe function
- *
- * @param  bdf   - Segment/Bus/Dev/Func in PCIE_CREATE_BDF format
- * @return ECAM address if success, else NULL address
- */
-static uintptr_t pcie_get_ecam_base(uint32_t bdf)
-{
-	uint8_t ecam_index = 0, sec_bus = 0, sub_bus;
-	uint16_t seg_num = (uint16_t)PCIE_EXTRACT_BDF_SEG(bdf);
-	uint32_t reg_value;
-	uintptr_t ecam_base = 0;
-
-	assert(g_pcie_info_table != NULL);
-
-	while (ecam_index < g_pcie_info_table->num_entries) {
-		/* Derive ECAM specific information */
-		const pcie_info_block_t *block = &g_pcie_info_table->block[ecam_index];
-
-		if (seg_num == block->segment_num) {
-			if (pcie_function_header_type(bdf) == TYPE0_HEADER) {
-				/* Return ecam_base if Type0 Header */
-				ecam_base = block->ecam_base;
-				break;
-			}
-
-			/* Check for Secondary/Subordinate bus if Type1 Header */
-			reg_value = pcie_read_cfg(bdf, TYPE1_PBN);
-			sec_bus = ((reg_value >> SECBN_SHIFT) & SECBN_MASK);
-			sub_bus = ((reg_value >> SUBBN_SHIFT) & SUBBN_MASK);
-
-			if ((sec_bus >= block->start_bus_num) &&
-			    (sub_bus <= block->end_bus_num)) {
-				ecam_base = block->ecam_base;
-				break;
-			}
-		}
-		ecam_index++;
-	}
-
-	return ecam_base;
 }
 
 /*
@@ -620,7 +677,7 @@ static void pcie_create_info_table(void)
 	unsigned int num_ecam;
 
 	INFO("Creating PCIe info table\n");
-	g_pcie_bdf_table = pcie_bdf_table;
+	g_pcie_bdf_table = &pcie_bdf_table;
 
 	num_ecam = g_pcie_info_table->num_entries;
 	INFO("Number of ECAM regions   : %u\n", num_ecam);

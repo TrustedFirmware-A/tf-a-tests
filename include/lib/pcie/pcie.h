@@ -7,12 +7,15 @@
 #ifndef PCIE_H
 #define PCIE_H
 
+#include <stdbool.h>
 #include <cdefs.h>
 #include <stdint.h>
 #include <utils_def.h>
 
 /* platforms need to ensure that number of entries is less that this value */
 #define MAX_PCIE_INFO_ENTRIES 5
+
+#define PCIE_DEVICES_MAX	128
 
 typedef struct {
 	unsigned long ecam_base;	/* ECAM base address */
@@ -26,14 +29,39 @@ struct pcie_info_table{
 	pcie_info_block_t block[MAX_PCIE_INFO_ENTRIES];
 };
 
-typedef struct {
-	uint32_t bdf;
-	uint32_t rp_bdf;
-} pcie_device_attr_t;
+/* Flags for PCIe device capability */
+#define PCIE_DEV_CFLAG_DOE		(U(1) << 0)
+#define PCIE_DEV_CFLAG_IDE		(U(1) << 1)
+#define PCIE_DEV_CFLAG_DVSEC_RMEDA	(U(1) << 3)
 
-typedef struct __packed {
+#define pcie_dev_has_doe(_d)	(((_d)->cflags & PCIE_DEV_CFLAG_DOE) != 0U)
+#define pcie_dev_has_ide(_d)	(((_d)->cflags & PCIE_DEV_CFLAG_IDE) != 0U)
+#define pcie_dev_has_dvsec_rmeda(_d)	\
+	(((_d)->cflags & PCIE_DEV_CFLAG_DVSEC_RMEDA) != 0U)
+
+struct pcie_dev {
+	uint32_t bdf;
+
+	/* Pointer to rootport device if this is a endpoint */
+	struct pcie_dev *rp_dev;
+
+	/* PCIe capabilities flags */
+	uint32_t cflags;
+
+	uint32_t doe_cap_base;
+	uint32_t ide_cap_base;
+	uint32_t dvsec_rmeda_cap_base;
+
+	/* Device port type */
+	uint32_t dp_type;
+
+	unsigned long ecam_base;
+};
+typedef struct pcie_dev pcie_dev_t;
+
+typedef struct {
 	uint32_t num_entries;
-	pcie_device_attr_t device[]; /* in the format of Segment/Bus/Dev/Func */
+	pcie_dev_t device[PCIE_DEVICES_MAX];
 } pcie_device_bdf_table_t;
 
 /* Address initialisation structure */
@@ -70,9 +98,6 @@ typedef struct {
 #define PCIE_NO_MAPPING		0x10000001  /* A mapping to a Function does not exist */
 #define PCIE_CAP_NOT_FOUND	0x10000010  /* The specified capability was not found */
 #define PCIE_UNKNOWN_RESPONSE	0xFFFFFFFF  /* Function not found or UR response from completer */
-
-/* Allows storage of 2048 valid BDFs */
-#define PCIE_DEVICE_BDF_TABLE_SZ	8192
 
 typedef enum {
 	HEADER = 0,

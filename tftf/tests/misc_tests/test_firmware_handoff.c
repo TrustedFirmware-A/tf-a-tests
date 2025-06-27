@@ -6,7 +6,7 @@
 
 #include <assert.h>
 
-#include <tcg.h>
+#include <drivers/measured_boot/event_log/tcg.h>
 #include <test_helpers.h>
 #include <tftf_lib.h>
 #include <transfer_list.h>

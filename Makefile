@@ -98,6 +98,9 @@ PLATFORMS		:=	$(shell find plat/ -name '${PLAT_MAKEFILE}' -print0 |			\
 
 DOCS_PATH		:=	docs
 
+# Path to Transfer List Library (LibTL)
+LIBTL_PATH		:=	contrib/libtl
+
 ifeq (${PLAT},)
   $(error "Error: Unknown platform. Please use PLAT=<platform name> to specify the platform")
 endif

@@ -9,6 +9,29 @@
 
 #include <host_realm_rmi.h>
 
+/*
+ * Skip DA test if any of the below check is true
+ *   RMM is TRP
+ *   FEAT_RME not supported
+ *   DA is not supported in RMI features
+ */
+#define SKIP_DA_TEST_IF_PREREQS_NOT_MET(_reg0)					\
+	do {									\
+		SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();			\
+										\
+		/* Get feature register0 */					\
+		if (host_rmi_features(0UL, &_reg0) != REALM_SUCCESS) {		\
+			ERROR("Failed to get RMI feat_reg0\n");			\
+			return TEST_RESULT_FAIL;				\
+		}								\
+										\
+		/* DA not supported in RMI features? */				\
+		if ((_reg0 & RMI_FEATURE_REGISTER_0_DA_EN) == 0UL) {		\
+			WARN("DA not in RMI features, skipping\n");		\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)
+
 /* SPDM_MAX_CERTIFICATE_CHAIN_SIZE is 64KB */
 #define HOST_PDEV_CERT_LEN_MAX		(64 * 1024)
 

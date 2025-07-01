@@ -12,7 +12,6 @@
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
 #include <host_shared_data.h>
-#include <pcie_doe.h>
 #include <plat_topology.h>
 #include <platform.h>
 #include <test_helpers.h>
@@ -77,7 +76,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	unsigned int num[NUM_INFO_TESTS];
 	unsigned int num_reg, offset, i, j;
 
-	CHECK_DA_SUPPORT_IN_RMI(rmi_features);
+	SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_features);
 
 	/* Initialise memory test structures */
 

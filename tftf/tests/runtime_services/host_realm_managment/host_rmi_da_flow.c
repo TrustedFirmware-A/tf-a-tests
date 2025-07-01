@@ -49,7 +49,7 @@ test_result_t host_invoke_rmi_da_flow(void)
 	struct realm realm;
 	test_result_t result = TEST_RESULT_FAIL;
 
-	CHECK_DA_SUPPORT_IN_RMI(rmi_feat_reg0);
+	SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 	SKIP_TEST_IF_DOE_NOT_SUPPORTED(pdev_bdf, doe_cap_base);
 
 	INFO("DA on bdf: 0x%x, doe_cap_base: 0x%x\n", pdev_bdf, doe_cap_base);

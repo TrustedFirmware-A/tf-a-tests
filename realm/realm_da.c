@@ -62,6 +62,11 @@ bool test_realm_da_rsi_calls(void)
 		return false;
 	}
 
+	realm_printf("======================================\n");
+	realm_printf("Realm: Lock -> Accept -> Unlock device: (bdf: 0x%x)\n",
+		     rdev->id);
+	realm_printf("======================================\n");
+
 	rsi_rc = realm_rsi_rdev_get_state(rdev);
 	if (rsi_rc != RSI_SUCCESS) {
 		return false;

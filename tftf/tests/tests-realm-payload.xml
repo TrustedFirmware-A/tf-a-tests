@@ -173,8 +173,8 @@
 	  <!-- Test cases related to Dev Mem Map and Unmap -->
 	  <testcase name="Realm payload Dev Mem Map and Unmap"
 	  function="host_realm_dev_mem_map_unmap" />
-	  <!-- Invoke RMI calls related to DA PDEV/VDEV management -->
-	  <testcase name="Invoke RMI DA ABIs "
-	  function="host_invoke_rmi_da_flow" />
+	  <!-- Invoke DA workflow on PCIe off-chip device -->
+	  <testcase name="DA workflow on all PCIe off-chip devices"
+	  function="host_da_workflow_on_all_offchip_devices" />
   </testsuite>
 </testsuites>

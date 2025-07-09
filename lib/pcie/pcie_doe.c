@@ -13,6 +13,7 @@
 
 #include <debug.h>
 #include <pcie.h>
+#include <pcie_spec.h>
 #include <pcie_doe.h>
 #include <tftf_lib.h>
 
@@ -241,10 +242,12 @@ int pcie_doe_communicate(uint32_t header, uint32_t bdf, uint32_t doe_cap_base,
 	return rc;
 }
 
+/* TODO: add an iterator interface to get next eligible device */
 int pcie_find_doe_device(uint32_t *bdf_ptr, uint32_t *cap_base_ptr)
 {
 	pcie_device_bdf_table_t *bdf_table_ptr = pcie_get_bdf_table();
 	uint32_t num_bdf = bdf_table_ptr->num_entries;
+	pcie_dev_t *dev;
 
 	INFO("PCI BDF table entries: %u\n", num_bdf);
 
@@ -257,15 +260,13 @@ int pcie_find_doe_device(uint32_t *bdf_ptr, uint32_t *cap_base_ptr)
 	INFO("PCI BDF table 0x%lx\n", (uintptr_t)bdf_table_ptr);
 
 	while (num_bdf-- != 0) {
-		uint32_t bdf = bdf_table_ptr->device[num_bdf].bdf;
-		uint32_t status, doe_cap_base;
+		dev = &bdf_table_ptr->device[num_bdf];
 
-		/* Check for DOE capability */
-		status = pcie_find_capability(bdf, PCIE_ECAP, DOE_CAP_ID, &doe_cap_base);
-		if (status == PCIE_SUCCESS) {
-			INFO("PCIe DOE capability: bdf 0x%x cap_base 0x%x\n", bdf, doe_cap_base);
-			*bdf_ptr = bdf;
-			*cap_base_ptr = doe_cap_base;
+		if ((dev->dp_type == EP) && (pcie_dev_has_doe(dev))) {
+			INFO("PCIe DOE capability: bdf 0x%x cap_base 0x%x\n",
+			     dev->bdf, dev->doe_cap_base);
+			*bdf_ptr = dev->bdf;
+			*cap_base_ptr = dev->doe_cap_base;
 			return 0;
 		}
 	}

@@ -91,23 +91,6 @@ typedef struct {
 	uint8_t next_index;
 } pcie_doe_disc_resp_t;
 
-/* Skip test if DA is not supported in RMI features */
-#define CHECK_DA_SUPPORT_IN_RMI(_reg0)						\
-	do {									\
-		SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();			\
-		/* Get feature register0 */					\
-		if (host_rmi_features(0UL, &_reg0) != REALM_SUCCESS) {		\
-			ERROR("Failed to get RMI feat_reg0\n");			\
-			return TEST_RESULT_FAIL;				\
-		}								\
-										\
-		/* DA not supported in RMI features? */				\
-		if ((_reg0 & RMI_FEATURE_REGISTER_0_DA_EN) == 0UL) {		\
-			WARN("DA not in RMI features, skipping\n");		\
-			return TEST_RESULT_SKIPPED;				\
-		}								\
-	} while (false)
-
 #define SKIP_TEST_IF_DOE_NOT_SUPPORTED(_bdf, _doe_cap_base)			\
 	do {									\
 		/* Test PCIe DOE only for RME */				\

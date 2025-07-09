@@ -27,6 +27,28 @@ const struct pcie_info_table *plat_pcie_get_info_table(void)
 	return &fvp_pcie_cfg;
 }
 
+/* Retrieve platform PCIe bar config values */
+int plat_pcie_get_bar_config(uint64_t *bar64_val, uint64_t *rp_bar64_val,
+			     uint32_t *bar32np_val, uint32_t *bar32p_val,
+			     uint32_t *rp_bar32_val)
+{
+#ifdef __aarch64__
+	assert((bar64_val != NULL) && (rp_bar64_val != NULL) &&
+	       (bar32np_val != NULL) && (bar32p_val != NULL) &&
+	       (rp_bar32_val != NULL));
+
+	*bar64_val = PLATFORM_OVERRIDE_PCIE_BAR64_VALUE;
+	*rp_bar64_val = PLATFORM_OVERRIDE_RP_BAR64_VALUE;
+
+	*bar32np_val = PLATFORM_OVERRIDE_PCIE_BAR32NP_VALUE;
+	*bar32p_val = PLATFORM_OVERRIDE_PCIE_BAR32P_VALUE;
+	*rp_bar32_val = PLATOFRM_OVERRIDE_RP_BAR32_VALUE;
+
+	return 0;
+#endif
+	return -1;
+}
+
 /*
  * Retrieve platform PCIe memory region (Base Platform RevC only)
  */

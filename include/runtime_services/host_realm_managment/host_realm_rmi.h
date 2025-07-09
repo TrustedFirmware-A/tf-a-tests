@@ -1234,7 +1234,7 @@ struct rmi_pdev_params {
 	/* Bits16: Segment ID */
 	SET_MEMBER_RMI(unsigned short segment_id, 0x10, 0x18);
 	/* Address: ECAM base address of the PCIe configuration space */
-	SET_MEMBER_RMI(unsigned short ecam_addr, 0x18, 0x20);
+	SET_MEMBER_RMI(unsigned long ecam_addr, 0x18, 0x20);
 	/* Bits16: Root Port identifier */
 	SET_MEMBER_RMI(unsigned short root_id, 0x20, 0x28);
 	/* UInt64: Certificate identifier */

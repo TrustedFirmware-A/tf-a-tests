@@ -208,6 +208,11 @@ struct pcie_info_table;
  */
 const struct pcie_info_table *plat_pcie_get_info_table(void);
 
+/* Retrieve platform PCIe bar config values */
+int plat_pcie_get_bar_config(uint64_t *bar64_val, uint64_t *rp_bar64_val,
+			     uint32_t *bar32np_val, uint32_t *bar32p_val,
+			     uint32_t *rp_bar32_val);
+
 /*
  * This function provides an address that is recognized as invalid for use
  * as an entry point in the CPU_ON and CPU_SUSPEND calls on this platform.

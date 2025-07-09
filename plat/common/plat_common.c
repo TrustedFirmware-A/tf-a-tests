@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
@@ -25,6 +26,7 @@
 #pragma weak tftf_plat_reset
 #pragma weak plat_get_prot_regions
 #pragma weak plat_pcie_get_info_table
+#pragma weak plat_pcie_get_bar_config
 #pragma weak plat_get_invalid_addr
 #pragma weak plat_get_dev_region
 
@@ -155,6 +157,13 @@ const mem_region_t *plat_get_prot_regions(int *nelem)
 const struct pcie_info_table *plat_pcie_get_info_table(void)
 {
 	return NULL;
+}
+
+int plat_pcie_get_bar_config(uint64_t *bar64_val, uint64_t *rp_bar64_val,
+			     uint32_t *bar32np_val, uint32_t *bar32p_val,
+			     uint32_t *rp_bar32_val)
+{
+	return -1;
 }
 
 uintptr_t plat_get_invalid_addr(void)

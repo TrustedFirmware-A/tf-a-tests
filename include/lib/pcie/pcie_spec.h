@@ -87,6 +87,14 @@
 #define PCIE_ECAP_CIDR_MASK	0xffff
 #define PCIE_ECAP_NCPR_MASK	0xfff
 
+/* PCIe Extended Capability Header */
+#define PCIE_ECH_ID_SHIFT			U(0)
+#define PCIE_ECH_ID_WIDTH			U(16)
+#define PCIE_ECH_CAP_VER_SHIFT			U(16)
+#define PCIE_ECH_CAP_VER_WIDTH			U(4)
+#define PCIE_ECH_NEXT_CAP_OFFSET_SHIFT		U(20)
+#define PCIE_ECH_NEXT_CAP_OFFSET_WIDTH		U(12)
+
 #define PCIE_CAP_START		0x40
 #define PCIE_CAP_END		0xFC
 #define PCIE_ECAP_START		0x100
@@ -107,6 +115,8 @@
 #define ECID_PASID		0x001B
 #define ECID_DPC		0x001D
 #define ECID_DVSEC		0x0023
+#define ECID_DOE		0x002E
+#define ECID_IDE		0x0030
 
 /* PCI Express capability struct offsets */
 #define CIDR_OFFSET		0x0

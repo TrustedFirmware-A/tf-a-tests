@@ -62,6 +62,7 @@ TESTS_SOURCES	+=		\
 	$(addprefix lib/pcie/,	\
 		pcie.c		\
 		pcie_doe.c	\
+		pcie_dvsec_rmeda.c	\
 	)
 
 ifeq (${ENABLE_REALM_PAYLOAD_TESTS},1)

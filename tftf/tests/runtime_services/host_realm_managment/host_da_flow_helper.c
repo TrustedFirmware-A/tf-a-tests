@@ -4,27 +4,22 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <string.h>
 
-#include <heap/page_alloc.h>
 #include <host_crypto_utils.h>
 #include <host_da_helper.h>
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
 #include <host_shared_data.h>
-#include <mmio.h>
 #include <pcie.h>
 #include <pcie_doe.h>
-#include <pcie_spec.h>
 #include <platform.h>
-#include <spdm.h>
 #include <test_helpers.h>
 
-int gbl_host_pdev_count;
-struct host_pdev gbl_host_pdevs[HOST_PDEV_MAX];
-struct host_vdev gbl_host_vdev;
+extern unsigned int gbl_host_pdev_count;
+extern struct host_pdev gbl_host_pdevs[HOST_PDEV_MAX];
+extern struct host_vdev gbl_host_vdev;
 
-test_result_t tsm_disconnect_device(struct host_pdev *h_pdev)
+int tsm_disconnect_device(struct host_pdev *h_pdev)
 {
 	int rc;
 
@@ -40,12 +35,12 @@ test_result_t tsm_disconnect_device(struct host_pdev *h_pdev)
 
 	rc = host_pdev_reclaim(h_pdev);
 	if (rc != 0) {
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 
 	h_pdev->is_connected_to_tsm = false;
 
-	return TEST_RESULT_SUCCESS;
+	return 0;
 }
 
 /*
@@ -57,7 +52,7 @@ test_result_t tsm_disconnect_device(struct host_pdev *h_pdev)
  * 2. Find a known PCIe endpoint and connect with TSM to get_cert and establish
  *    secure session
  */
-static test_result_t tsm_connect_device(struct host_pdev *h_pdev)
+static int tsm_connect_device(struct host_pdev *h_pdev)
 {
 	int rc;
 	uint8_t public_key_algo;
@@ -74,7 +69,7 @@ static test_result_t tsm_connect_device(struct host_pdev *h_pdev)
 	rc = host_pdev_setup(h_pdev);
 	if (rc == -1) {
 		ERROR("host_pdev_setup failed.\n");
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 
 	/* Call rmi_pdev_create to transition PDEV to STATE_NEW */
@@ -121,7 +116,7 @@ static test_result_t tsm_connect_device(struct host_pdev *h_pdev)
 		goto err_pdev_reclaim;
 	}
 
-	/* Call rmi_pdev_comminucate to transition PDEV to READY state */
+	/* Call rmi_pdev_communicate to transition PDEV to READY state */
 	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_READY);
 	if (rc != 0) {
 		ERROR("PDEV transition: PDEV_HAS_KEY -> PDEV_READY failed\n");
@@ -130,18 +125,18 @@ static test_result_t tsm_connect_device(struct host_pdev *h_pdev)
 
 	h_pdev->is_connected_to_tsm = true;
 
-	return TEST_RESULT_SUCCESS;
+	return 0;
 
 err_pdev_reclaim:
 	(void)host_pdev_reclaim(h_pdev);
 
-	return TEST_RESULT_FAIL;
+	return -1;
 }
 
 /* Get the first pdev from host_pdevs and try to connect to TSM */
-test_result_t tsm_connect_first_device(struct host_pdev **h_pdev)
+int tsm_connect_first_device(struct host_pdev **h_pdev)
 {
-	test_result_t result = TEST_RESULT_SKIPPED;
+	int result = -1;
 
 	*h_pdev = &gbl_host_pdevs[0];
 
@@ -150,7 +145,7 @@ test_result_t tsm_connect_first_device(struct host_pdev **h_pdev)
 	}
 
 	result = tsm_connect_device(*h_pdev);
-	if (result != TEST_RESULT_SUCCESS) {
+	if (result != 0) {
 		ERROR("tsm_connect_device: 0x%x failed\n", (*h_pdev)->dev->bdf);
 	}
 
@@ -158,45 +153,44 @@ test_result_t tsm_connect_first_device(struct host_pdev **h_pdev)
 }
 
 /* Iterate thorough all host_pdevs and try to connect to TSM */
-test_result_t tsm_connect_devices(void)
+int tsm_connect_devices(unsigned int *count)
 {
-	uint32_t i;
-	int count = 0;
+	int rc = 0;
+	unsigned int i;
+	unsigned int count_ret = 0U;
 	struct host_pdev *h_pdev;
-	test_result_t result = TEST_RESULT_SKIPPED;
 
-	for (i = 0; i < gbl_host_pdev_count; i++) {
+	for (i = 0U; i < gbl_host_pdev_count; i++) {
 		h_pdev = &gbl_host_pdevs[i];
 
 		if (!is_host_pdev_independently_attested(h_pdev)) {
 			continue;
 		}
 
-		result = tsm_connect_device(h_pdev);
-		if (result != TEST_RESULT_SUCCESS) {
+		rc = tsm_connect_device(h_pdev);
+		if (rc != 0) {
 			ERROR("tsm_connect_device: 0x%x failed\n",
-			     h_pdev->dev->bdf);
+			      h_pdev->dev->bdf);
+			rc = -1;
 			break;
 		}
 
-		count++;
+		count_ret++;
 	}
 
-	if (count != 0U) {
-		INFO("%d devices connected to TSM\n", count);
-	} else {
-		INFO("No device connected to TSM\n");
-	}
+	INFO("%u devices connected to TSM\n", count_ret);
+	*count = count_ret;
 
-	return result;
+	return rc;
 }
 
+
 /* Iterate thorough all connected host_pdevs and disconnect from TSM */
-test_result_t tsm_disconnect_devices(void)
+int tsm_disconnect_devices(void)
 {
 	uint32_t i;
 	struct host_pdev *h_pdev;
-	test_result_t rc;
+	int rc;
 	bool return_error = false;
 
 	for (i = 0; i < gbl_host_pdev_count; i++) {
@@ -204,7 +198,7 @@ test_result_t tsm_disconnect_devices(void)
 
 		if (h_pdev->is_connected_to_tsm) {
 			rc = tsm_disconnect_device(h_pdev);
-			if (rc != TEST_RESULT_SUCCESS) {
+			if (rc != 0) {
 				/* Set error, continue with other devices */
 				return_error = true;
 			}
@@ -212,13 +206,13 @@ test_result_t tsm_disconnect_devices(void)
 	}
 
 	if (return_error) {
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 
-	return TEST_RESULT_SUCCESS;
+	return 0;
 }
 
-static test_result_t realm_assign_unassign_device(struct realm *realm_ptr,
+static int realm_assign_unassign_device(struct realm *realm_ptr,
 						struct host_vdev *h_vdev,
 						unsigned long tdi_id,
 						void *pdev_ptr)
@@ -238,45 +232,45 @@ static test_result_t realm_assign_unassign_device(struct realm *realm_ptr,
 	rc = host_assign_vdev_to_realm(realm_ptr, h_vdev, tdi_id, pdev_ptr);
 	if (rc != 0) {
 		ERROR("VDEV assign to realm failed\n");
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 
 	/* execute communicate until vdev reaches VDEV_UNLOCKED state */
 	rc = host_vdev_transition(realm_ptr, h_vdev, RMI_VDEV_STATE_UNLOCKED);
 	if (rc != 0) {
 		ERROR("Transitioning to RMI_VDEV_STATE_UNLOCKED state failed\n");
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 
 	rc = host_vdev_get_measurements(realm_ptr, h_vdev, RMI_VDEV_STATE_UNLOCKED);
 	if (rc != 0) {
 		ERROR("Getting measurements failed\n");
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 	/* execute communicate until vdev reaches VDEV_LOCKED state */
 	rc = host_vdev_transition(realm_ptr, h_vdev, RMI_VDEV_STATE_LOCKED);
 	if (rc != 0) {
 		ERROR("Transitioning to RMI_VDEV_STATE_LOCKED state failed\n");
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 
 	rc = host_vdev_get_measurements(realm_ptr, h_vdev, RMI_VDEV_STATE_LOCKED);
 	if (rc != 0) {
 		ERROR("Getting measurements failed\n");
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 
 	rc = host_vdev_get_interface_report(realm_ptr, h_vdev, RMI_VDEV_STATE_LOCKED);
 	if (rc != 0) {
 		ERROR("Getting if report failed\n");
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 	/* execute communicate until vdev reaches VDEV_LOCKED state */
 	INFO("Start transitioning to RMI_VDEV_STATE_STARTED state\n");
 	rc = host_vdev_transition(realm_ptr, h_vdev, RMI_VDEV_STATE_STARTED);
 	if (rc != 0) {
 		ERROR("Transitioning to RMI_VDEV_STATE_STARTED state failed\n");
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 
 	/* Enter Realm. Execute realm DA commands */
@@ -295,22 +289,21 @@ static test_result_t realm_assign_unassign_device(struct realm *realm_ptr,
 	rc = host_unassign_vdev_from_realm(realm_ptr, h_vdev);
 	if (rc != 0) {
 		ERROR("VDEV unassign to realm failed\n");
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 
 	if (!realm_rc) {
 		ERROR("Realm DA_RSI_CALLS failed\n");
-		return TEST_RESULT_FAIL;
+		return -1;
 	}
 
-	return TEST_RESULT_SUCCESS;
+	return 0;
 }
 
-test_result_t
-realm_assign_unassign_devices(struct realm *realm_ptr)
+int realm_assign_unassign_devices(struct realm *realm_ptr)
 {
 	uint32_t i;
-	test_result_t rc;
+	int rc = 0;
 	struct host_pdev *h_pdev;
 	struct host_vdev *h_vdev;
 
@@ -323,7 +316,7 @@ realm_assign_unassign_devices(struct realm *realm_ptr)
 			rc = realm_assign_unassign_device(realm_ptr, h_vdev,
 							  h_pdev->dev->bdf,
 							  h_pdev->pdev);
-			if (rc != TEST_RESULT_SUCCESS) {
+			if (rc != 0) {
 				break;
 			}
 		}

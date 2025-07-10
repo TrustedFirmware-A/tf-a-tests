@@ -10,14 +10,18 @@
 #include <host_realm_rmi.h>
 #include <pcie.h>
 
+#define DEV_TYPE_INDEPENDENTLY_ATTESTED		(0)
+
 /*
+ * Init DA specific globals
  * Skip DA test if any of the below check is true
  *   RMM is TRP
  *   FEAT_RME not supported
  *   DA is not supported in RMI features
  */
-#define SKIP_DA_TEST_IF_PREREQS_NOT_MET(_reg0)					\
+#define INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(_reg0)				\
 	do {									\
+										\
 		SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();			\
 										\
 		/* Get feature register0 */					\
@@ -31,6 +35,8 @@
 			WARN("DA not in RMI features, skipping\n");		\
 			return TEST_RESULT_SKIPPED;				\
 		}								\
+		/* Init host_pdevs global array */				\
+		host_pdevs_init();						\
 	} while (false)
 
 /* SPDM_MAX_CERTIFICATE_CHAIN_SIZE is 64KB */

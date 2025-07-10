@@ -329,10 +329,10 @@ static uint32_t pcie_populate_device_rootport(void)
 		bdf_tbl_ptr->device[tbl_index].rp_dev = rp_dev;
 
 		if (rp_dev != NULL) {
-			INFO("Dev bdf: 0x%x RP bdf: 0x%x\n", bdf,
-			     rp_dev->bdf);
+			PCIE_DEBUG("Dev bdf: 0x%x RP bdf: 0x%x\n", bdf,
+				   rp_dev->bdf);
 		} else {
-			INFO("Dev bdf: 0x%x RP bdf: none\n", bdf);
+			PCIE_DEBUG("Dev bdf: 0x%x RP bdf: none\n", bdf);
 		}
 	}
 

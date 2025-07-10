@@ -4,38 +4,31 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <string.h>
-
 #include <heap/page_alloc.h>
 #include <host_crypto_utils.h>
 #include <host_da_flow_helper.h>
 #include <host_da_helper.h>
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
-#include <host_shared_data.h>
-#include <mmio.h>
-#include <pcie.h>
 #include <pcie_doe.h>
-#include <pcie_spec.h>
 #include <platform.h>
-#include <spdm.h>
 #include <test_helpers.h>
 
 /*
- * Iterate thorugh all host_pdevs and do
+ * Iterate through all host_pdevs and do
  * TSM connect
  * TSM disconnect
  */
 test_result_t host_da_workflow_on_all_offchip_devices(void)
 {
 	int rc;
+	unsigned int count;
 	struct realm realm;
-	test_result_t result;
+	test_result_t result = TEST_RESULT_SUCCESS;
 	bool return_error = false;
 	u_register_t rmi_feat_reg0;
 
-	SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
-	host_pdevs_init();
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
 	/*
 	 * Create a Realm with DA feature enabled
@@ -50,21 +43,25 @@ test_result_t host_da_workflow_on_all_offchip_devices(void)
 	}
 
 	/* Connect all devices with TSM */
-	result = tsm_connect_devices();
-	if (result == TEST_RESULT_SKIPPED) {
-		goto out_rm_realm;
-	} else if (result != TEST_RESULT_SUCCESS) {
+	rc = tsm_connect_devices(&count);
+	if (rc != 0) {
 		return_error = true;
+	}
+
+	/* If no devices are connected to TSM, then skip the test */
+	if (count == 0U) {
+		result = TEST_RESULT_SKIPPED;
+		goto out_rm_realm;
 	}
 
 	/* Assign all TSM connected devices to a Realm */
-	result = realm_assign_unassign_devices(&realm);
-	if (result != TEST_RESULT_SUCCESS) {
+	rc = realm_assign_unassign_devices(&realm);
+	if (rc != 0) {
 		return_error = true;
 	}
 
-	result = tsm_disconnect_devices();
-	if (result != TEST_RESULT_SUCCESS) {
+	rc = tsm_disconnect_devices();
+	if (rc != 0) {
 		return_error = true;
 	}
 
@@ -97,7 +94,7 @@ test_result_t host_realm_test_root_port_key_management(void)
 
 	/* Initialize Host NS heap memory */
 	ret = page_pool_init((u_register_t)PAGE_POOL_BASE,
-				(u_register_t)PAGE_POOL_MAX_SIZE);
+			     (u_register_t)PAGE_POOL_MAX_SIZE);
 	if (ret != HEAP_INIT_SUCCESS) {
 		ERROR("Failed to init heap pool %d\n", ret);
 		return TEST_RESULT_FAIL;

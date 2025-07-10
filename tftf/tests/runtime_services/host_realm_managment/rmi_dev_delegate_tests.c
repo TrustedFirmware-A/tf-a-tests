@@ -90,7 +90,7 @@ test_result_t host_dev_mem_delegate_undelegate(void)
 	u_register_t rmi_feat_reg0;
 	unsigned int num_reg = 0U;
 
-	SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
 	host_rmi_init_cmp_result();
 
@@ -147,7 +147,7 @@ test_result_t host_dev_mem_delundel_multi_cpu(void)
 	u_register_t rmi_feat_reg0, lead_mpid;
 	unsigned int num_reg = 0U;
 
-	SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
 	lead_mpid = read_mpidr_el1() & MPID_MASK;
 
@@ -275,7 +275,7 @@ test_result_t host_fail_dev_mem_del(void)
 	u_register_t rmi_feat_reg0;
 	unsigned int num_reg = 0U;
 
-	SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
 	host_rmi_init_cmp_result();
 

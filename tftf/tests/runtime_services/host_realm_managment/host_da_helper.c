@@ -9,15 +9,16 @@
 #include <arch_features.h>
 #include <debug.h>
 #include <heap/page_alloc.h>
+#include <host_crypto_utils.h>
 #include <host_da_helper.h>
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
 #include <pcie_spec.h>
 #include <pcie_doe.h>
 
-extern int gbl_host_pdev_count;
-extern struct host_pdev gbl_host_pdevs[32];
-extern struct host_vdev gbl_host_vdev;
+unsigned int gbl_host_pdev_count;
+struct host_pdev gbl_host_pdevs[HOST_PDEV_MAX];
+struct host_vdev gbl_host_vdev;
 
 static const char * const pdev_state_str[] = {
 	"PDEV_STATE_NEW",
@@ -50,10 +51,10 @@ static struct host_vdev *find_host_vdev_from_id(unsigned long vdev_id)
 
 static struct host_pdev *find_host_pdev_from_pdev_ptr(unsigned long pdev_ptr)
 {
-	uint32_t i;
+	unsigned int i;
 	struct host_pdev *h_pdev;
 
-	for (i = 0; i < gbl_host_pdev_count; i++) {
+	for (i = 0U; i < gbl_host_pdev_count; i++) {
 		h_pdev = &gbl_host_pdevs[i];
 
 		if (h_pdev->pdev == (void *)pdev_ptr) {
@@ -144,7 +145,7 @@ int host_pdev_create(struct host_pdev *h_pdev)
 {
 	struct rmi_pdev_params *pdev_params;
 	u_register_t ret;
-	uint32_t i;
+	unsigned int i;
 
 	pdev_params = (struct rmi_pdev_params *)page_alloc(PAGE_SIZE);
 	memset(pdev_params, 0, GRANULE_SIZE);
@@ -156,12 +157,13 @@ int host_pdev_create(struct host_pdev *h_pdev)
 	pdev_params->hash_algo = h_pdev->pdev_hash_algo;
 	pdev_params->root_id = h_pdev->dev->rp_dev->bdf;
 	pdev_params->ecam_addr = h_pdev->dev->ecam_base;
-	for (i = 0; i < h_pdev->pdev_aux_num; i++) {
+	for (i = 0U; i < h_pdev->pdev_aux_num; i++) {
 		pdev_params->aux[i] = (uintptr_t)h_pdev->pdev_aux[i];
 	}
 
 	ret = host_rmi_pdev_create((u_register_t)h_pdev->pdev,
 				   (u_register_t)pdev_params);
+	page_free((u_register_t)pdev_params);
 	if (ret != RMI_SUCCESS) {
 		return -1;
 	}
@@ -521,7 +523,7 @@ static int host_dev_communicate(struct realm *realm,
 		}
 		if (state == target_state) {
 			/* The target state was reached, but for some
-			 * transitions this is not enough, ned to continue
+			 * transitions this is not enough, need to continue
 			 * calling it till certain flags are cleared in the
 			 * exit. wait for that to happen.
 			 */
@@ -746,7 +748,7 @@ int host_vdev_transition(struct realm *realm,
 int host_pdev_setup(struct host_pdev *h_pdev)
 {
 	u_register_t ret, count;
-	int i;
+	unsigned int i;
 
 	/* RCiEP devices not supported by RMM */
 	if (h_pdev->dev->dp_type == RCiEP) {
@@ -767,7 +769,7 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 	}
 
 	/*
-	 * Off chip PCIe device - set flags as non coherent device protected by
+	 * Off chip PCIe device - set flags as non-coherent device protected by
 	 * end to end IDE, with SPDM.
 	 */
 	h_pdev->pdev_flags = 0;
@@ -791,7 +793,7 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 
 	/* Allocate aux granules for PDEV and delegate */
 	INFO("PDEV create requires %u aux pages\n", h_pdev->pdev_aux_num);
-	for (i = 0; i < h_pdev->pdev_aux_num; i++) {
+	for (i = 0U; i < h_pdev->pdev_aux_num; i++) {
 		void *pdev_aux = page_alloc(PAGE_SIZE);
 
 		if (pdev_aux == NULL) {
@@ -864,10 +866,10 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 
 err_undelegate_pdev_aux:
 	/* Undelegate all the delegated pages */
-	for (int i = 0; i < h_pdev->pdev_aux_num; i++) {
-		if (h_pdev->pdev_aux[i]) {
+	for (unsigned int j = 0U; j < h_pdev->pdev_aux_num; j++) {
+		if (h_pdev->pdev_aux[j]) {
 			host_rmi_granule_undelegate((u_register_t)
-						    h_pdev->pdev_aux[i]);
+						    h_pdev->pdev_aux[j]);
 		}
 	}
 
@@ -878,7 +880,7 @@ err_undelegate_pdev:
 }
 
 /*
- * Stop PDEV and ternimate secure session and call PDEV destroy
+ * Stop PDEV and terminate secure session and call PDEV destroy
  */
 int host_pdev_reclaim(struct host_pdev *h_pdev)
 {
@@ -923,6 +925,22 @@ int host_pdev_reclaim(struct host_pdev *h_pdev)
 		ERROR("PDEV undelegate failed 0x%lx\n", ret);
 		result = -1;
 	}
+
+	page_free((u_register_t)h_pdev->dev_comm_data->enter.req_addr);
+	page_free((u_register_t)h_pdev->dev_comm_data->enter.resp_addr);
+
+	page_free((u_register_t)h_pdev->dev_comm_data);
+	page_free((u_register_t)h_pdev->cert_chain);
+	page_free((u_register_t)h_pdev->vca);
+	page_free((u_register_t)h_pdev->public_key);
+	page_free((u_register_t)h_pdev->public_key_metadata);
+
+	h_pdev->dev_comm_data = NULL;
+	h_pdev->cert_chain = NULL;
+	h_pdev->vca = NULL;
+	h_pdev->public_key = NULL;
+	h_pdev->public_key_metadata = NULL;
+	h_pdev->vca_len = 0;
 
 	return result;
 }
@@ -1198,19 +1216,59 @@ bool is_host_pdev_independently_attested(struct host_pdev *h_pdev)
 }
 
 /*
- * Find all PCIe off-chip devices that confimrs to TEE-IO standards
+ * Returns true if all host_pdev state is clean like no granules, aux granules,
+ * memory are associated with the host_pdev.
+ */
+bool is_host_pdevs_state_clean(void)
+{
+	unsigned int i, cnt;
+
+	for (i = 0U; i < gbl_host_pdev_count; i++) {
+		struct host_pdev *h_pdev = &gbl_host_pdevs[i];
+
+		if ((h_pdev->is_connected_to_tsm) ||
+		    (h_pdev->pdev != NULL) ||
+		    (h_pdev->dev_comm_data != NULL) ||
+		    (h_pdev->cert_chain != NULL) ||
+		    (h_pdev->public_key != NULL) ||
+		    (h_pdev->public_key_metadata != NULL) ||
+		    (h_pdev->dev == NULL)) {
+			return false;
+		    }
+
+		for (cnt = 0U; cnt < PDEV_PARAM_AUX_GRANULES_MAX; cnt++) {
+			if (h_pdev->pdev_aux[cnt] != NULL) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+/*
+ * Find all PCIe off-chip devices that confirm to TEE-IO standards
  * Devices that supports DOE, IDE, TDISP with RootPort that supports
- * RME DA are initlized in host_pdevs[]
+ * RME DA are initialized in host_pdevs[]
  */
 void host_pdevs_init(void)
 {
 	static bool gbl_host_pdevs_init_done;
 	pcie_device_bdf_table_t *bdf_table;
 	pcie_dev_t *dev;
-	uint32_t i;
-	uint32_t cnt = 0;
+	unsigned int i;
+	unsigned int cnt = 0U;
 
 	if (gbl_host_pdevs_init_done) {
+		/*
+		 * Check if the state of host_pdev is cleared and de-inited
+		 * properly by the last testcase.
+		 */
+		if (!is_host_pdevs_state_clean()) {
+			ERROR("gbl_host_pdevs state not clean\n");
+			exit(1);
+		}
+
 		return;
 	}
 
@@ -1223,7 +1281,7 @@ void host_pdevs_init(void)
 		goto out_init;
 	}
 
-	for (i = 0; i < bdf_table->num_entries; i++) {
+	for (i = 0U; i < bdf_table->num_entries; i++) {
 		dev = &bdf_table->device[i];
 
 		if ((dev->dp_type != EP) && (dev->dp_type != RCiEP)) {

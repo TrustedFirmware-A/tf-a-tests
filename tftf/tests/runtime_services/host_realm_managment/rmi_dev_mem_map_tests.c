@@ -82,7 +82,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	struct host_vdev *h_vdev = &gbl_host_vdev;
 	struct host_pdev *h_pdev;
 
-	SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_features);
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_features);
 
 	/* Initialise memory test structures */
 
@@ -230,9 +230,9 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	host_pdevs_init();
 
 	/* Create PDEV and ready*/
-	ret = tsm_connect_first_device(&h_pdev);
-	if (ret != TEST_RESULT_SUCCESS) {
+	if (tsm_connect_first_device(&h_pdev) != 0) {
 		ERROR("Connecting to device failed\n");
+		ret = TEST_RESULT_FAIL;
 		goto undelegate_granules;
 	}
 
@@ -392,9 +392,9 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	}
 
 	/* Destroy PDEV */
-	ret = tsm_disconnect_device(h_pdev);
-	if (ret != TEST_RESULT_SUCCESS) {
+	if (tsm_disconnect_device(h_pdev) != 0) {
 		ERROR("Destroying PDEV failed\n");
+		ret = TEST_RESULT_FAIL;
 		goto undelegate_granules;
 	}
 
@@ -420,6 +420,13 @@ undelegate_granules:
 		}
 	}
 
+	/* Disconnect device if we managed to connect it but exited early */
+	if ((h_pdev != NULL) && h_pdev->is_connected_to_tsm) {
+		if (tsm_disconnect_device(h_pdev) != 0) {
+			ret = TEST_RESULT_FAIL;
+		}
+	}
+
 	if (!host_destroy_realm(&realm)) {
 		ERROR("host_destroy_realm() failed\n");
 		return TEST_RESULT_FAIL;
@@ -431,4 +438,3 @@ undelegate_granules:
 
 	return host_cmp_result();
 }
-

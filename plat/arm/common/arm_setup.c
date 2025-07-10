@@ -49,5 +49,10 @@ void tftf_plat_arch_setup(void)
 void tftf_early_platform_setup(void)
 {
 	console_init(PLAT_ARM_UART_BASE, PLAT_ARM_UART_CLK_IN_HZ,
-		     PL011_BAUDRATE);
+		PL011_BAUDRATE);
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+	console_init_fuzzer(PLAT_ARM_SMC_FUZZER_UART_BASE, PLAT_ARM_SMC_FUZZER_UART_CLK_IN_HZ,
+		PL011_BAUDRATE);
+	tftf_console_state = 0;
+#endif
 }

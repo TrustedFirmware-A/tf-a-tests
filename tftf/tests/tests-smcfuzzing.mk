@@ -72,6 +72,9 @@ $(eval $(call add_define,TFTF_DEFINES,SMC_FUZZ_CALL_END))
 $(eval $(call add_define,TFTF_DEFINES,CONSTRAIN_EVENTS))
 $(eval $(call add_define,TFTF_DEFINES,EXCLUDE_FUNCID))
 $(eval $(call add_define,TFTF_DEFINES,INTR_ASSERT))
+ifeq ($(SMC_FUZZ_VARIABLE_COVERAGE),1)
+$(eval $(call add_define,TFTF_DEFINES,SMC_FUZZ_VARIABLE_COVERAGE))
+endif
 
 TESTS_SOURCES	+=								\
 	$(addprefix tftf/tests/runtime_services/standard_service/sdei/system_tests/, \

@@ -18,6 +18,10 @@
 	.globl	console_core_putc
 	.globl	console_core_getc
 	.globl	console_core_flush
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+	.globl	console_init_fuzzer
+	.globl	console_pl011_putc_fuzzer
+#endif
 
 	/*
 	 *  The console base is in the data section and not in .bss
@@ -28,7 +32,14 @@
 	 */
 	.section .data.console_base
 	.align 3
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+	.section .data.console_base_fuzzer
+	.align 3
+#endif
 console_base: .quad 0x0
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+console_base_fuzzer: .quad 0x0
+#endif
 
 	/* -----------------------------------------------
 	 * int console_init(uintptr_t base_addr,
@@ -42,6 +53,24 @@ func console_init
 	str	x0, [x3, :lo12:console_base]
 	b	console_core_init
 endfunc console_init
+
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+	/* -----------------------------------------------
+	 * int console_init_fuzzer(uintptr_t base_addr,
+	 * unsigned int uart_clk, unsigned int baud_rate)
+	 *
+	 * Clobber list : x1 - x3
+	 * x1: Base address
+	 * x2: UART clock
+	 * x3: Baud rate
+	 * -----------------------------------------------
+	 */
+func console_init_fuzzer
+	adrp	x3, console_base_fuzzer
+	str	x0, [x3, :lo12:console_base_fuzzer]
+	b	console_core_init
+endfunc console_init_fuzzer
+#endif
 
 	/* -----------------------------------------------
 	 * int console_core_init(uintptr_t base_addr,
@@ -107,6 +136,26 @@ func console_pl011_putc
 	ldr	x1, [x1, :lo12:console_base]
 	b	console_core_putc
 endfunc console_pl011_putc
+
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+	/* -------------------------------------------------
+	 * To allow alternate implementation of putc, pl011
+	 * is appended in the function name.
+	 *
+	 * int console_pl011_putc_fuzzer(int c)
+	 *
+	 * Clobber list : x0-x2
+	 * x0: Character to be printed
+	 * x1: Base address
+	 * x2: Overwritten by function
+	 * -------------------------------------------------
+	 */
+func console_pl011_putc_fuzzer
+	adrp	x1, console_base_fuzzer
+	ldr	x1, [x1, :lo12:console_base_fuzzer]
+	b	console_core_putc
+endfunc console_pl011_putc_fuzzer
+#endif
 
 	/* ---------------------------------------------
 	 * int console_core_putc(int c, uintptr_t base_addr)

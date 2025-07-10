@@ -16,6 +16,11 @@
 
 #include <stdint.h>
 
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+#define CONSOLE_FLAG_PLAT_UART		0
+#define CONSOLE_FLAG_SMC_FUZZER		1
+#endif
+
 /*
  * Function to initialize the console without a C Runtime to print debug
  * information. It saves the console base to the data section. Returns 1 on
@@ -24,11 +29,32 @@
 int console_init(uintptr_t base_addr,
 		unsigned int uart_clk, unsigned int baud_rate);
 
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+/*
+ * Function to initialize the console without a C Runtime to print debug
+ * information. It saves the console base to the data section. Returns 1 on
+ * success, 0 on error.
+ */
+int console_init_fuzzer(uintptr_t base_addr,
+                unsigned int uart_clk, unsigned int baud_rate);
+void tftf_switch_console_state(int state);
+int tftf_get_console_state(void);
+#endif
+
 /*
  * Function to output a character over the console. It returns the character
  * printed on success or an error code.
  */
 int console_putc(int c);
+
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+/*
+ * Function to output a character over the console. It returns the character
+ * printed on success or an error code.
+ */
+int console_putc_fuzzer(int c);
+#endif
+
 
 /*
  * Function to get a character from the console.  It returns the character

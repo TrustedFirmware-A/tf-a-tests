@@ -343,15 +343,13 @@ out_rm_realm:
  */
 test_result_t host_realm_test_root_port_key_management(void)
 {
-	struct host_pdev *h_pdev;
+	u_register_t rmi_rc;
 	int ret;
 
 	if (host_rmi_version(RMI_ABI_VERSION_VAL) != 0U) {
 		tftf_testcase_printf("RMM is not TRP\n");
 		return TEST_RESULT_SKIPPED;
 	}
-
-	host_pdevs_init();
 
 	/* Initialize Host NS heap memory */
 	ret = page_pool_init((u_register_t)PAGE_POOL_BASE,
@@ -361,14 +359,12 @@ test_result_t host_realm_test_root_port_key_management(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	h_pdev = &gbl_host_pdevs[0];
-
 	/*
-	 * Call rmi_pdev_create with invalid pdev, expect an error
+	 * Directly call host_rmi_pdev_create with invalid pdev, expect an error
 	 * to be returned from TRP.
 	 */
-	ret = host_pdev_create(h_pdev);
-	if (ret != 0) {
+	rmi_rc = host_rmi_pdev_create((u_register_t)0UL, (u_register_t)0UL);
+	if (rmi_rc != RMI_SUCCESS) {
 		return TEST_RESULT_SUCCESS;
 	}
 

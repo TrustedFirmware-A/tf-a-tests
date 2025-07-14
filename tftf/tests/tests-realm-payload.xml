@@ -187,6 +187,9 @@
 	  <!-- Invoke all possible PDEV state transitions -->
 	  <testcase name="PDEV test valid state transitions"
 	  function="host_pdev_test_valid_state_transition" />
+	  <!-- Invoke IDE refresh and reset on PDEV -->
+	  <testcase name="Invoke IDE refresh and reset on PDEV"
+	  function="host_pdev_invoke_ide_refresh_reset" />
 	  <!-- Test case for LFA with Realm Payload -->
 	  <testcase name="Test Live Firmware Activation of RMM with Realm Payload"
 	  function="host_test_realm_rsi_version_with_lfa" />

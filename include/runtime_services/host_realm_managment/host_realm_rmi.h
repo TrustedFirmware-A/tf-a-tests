@@ -1568,6 +1568,8 @@ u_register_t host_rmi_pdev_communicate(u_register_t pdev_ptr,
 u_register_t host_rmi_pdev_set_pubkey(u_register_t pdev_ptr,
 				      u_register_t pubkey_params_ptr);
 u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr);
+u_register_t host_rmi_pdev_ide_key_refresh(u_register_t pdev_ptr, u_register_t event);
+u_register_t host_rmi_pdev_ide_reset(u_register_t pdev_ptr);
 u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr);
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 				  u_register_t vdev_ptr,

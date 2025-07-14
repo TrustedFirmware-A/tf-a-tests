@@ -149,6 +149,60 @@ test_result_t host_pdev_test_valid_state_transition(void)
 	return (rc == 0) ? TEST_RESULT_SUCCESS : TEST_RESULT_FAIL;
 }
 
+/* Invoke IDE key refresh and IDE reset on PDEV once it is in READY state */
+test_result_t host_pdev_invoke_ide_refresh_reset(void)
+{
+	int rc = 0;
+	struct host_pdev *h_pdev;
+	u_register_t rmi_feat_reg0;
+	bool return_error = false;
+	const unsigned char pdev_ide_refresh_reset[] = {
+		RMI_PDEV_STATE_COMMUNICATING,
+		RMI_PDEV_STATE_READY,
+		RMI_PDEV_STATE_IDE_RESETTING,
+		RMI_PDEV_STATE_READY
+	};
+
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+
+	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
+	if (h_pdev == NULL) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/* Initialize Host NS heap memory */
+	rc = page_pool_init((u_register_t)PAGE_POOL_BASE,
+			     (u_register_t)PAGE_POOL_MAX_SIZE);
+	if (rc != HEAP_INIT_SUCCESS) {
+		ERROR("Failed to init heap pool %d\n", rc);
+		return TEST_RESULT_FAIL;
+	}
+
+	rc = tsm_connect_device(h_pdev);
+	if (rc != 0) {
+		ERROR("TSM connect failed for device 0x%x\n", h_pdev->dev->bdf);
+		return TEST_RESULT_FAIL;
+	}
+
+	INFO("Invoke pdev_ide_refresh_reset sequence\n");
+	rc = host_pdev_state_transition(h_pdev, pdev_ide_refresh_reset,
+					sizeof(pdev_ide_refresh_reset));
+	if (rc != 0) {
+		ERROR("pdev_ide_refresh_reset failed\n");
+		return_error = true;
+	}
+
+	/* Disconnect the device from TSM */
+	rc = tsm_disconnect_device(h_pdev);
+	if (rc != 0) {
+		ERROR("TSM disconnect failed for device 0x%x\n",
+		      h_pdev->dev->bdf);
+		return_error = true;
+	}
+
+	return return_error ? TEST_RESULT_FAIL : TEST_RESULT_SUCCESS;
+}
+
 /*
  * This function invokes PDEV_CREATE on TRP and tries to test
  * the EL3 RMM-EL3 IDE KM interface. Will be skipped on TF-RMM.

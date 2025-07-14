@@ -378,6 +378,31 @@ static int host_pdev_stop(struct host_pdev *h_pdev)
 	return 0;
 }
 
+static int host_pdev_ide_key_refresh(struct host_pdev *h_pdev, unsigned long event)
+{
+	u_register_t ret;
+
+	ret = host_rmi_pdev_ide_key_refresh((u_register_t)h_pdev->pdev,
+				   (u_register_t)event);
+	if (ret != RMI_SUCCESS) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static int host_pdev_ide_reset(struct host_pdev *h_pdev)
+{
+	u_register_t ret;
+
+	ret = host_rmi_pdev_ide_reset((u_register_t)h_pdev->pdev);
+	if (ret != RMI_SUCCESS) {
+		return -1;
+	}
+
+	return 0;
+}
+
 /* Call RMI_PDEV_DESTROY and free all pdev related allocations */
 static int host_pdev_destroy(struct host_pdev *h_pdev)
 {
@@ -791,6 +816,12 @@ int host_pdev_transition(struct host_pdev *h_pdev, unsigned char to_state)
 		break;
 	case RMI_PDEV_STATE_STOPPED:
 		rc = host_dev_communicate(NULL, h_pdev, NULL, RMI_PDEV_STATE_STOPPED);
+		break;
+	case RMI_PDEV_STATE_COMMUNICATING:
+		rc = host_pdev_ide_key_refresh(h_pdev, RMI_PDEV_EVENT_IDE_KEY_REFRESH);
+		break;
+	case RMI_PDEV_STATE_IDE_RESETTING:
+		rc = host_pdev_ide_reset(h_pdev);
 		break;
 	default:
 		rc = -1;

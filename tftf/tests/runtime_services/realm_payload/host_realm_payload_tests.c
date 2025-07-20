@@ -67,7 +67,7 @@ test_result_t host_test_realm_create_planes_register_rw(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 1U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 1U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -129,13 +129,13 @@ test_result_t host_test_realm_create_planes_enter_multiple_rtt(void)
 	/* Test invalid combination Tree per plane with s2ap indirect */
 	if (host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			feature_flag0, RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT,
-			sl, rec_flag, 1U, MAX_AUX_PLANE_COUNT, TEST_MECID1)) {
+			sl, rec_flag, 1U, MAX_AUX_PLANE_COUNT, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			feature_flag0, 0U, sl, rec_flag, 1U, MAX_AUX_PLANE_COUNT,
-			TEST_MECID2)) {
+			get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -238,7 +238,7 @@ test_result_t host_test_realm_create_planes_enter_single_rtt(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			feature_flag0, feature_flag1, sl, &rec_flag, 1U, MAX_AUX_PLANE_COUNT,
-			TEST_MECID1)) {
+			get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -347,7 +347,7 @@ test_result_t host_test_realm_pn_access_outside_par(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			feature_flag0, 0U, RTT_MIN_LEVEL, rec_flag, 2U, 1U,
-			TEST_MECID1)) {
+			get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -484,7 +484,7 @@ test_result_t host_test_realm_create_enter(void)
 
 		if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 				feature_flag0, feature_flag1, sl, rec_flag, MAX_REC_COUNT, 0U,
-				TEST_MECID1)) {
+				get_test_mecid())) {
 			return TEST_RESULT_FAIL;
 		}
 
@@ -524,7 +524,7 @@ test_result_t host_test_realm_rsi_version(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -569,7 +569,7 @@ test_result_t host_realm_enable_pauth(void)
 	pauth_test_lib_fill_regs_and_template(pauth_keys_before);
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 				feature_flag0, 0U, sl, rec_flag, MAX_REC_COUNT, 0U,
-				TEST_MECID1)) {
+				get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -631,7 +631,7 @@ test_result_t host_realm_pauth_fault(void)
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+				feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -735,7 +735,7 @@ static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -884,7 +884,7 @@ test_result_t host_test_multiple_realm_create_enter(void)
 		ret = host_create_activate_realm_payload(&realm[num],
 							(u_register_t)REALM_IMAGE_BASE,
 							feature_flag0, 0U, sl, rec_flag,
-							MAX_REC_COUNT, 0U, TEST_MECID1);
+							MAX_REC_COUNT, 0U, get_test_mecid());
 		if (!ret) {
 			goto destroy_realms;
 		}
@@ -949,7 +949,7 @@ test_result_t host_realm_set_ripas(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1048,7 +1048,7 @@ test_result_t host_realm_reject_set_ripas(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1133,7 +1133,7 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes,
-			TEST_MECID1)) {
+			get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1331,7 +1331,7 @@ test_result_t host_realm_abort_unassigned_ram(void)
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes,
-			TEST_MECID1)) {
+			get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1527,7 +1527,7 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes,
-			TEST_MECID1)) {
+			get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1735,7 +1735,7 @@ test_result_t host_realm_sea_empty(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			feature_flag0, feature_flag1, sl, rec_flag, 8U, num_aux_planes,
-			TEST_MECID1)) {
+			get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -2033,7 +2033,7 @@ test_result_t host_realm_sea_unprotected(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes,
-			TEST_MECID1)) {
+			get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -2223,7 +2223,7 @@ test_result_t host_realm_enable_dit(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, MAX_REC_COUNT, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, MAX_REC_COUNT, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -2453,7 +2453,7 @@ test_result_t host_realm_pas_validation_new(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 2U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 2U, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -2639,7 +2639,7 @@ test_result_t host_realm_pas_validation_active(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		goto destroy_realm;
 	}
 
@@ -2685,7 +2685,7 @@ test_result_t host_realm_sea_adr_fault(void)
 	feature_flag0 = INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 0x2CU);
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, RTT_MIN_LEVEL, rec_flag, 4U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, RTT_MIN_LEVEL, rec_flag, 4U, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -2832,7 +2832,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_empty(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		ERROR("Realm creation failed\n");
 		goto destroy_realm;
 	}
@@ -2989,7 +2989,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_ram(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		ERROR("Realm creation failed\n");
 		goto destroy_realm;
 	}
@@ -3164,7 +3164,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_ns(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		ERROR("Realm creation failed\n");
 		goto destroy_realm;
 	}
@@ -3279,7 +3279,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_empty(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		ERROR("Realm creation failed\n");
 		goto destroy_realm;
 	}
@@ -3392,7 +3392,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_ram(void)
 	}
 
 	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		ERROR("Realm creation failed\n");
 		goto destroy_realm;
 	}
@@ -3508,7 +3508,7 @@ test_result_t host_test_feat_doublefault2(void)
 
 	if (!host_create_activate_realm_payload(&realm,
 					(u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, &rec_flag, 1U, 0U, TEST_MECID1)) {
+				feature_flag0, 0U, sl, &rec_flag, 1U, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -3568,7 +3568,7 @@ test_result_t host_realm_test_attestation(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+				feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -3609,7 +3609,7 @@ test_result_t host_realm_test_attestation_fault(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+				feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -3664,7 +3664,7 @@ test_result_t host_realm_feat_tcr2(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 2, 0U, TEST_MECID1)) {
+			feature_flag0, 0U, sl, rec_flag, 2, 0U, get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 

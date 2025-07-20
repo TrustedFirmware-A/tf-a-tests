@@ -43,12 +43,12 @@ test_result_t host_realm_test_mecid(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm1, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+				feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		fail = true;
 	}
 
 	if (!host_create_activate_realm_payload(&realm2, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID2)) {
+				feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
 		fail = true;
 		goto destroy_realm1;
 	}
@@ -78,6 +78,7 @@ test_result_t host_realm_test_mecid_fault(void)
 	u_register_t feature_flag0 = 0UL;
 	unsigned long feat_reg1;
 	long sl = RTT_MIN_LEVEL;
+	int mecid;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -95,13 +96,14 @@ test_result_t host_realm_test_mecid_fault(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
+	mecid = get_test_mecid();
 	if (!host_create_activate_realm_payload(&realm1, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+				feature_flag0, 0U, sl, rec_flag, 1U, 0U, mecid)) {
 		fail = true;
 	}
 
 	if (!host_create_activate_realm_payload(&realm2, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, TEST_MECID1)) {
+				feature_flag0, 0U, sl, rec_flag, 1U, 0U, mecid)) {
 		/*
 		 * Creation should fail as there should not be two Realms with the same
 		 * MECID.

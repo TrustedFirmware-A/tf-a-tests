@@ -7,8 +7,10 @@
 #define HOST_REALM_HELPER_H
 
 #include <stdlib.h>
+#include <arch_features.h>
 #include <debug.h>
 #include <host_realm_rmi.h>
+#include <spinlock.h>
 #include <tftf_lib.h>
 
 /*
@@ -102,6 +104,34 @@ static inline bool is_single_rtt_supported(void)
 	}
 
 	return false;
+}
+
+/* Test helper to retrieve a test MECID */
+static inline unsigned short get_test_mecid(void)
+{
+	static bool inited = false;
+	static unsigned short max_mecid = 0, current_mecid;
+	static spinlock_t lock;
+	unsigned long feat_reg1;
+
+	spin_lock(&lock);
+
+	if (!inited) {
+		if (is_feat_mec_supported() &&
+				(host_rmi_features(1UL, &feat_reg1) == 0UL &&
+				feat_reg1 != 0UL)) {
+			max_mecid = (unsigned short)feat_reg1;
+		}
+
+		inited = true;
+	}
+	if(max_mecid != 0) {
+		current_mecid++;
+		current_mecid %= max_mecid;
+	}
+	spin_unlock(&lock);
+	return current_mecid;
+
 }
 
 /* Handle REC exit due to VDEV request */

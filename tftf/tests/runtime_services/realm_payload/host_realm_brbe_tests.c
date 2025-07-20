@@ -37,7 +37,7 @@ test_result_t host_realm_test_brbe_save_restore(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 						feature_flag, feature_flag1, sl, rec_flag, 1U, 0U,
-						TEST_MECID1)) {
+						get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 

@@ -696,7 +696,7 @@ int host_create_realm_with_feat_da(struct realm *realm)
 						(u_register_t)REALM_IMAGE_BASE,
 						feature_flag, 0UL, sl,
 						rec_flag, 1U, 0U,
-						TEST_MECID1)) {
+						get_test_mecid())) {
 		return -1;
 	}
 

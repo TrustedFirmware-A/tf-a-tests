@@ -17,9 +17,6 @@
 #include <uuid_utils.h>
 #include <uuid.h>
 
-#define TEST_MECID1	(unsigned short)1
-#define TEST_MECID2	(unsigned short)2
-
 typedef struct {
 	uintptr_t addr;
 	size_t size;

@@ -1115,7 +1115,7 @@ u_register_t host_realm_create(struct realm *realm)
 		goto pool_reset;
 	}
 
-	INFO("Realm start adr=0x%lx\n", realm->par_base);
+	INFO("Realm start adr=0x%lx mecid=%d\n", realm->par_base, realm->mecid);
 
 	/* Allocate memory for params */
 	params = (struct rmi_realm_params *)page_alloc(PAGE_SIZE);

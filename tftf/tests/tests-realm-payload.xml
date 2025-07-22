@@ -168,7 +168,7 @@
 	  <testcase name="Test Realm with minimum MECID" function="host_realm_test_min_mecid" />
 	  <testcase name="Test Realms with maximum MECID" function="host_realm_test_max_mecid" />
 	  <testcase name="Test Realms with shared default MECID" function="host_realm_test_default_mecid" />
-	 <!-- Test case for EL3-RMM IDE KM Interface -->
+	  <!-- Test case for EL3-RMM IDE KM Interface -->
 	  <testcase name="Test for Root Port Key management interface"
 	  function="host_realm_test_root_port_key_management" />
 	  <!-- Test cases related to Dev Mem Delegate and Undelegate -->
@@ -184,6 +184,9 @@
 	  <!-- Invoke DA workflow on PCIe off-chip device -->
 	  <testcase name="DA workflow on all PCIe off-chip devices"
 	  function="host_da_workflow_on_all_offchip_devices" />
+	  <!-- Invoke all possible PDEV state transitions -->
+	  <testcase name="PDEV test valid state transitions"
+	  function="host_pdev_test_valid_state_transition" />
 	  <!-- Test case for LFA with Realm Payload -->
 	  <testcase name="Test Live Firmware Activation of RMM with Realm Payload"
 	  function="host_test_realm_rsi_version_with_lfa" />

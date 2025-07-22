@@ -78,6 +78,77 @@ out_rm_realm:
 	return result;
 }
 
+/* Test all possible valid state transitions for PDEV */
+test_result_t host_pdev_test_valid_state_transition(void)
+{
+	int rc = 0;
+	struct host_pdev *h_pdev;
+	unsigned int i;
+	u_register_t rmi_feat_reg0;
+	const unsigned char pdev_valid_state_transition[][PDEV_STATE_TRANSITION_MAX] = {
+		{
+			RMI_PDEV_STATE_NEW,
+			RMI_PDEV_STATE_STOPPING,
+			RMI_PDEV_STATE_STOPPED,
+			-1
+		},
+		{
+			RMI_PDEV_STATE_NEW,
+			RMI_PDEV_STATE_NEEDS_KEY,
+			RMI_PDEV_STATE_STOPPING,
+			RMI_PDEV_STATE_STOPPED,
+			-1
+		},
+		{
+			RMI_PDEV_STATE_NEW,
+			RMI_PDEV_STATE_NEEDS_KEY,
+			RMI_PDEV_STATE_HAS_KEY,
+			RMI_PDEV_STATE_STOPPING,
+			RMI_PDEV_STATE_STOPPED,
+			-1
+		},
+		{
+			RMI_PDEV_STATE_NEW,
+			RMI_PDEV_STATE_NEEDS_KEY,
+			RMI_PDEV_STATE_HAS_KEY,
+			RMI_PDEV_STATE_READY,
+			RMI_PDEV_STATE_STOPPING,
+			RMI_PDEV_STATE_STOPPED,
+			-1
+		}
+	};
+
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+
+	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
+	if (h_pdev == NULL) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/* Initialize Host NS heap memory */
+	rc = page_pool_init((u_register_t)PAGE_POOL_BASE,
+			     (u_register_t)PAGE_POOL_MAX_SIZE);
+	if (rc != HEAP_INIT_SUCCESS) {
+		ERROR("Failed to init heap pool %d\n", rc);
+		return TEST_RESULT_FAIL;
+	}
+
+	for (i = 0U; i < sizeof(pdev_valid_state_transition)/
+		     sizeof(pdev_valid_state_transition[0]); i++) {
+		INFO("pdev_valid_state_transition sequence: %d\n", i);
+		rc = host_pdev_state_transition(h_pdev,
+					pdev_valid_state_transition[i],
+					sizeof(pdev_valid_state_transition[i]));
+		if (rc != 0) {
+			ERROR("pdev_valid_state_transition failed at "
+			      "sequence index: %d\n", i);
+			break;
+		}
+	}
+
+	return (rc == 0) ? TEST_RESULT_SUCCESS : TEST_RESULT_FAIL;
+}
+
 /*
  * This function invokes PDEV_CREATE on TRP and tries to test
  * the EL3 RMM-EL3 IDE KM interface. Will be skipped on TF-RMM.

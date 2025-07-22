@@ -1303,6 +1303,24 @@ bool is_host_pdev_independently_attested(struct host_pdev *h_pdev)
 	return false;
 }
 
+struct host_pdev *get_host_pdev_by_type(uint8_t type)
+{
+	unsigned int i;
+
+	if (type != DEV_TYPE_INDEPENDENTLY_ATTESTED) {
+		return NULL;
+	}
+
+	/* return the first host_pdev of 'type' */
+	for (i = 0U; i < gbl_host_pdev_count; i++) {
+		if (is_host_pdev_independently_attested(&gbl_host_pdevs[i])) {
+			return &gbl_host_pdevs[i];
+		}
+	}
+
+	return NULL;
+}
+
 /*
  * Returns true if all host_pdev state is clean like no granules, aux granules,
  * memory are associated with the host_pdev.

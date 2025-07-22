@@ -126,6 +126,7 @@ struct host_vdev {
 
 void host_pdevs_init(void);
 bool is_host_pdev_independently_attested(struct host_pdev *h_pdev);
+struct host_pdev *get_host_pdev_by_type(uint8_t type);
 
 /*
  * Transition PDEV to sequence of states mentioned in 'pdev_states'. During

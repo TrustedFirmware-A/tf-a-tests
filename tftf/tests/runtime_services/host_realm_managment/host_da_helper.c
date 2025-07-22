@@ -25,9 +25,11 @@ static const char * const pdev_state_str[] = {
 	"PDEV_STATE_NEEDS_KEY",
 	"PDEV_STATE_HAS_KEY",
 	"PDEV_STATE_READY",
+	"PDEV_STATE_IDE_RESETTING",
 	"PDEV_STATE_COMMUNICATING",
+	"PDEV_STATE_STOPPING",
 	"PDEV_STATE_STOPPED",
-	"PDEV_STATE_ERROR"
+	"RMI_PDEV_STATE_ERROR"
 };
 
 static const char * const vdev_state_str[] = {
@@ -134,11 +136,145 @@ static bool is_host_vdev_state(struct host_vdev *h_vdev, u_register_t exp_state)
 		return false;
 	}
 
-	if (cur_state != exp_state) {
-		return false;
+	return cur_state == exp_state;
+}
+
+/*
+ * Allocate granules needed for a PDEV object like device communication data,
+ * response buffer, PDEV AUX granules and memory required to store cert_chain
+ */
+int host_pdev_setup(struct host_pdev *h_pdev)
+{
+	u_register_t ret, count;
+	int i;
+
+	/* RCiEP devices not supported by RMM */
+	if (h_pdev->dev->dp_type == RCiEP) {
+		return -1;
 	}
 
-	return true;
+	/* Allocate granule for PDEV and delegate */
+	h_pdev->pdev = page_alloc(PAGE_SIZE);
+	if (h_pdev->pdev == NULL) {
+		return -1;
+	}
+
+	memset(h_pdev->pdev, 0, GRANULE_SIZE);
+	ret = host_rmi_granule_delegate((u_register_t)h_pdev->pdev);
+	if (ret != RMI_SUCCESS) {
+		ERROR("PDEV delegate failed 0x%lx\n", ret);
+		goto err_undelegate_pdev;
+	}
+
+	/*
+	 * Off chip PCIe device - set flags as non coherent device protected by
+	 * end to end IDE, with SPDM.
+	 */
+	h_pdev->pdev_flags = 0;
+
+	/* Set IDE based on device capability */
+	if (pcie_dev_has_ide(h_pdev->dev)) {
+		h_pdev->pdev_flags |= INPLACE(RMI_PDEV_FLAGS_NCOH_IDE,
+					      RMI_PDEV_IDE_TRUE);
+	}
+
+	/* Supports SPDM */
+	h_pdev->pdev_flags |= INPLACE(RMI_PDEV_FLAGS_SPDM, RMI_PDEV_SPDM_TRUE);
+
+	/* Get num of aux granules required for this PDEV */
+	ret = host_rmi_pdev_aux_count(h_pdev->pdev_flags, &count);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_pdev_aux_count() failed 0x%lx\n", ret);
+		return -1;
+	}
+	h_pdev->pdev_aux_num = count;
+
+	/* Allocate aux granules for PDEV and delegate */
+	INFO("PDEV create requires %u aux pages\n", h_pdev->pdev_aux_num);
+	for (i = 0; i < h_pdev->pdev_aux_num; i++) {
+		void *pdev_aux = page_alloc(PAGE_SIZE);
+
+		if (pdev_aux == NULL) {
+			goto err_undelegate_pdev_aux;
+		}
+
+		ret = host_rmi_granule_delegate((u_register_t)pdev_aux);
+		if (ret != RMI_SUCCESS) {
+			ERROR("Aux granule delegate failed 0x%lx\n", ret);
+			goto err_undelegate_pdev;
+		}
+
+		h_pdev->pdev_aux[i] = pdev_aux;
+	}
+
+	/* Allocate dev_comm_data and send/recv buffer for Dev communication */
+	h_pdev->dev_comm_data = (struct rmi_dev_comm_data *)page_alloc(PAGE_SIZE);
+	if (h_pdev->dev_comm_data == NULL) {
+		goto err_undelegate_pdev_aux;
+	}
+
+	memset(h_pdev->dev_comm_data, 0, sizeof(struct rmi_dev_comm_data));
+
+	h_pdev->dev_comm_data->enter.req_addr = (unsigned long)
+		page_alloc(PAGE_SIZE);
+	if (h_pdev->dev_comm_data->enter.req_addr == 0UL) {
+		goto err_undelegate_pdev_aux;
+	}
+
+	h_pdev->dev_comm_data->enter.resp_addr = (unsigned long)
+		page_alloc(PAGE_SIZE);
+	if (h_pdev->dev_comm_data->enter.resp_addr == 0UL) {
+		goto err_undelegate_pdev_aux;
+	}
+
+	/* Allocate buffer to cache device certificate */
+	h_pdev->cert_slot_id = 0;
+	h_pdev->cert_chain = (uint8_t *)page_alloc(HOST_PDEV_CERT_LEN_MAX);
+	h_pdev->cert_chain_len = 0;
+	if (h_pdev->cert_chain == NULL) {
+		goto err_undelegate_pdev_aux;
+	}
+
+	/* Allocate buffer to store extracted public key */
+	h_pdev->public_key = (void *)page_alloc(PAGE_SIZE);
+	if (h_pdev->public_key == NULL) {
+		goto err_undelegate_pdev_aux;
+	}
+	h_pdev->public_key_len = PAGE_SIZE;
+
+	/* Allocate buffer to store public key metadata */
+	h_pdev->public_key_metadata = (void *)page_alloc(PAGE_SIZE);
+	if (h_pdev->public_key_metadata == NULL) {
+		goto err_undelegate_pdev_aux;
+	}
+
+	h_pdev->public_key_metadata_len = PAGE_SIZE;
+
+	/* Allocate buffer to store VCA */
+	h_pdev->vca = (uint8_t *)page_alloc(HOST_PDEV_VCA_LEN_MAX);
+	h_pdev->vca_len = 0;
+	if (h_pdev->vca == NULL) {
+		goto err_undelegate_pdev_aux;
+	}
+
+	/* Set algorithm to use for device digests */
+	h_pdev->pdev_hash_algo = RMI_HASH_SHA_512;
+
+	return 0;
+
+err_undelegate_pdev_aux:
+	/* Undelegate all the delegated pages */
+	for (int i = 0; i < h_pdev->pdev_aux_num; i++) {
+		if (h_pdev->pdev_aux[i]) {
+			host_rmi_granule_undelegate((u_register_t)
+						    h_pdev->pdev_aux[i]);
+		}
+	}
+
+err_undelegate_pdev:
+	host_rmi_granule_undelegate((u_register_t)h_pdev->pdev);
+
+	return -1;
 }
 
 int host_pdev_create(struct host_pdev *h_pdev)
@@ -146,6 +282,14 @@ int host_pdev_create(struct host_pdev *h_pdev)
 	struct rmi_pdev_params *pdev_params;
 	u_register_t ret;
 	unsigned int i;
+	int rc;
+
+	/* Allocate granules and memory for PDEV objects like certificate, key */
+	rc = host_pdev_setup(h_pdev);
+	if (rc == -1) {
+		ERROR("host_pdev_setup failed.\n");
+		return -1;
+	}
 
 	pdev_params = (struct rmi_pdev_params *)page_alloc(PAGE_SIZE);
 	memset(pdev_params, 0, GRANULE_SIZE);
@@ -174,7 +318,33 @@ int host_pdev_create(struct host_pdev *h_pdev)
 static int host_pdev_set_pubkey(struct host_pdev *h_pdev)
 {
 	struct rmi_public_key_params *pubkey_params;
+	uint8_t public_key_algo;
 	u_register_t ret;
+	int rc;
+
+	/* Get public key. Verifying cert_chain not done by host but by Realm? */
+	rc = host_get_public_key_from_cert_chain(h_pdev->cert_chain,
+						 h_pdev->cert_chain_len,
+						 h_pdev->public_key,
+						 &h_pdev->public_key_len,
+						 h_pdev->public_key_metadata,
+						 &h_pdev->public_key_metadata_len,
+						 &public_key_algo);
+	if (rc != 0) {
+		ERROR("Get public key failed\n");
+		return -1;
+	}
+
+	if (public_key_algo == PUBLIC_KEY_ALGO_ECDSA_ECC_NIST_P256) {
+		h_pdev->public_key_sig_algo = RMI_SIGNATURE_ALGORITHM_ECDSA_P256;
+	} else if (public_key_algo == PUBLIC_KEY_ALGO_ECDSA_ECC_NIST_P384) {
+		h_pdev->public_key_sig_algo = RMI_SIGNATURE_ALGORITHM_ECDSA_P384;
+	} else {
+		h_pdev->public_key_sig_algo = RMI_SIGNATURE_ALGORITHM_RSASSA_3072;
+	}
+	INFO("DEV public key len/sig_algo: %ld/%d\n", h_pdev->public_key_len,
+	     h_pdev->public_key_sig_algo);
+
 
 	pubkey_params = (struct rmi_public_key_params *)page_alloc(PAGE_SIZE);
 	memset(pubkey_params, 0, GRANULE_SIZE);
@@ -207,16 +377,56 @@ static int host_pdev_stop(struct host_pdev *h_pdev)
 	return 0;
 }
 
+/* Call RMI_PDEV_DESTROY and free all pdev related allocations */
 static int host_pdev_destroy(struct host_pdev *h_pdev)
 {
 	u_register_t ret;
+	int rc = 0;
 
 	ret = host_rmi_pdev_destroy((u_register_t)h_pdev->pdev);
 	if (ret != RMI_SUCCESS) {
 		return -1;
 	}
 
-	return 0;
+	/* Undelegate all aux granules */
+	for (int i = 0; i < h_pdev->pdev_aux_num; i++) {
+		ret = host_rmi_granule_undelegate((u_register_t)h_pdev->pdev_aux[i]);
+		if (ret != RMI_SUCCESS) {
+			ERROR("Aux granule undelegate failed 0x%lx\n", ret);
+			rc = -1;
+		}
+
+		h_pdev->pdev_aux[i] = NULL;
+	}
+
+	/* Undelegate PDEV granule */
+	ret = host_rmi_granule_undelegate((u_register_t)h_pdev->pdev);
+	h_pdev->pdev = NULL;
+	if (ret != RMI_SUCCESS) {
+		ERROR("PDEV undelegate failed 0x%lx\n", ret);
+		rc = -1;
+	}
+
+	page_free((u_register_t)h_pdev->dev_comm_data->enter.req_addr);
+	page_free((u_register_t)h_pdev->dev_comm_data->enter.resp_addr);
+
+	page_free((u_register_t)h_pdev->dev_comm_data);
+	page_free((u_register_t)h_pdev->cert_chain);
+	page_free((u_register_t)h_pdev->public_key);
+	page_free((u_register_t)h_pdev->public_key_metadata);
+	page_free((u_register_t)h_pdev->vca);
+
+	h_pdev->dev_comm_data = NULL;
+	h_pdev->cert_chain = NULL;
+	h_pdev->public_key = NULL;
+	h_pdev->public_key_metadata = NULL;
+	h_pdev->vca = NULL;
+	h_pdev->cert_chain_len = 0;
+	h_pdev->vca_len = 0;
+	h_pdev->public_key_len = 0;
+	h_pdev->public_key_metadata_len = 0;
+
+	return rc;
 }
 
 static int host_dev_get_state(struct host_pdev *h_pdev, struct host_vdev *h_vdev,
@@ -240,11 +450,10 @@ static u_register_t host_rmi_dev_communicate(struct realm *realm,
 						 (u_register_t)h_vdev->vdev_ptr,
 						 (u_register_t)
 						 h_vdev->dev_comm_data);
-	} else {
-		return host_rmi_pdev_communicate((u_register_t)h_pdev->pdev,
-						 (u_register_t)
-						 h_pdev->dev_comm_data);
 	}
+
+	return host_rmi_pdev_communicate((u_register_t)h_pdev->pdev,
+					 (u_register_t)h_pdev->dev_comm_data);
 }
 
 static int host_pdev_cache_device_object(struct host_pdev *h_pdev,
@@ -285,6 +494,7 @@ static int host_pdev_cache_device_object(struct host_pdev *h_pdev,
 		h_pdev->vca_len += dev_obj_buf_len;
 		rc = 0;
 	}
+
 	return rc;
 }
 
@@ -336,7 +546,6 @@ static int host_dev_cache_dev_object(struct host_pdev *h_pdev,
 				     unsigned char cache_obj_id,
 				     size_t cache_offset, size_t cache_len)
 {
-	uint8_t *dev_obj_cache;
 	int rc;
 
 	if ((cache_len != 0) &&
@@ -345,17 +554,17 @@ static int host_dev_cache_dev_object(struct host_pdev *h_pdev,
 		return -1;
 	}
 
-	dev_obj_cache = dev_obj_buf + cache_offset;
+	dev_obj_buf = dev_obj_buf + cache_offset;
 
 	if (h_vdev) {
 		rc = host_vdev_cache_device_object(h_vdev,
 						   cache_obj_id,
-						   dev_obj_cache,
+						   dev_obj_buf,
 						   cache_len);
 	} else {
 		rc = host_pdev_cache_device_object(h_pdev,
 						   cache_obj_id,
-						   dev_obj_cache,
+						   dev_obj_buf,
 						   cache_len);
 	}
 
@@ -481,6 +690,7 @@ static int host_dev_communicate(struct realm *realm,
 		return rc;
 	}
 
+	stop = false;
 	do {
 		ret = host_rmi_dev_communicate(realm, h_pdev, h_vdev);
 		if (ret != RMI_SUCCESS) {
@@ -494,11 +704,12 @@ static int host_dev_communicate(struct realm *realm,
 		 * device object to be cached.
 		 */
 		if ((EXTRACT(RMI_DEV_COMM_EXIT_FLAGS_CACHE_REQ,
-			dcomm_exit->flags) != 0U) ||
+			     dcomm_exit->flags) != 0U) ||
 		    (EXTRACT(RMI_DEV_COMM_EXIT_FLAGS_CACHE_RSP,
-			dcomm_exit->flags) != 0U)) {
+			     dcomm_exit->flags) != 0U)) {
 			rc = host_dev_cache_dev_req_resp(h_pdev, h_vdev,
-						       dcomm_enter, dcomm_exit);
+							 dcomm_enter,
+							 dcomm_exit);
 			if (rc != 0) {
 				ERROR("host_dev_cache_dev_object failed\n");
 				break;
@@ -522,7 +733,8 @@ static int host_dev_communicate(struct realm *realm,
 			break;
 		}
 		if (state == target_state) {
-			/* The target state was reached, but for some
+			/*
+			 * The target state was reached, but for some
 			 * transitions this is not enough, need to continue
 			 * calling it till certain flags are cleared in the
 			 * exit. wait for that to happen.
@@ -530,7 +742,7 @@ static int host_dev_communicate(struct realm *realm,
 			stop = dcomm_exit->flags == 0U;
 		} else if (state == error_state) {
 			ERROR("Failed to reach target_state %lu instead of %u\n",
-				state, (unsigned int)target_state);
+			      state, (unsigned int)target_state);
 			rc = -1;
 			stop = true;
 		} else {
@@ -544,8 +756,7 @@ static int host_dev_communicate(struct realm *realm,
 /*
  * Invoke RMI handler to transition PDEV state to 'to_state'
  */
-int host_pdev_transition(struct host_pdev *h_pdev,
-			 unsigned char to_state)
+int host_pdev_transition(struct host_pdev *h_pdev, unsigned char to_state)
 {
 	int rc;
 
@@ -556,6 +767,7 @@ int host_pdev_transition(struct host_pdev *h_pdev,
 	case RMI_PDEV_STATE_NEEDS_KEY:
 		/* Reset cached cert_chain */
 		h_pdev->cert_chain_len = 0UL;
+		h_pdev->vca_len = 0UL;
 		rc = host_dev_communicate(NULL, h_pdev, NULL,
 					  RMI_PDEV_STATE_NEEDS_KEY);
 		break;
@@ -573,19 +785,92 @@ int host_pdev_transition(struct host_pdev *h_pdev,
 		break;
 	default:
 		rc = -1;
+		break;
 	}
 
 	if (rc != 0) {
-		ERROR("RMI command failed\n");
+		ERROR("pdev_state_transition: failed\n");
 		return rc;
 	}
 
 	if (!is_host_pdev_state(h_pdev, to_state)) {
-		ERROR("PDEV state not [%s]\n", pdev_state_str[to_state]);
+		ERROR("pdev_state_transition: PDEV state not [%s]\n",
+		      pdev_state_str[to_state]);
 		return -1;
 	}
 
-	return 0;
+	/*
+	 * Upon successful transition to STOPPED, call pdev_destroy and reclaim
+	 * all the allocation done to PDEV.
+	 */
+	if (to_state == RMI_PDEV_STATE_STOPPED) {
+		rc = host_pdev_destroy(h_pdev);
+	}
+
+	return rc;
+}
+
+int host_pdev_state_transition(struct host_pdev *h_pdev,
+			       const unsigned char pdev_states[],
+			       size_t pdev_states_max)
+{
+	unsigned int i;
+	u_register_t state;
+	int rc = 0;
+
+	if ((h_pdev == NULL) || (pdev_states_max > PDEV_STATE_TRANSITION_MAX)) {
+		return -1;
+	}
+
+	for (i = 0U; i < pdev_states_max; i++) {
+		if (pdev_states[i] == (unsigned char)-1) {
+			break;
+		}
+
+		if (pdev_states[i] > RMI_PDEV_STATE_STOPPED) {
+			ERROR("Invalid PDEV state: %d\n", pdev_states[i]);
+			rc = -1;
+			break;
+		}
+
+		if (i == 0U) {
+			INFO("PDEV transition to [%s]\n",
+			     pdev_state_str[pdev_states[i]]);
+		} else {
+			INFO("PDEV transition from [%s] -> [%s]\n",
+			     pdev_state_str[pdev_states[i - 1]],
+			     pdev_state_str[pdev_states[i]]);
+		}
+
+		rc = host_pdev_transition(h_pdev, pdev_states[i]);
+		if (rc != 0) {
+			ERROR("PDEV transition: to [%s] failed\n",
+			      pdev_state_str[pdev_states[i]]);
+			rc = -1;
+			break;
+		}
+	}
+
+	/*
+	 * On error transition the PDEV to STOPPED state and cleanup the
+	 * resources held by PDEV.
+	 */
+	if ((rc != 0) && (host_pdev_get_state(h_pdev, &state) == 0)) {
+		INFO("PDEV transition from [%s] -> [%s]\n",
+		     pdev_state_str[state],
+		     pdev_state_str[RMI_PDEV_STATE_STOPPING]);
+
+		if (host_pdev_transition(h_pdev, RMI_PDEV_STATE_STOPPING) == 0) {
+			INFO("PDEV transition from [%s] -> [%s]\n",
+			     pdev_state_str[RMI_PDEV_STATE_STOPPING],
+			     pdev_state_str[RMI_PDEV_STATE_STOPPED]);
+
+			(void)host_pdev_transition(h_pdev,
+						   RMI_PDEV_STATE_STOPPED);
+		}
+	}
+
+	return rc;
 }
 
 int host_vdev_get_interface_report(struct realm *realm,
@@ -622,8 +907,8 @@ int host_vdev_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t ip
 }
 
 int host_vdev_unlock(struct realm *realm,
-		struct host_vdev *h_vdev,
-		unsigned char target_state)
+		     struct host_vdev *h_vdev,
+		     unsigned char target_state)
 {
 	int rc;
 	struct host_pdev *h_pdev;
@@ -635,7 +920,7 @@ int host_vdev_unlock(struct realm *realm,
 	}
 
 	rc = host_rmi_vdev_unlock(realm->rd, (u_register_t)h_pdev->pdev,
-				(u_register_t)h_vdev->vdev_ptr);
+				  (u_register_t)h_vdev->vdev_ptr);
 	if (rc != 0) {
 		return rc;
 	}
@@ -739,210 +1024,6 @@ int host_vdev_transition(struct realm *realm,
 	}
 
 	return 0;
-}
-
-/*
- * Allocate granules needed for a PDEV object like device communication data,
- * response buffer, PDEV AUX granules and memory required to store cert_chain
- */
-int host_pdev_setup(struct host_pdev *h_pdev)
-{
-	u_register_t ret, count;
-	unsigned int i;
-
-	/* RCiEP devices not supported by RMM */
-	if (h_pdev->dev->dp_type == RCiEP) {
-		return -1;
-	}
-
-	/* Allocate granule for PDEV and delegate */
-	h_pdev->pdev = page_alloc(PAGE_SIZE);
-	if (h_pdev->pdev == NULL) {
-		return -1;
-	}
-
-	memset(h_pdev->pdev, 0, GRANULE_SIZE);
-	ret = host_rmi_granule_delegate((u_register_t)h_pdev->pdev);
-	if (ret != RMI_SUCCESS) {
-		ERROR("PDEV delegate failed 0x%lx\n", ret);
-		goto err_undelegate_pdev;
-	}
-
-	/*
-	 * Off chip PCIe device - set flags as non-coherent device protected by
-	 * end to end IDE, with SPDM.
-	 */
-	h_pdev->pdev_flags = 0;
-
-	/* Set IDE based on device capability */
-	if (pcie_dev_has_ide(h_pdev->dev)) {
-		h_pdev->pdev_flags |= INPLACE(RMI_PDEV_FLAGS_NCOH_IDE,
-					      RMI_PDEV_IDE_TRUE);
-	}
-
-	/* Supports SPDM */
-	h_pdev->pdev_flags |= INPLACE(RMI_PDEV_FLAGS_SPDM, RMI_PDEV_SPDM_TRUE);
-
-	/* Get num of aux granules required for this PDEV */
-	ret = host_rmi_pdev_aux_count(h_pdev->pdev_flags, &count);
-	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_pdev_aux_count() failed 0x%lx\n", ret);
-		return -1;
-	}
-	h_pdev->pdev_aux_num = count;
-
-	/* Allocate aux granules for PDEV and delegate */
-	INFO("PDEV create requires %u aux pages\n", h_pdev->pdev_aux_num);
-	for (i = 0U; i < h_pdev->pdev_aux_num; i++) {
-		void *pdev_aux = page_alloc(PAGE_SIZE);
-
-		if (pdev_aux == NULL) {
-			goto err_undelegate_pdev_aux;
-		}
-
-		ret = host_rmi_granule_delegate((u_register_t)pdev_aux);
-		if (ret != RMI_SUCCESS) {
-			ERROR("Aux granule delegate failed 0x%lx\n", ret);
-			goto err_undelegate_pdev;
-		}
-
-		h_pdev->pdev_aux[i] = pdev_aux;
-	}
-
-	/* Allocate dev_comm_data and send/recv buffer for Dev communication */
-	h_pdev->dev_comm_data = (struct rmi_dev_comm_data *)page_alloc(PAGE_SIZE);
-	if (h_pdev->dev_comm_data == NULL) {
-		goto err_undelegate_pdev_aux;
-	}
-
-	memset(h_pdev->dev_comm_data, 0, sizeof(struct rmi_dev_comm_data));
-
-	h_pdev->dev_comm_data->enter.req_addr = (unsigned long)
-		page_alloc(PAGE_SIZE);
-	if (h_pdev->dev_comm_data->enter.req_addr == 0UL) {
-		goto err_undelegate_pdev_aux;
-	}
-
-	h_pdev->dev_comm_data->enter.resp_addr = (unsigned long)
-		page_alloc(PAGE_SIZE);
-	if (h_pdev->dev_comm_data->enter.resp_addr == 0UL) {
-		goto err_undelegate_pdev_aux;
-	}
-
-	/* Allocate buffer to cache device certificate */
-	h_pdev->cert_slot_id = 0;
-	h_pdev->cert_chain = (uint8_t *)page_alloc(HOST_PDEV_CERT_LEN_MAX);
-	h_pdev->cert_chain_len = 0;
-	if (h_pdev->cert_chain == NULL) {
-		goto err_undelegate_pdev_aux;
-	}
-
-	/* Allocate buffer to cache VCA */
-	h_pdev->vca = (uint8_t *)page_alloc(HOST_PDEV_VCA_LEN_MAX);
-	h_pdev->vca_len = 0;
-	if (h_pdev->vca == NULL) {
-		goto err_undelegate_pdev_aux;
-	}
-
-	/* Allocate buffer to store extracted public key */
-	h_pdev->public_key = (void *)page_alloc(PAGE_SIZE);
-	if (h_pdev->public_key == NULL) {
-		goto err_undelegate_pdev_aux;
-	}
-	h_pdev->public_key_len = PAGE_SIZE;
-
-	/* Allocate buffer to store public key metadata */
-	h_pdev->public_key_metadata = (void *)page_alloc(PAGE_SIZE);
-	if (h_pdev->public_key_metadata == NULL) {
-		goto err_undelegate_pdev_aux;
-	}
-
-	h_pdev->public_key_metadata_len = PAGE_SIZE;
-
-	/* Set algorithm to use for device digests */
-	h_pdev->pdev_hash_algo = RMI_HASH_SHA_512;
-
-	return 0;
-
-err_undelegate_pdev_aux:
-	/* Undelegate all the delegated pages */
-	for (unsigned int j = 0U; j < h_pdev->pdev_aux_num; j++) {
-		if (h_pdev->pdev_aux[j]) {
-			host_rmi_granule_undelegate((u_register_t)
-						    h_pdev->pdev_aux[j]);
-		}
-	}
-
-err_undelegate_pdev:
-	host_rmi_granule_undelegate((u_register_t)h_pdev->pdev);
-
-	return -1;
-}
-
-/*
- * Stop PDEV and terminate secure session and call PDEV destroy
- */
-int host_pdev_reclaim(struct host_pdev *h_pdev)
-{
-	u_register_t ret;
-	int rc, result = 0;
-
-	/* Move the device to STOPPING state */
-	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_STOPPING);
-	if (rc != 0) {
-		ERROR("PDEV transition: to PDEV_STATE_STOPPING failed\n");
-		result = -1;
-	}
-
-	/* Do pdev_communicate to terminate secure session */
-	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_STOPPED);
-	if (rc != 0) {
-		ERROR("PDEV transition: to PDEV_STATE_STOPPED failed\n");
-		result = -1;
-	}
-
-	rc = host_pdev_destroy(h_pdev);
-	if (rc != 0) {
-		ERROR("PDEV transition: to STATE_NULL failed\n");
-		result = -1;
-	}
-
-	/* Undelegate all aux granules */
-	for (int i = 0; i < h_pdev->pdev_aux_num; i++) {
-		ret = host_rmi_granule_undelegate((u_register_t)h_pdev->pdev_aux[i]);
-		if (ret != RMI_SUCCESS) {
-			ERROR("Aux granule undelegate failed 0x%lx\n", ret);
-			result = -1;
-		}
-
-		h_pdev->pdev_aux[i] = NULL;
-	}
-
-	/* Undelegate PDEV granule */
-	ret = host_rmi_granule_undelegate((u_register_t)h_pdev->pdev);
-	h_pdev->pdev = NULL;
-	if (ret != RMI_SUCCESS) {
-		ERROR("PDEV undelegate failed 0x%lx\n", ret);
-		result = -1;
-	}
-
-	page_free((u_register_t)h_pdev->dev_comm_data->enter.req_addr);
-	page_free((u_register_t)h_pdev->dev_comm_data->enter.resp_addr);
-
-	page_free((u_register_t)h_pdev->dev_comm_data);
-	page_free((u_register_t)h_pdev->cert_chain);
-	page_free((u_register_t)h_pdev->vca);
-	page_free((u_register_t)h_pdev->public_key);
-	page_free((u_register_t)h_pdev->public_key_metadata);
-
-	h_pdev->dev_comm_data = NULL;
-	h_pdev->cert_chain = NULL;
-	h_pdev->vca = NULL;
-	h_pdev->public_key = NULL;
-	h_pdev->public_key_metadata = NULL;
-	h_pdev->vca_len = 0;
-
-	return result;
 }
 
 int host_create_realm_with_feat_da(struct realm *realm)
@@ -1086,8 +1167,7 @@ int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
 	return 0;
 }
 
-int host_unassign_vdev_from_realm(struct realm *realm,
-				  struct host_vdev *h_vdev)
+int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev)
 {
 	u_register_t ret;
 	u_register_t state;
@@ -1152,7 +1232,6 @@ void host_do_vdev_communicate(struct realm *realm, u_register_t vdev_ptr)
 		return;
 	}
 
-
 	h_pdev = find_host_pdev_from_vdev_ptr(vdev_ptr);
 	if (h_pdev == NULL) {
 		return;
@@ -1165,13 +1244,13 @@ void host_do_vdev_communicate(struct realm *realm, u_register_t vdev_ptr)
 }
 
 u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev,
-			      u_register_t dev_pa, long map_level, u_register_t *dev_ipa)
+			      u_register_t dev_pa, long map_level,
+			      u_register_t *dev_ipa)
 {
 	u_register_t map_addr = dev_pa;	/* 1:1 PA->IPA mapping */
 	u_register_t ret;
 
 	*dev_ipa = 0UL;
-
 
 	ret = host_vdev_map(realm, h_vdev, map_addr, map_level, dev_pa);
 
@@ -1219,7 +1298,7 @@ bool is_host_pdev_independently_attested(struct host_pdev *h_pdev)
  * Returns true if all host_pdev state is clean like no granules, aux granules,
  * memory are associated with the host_pdev.
  */
-bool is_host_pdevs_state_clean(void)
+static bool is_host_pdevs_state_clean(void)
 {
 	unsigned int i, cnt;
 
@@ -1230,11 +1309,12 @@ bool is_host_pdevs_state_clean(void)
 		    (h_pdev->pdev != NULL) ||
 		    (h_pdev->dev_comm_data != NULL) ||
 		    (h_pdev->cert_chain != NULL) ||
+		    (h_pdev->vca != NULL) ||
 		    (h_pdev->public_key != NULL) ||
 		    (h_pdev->public_key_metadata != NULL) ||
 		    (h_pdev->dev == NULL)) {
 			return false;
-		    }
+		}
 
 		for (cnt = 0U; cnt < PDEV_PARAM_AUX_GRANULES_MAX; cnt++) {
 			if (h_pdev->pdev_aux[cnt] != NULL) {
@@ -1247,7 +1327,7 @@ bool is_host_pdevs_state_clean(void)
 }
 
 /*
- * Find all PCIe off-chip devices that confirm to TEE-IO standards
+ * Find all PCIe off-chip devices that confirm to TEE-IO standards.
  * Devices that supports DOE, IDE, TDISP with RootPort that supports
  * RME DA are initialized in host_pdevs[]
  */

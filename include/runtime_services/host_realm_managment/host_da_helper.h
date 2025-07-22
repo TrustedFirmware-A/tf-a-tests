@@ -12,6 +12,8 @@
 
 #define DEV_TYPE_INDEPENDENTLY_ATTESTED		(0)
 
+#define PDEV_STATE_TRANSITION_MAX		(10)
+
 /*
  * Init DA specific globals
  * Skip DA test if any of the below check is true
@@ -124,13 +126,24 @@ struct host_vdev {
 
 void host_pdevs_init(void);
 bool is_host_pdev_independently_attested(struct host_pdev *h_pdev);
-int host_create_realm_with_feat_da(struct realm *realm);
-int host_pdev_create(struct host_pdev *h_pdev);
-int host_pdev_reclaim(struct host_pdev *h_pdev);
+
+/*
+ * Transition PDEV to sequence of states mentioned in 'pdev_states'. During
+ * state transition if any error is detected, this api will try to transition
+ * the PDEV to STOPPED state and cleanup the resources held by PDEV.
+ */
+int host_pdev_state_transition(struct host_pdev *h_pdev,
+			       const unsigned char pdev_states[],
+			       size_t pdev_states_max);
+
 int host_pdev_setup(struct host_pdev *h_pdev);
 int host_pdev_transition(struct host_pdev *h_pdev, unsigned char to_state);
-int host_vdev_transition(struct realm *realm, struct host_vdev *h_vdev, unsigned char to_state);
+int host_pdev_reclaim(struct host_pdev *h_pdev);
+int host_pdev_create(struct host_pdev *h_pdev);
 
+int host_create_realm_with_feat_da(struct realm *realm);
+int host_vdev_transition(struct realm *realm, struct host_vdev *h_vdev,
+			 unsigned char to_state);
 int host_vdev_get_interface_report(struct realm *realm,
 			       struct host_vdev *h_vdev,
 			       unsigned char target_state);
@@ -139,12 +152,14 @@ int host_vdev_get_measurements(struct realm *realm,
 			       unsigned char target_state);
 int host_vdev_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t ipa,
 		  u_register_t level, u_register_t addr);
-int host_vdev_unlock(struct realm *realm, struct host_vdev *h_vdev, unsigned char target_state);
+int host_vdev_unlock(struct realm *realm, struct host_vdev *h_vdev,
+		     unsigned char target_state);
 int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
 			      unsigned long tdi_id, void *pdev_ptr);
 int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev);
 
-u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t dev_pa,
-				long map_level, u_register_t *dev_ipa);
+u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev,
+			      u_register_t dev_pa, long map_level,
+			      u_register_t *dev_ipa);
 
 #endif /* HOST_DA_HELPER_H */

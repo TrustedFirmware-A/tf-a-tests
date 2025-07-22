@@ -22,7 +22,13 @@ extern struct host_vdev gbl_host_vdev;
 int tsm_disconnect_device(struct host_pdev *h_pdev)
 {
 	int rc;
+	const unsigned char tsm_disconnect_flow[] = {
+		RMI_PDEV_STATE_STOPPING,
+		RMI_PDEV_STATE_STOPPED
+	};
 
+	assert(h_pdev);
+	assert(h_pdev->dev);
 	assert(h_pdev->is_connected_to_tsm);
 
 	INFO("===========================================\n");
@@ -33,8 +39,10 @@ int tsm_disconnect_device(struct host_pdev *h_pdev)
 	     PCIE_EXTRACT_BDF_FUNC(h_pdev->dev->bdf));
 	INFO("===========================================\n");
 
-	rc = host_pdev_reclaim(h_pdev);
+	rc = host_pdev_state_transition(h_pdev, tsm_disconnect_flow,
+					sizeof(tsm_disconnect_flow));
 	if (rc != 0) {
+		ERROR("PDEV TSM disconnect state transitions: failed\n");
 		return -1;
 	}
 
@@ -52,10 +60,19 @@ int tsm_disconnect_device(struct host_pdev *h_pdev)
  * 2. Find a known PCIe endpoint and connect with TSM to get_cert and establish
  *    secure session
  */
-static int tsm_connect_device(struct host_pdev *h_pdev)
+int tsm_connect_device(struct host_pdev *h_pdev)
 {
 	int rc;
-	uint8_t public_key_algo;
+	const unsigned char tsm_connect_flow[] = {
+		RMI_PDEV_STATE_NEW,
+		RMI_PDEV_STATE_NEEDS_KEY,
+		RMI_PDEV_STATE_HAS_KEY,
+		RMI_PDEV_STATE_READY
+	};
+
+	assert(h_pdev);
+	assert(h_pdev->dev);
+	assert(!h_pdev->is_connected_to_tsm);
 
 	INFO("======================================\n");
 	INFO("Host: TSM connect device: (0x%x) %x:%x.%x\n",
@@ -65,72 +82,16 @@ static int tsm_connect_device(struct host_pdev *h_pdev)
 	     PCIE_EXTRACT_BDF_FUNC(h_pdev->dev->bdf));
 	INFO("======================================\n");
 
-	/* Allocate granules. Skip DA ABIs if host_pdev_setup fails */
-	rc = host_pdev_setup(h_pdev);
-	if (rc == -1) {
-		ERROR("host_pdev_setup failed.\n");
+	rc = host_pdev_state_transition(h_pdev, tsm_connect_flow,
+					sizeof(tsm_connect_flow));
+	if (rc != 0) {
+		ERROR("PDEV TSM connect state transitions: failed\n");
 		return -1;
-	}
-
-	/* Call rmi_pdev_create to transition PDEV to STATE_NEW */
-	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_NEW);
-	if (rc != 0) {
-		ERROR("PDEV transition: NULL -> STATE_NEW failed\n");
-		goto err_pdev_reclaim;
-	}
-
-	/* Call rmi_pdev_communicate to transition PDEV to NEEDS_KEY */
-	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_NEEDS_KEY);
-	if (rc != 0) {
-		ERROR("PDEV transition: PDEV_NEW -> PDEV_NEEDS_KEY failed\n");
-		goto err_pdev_reclaim;
-	}
-
-	/* Get public key. Verifying cert_chain not done by host but by Realm? */
-	rc = host_get_public_key_from_cert_chain(h_pdev->cert_chain,
-						 h_pdev->cert_chain_len,
-						 h_pdev->public_key,
-						 &h_pdev->public_key_len,
-						 h_pdev->public_key_metadata,
-						 &h_pdev->public_key_metadata_len,
-						 &public_key_algo);
-	if (rc != 0) {
-		ERROR("Get public key failed\n");
-		goto err_pdev_reclaim;
-	}
-
-	if (public_key_algo == PUBLIC_KEY_ALGO_ECDSA_ECC_NIST_P256) {
-		h_pdev->public_key_sig_algo = RMI_SIGNATURE_ALGORITHM_ECDSA_P256;
-	} else if (public_key_algo == PUBLIC_KEY_ALGO_ECDSA_ECC_NIST_P384) {
-		h_pdev->public_key_sig_algo = RMI_SIGNATURE_ALGORITHM_ECDSA_P384;
-	} else {
-		h_pdev->public_key_sig_algo = RMI_SIGNATURE_ALGORITHM_RSASSA_3072;
-	}
-	INFO("DEV public key len/sig_algo: %ld/%d\n", h_pdev->public_key_len,
-	     h_pdev->public_key_sig_algo);
-
-	/* Call rmi_pdev_set_key transition PDEV to HAS_KEY */
-	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_HAS_KEY);
-	if (rc != 0) {
-		ERROR("PDEV transition: PDEV_NEEDS_KEY -> PDEV_HAS_KEY failed\n");
-		goto err_pdev_reclaim;
-	}
-
-	/* Call rmi_pdev_communicate to transition PDEV to READY state */
-	rc = host_pdev_transition(h_pdev, RMI_PDEV_STATE_READY);
-	if (rc != 0) {
-		ERROR("PDEV transition: PDEV_HAS_KEY -> PDEV_READY failed\n");
-		goto err_pdev_reclaim;
 	}
 
 	h_pdev->is_connected_to_tsm = true;
 
 	return 0;
-
-err_pdev_reclaim:
-	(void)host_pdev_reclaim(h_pdev);
-
-	return -1;
 }
 
 /* Get the first pdev from host_pdevs and try to connect to TSM */

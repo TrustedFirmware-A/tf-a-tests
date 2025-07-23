@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -125,11 +125,13 @@ func __tftf_cpu_resume_ep
 	ldp	x1, x2, [x0, #SUSPEND_CTX_MAIR_OFFSET]
 	ldp	x3, x4, [x0, #SUSPEND_CTX_TTBR0_OFFSET]
 	ldp	x5, x6, [x0, #SUSPEND_CTX_VBAR_OFFSET]
+	ldr	x7, [x0, #SUSPEND_CTX_HCR_OFFSET]
 	msr	mair_el2, x1
 	msr	cptr_el2, x2
 	msr	ttbr0_el2, x3
 	msr	tcr_el2, x4
 	msr	vbar_el2, x5
+	msr	hcr_el2, x7
 
 	/* make sure whatever just got turned on is in effect */
 	isb
@@ -138,13 +140,9 @@ func __tftf_cpu_resume_ep
 	 */
 	mrs	x2, id_aa64pfr1_el1
 	tst	x2, #(1 << 25)
-	bne	3f
-	ldr	x1, [x0, #SUSPEND_CTX_HCR_OFFSET]
-	msr	hcr_el2, x1
-	b	4f
+	beq	4f
 
-3:	ldp	x1, x2, [x0, #SUSPEND_CTX_HCR_OFFSET]
-	msr     hcr_el2, x1
+	ldr	x2, [x0, #SUSPEND_CTX_SMCR_OFFSET]
 	msr	SMCR_EL2, x2
 
 	/*

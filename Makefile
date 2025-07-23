@@ -547,7 +547,7 @@ define MAKE_IMG
 $(BUILD_DIR) : ${BUILD_PLAT}
 	$$(Q)mkdir -p "$$@"
 
-$(ELF) : $(OBJS) $(LINKERFILE)
+$(ELF) : $(OBJS) $(LINKERFILE) ${BUILD_PLAT}/smcf/dtb.o
 	@echo "  LD      $$@"
 	@echo 'const char build_message[] = "Built : "__TIME__", "__DATE__; \
                const char version_string[] = "${VERSION_STRING}";' | \
@@ -580,16 +580,16 @@ endif
 $(AUTOGEN_DIR):
 	$(Q)mkdir -p "$@"
 
-$(AUTOGEN_DIR)/tests_list.c $(AUTOGEN_DIR)/tests_list.h &: $(AUTOGEN_DIR) ${TESTS_FILE} ${PLAT_TESTS_SKIP_LIST} $(ARCH_TESTS_SKIP_LIST)
+$(AUTOGEN_DIR)/tests_list.c $(AUTOGEN_DIR)/tests_list.h ${BUILD_PLAT}/smcf/dtb.o &: $(AUTOGEN_DIR) ${TESTS_FILE} ${PLAT_TESTS_SKIP_LIST} $(ARCH_TESTS_SKIP_LIST)
 	@echo "  AUTOGEN $(AUTOGEN_DIR)/tests_list.c $(AUTOGEN_DIR)/tests_list.h"
 	tools/generate_test_list/generate_test_list.py $(AUTOGEN_DIR)/tests_list.c \
 		$(AUTOGEN_DIR)/tests_list.h  ${TESTS_FILE} \
 		--plat-skip-file=$(PLAT_TESTS_SKIP_LIST) \
 		--arch-skip-file=$(ARCH_TESTS_SKIP_LIST)
 ifeq ($(SMC_FUZZING), 1)
-	$(Q)mkdir -p  ${BUILD_PLAT}/smcf
-	dtc ${SMC_FUZZ_DTS} >> ${BUILD_PLAT}/smcf/dtb
-	$(OC) -I binary -O elf64-littleaarch64 -B aarch64 ${BUILD_PLAT}/smcf/dtb ${BUILD_PLAT}/smcf/dtb.o \
+	$(Q)mkdir -p  ${BUILD_PLAT}/smcf;dtc ${SMC_FUZZ_DTS} >> ${BUILD_PLAT}/smcf/dtb
+	cd ${BUILD_PLAT}/smcf; \
+	$(OC) -I binary -O elf64-littleaarch64 -B aarch64 ./dtb ./dtb.o \
 	--redefine-sym _binary___build_$(PLAT)_$(BUILD_TYPE)_smcf_dtb_start=_binary___dtb_start \
 	--redefine-sym _binary___build_$(PLAT)_$(BUILD_TYPE)_smcf_dtb_end=_binary___dtb_end
 endif

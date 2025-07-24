@@ -185,7 +185,7 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 	ret = host_rmi_pdev_aux_count(h_pdev->pdev_flags, &count);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_pdev_aux_count() failed 0x%lx\n", ret);
-		return -1;
+		goto err_undelegate_pdev;
 	}
 	h_pdev->pdev_aux_num = count;
 
@@ -195,13 +195,14 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 		void *pdev_aux = page_alloc(PAGE_SIZE);
 
 		if (pdev_aux == NULL) {
+			ERROR("page_alloc for PDEV aux granule failed");
 			goto err_undelegate_pdev_aux;
 		}
 
 		ret = host_rmi_granule_delegate((u_register_t)pdev_aux);
 		if (ret != RMI_SUCCESS) {
-			ERROR("Aux granule delegate failed 0x%lx\n", ret);
-			goto err_undelegate_pdev;
+			ERROR("PDEV aux granule delegate failed 0x%lx\n", ret);
+			goto err_undelegate_pdev_aux;
 		}
 
 		h_pdev->pdev_aux[i] = pdev_aux;
@@ -671,11 +672,19 @@ static int host_dev_communicate(struct realm *realm,
 	bool stop;
 
 	if (h_vdev) {
+		if (h_vdev->dev_comm_data == NULL) {
+			return -1;
+		}
+
 		dcomm_enter = &h_vdev->dev_comm_data->enter;
 		dcomm_exit = &h_vdev->dev_comm_data->exit;
 
 		error_state = RMI_VDEV_STATE_ERROR;
 	} else {
+		if (h_pdev->dev_comm_data == NULL) {
+			return -1;
+		}
+
 		dcomm_enter = &h_pdev->dev_comm_data->enter;
 		dcomm_exit = &h_pdev->dev_comm_data->exit;
 

@@ -163,6 +163,9 @@
 	  <!-- Test cases related to FEAT_MEC -->
 	  <testcase name="Test Realms with different MECIDs" function="host_realm_test_mecid" />
 	  <testcase name="Test Realms with the same MECID" function="host_realm_test_mecid_fault" />
+	  <testcase name="Test Realm with minimum MECID" function="host_realm_test_min_mecid" />
+	  <testcase name="Test Realms with maximum MECID" function="host_realm_test_max_mecid" />
+	  <testcase name="Test Realms with shared default MECID" function="host_realm_test_default_mecid" />
 	 <!-- Test case for EL3-RMM IDE KM Interface -->
 	  <testcase name="Test for Root Port Key management interface"
 	  function="host_realm_test_root_port_key_management" />

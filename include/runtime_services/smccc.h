@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -79,6 +79,9 @@
  ******************************************************************************/
 #define SMC_GET_SOC_VERSION		0
 #define SMC_GET_SOC_REVISION		1
+#define SMC_GET_SOC_NAME		2
+
+#define SMCCC_SOC_NAME_LEN		U(136)
 
 #define SCR_EL3_OPCODE			U(0x1E1100)
 #define CPTR_EL3_OPCODE			U(0x1E1140)

@@ -6,10 +6,7 @@
 
 PLAT_INCLUDES		:=	-Iplat/nvidia/tegra210/include/
 
-PLAT_SOURCES		:=	drivers/arm/gic/arm_gic_v2.c			\
-				drivers/arm/gic/gic_v2v3_common.c		\
-				drivers/arm/gic/gic_v2.c			\
-				drivers/arm/timer/private_timer.c		\
+PLAT_SOURCES		:=	drivers/arm/timer/private_timer.c		\
 				drivers/ti/uart/aarch64/16550_console.S		\
 				plat/nvidia/drivers/reset/reset.c		\
 				plat/nvidia/drivers/timer/timers.c		\

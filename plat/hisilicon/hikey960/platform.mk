@@ -12,9 +12,6 @@ PLAT_SOURCES	:=	${HIKEY960_PATH}/hikey960_setup.c		\
 			${HIKEY960_PATH}/hikey960_pwr_state.c		\
 			${HIKEY960_PATH}/aarch64/plat_helpers.S		\
 			drivers/arm/pl011/${ARCH}/pl011_console.S	\
-			drivers/arm/gic/gic_v2v3_common.c		\
-			drivers/arm/gic/gic_v2.c			\
-			drivers/arm/gic/arm_gic_v2.c			\
 			drivers/arm/timer/system_timer.c		\
 			drivers/arm/timer/private_timer.c		\
 			drivers/console/console.c			\

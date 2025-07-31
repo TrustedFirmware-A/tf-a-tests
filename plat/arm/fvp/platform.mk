@@ -93,10 +93,7 @@ $(eval $(call add_define,REALM_DEFINES,PA_SIZE))
 PLAT_INCLUDES	+=	-Iplat/arm/fvp/include/				\
 			-Iinclude/lib/pcie/
 
-PLAT_SOURCES	:=	drivers/arm/gic/arm_gic.c			\
-			drivers/arm/gic/gic_v2.c			\
-			drivers/arm/gic/gic_v3.c			\
-			drivers/arm/sp805/sp805.c			\
+PLAT_SOURCES	:=	drivers/arm/sp805/sp805.c			\
 			drivers/arm/timer/private_timer.c		\
 			drivers/arm/timer/system_timer.c		\
 			plat/arm/fvp/${ARCH}/plat_helpers.S		\

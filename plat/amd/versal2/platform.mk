@@ -10,11 +10,7 @@ VERSAL2_PATH :=	plat/amd/versal2
 PLAT_INCLUDES	:=	-I${XLNX_COMMON_PATH}/include/			\
 			-I${VERSAL2_PATH}/include/
 
-PLAT_SOURCES	:=	drivers/arm/gic/arm_gic.c			\
-			drivers/arm/gic/gic_v2v3_common.c               \
-			drivers/arm/gic/gic_v2.c                        \
-			drivers/arm/gic/gic_v3.c                        \
-			drivers/arm/pl011/${ARCH}/pl011_console.S       \
+PLAT_SOURCES	:=	drivers/arm/pl011/${ARCH}/pl011_console.S       \
 			drivers/arm/timer/private_timer.c		\
 			drivers/console/console.c                       \
 			${VERSAL2_PATH}/versal2_setup.c		\

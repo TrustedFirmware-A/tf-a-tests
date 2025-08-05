@@ -560,9 +560,11 @@ struct rsi_dev_measure_params {
 /* Data structure used to pass values from P0 to the RMM on Plane entry */
 struct rsi_plane_entry {
 	/* Flags */
-	SET_MEMBER(u_register_t flags, 0, 0x8);	/* Offset 0 */
+	SET_MEMBER(u_register_t flags, 0, 0x8);		/* Offset 0 */
 	/* PC */
-	SET_MEMBER(u_register_t pc, 0x8, 0x100);	/* Offset 0x8 */
+	SET_MEMBER(u_register_t pc, 0x8, 0x10);		/* Offset 0x8 */
+	/* PSTATE */
+	SET_MEMBER(u_register_t pstate, 0x10, 0x100);	/* Offset 0x10 */
 	/* General-purpose registers */
 	SET_MEMBER(u_register_t gprs[RSI_PLANE_NR_GPRS], 0x100, 0x200);	/* 0x100 */
 	/* EL1 system registers */
@@ -584,9 +586,11 @@ struct rsi_plane_exit {
 		/* Exception Syndrome Register */
 		u_register_t esr;				/* 0x108 */
 		/* Fault Address Register */
-		u_register_t far;				/* 0x108 */
+		u_register_t far;				/* 0x110 */
 		/* Hypervisor IPA Fault Address register */
-		u_register_t hpfar;				/* 0x110 */
+		u_register_t hpfar;				/* 0x118 */
+		/* Hypervisor PSTATE */
+		u_register_t pstate;				/* 0x120 */
 	}, 0x100, 0x200);
 	/* General-purpose registers */
 	SET_MEMBER(u_register_t gprs[RSI_PLANE_NR_GPRS], 0x200, 0x300); /* 0x200 */

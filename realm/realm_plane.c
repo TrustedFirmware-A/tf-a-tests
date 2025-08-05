@@ -172,6 +172,11 @@ bool plane_common_init(u_register_t plane_index,
 	memset(run, 0, sizeof(rsi_plane_run));
 	run->enter.pc = base;
 
+	/* Setup the initial PSTATE for the plane */
+	run->enter.pstate = ((SPSR_M3_0_EL1_SP_EL1 << SPSR_M3_0_SHIFT) |
+			     (SPSR_M_AARCH64 << SPSR_M_SHIFT) |
+			     (0xf << SPSR_DAIF_SHIFT));
+
 	/* Perm init */
 	if (plane_init[plane_index]) {
 		return true;
@@ -198,6 +203,10 @@ bool realm_plane_enter(u_register_t plane_index,
 
 	while (true) {
 		ret = rsi_plane_enter(plane_index, (u_register_t)run);
+
+		/* Restore PSTATE with the value on run->exit for the next entry */
+		run->enter.pstate = run->exit.pstate;
+
 		if (ret != RSI_SUCCESS) {
 			ERROR("Plane %u enter failed ret= 0x%lx\n", plane_index, ret);
 			return false;

@@ -20,7 +20,7 @@ static test_result_t cntfrq_check(void)
 	ns_cntfrq = mmio_read_32(SYS_CNT_BASE1 + CNTBASEN_CNTFRQ);
 
 	if (cntfrq_el0 != ns_cntfrq) {
-		tftf_testcase_printf("CNTFRQ read from sys_reg = %llx and NS timer = %llx differs/n",
+		tftf_testcase_printf("CNTFRQ read from sys_reg = %llx and NS timer = %llx differs\n",
 			(unsigned long long)cntfrq_el0,
 			(unsigned long long)ns_cntfrq);
 		return TEST_RESULT_FAIL;

@@ -86,7 +86,7 @@ endif
 VERSION_STRING		:= 	v${VERSION_MAJOR}.${VERSION_MINOR}(${PLAT},${BUILD_TYPE}):${BUILD_STRING}
 
 BUILD_BASE		:=	./build
-BUILD_PLAT		:=	${BUILD_BASE}/${PLAT}/${BUILD_TYPE}
+BUILD_PLAT		:=	 $(abspath ${BUILD_BASE}/${PLAT}/${BUILD_TYPE})
 
 PLAT_MAKEFILE		:=	platform.mk
 # Generate the platforms list by recursively searching for all directories
@@ -640,8 +640,7 @@ ifneq ($(findstring gcc,$(notdir $(CC))),)
 ifneq (${ARCH},aarch32)
 ifneq ($(wildcard ${EL3_PAYLOAD_PLAT_MAKEFILE_FULL}),)
 el3_payload: $(BUILD_DIR)
-	${Q}${MAKE} -C el3_payload PLAT=${PLAT}
-	${Q}find "el3_payload/build/${PLAT}" -name '*.bin' -exec cp {} "${BUILD_PLAT}" \;
+	${Q}${MAKE} -C el3_payload PLAT=${PLAT} BUILD_PLAT=${BUILD_PLAT}
 
 all: el3_payload
 endif

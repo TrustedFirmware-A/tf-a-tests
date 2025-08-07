@@ -53,10 +53,10 @@ static int32_t is_soc_name_valid(char *soc_name)
 
 	for (i = 0; i < SMCCC_SOC_NAME_LEN; i++) {
 		char ch = soc_name[i];
+
 		if (ch == '\0') {
 			return 0;
-		}
-		else if(ch <= 0x20 && ch > 0x7F) {
+		} else if (ch <= 0x20 && ch > 0x7F) {
 			tftf_testcase_printf("Non-ASCII character detected\n");
 			return -1;
 		}
@@ -137,11 +137,10 @@ test_result_t test_smccc_arch_soc_id(void)
 
 		memcpy(&soc_name, &ext_ret.ret1, SMCCC_SOC_NAME_LEN);
 
-		if (is_soc_name_valid(soc_name) != 0) {
+		if (is_soc_name_valid(soc_name) != 0)
 			return TEST_RESULT_FAIL;
-		}
 
-		tftf_testcase_printf("SOC Name = %s\n",soc_name);
+		tftf_testcase_printf("SOC Name = %s\n", soc_name);
 #endif /* __aarch64__*/
 
 		/*

@@ -483,6 +483,11 @@
 #define ID_AA64MMFR3_EL1_TCRX_WIDTH		U(4)
 #define ID_AA64MMFR3_EL1_TCR2_SUPPORTED		ULL(0x1)
 
+#define ID_AA64MMFR3_EL1_MEC_SHIFT              U(28)
+#define ID_AA64MMFR3_EL1_MEC_MASK               ULL(0xf)
+#define ID_AA64MMFR3_EL1_MEC_WIDTH		U(4)
+#define ID_AA64MMFR3_EL1_MEC_SUPPORTED		ULL(0x1)
+
 /* ID_AA64PFR1_EL1 definitions */
 #define ID_AA64PFR1_EL1_DF2_SHIFT		U(56)
 #define ID_AA64PFR1_EL1_DF2_WIDTH		U(4)
@@ -1824,5 +1829,11 @@
 
 /* RNDRRS definition */
 #define RNDRRS			S3_3_C2_C4_1
+
+/* MEC Registers */
+#define MECIDR_EL2				S3_4_C10_C8_7
+
+#define MECIDR_EL2_MECIDWidthm1_SHIFT		U(0)
+#define MECIDR_EL2_MECIDWidthm1_WIDTH		U(4)
 
 #endif /* ARCH_H */

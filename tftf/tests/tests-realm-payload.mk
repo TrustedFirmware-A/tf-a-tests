@@ -18,6 +18,7 @@ TESTS_SOURCES	+=							\
 		host_realm_lpa2_tests.c					\
 		host_realm_mpam_tests.c					\
 		host_realm_brbe_tests.c					\
+		host_realm_mec_tests.c					\
 	)
 
 TESTS_SOURCES	+=							\

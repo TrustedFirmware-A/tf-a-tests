@@ -5,10 +5,12 @@
 
 #include <arch_features.h>
 #include <tftf.h>
+
 #include <host_realm_rmi.h>
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
 #include <lib/extensions/sve.h>
+#include <test_helpers.h>
 
 #include "host_realm_simd_common.h"
 
@@ -39,7 +41,8 @@ test_result_t host_create_sve_realm_payload(struct realm *realm, bool sve_en,
 	/* Initialise Realm payload */
 	if (!host_create_activate_realm_payload(realm,
 				       (u_register_t)REALM_IMAGE_BASE,
-				       feature_flag0, 0UL, sl, rec_flag, 1U, 0U)) {
+				       feature_flag0, 0UL, sl, rec_flag, 1U, 0U,
+				       get_test_mecid())) {
 		return TEST_RESULT_FAIL;
 	}
 

@@ -125,7 +125,8 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 			       long sl,
 			       const u_register_t *rec_flag,
 			       unsigned int rec_count,
-			       unsigned int num_aux_planes)
+			       unsigned int num_aux_planes,
+			       unsigned short mecid)
 {
 	int8_t value;
 
@@ -232,6 +233,26 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 						feature_flag));
 	}
 
+	/* Assign a MECID to the realm */
+	/*
+	 * Check if FEAT_MEC is supported and RMM supports MECIDs other than the
+	 * default MECID (0) first. Otherwise, assign the default MECID.
+	 */
+	if (is_feat_mec_supported() &&
+			(host_rmi_features(1UL, &realm_ptr->rmm_feat_reg1)
+				== REALM_SUCCESS) &&
+			((unsigned short)realm_ptr->rmm_feat_reg1 != DEFAULT_MECID)) {
+		if (mecid > (unsigned short)realm_ptr->rmm_feat_reg1) {
+			ERROR("Invalid MECID: %hu\n. Max MECID is %hu.",
+				mecid, (unsigned short)realm_ptr->rmm_feat_reg1);
+			return false;
+		}
+
+		realm_ptr->mecid = mecid;
+	} else {
+		realm_ptr->mecid = DEFAULT_MECID;
+	}
+
 	if (realm_ptr->rec_count > MAX_REC_COUNT) {
 		ERROR("Invalid Rec Count\n");
 		return false;
@@ -303,7 +324,8 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 			       long sl,
 			       const u_register_t *rec_flag,
 			       unsigned int rec_count,
-			       unsigned int num_aux_planes)
+			       unsigned int num_aux_planes,
+			       unsigned short mecid)
 {
 	bool ret;
 
@@ -314,7 +336,8 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 			sl,
 			rec_flag,
 			rec_count,
-			num_aux_planes);
+			num_aux_planes,
+			mecid);
 	if (!ret) {
 		goto destroy_realm;
 	} else {
@@ -351,7 +374,8 @@ bool host_create_activate_realm_payload(struct realm *realm_ptr,
 			long sl,
 			const u_register_t *rec_flag,
 			unsigned int rec_count,
-			unsigned int num_aux_planes)
+			unsigned int num_aux_planes,
+			unsigned short mecid)
 
 {
 	bool ret;
@@ -363,7 +387,8 @@ bool host_create_activate_realm_payload(struct realm *realm_ptr,
 			sl,
 			rec_flag,
 			rec_count,
-			num_aux_planes);
+			num_aux_planes,
+			mecid);
 	if (!ret) {
 		goto destroy_realm;
 	} else {

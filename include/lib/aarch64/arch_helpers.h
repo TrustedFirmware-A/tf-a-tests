@@ -733,6 +733,9 @@ DEFINE_RENAME_SYSREG_RW_FUNCS(ich_vmcr_el2, ICH_VMCR_EL2)
 DEFINE_RENAME_SYSREG_RW_FUNCS(tpidr_el2, TPIDR_EL2)
 DEFINE_RENAME_SYSREG_RW_FUNCS(vtcr_el2, VTCR_EL2)
 
+/* Memory Encryption Contexts (MEC) */
+DEFINE_RENAME_SYSREG_READ_FUNC(mecidr_el2, MECIDR_EL2)
+
 static inline u_register_t read_sp(void)
 {
 	u_register_t v;

@@ -107,4 +107,6 @@
 
 #define REALM_TOKEN_BUF_SIZE		GRANULE_SIZE
 
+#define DEFAULT_MECID			(unsigned short)0
+
 #endif /* REALM_DEF_H */

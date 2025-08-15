@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -22,6 +22,21 @@ test_result_t test_mpam_reg_access(void)
 
 	read_mpamidr_el1();
 	read_mpam2_el2();
+
+	return TEST_RESULT_SUCCESS;
+#endif
+}
+
+test_result_t test_mpam_pe_bw_ctrl_reg_access(void)
+{
+	SKIP_TEST_IF_AARCH32();
+
+#ifdef __aarch64__
+	SKIP_TEST_IF_FEAT_MPAM_PE_BW_CTRL_NOT_SUPPORTED();
+
+	read_mpambw2_el2();
+	read_mpambw1_el1();
+	read_mpambwidr_el1();
 
 	return TEST_RESULT_SUCCESS;
 #endif

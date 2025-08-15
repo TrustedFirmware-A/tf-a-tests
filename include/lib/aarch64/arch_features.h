@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -255,6 +255,12 @@ static inline bool is_feat_mpam_supported(void)
 		ID_AA64PFR0_MPAM_SHIFT) & ID_AA64PFR0_MPAM_MASK) << 4) |
 		((read_id_aa64pfr1_el1() >>
 		ID_AA64PFR1_MPAM_FRAC_SHIFT) & ID_AA64PFR1_MPAM_FRAC_MASK)) != 0U);
+}
+
+static inline bool is_feat_mpam_pe_bw_ctrl_supported(void)
+{
+	return (is_feat_mpam_supported() &&
+			(EXTRACT(MPAMIDR_HAS_BW_CTRL, read_mpamidr_el1()) != 0U));
 }
 
 static inline unsigned int spe_get_version(void)

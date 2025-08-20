@@ -81,6 +81,10 @@
 /* Functions */
 
 int console_pl011_putc(int);
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+int console_pl011_putc_fuzzer(int);
+static int tftf_console_state;
+#endif
 
 #endif /* __ASSEMBLER__ */
 

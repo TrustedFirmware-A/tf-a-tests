@@ -10,3 +10,21 @@ int console_putc(int c)
 {
 	return console_pl011_putc(c);
 }
+
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+int console_putc_fuzzer(int c)
+{
+	return console_pl011_putc_fuzzer(c);
+}
+
+void tftf_switch_console_state(int state)
+{
+	tftf_console_state = state;
+}
+
+int tftf_get_console_state(void)
+{
+	return tftf_console_state;
+}
+
+#endif

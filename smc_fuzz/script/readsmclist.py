@@ -14,6 +14,9 @@ argfieldname = {}
 argstartbit = {}
 argendbit = {}
 argdefval = {}
+smcid = {}
+defval = {}
+sdef = {}
 smcname = ""
 argnum = ""
 argname = ""
@@ -23,9 +26,54 @@ def readsmclist(smclist,seq):
 	smclist_lines = smclistfile.readlines()
 	smclistfile.close()
 	for sline in smclist_lines:
+		svar = 0
 		lcon = 0
 		sl = sline.strip()
-		sinstr = re.search(r'^smc:\s*([a-zA-Z0-9_]+)$',sl)
+		sinstr = re.search(r'^smc:\s*([a-zA-Z0-9_]+)\s*0x([a-fA-F0-9]+)\s*$',sl)
+		if sinstr:
+			smcname = sinstr.group(1)
+			arglst[sinstr.group(1)] = []
+			argnumfield[sinstr.group(1)] = {}
+			argfieldname[sinstr.group(1)] = {}
+			argstartbit[sinstr.group(1)] = {}
+			argendbit[sinstr.group(1)] = {}
+			argdefval[sinstr.group(1)] = {}
+			smcid[sinstr.group(2)] = sinstr.group(1)
+			svar = 1
+			lcon = 1
+			argoccupy = {}
+			if not seq:
+				seq = seq + 1
+			else:
+				if seq != 2:
+					print("Error: out of sequence for smc call",end=" ")
+					print(smcname)
+					sys.exit()
+				else:
+					seq = 1
+		sinstr = re.search(r'^smc:\s*([a-zA-Z0-9_]+)\s*([a-zA-Z0-9_]+)\s*$',sl)
+		if sinstr and (svar == 0):
+			smcname = sinstr.group(1)
+			arglst[sinstr.group(1)] = []
+			argnumfield[sinstr.group(1)] = {}
+			argfieldname[sinstr.group(1)] = {}
+			argstartbit[sinstr.group(1)] = {}
+			argendbit[sinstr.group(1)] = {}
+			argdefval[sinstr.group(1)] = {}
+			sdef[sinstr.group(1)] = sinstr.group(2)
+			smcid[sinstr.group(2)] = sinstr.group(1)
+			lcon = 1
+			argoccupy = {}
+			if not seq:
+				seq = seq + 1
+			else:
+				if seq != 2:
+					print("Error: out of sequence for smc call",end=" ")
+					print(smcname)
+					sys.exit()
+				else:
+					seq = 1
+		sinstr = re.search(r'^smc:\s*([a-zA-Z0-9_]+)\s*$',sl)
 		if sinstr:
 			smcname = sinstr.group(1)
 			arglst[sinstr.group(1)] = []
@@ -181,6 +229,10 @@ def readsmclist(smclist,seq):
 			if seq != 2:
 				print("Error: out of sequence for field")
 				sys.exit()
+		sinstr = re.search(r'^define ([a-zA-Z0-9_]+)\s*=\s*0x([a-fA-F0-9]+|\d+)$',sl)
+		if sinstr:
+			defval[sinstr.group(1)] = sinstr.group(2)
+			lcon = 1
 		if not lcon:
 			cline = re.search(r'^#',sl)
 			if not cline:
@@ -191,3 +243,11 @@ def readsmclist(smclist,seq):
 	if(seq != 2):
 		print("incorrect ending for smc specification")
 		sys.exit()
+
+	for smccal,dval in sdef.items():
+		if dval in defval:
+			smcid[defval[dval]] = smccal
+		else:
+			print("Error: cannot find define value",end=" ")
+			print(dval)
+			sys.exit()

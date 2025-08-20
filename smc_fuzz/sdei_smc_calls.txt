@@ -4,15 +4,35 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-smc: SDEI_EVENT_STATUS_CALL
+define SDEI_EVENT_STATUS_CALL_SMCID = 0xc4000028
+define SDEI_INTERRUPT_BIND_CALL_SMCID = 0xc400002d
+define SDEI_VERSION_CALL_SMCID = 0xc4000020
+define SDEI_EVENT_REGISTER_CALL_SMCID = 0xc4000021
+define SDEI_EVENT_ENABLE_CALL_SMCID = 0xc4000022
+define SDEI_FEATURES_CALL_SMCID = 0xc4000030
+define SDEI_EVENT_DISABLE_CALL_SMCID = 0xc4000023
+define SDEI_EVENT_CONTEXT_CALL_SMCID = 0xc4000024
+define SDEI_EVENT_COMPLETE_CALL_SMCID = 0xc4000025
+define SDEI_EVENT_COMPLETE_AND_RESUME_CALL_SMCID = 0xc4000026
+define SDEI_EVENT_UNREGISTER_CALL_SMCID = 0xc4000027
+define SDEI_EVENT_GET_INFO_CALL_SMCID = 0xc4000029
+define SDEI_EVENT_ROUTING_SET_CALL_SMCID = 0xc400002a
+define SDEI_PE_MASK_CALL_SMCID = 0xc400002b
+define SDEI_PE_UNMASK_CALL_SMCID = 0xc400002c
+define SDEI_INTERRUPT_RELEASE_CALL_SMCID = 0xc400002e
+define SDEI_EVENT_SIGNAL_CALL_SMCID = 0xc400002f
+define SDEI_PRIVATE_RESET_CALL_SMCID = 0xc4000031
+define SDEI_SHARED_RESET_CALL_SMCID = 0xc4000032
+
+smc: SDEI_EVENT_STATUS_CALL SDEI_EVENT_STATUS_CALL_SMCID
         arg1:bev
                 field:bev:[0,31] = 0
-smc: SDEI_INTERRUPT_BIND_CALL
+smc: SDEI_INTERRUPT_BIND_CALL SDEI_INTERRUPT_BIND_CALL_SMCID
         arg1:interruptnum
                 field:inum:[0,31] = 1
-smc: SDEI_VERSION_CALL
+smc: SDEI_VERSION_CALL SDEI_VERSION_CALL_SMCID
         arg1-arg17 = 0
-smc: SDEI_EVENT_REGISTER_CALL
+smc: SDEI_EVENT_REGISTER_CALL SDEI_EVENT_REGISTER_CALL_SMCID
         arg1:eventnum
                 field:enum:[0,31] = 0
         arg2:entryaddr
@@ -25,33 +45,33 @@ smc: SDEI_EVENT_REGISTER_CALL
                 field:reserved:[2,63] = 0
         arg5:affinity
                 field:aff:[0,63] = 0
-smc: SDEI_EVENT_ENABLE_CALL
+smc: SDEI_EVENT_ENABLE_CALL SDEI_EVENT_ENABLE_CALL_SMCID
         arg1:eventnum
                 field:enum:[0,31] = 0
-smc: SDEI_FEATURES_CALL
+smc: SDEI_FEATURES_CALL SDEI_FEATURES_CALL_SMCID
         arg1:feature
                 field:feat:[0,31] = 0
-smc: SDEI_EVENT_DISABLE_CALL
+smc: SDEI_EVENT_DISABLE_CALL SDEI_EVENT_DISABLE_CALL_SMCID
         arg1:eventnum
                 field:enum:[0,31] = 0
-smc: SDEI_EVENT_CONTEXT_CALL
+smc: SDEI_EVENT_CONTEXT_CALL SDEI_EVENT_CONTEXT_CALL_SMCID
         arg1:paramid
                 field:param:[0,31] = 0
-smc: SDEI_EVENT_COMPLETE_CALL
+smc: SDEI_EVENT_COMPLETE_CALL SDEI_EVENT_COMPLETE_CALL_SMCID
         arg1:status
                 field:stat:[0,31] = 0
-smc: SDEI_EVENT_COMPLETE_AND_RESUME_CALL
+smc: SDEI_EVENT_COMPLETE_AND_RESUME_CALL SDEI_EVENT_COMPLETE_AND_RESUME_CALL_SMCID
         arg1:resumeaddr
                 field:addr:[0,63] = 0
-smc: SDEI_EVENT_UNREGISTER_CALL
+smc: SDEI_EVENT_UNREGISTER_CALL SDEI_EVENT_UNREGISTER_CALL_SMCID
         arg1:event
                 field:enum:[0,31] = 0
-smc: SDEI_EVENT_GET_INFO_CALL
+smc: SDEI_EVENT_GET_INFO_CALL SDEI_EVENT_GET_INFO_CALL_SMCID
         arg1:event
                 field:enum:[0,31] = 0
         arg2:info
                 field:info:[0,31] = 0
-smc: SDEI_EVENT_ROUTING_SET_CALL
+smc: SDEI_EVENT_ROUTING_SET_CALL SDEI_EVENT_ROUTING_SET_CALL_SMCID
         arg1:event
                 field:enum:[0,31] = 0
         arg2:routingmode
@@ -59,19 +79,19 @@ smc: SDEI_EVENT_ROUTING_SET_CALL
                 field:constant:[1,63] = 0
         arg3:affinity
                 field:aff:[0,63] = 0
-smc: SDEI_PE_MASK_CALL
+smc: SDEI_PE_MASK_CALL SDEI_PE_MASK_CALL_SMCID
         arg1 = 0
-smc: SDEI_PE_UNMASK_CALL
+smc: SDEI_PE_UNMASK_CALL SDEI_PE_UNMASK_CALL_SMCID
         arg1 = 0
-smc:  SDEI_INTERRUPT_RELEASE_CALL
+smc:  SDEI_INTERRUPT_RELEASE_CALL SDEI_INTERRUPT_RELEASE_CALL_SMCID
         arg1:event
                 field:enum:[0,31] = 0
-smc: SDEI_EVENT_SIGNAL_CALL
+smc: SDEI_EVENT_SIGNAL_CALL SDEI_EVENT_SIGNAL_CALL_SMCID
         arg1:event
                 field:enum:[0,31] = 0
         arg2:targetpe
                 field:pe:[0,31] = 0
-smc: SDEI_PRIVATE_RESET_CALL
+smc: SDEI_PRIVATE_RESET_CALL SDEI_PRIVATE_RESET_CALL_SMCID
         arg1 = 0
-smc: SDEI_SHARED_RESET_CALL
+smc: SDEI_SHARED_RESET_CALL SDEI_SHARED_RESET_CALL_SMCID
         arg1 = 0

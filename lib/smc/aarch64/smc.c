@@ -6,11 +6,14 @@
 
 #include <arch.h>
 #include <arch_features.h>
+#include <drivers/console.h>
 #include <lib/extensions/sve.h>
-#include <stdint.h>
 #include <smccc.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <tftf.h>
 #include <utils_def.h>
+
 
 static void sve_enable(void)
 {
@@ -93,14 +96,20 @@ smc_ret_values tftf_smc(const smc_args *args)
 		fid &= ~MASK(FUNCID_SVE_HINT);
 	}
 
+#ifdef SMC_FUZZ_VARIABLE_COVERAGE
+	tftf_switch_console_state(CONSOLE_FLAG_SMC_FUZZER);
+	printf("SMC FUZZER CALL fid:%x arg1:%lx arg2:%lx arg3:%lx arg4:%lx arg5:%lx arg6:%lx arg7:%lx\n",
+	fid, args->arg1, args->arg2, args->arg3, args->arg4, args->arg5, args->arg6, args->arg7);
+	tftf_switch_console_state(CONSOLE_FLAG_PLAT_UART);
+#endif
 	return asm_tftf_smc64(fid,
-			      args->arg1,
-			      args->arg2,
-			      args->arg3,
-			      args->arg4,
-			      args->arg5,
-			      args->arg6,
-			      args->arg7);
+			args->arg1,
+			args->arg2,
+			args->arg3,
+			args->arg4,
+			args->arg5,
+			args->arg6,
+			args->arg7);
 }
 
 void tftf_smc_no_retval_x8(const smc_args_ext *args, smc_ret_values_ext *ret)

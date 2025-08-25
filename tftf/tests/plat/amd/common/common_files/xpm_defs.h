@@ -13,6 +13,8 @@
 
 #define PM_SIP_SVC		0xC2000000U
 #define PAYLOAD_ARG_CNT		7U
+#define NOTIFIER_SGI           15U
+#define IRQ_PRIORITY		0U
 
 #define upper_32_bits(n)	((uint32_t)(((n) >> 32U)))
 #define lower_32_bits(n)	((uint32_t)((n) & 0xffffffffU))
@@ -27,6 +29,7 @@
 
 /* TF-A only commands */
 #define PM_GET_CALLBACK_DATA	0xa01U
+#define TF_A_PM_REGISTER_SGI	0xa04U
 
 /* API IDs */
 enum pm_api_id {
@@ -107,6 +110,28 @@ enum pm_api_id {
 	PM_FPGA_GET_FEATURE_LIST,                       /**< 0x49 */
 	PM_HNICX_NPI_DATA_XFER,                         /**< 0x4A */
 	PM_API_MAX                                      /**< 0x4B */
+};
+
+/* Node capabilities */
+#define        PM_CAP_ACCESS            1U
+#define        PM_CAP_CONTEXT           2U
+
+/*
+ * PM notify events
+ */
+enum xpm_notify_event {
+	EVENT_STATE_CHANGE = 1U,                        /**< State change event */
+	EVENT_ZERO_USERS = 2U,                          /**< Zero user event */
+	EVENT_CPU_IDLE_FORCE_PWRDWN = 4U,               /**< CPU idle event during force pwr down */
+};
+
+/**
+ * PM API callback IDs
+ */
+enum pm_api_cb_id {
+	PM_INIT_SUSPEND_CB = 30U,                       /**< Suspend callback */
+	PM_ACKNOWLEDGE_CB = 31U,                        /**< Acknowledge callback */
+	PM_NOTIFY_CB = 32U,                             /**< Notify callback */
 };
 
 #endif /* XPM_DEFS_H_ */

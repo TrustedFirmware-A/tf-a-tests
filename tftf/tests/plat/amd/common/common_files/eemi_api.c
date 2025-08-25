@@ -7,6 +7,8 @@
 #include "eemi_api.h"
 #include "xpm_defs.h"
 
+xpm_notifier * notifier_store = NULL;
+
 static int do_feature_check(const uint32_t api_id)
 {
 	smc_args args;
@@ -98,6 +100,126 @@ int xpm_feature_check(const uint32_t api_id, uint32_t *const version)
 	ret = eemi_call(PM_FEATURE_CHECK, api_id, 0, 0, 0, 0, 0, 0, ret_payload);
 	if (ret == PM_RET_SUCCESS)
 		*version = ret_payload[1];
+
+	return ret;
+}
+
+int xpm_request_node(const uint32_t device_id, const uint32_t capabilities,
+		     const uint32_t qos, const uint32_t ack)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_REQUEST_NODE, ((uint64_t)capabilities << 32 | device_id),
+			((uint64_t)ack << 32 | qos), 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_release_node(const uint32_t device_id)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_RELEASE_NODE, device_id, 0, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_set_requirement(const uint32_t device_id, const uint32_t capabilities,
+			const uint32_t qos, const uint32_t ack)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_SET_REQUIREMENT, ((uint64_t)capabilities << 32 | device_id),
+			((uint64_t)ack << 32 | qos), 0, 0, 0, 0, 0, ret_payload);
+}
+
+irq_handler_t xpm_notifier_cb(void *data)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	/* Get the IPI payload from TF-A */
+	(void)eemi_call(PM_GET_CALLBACK_DATA, 0, 0, 0, 0, 0, 0, 0, ret_payload);
+
+	if (!notifier_store)
+		return NULL;
+
+	if (ret_payload[0] != PM_NOTIFY_CB) {
+		notifier_store->received = 0;
+		tftf_testcase_printf("unexpected callback type\n");
+	} else {
+		notifier_store->received = 1;
+	}
+
+	(void)notifier_store->callback(notifier_store);
+
+	return 0;
+}
+
+int xpm_register_notifier(xpm_notifier * const notifier)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	uint32_t wake = 1U;
+	uint32_t enable = 1U;
+	uint32_t sgi_num = NOTIFIER_SGI;
+	uint32_t reset = 0U;
+	int ret;
+
+	if (!notifier)
+		return PM_RET_ERROR_ARGS;
+
+	/* Save the pointer to the structure so the notifier handler can access it */
+	notifier_store = notifier;
+
+	ret = tftf_irq_register_handler(sgi_num, (irq_handler_t)xpm_notifier_cb);
+	if (ret != PM_RET_SUCCESS) {
+		tftf_testcase_printf("failed to register the irq handler\n");
+		return ret;
+	}
+
+	tftf_irq_enable(sgi_num, IRQ_PRIORITY);
+
+	/* Register PM event notifier */
+	ret = eemi_call(PM_REGISTER_NOTIFIER, ((uint64_t)notifier->event << 32 | notifier->node),
+			((uint64_t)enable << 32 | wake), 0, 0, 0, 0, 0, ret_payload);
+	if (ret != PM_RET_SUCCESS) {
+		tftf_testcase_printf("failed to register the event notifier\n");
+		return ret;
+	}
+
+	/* Register the SGI number with TF-A */
+	ret = eemi_call(TF_A_PM_REGISTER_SGI, ((uint64_t)reset << 32 | sgi_num),
+			0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret != PM_RET_SUCCESS)
+		tftf_testcase_printf("failed to register the SGI with TF-A\n");
+
+	return ret;
+}
+
+int xpm_unregister_notifier(xpm_notifier * const notifier)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	uint32_t wake = 0U;
+	uint32_t enable = 0U;
+	uint32_t reset = 1U;
+	int ret;
+
+	/* Unregister PM event notifier */
+	ret = eemi_call(PM_REGISTER_NOTIFIER, ((uint64_t)notifier->event << 32 | notifier->node),
+			((uint64_t)enable << 32 | wake), 0, 0, 0, 0, 0, ret_payload);
+	if (ret != PM_RET_SUCCESS) {
+		tftf_testcase_printf("failed to unregister the event notifier\n");
+		return ret;
+	}
+
+	/* Unregister the SGI number with TF-A */
+	ret = eemi_call(TF_A_PM_REGISTER_SGI, ((uint64_t)reset << 32 | 0),
+			0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret != PM_RET_SUCCESS) {
+		tftf_testcase_printf("failed to unregister the SGI with TF-A\n");
+		return ret;
+	}
+
+	tftf_irq_disable(NOTIFIER_SGI);
+
+	tftf_irq_unregister_handler(NOTIFIER_SGI);
+	if (ret != PM_RET_SUCCESS)
+		tftf_testcase_printf("failed to unregister the IRQ handler\n");
 
 	return ret;
 }

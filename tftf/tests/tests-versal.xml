@@ -15,6 +15,7 @@
       <testcase name="Read PM API Version" function="test_pm_api_version" />
       <testcase name="Get Platform Chip ID" function="test_get_chip_id" />
       <testcase name="Feature Check" function="test_feature_check" />
+      <testcase name="Notifier EEMI API" function="test_notifier_api" />
     </testsuite>
 
   </testsuites>

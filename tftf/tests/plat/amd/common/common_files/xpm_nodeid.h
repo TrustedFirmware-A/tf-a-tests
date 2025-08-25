@@ -23,4 +23,14 @@
 #define PM_CLK_QSPI_REF         0x8208039U
 #define PM_CLK_GEM0_REF         0x8208058U
 
+/*
+ * MIO Nodes
+ */
+#define PM_STMIC_LMIO_0         0x14104001U
+
+/*
+ * Reset Nodes
+ */
+#define PM_RST_GEM_0            0xC104033U
+
 #endif /* XPM_NODEID_H_ */

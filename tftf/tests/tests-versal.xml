@@ -24,6 +24,10 @@
       <testcase name="Release already released node" function="test_release_already_released_node" />
       <testcase name="Clock control with device request" function="test_clock_control_with_device_request" />
       <testcase name="Clock control without device request" function="test_clock_control_without_device_request" />
+      <testcase name="Set pin function" function="test_set_pin_function" />
+      <testcase name="Set pin configuration parameter" function="test_set_pin_config_param" />
+      <testcase name="Set pin function without requesting pin" function="test_set_pin_function_of_unrequested_pin" />
+      <testcase name="Set pin parameter without requesting pin" function="test_set_pin_parameter_of_unrequested_pin" />
     </testsuite>
 
   </testsuites>

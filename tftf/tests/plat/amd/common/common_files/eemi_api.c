@@ -330,3 +330,68 @@ int xpm_clock_get_divider(const uint32_t clock_id, uint32_t *const divider)
 
 	return ret;
 }
+
+int xpm_pinctrl_set_function(const uint32_t pin_id, const uint32_t function_id)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_PINCTRL_SET_FUNCTION, ((uint64_t)function_id << 32 | pin_id),
+			0, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_pinctrl_get_function(const uint32_t pin_id, uint32_t *const function_id)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int32_t ret;
+
+	ret = eemi_call(PM_PINCTRL_GET_FUNCTION, pin_id, 0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*function_id = ret_payload[1];
+
+	return ret;
+}
+
+int xpm_pinctrl_request(const uint32_t pin_id)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_PINCTRL_REQUEST, pin_id, 0, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_pinctrl_release(const uint32_t pin_id)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_PINCTRL_RELEASE, pin_id, 0, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_reset_assert(const uint32_t reset_id, const uint32_t action)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_RESET_ASSERT, ((uint64_t)action << 32 | reset_id),
+			 0, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_pinctrl_get_parameter(const uint32_t pin_id, const uint32_t param_id,
+			      uint32_t *const param_val)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int32_t ret;
+
+	ret = eemi_call(PM_PINCTRL_CONFIG_PARAM_GET, ((uint64_t)param_id << 32 | pin_id),
+			0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*param_val = ret_payload[1];
+
+	return ret;
+}
+
+int xpm_pinctrl_set_parameter(const uint32_t pin_id, const uint32_t param_id,
+			      const uint32_t param_val)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_PINCTRL_CONFIG_PARAM_SET, ((uint64_t)param_id << 32 | pin_id),
+			 param_val, 0, 0, 0, 0, 0, ret_payload);
+}

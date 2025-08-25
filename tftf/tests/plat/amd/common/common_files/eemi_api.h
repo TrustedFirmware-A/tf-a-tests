@@ -54,5 +54,14 @@ int xpm_clock_set_parent(const uint32_t clock_id, const uint32_t parent_id);
 int xpm_clock_get_parent(const uint32_t clock_id, uint32_t *const parent_id);
 int xpm_clock_set_divider(const uint32_t clock_id, const uint32_t divider);
 int xpm_clock_get_divider(const uint32_t clock_id, uint32_t *const divider);
+int xpm_pinctrl_set_function(const uint32_t pin_id, const uint32_t function_id);
+int xpm_pinctrl_get_function(const uint32_t pin_id, uint32_t *const function_id);
+int xpm_pinctrl_request(const uint32_t pin_id);
+int xpm_pinctrl_release(const uint32_t pin_id);
+int xpm_reset_assert(const uint32_t reset_id, const uint32_t action);
+int xpm_pinctrl_get_parameter(const uint32_t pin_id, const uint32_t param_id,
+			      uint32_t *const param_val);
+int xpm_pinctrl_set_parameter(const uint32_t pin_id, const uint32_t param_id,
+			      const uint32_t param_val);
 
 #endif /* __EEMI_API_H__ */

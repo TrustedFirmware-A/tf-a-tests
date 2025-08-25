@@ -31,6 +31,7 @@ def readsmclist(smclist,seq):
 		sl = sline.strip()
 		sinstr = re.search(r'^smc:\s*([a-zA-Z0-9_]+)\s*0x([a-fA-F0-9]+)\s*$',sl)
 		if sinstr:
+			print("in first")
 			smcname = sinstr.group(1)
 			arglst[sinstr.group(1)] = []
 			argnumfield[sinstr.group(1)] = {}
@@ -46,13 +47,14 @@ def readsmclist(smclist,seq):
 				seq = seq + 1
 			else:
 				if seq != 2:
-					print("Error: out of sequence for smc call",end=" ")
+					print("1 Error: out of sequence for smc call",end=" ")
 					print(smcname)
 					sys.exit()
 				else:
 					seq = 1
-		sinstr = re.search(r'^smc:\s*([a-zA-Z0-9_]+)\s*([a-zA-Z0-9_]+)\s*$',sl)
+		sinstr = re.search(r'^smc:\s*([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_]+)\s*$',sl)
 		if sinstr and (svar == 0):
+			print("in second")
 			smcname = sinstr.group(1)
 			arglst[sinstr.group(1)] = []
 			argnumfield[sinstr.group(1)] = {}
@@ -68,7 +70,7 @@ def readsmclist(smclist,seq):
 				seq = seq + 1
 			else:
 				if seq != 2:
-					print("Error: out of sequence for smc call",end=" ")
+					print("2 Error: out of sequence for smc call",end=" ")
 					print(smcname)
 					sys.exit()
 				else:
@@ -88,7 +90,7 @@ def readsmclist(smclist,seq):
 				seq = seq + 1
 			else:
 				if seq != 2:
-					print("Error: out of sequence for smc call",end=" ")
+					print("3 Error: out of sequence for smc call",end=" ")
 					print(smcname)
 					sys.exit()
 				else:

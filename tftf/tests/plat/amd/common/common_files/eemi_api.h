@@ -27,6 +27,12 @@ struct test_ioctl {
 	uint32_t ioctl_arg2;     /**<  Arg2 for Ioctl-ID if required */
 };
 
+typedef struct xpm_ndstatus {
+	uint32_t status;                /**< Node power state */
+	uint32_t requirements;          /**< Requirements on node (slaves only) */
+	uint32_t usage;                 /**< Indicates which master is using the slave */
+} xpm_node_status;
+
 int xpm_get_api_version(uint32_t *version);
 int xpm_get_chip_id(uint32_t *id_code, uint32_t *version);
 int xpm_feature_check(const uint32_t api_id, uint32_t *const version);
@@ -39,5 +45,7 @@ int xpm_register_notifier(xpm_notifier * const notifier);
 int xpm_unregister_notifier(xpm_notifier * const notifier);
 int xpm_ioctl(const uint32_t node_id, const uint32_t ioctl_id, const uint32_t arg1,
 	      const uint32_t arg2, uint32_t *const response);
+int xpm_set_max_latency(const uint32_t device_id, const uint32_t latency);
+int xpm_get_node_status(const uint32_t device_id, xpm_node_status * const node_status);
 
 #endif /* __EEMI_API_H__ */

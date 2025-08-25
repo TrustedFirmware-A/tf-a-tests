@@ -13,8 +13,9 @@
 
 #define PM_SIP_SVC		0xC2000000U
 #define PAYLOAD_ARG_CNT		7U
-#define NOTIFIER_SGI           15U
+#define NOTIFIER_SGI		15U
 #define IRQ_PRIORITY		0U
+#define PM_MAX_QOS		100
 
 #define upper_32_bits(n)	((uint32_t)(((n) >> 32U)))
 #define lower_32_bits(n)	((uint32_t)((n) & 0xffffffffU))
@@ -34,6 +35,9 @@
 /* RPU operation mode */
 #define XPM_RPU_MODE_LOCKSTEP   0U
 #define XPM_RPU_MODE_SPLIT      1U
+
+/* Requirement limits */
+#define XPM_MAX_LATENCY         0xFFFFU
 
 /* API IDs */
 enum pm_api_id {

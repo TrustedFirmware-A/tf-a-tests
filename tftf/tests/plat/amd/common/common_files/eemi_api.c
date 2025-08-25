@@ -237,3 +237,30 @@ int xpm_ioctl(const uint32_t node_id, const uint32_t ioctl_id, const uint32_t ar
 
 	return ret;
 }
+
+int xpm_set_max_latency(const uint32_t device_id, const uint32_t latency)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_SET_MAX_LATENCY, ((uint64_t)latency << 32 | device_id),
+			 0, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_get_node_status(const uint32_t device_id, xpm_node_status * const node_status)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	if (!node_status)
+		return PM_RET_ERROR_ARGS;
+
+	ret = eemi_call(PM_GET_NODE_STATUS, device_id, 0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret != PM_RET_SUCCESS)
+		return ret;
+
+	node_status->status = ret_payload[1];
+	node_status->requirements = ret_payload[2];
+	node_status->usage = ret_payload[3];
+
+	return ret;
+}

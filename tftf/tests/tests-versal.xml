@@ -17,6 +17,11 @@
       <testcase name="Feature Check" function="test_feature_check" />
       <testcase name="Notifier EEMI API" function="test_notifier_api" />
       <testcase name="Ioctl EEMI API" function="test_ioctl_api" />
+      <testcase name="Get node status functionality" function="test_get_node_status" />
+      <testcase name="Set requirement functionality" function="test_set_requirement" />
+      <testcase name="Set max latency functionality" function="test_set_max_latency" />
+      <testcase name="Request already requested node" function="test_request_already_requested_node" />
+      <testcase name="Release already released node" function="test_release_already_released_node" />
     </testsuite>
 
   </testsuites>

@@ -10,6 +10,7 @@
 /*
  * Device Nodes
  */
+#define PM_DEV_RPU0_0           0x18110005U
 #define PM_DEV_USB_0		0x18224018U
 
 #endif /* XPM_NODEID_H_ */

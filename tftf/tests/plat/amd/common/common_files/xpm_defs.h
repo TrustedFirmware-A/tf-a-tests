@@ -31,6 +31,10 @@
 #define PM_GET_CALLBACK_DATA	0xa01U
 #define TF_A_PM_REGISTER_SGI	0xa04U
 
+/* RPU operation mode */
+#define XPM_RPU_MODE_LOCKSTEP   0U
+#define XPM_RPU_MODE_SPLIT      1U
+
 /* API IDs */
 enum pm_api_id {
 	PM_API_MIN,                                     /**< 0x0 */
@@ -133,5 +137,11 @@ enum pm_api_cb_id {
 	PM_ACKNOWLEDGE_CB = 31U,                        /**< Acknowledge callback */
 	PM_NOTIFY_CB = 32U,                             /**< Notify callback */
 };
+
+/* IOCTL IDs */
+typedef enum {
+	IOCTL_GET_RPU_OPER_MODE = 0,                    /**< Get RPU mode */
+	IOCTL_SET_RPU_OPER_MODE = 1,                    /**< Set RPU mode */
+} pm_ioctl_id;
 
 #endif /* XPM_DEFS_H_ */

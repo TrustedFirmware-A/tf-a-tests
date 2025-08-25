@@ -16,6 +16,7 @@
       <testcase name="Get Platform Chip ID" function="test_get_chip_id" />
       <testcase name="Feature Check" function="test_feature_check" />
       <testcase name="Notifier EEMI API" function="test_notifier_api" />
+      <testcase name="Ioctl EEMI API" function="test_ioctl_api" />
     </testsuite>
 
   </testsuites>

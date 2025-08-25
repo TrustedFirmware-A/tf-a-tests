@@ -223,3 +223,17 @@ int xpm_unregister_notifier(xpm_notifier * const notifier)
 
 	return ret;
 }
+
+int xpm_ioctl(const uint32_t node_id, const uint32_t ioctl_id, const uint32_t arg1,
+	      const uint32_t arg2, uint32_t *const response)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	ret = eemi_call(PM_IOCTL, ((uint64_t)ioctl_id << 32 | node_id),
+			((uint64_t)arg2 << 32 | arg1), 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*response = ret_payload[1];
+
+	return ret;
+}

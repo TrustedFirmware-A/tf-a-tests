@@ -20,6 +20,13 @@ typedef struct xpm_notifier {
 	struct xpm_notifier *next;	/**< Pointer to next notifier in linked list */
 } xpm_notifier;
 
+struct test_ioctl {
+	uint32_t node_id;        /**<  Node ID */
+	uint32_t ioctl_id;      /**<  Ioctl ID */
+	uint32_t ioctl_arg1;     /**<  Arg1 for Ioctl-ID if required */
+	uint32_t ioctl_arg2;     /**<  Arg2 for Ioctl-ID if required */
+};
+
 int xpm_get_api_version(uint32_t *version);
 int xpm_get_chip_id(uint32_t *id_code, uint32_t *version);
 int xpm_feature_check(const uint32_t api_id, uint32_t *const version);
@@ -30,5 +37,7 @@ int xpm_set_requirement(const uint32_t device_id, const uint32_t capabilities,
 			const uint32_t qos, const uint32_t ack);
 int xpm_register_notifier(xpm_notifier * const notifier);
 int xpm_unregister_notifier(xpm_notifier * const notifier);
+int xpm_ioctl(const uint32_t node_id, const uint32_t ioctl_id, const uint32_t arg1,
+	      const uint32_t arg2, uint32_t *const response);
 
 #endif /* __EEMI_API_H__ */

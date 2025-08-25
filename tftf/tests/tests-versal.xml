@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2022-2023, Advanced Micro Devices, Inc. All rights reserved.
+  Copyright (c) 2022-2025, Advanced Micro Devices, Inc. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -12,8 +12,9 @@
   <testsuites>
 
     <testsuite name="AMD-Xilinx tests" description="AMD-Xilinx common platform tests" >
-      <testcase name="Read PM API Version" function="test_pmapi_version" />
-      <testcase name="Get Platform Chip ID" function="test_get_chipid" />
+      <testcase name="Read PM API Version" function="test_pm_api_version" />
+      <testcase name="Get Platform Chip ID" function="test_get_chip_id" />
+      <testcase name="Feature Check" function="test_feature_check" />
     </testsuite>
 
   </testsuites>

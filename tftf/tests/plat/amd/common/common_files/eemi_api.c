@@ -264,3 +264,69 @@ int xpm_get_node_status(const uint32_t device_id, xpm_node_status * const node_s
 
 	return ret;
 }
+
+int xpm_clock_get_status(const uint32_t clock_id, uint32_t *const state)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	ret = eemi_call(PM_CLOCK_GETSTATE, clock_id, 0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*state = ret_payload[1];
+
+	return ret;
+}
+
+int xpm_clock_enable(const uint32_t clock_id)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_CLOCK_ENABLE, clock_id, 0, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_clock_disable(const uint32_t clock_id)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_CLOCK_DISABLE, clock_id, 0, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_clock_set_parent(const uint32_t clock_id, const uint32_t parent_id)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_CLOCK_SETPARENT, ((uint64_t)parent_id << 32 | clock_id),
+			 0, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_clock_get_parent(const uint32_t clock_id, uint32_t *const parent_id)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	ret = eemi_call(PM_CLOCK_GETPARENT, clock_id, 0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*parent_id = ret_payload[1];
+
+	return ret;
+}
+
+int xpm_clock_set_divider(const uint32_t clock_id, const uint32_t divider)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_CLOCK_SETDIVIDER, ((uint64_t)divider << 32 | clock_id),
+			 0, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_clock_get_divider(const uint32_t clock_id, uint32_t *const divider)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	ret = eemi_call(PM_CLOCK_GETDIVIDER, clock_id, 0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*divider = ret_payload[1];
+
+	return ret;
+}

@@ -47,5 +47,12 @@ int xpm_ioctl(const uint32_t node_id, const uint32_t ioctl_id, const uint32_t ar
 	      const uint32_t arg2, uint32_t *const response);
 int xpm_set_max_latency(const uint32_t device_id, const uint32_t latency);
 int xpm_get_node_status(const uint32_t device_id, xpm_node_status * const node_status);
+int xpm_clock_get_status(const uint32_t clock_id, uint32_t *const state);
+int xpm_clock_enable(const uint32_t clock_id);
+int xpm_clock_disable(const uint32_t clock_id);
+int xpm_clock_set_parent(const uint32_t clock_id, const uint32_t parent_id);
+int xpm_clock_get_parent(const uint32_t clock_id, uint32_t *const parent_id);
+int xpm_clock_set_divider(const uint32_t clock_id, const uint32_t divider);
+int xpm_clock_get_divider(const uint32_t clock_id, uint32_t *const divider);
 
 #endif /* __EEMI_API_H__ */

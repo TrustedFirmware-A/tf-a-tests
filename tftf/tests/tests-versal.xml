@@ -22,6 +22,8 @@
       <testcase name="Set max latency functionality" function="test_set_max_latency" />
       <testcase name="Request already requested node" function="test_request_already_requested_node" />
       <testcase name="Release already released node" function="test_release_already_released_node" />
+      <testcase name="Clock control with device request" function="test_clock_control_with_device_request" />
+      <testcase name="Clock control without device request" function="test_clock_control_without_device_request" />
     </testsuite>
 
   </testsuites>

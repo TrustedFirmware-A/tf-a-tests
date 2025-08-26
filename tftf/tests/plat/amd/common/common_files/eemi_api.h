@@ -89,5 +89,9 @@ int xpm_pll_get_parameter(const uint32_t clock_id, const uint32_t param_id,
 			  uint32_t *value);
 int xpm_pll_set_mode(const uint32_t clock_id, const uint32_t value);
 int xpm_pll_get_mode(const uint32_t clock_id, uint32_t *value);
+int xpm_self_suspend(const uint32_t device_id, const uint32_t latency,
+		     const uint8_t state, uint32_t address);
+int xpm_set_wakeup_source(const uint32_t target_node_id, const uint32_t source_node_id,
+			  const uint32_t enable);
 
 #endif /* __EEMI_API_H__ */

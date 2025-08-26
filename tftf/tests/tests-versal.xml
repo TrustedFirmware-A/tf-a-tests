@@ -39,6 +39,8 @@
       <testcase name="Get PLL Mode" function="test_pll_get_mode" />
       <testcase name="Set PLL parameter " function="test_pll_set_parameter" />
       <testcase name="Get PLL parameter " function="test_pll_get_parameter" />
+      <testcase name="Set Wake Up Source" function="test_set_wakeup_source" />
+      <testcase name="Self Suspend" function="test_self_suspend" />
     </testsuite>
 
   </testsuites>

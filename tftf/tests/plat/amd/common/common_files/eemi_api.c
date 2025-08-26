@@ -495,3 +495,21 @@ int xpm_pll_get_mode(const uint32_t clock_id, uint32_t *value)
 
 	return ret;
 }
+
+int xpm_self_suspend(const uint32_t device_id, const uint32_t latency, const uint8_t state,
+		     uint32_t address)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_SELF_SUSPEND, ((uint64_t)latency << 32 | device_id),
+			 (uint64_t)address << 32 | state, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_set_wakeup_source(const uint32_t target_node_id, const uint32_t source_node_id,
+			  const uint32_t enable)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_SET_WAKEUP_SOURCE, ((uint64_t)source_node_id << 32 | target_node_id),
+			 enable, 0, 0, 0, 0, 0, ret_payload);
+}

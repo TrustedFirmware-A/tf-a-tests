@@ -54,6 +54,13 @@
 #define PM_SHUTDOWN_SUBTYPE_RST_PS_ONLY         (1U)
 #define PM_SHUTDOWN_SUBTYPE_RST_SYSTEM          (2U)
 
+/**
+ * State arguments of the self suspend
+ */
+#define PM_SUSPEND_STATE_CPU_IDLE               0x0U
+#define PM_SUSPEND_STATE_CPU_OFF                0x1U
+#define PM_SUSPEND_STATE_SUSPEND_TO_RAM         0xFU
+
 /* API IDs */
 enum pm_api_id {
 	PM_API_MIN,                                     /**< 0x0 */

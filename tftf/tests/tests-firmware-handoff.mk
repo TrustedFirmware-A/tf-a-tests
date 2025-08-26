@@ -9,6 +9,8 @@ ifeq (${TRANSFER_LIST}, 1)
 include lib/event_log/event_log.mk
 include lib/libtl/libtl.mk
 
+TFTF_INCLUDES	+= $(EVENT_LOG_INCLUDES)
+
 TESTS_SOURCES	+=	$(addprefix tftf/tests/misc_tests/,		\
 	test_firmware_handoff.c						\
 )

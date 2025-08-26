@@ -395,3 +395,10 @@ int xpm_pinctrl_set_parameter(const uint32_t pin_id, const uint32_t param_id,
 	return eemi_call(PM_PINCTRL_CONFIG_PARAM_SET, ((uint64_t)param_id << 32 | pin_id),
 			 param_val, 0, 0, 0, 0, 0, ret_payload);
 }
+
+int xpm_init_finalize(void)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_INIT_FINALIZE, 0, 0, 0, 0, 0, 0, 0, ret_payload);
+}

@@ -63,5 +63,6 @@ int xpm_pinctrl_get_parameter(const uint32_t pin_id, const uint32_t param_id,
 			      uint32_t *const param_val);
 int xpm_pinctrl_set_parameter(const uint32_t pin_id, const uint32_t param_id,
 			      const uint32_t param_val);
+int xpm_init_finalize(void);
 
 #endif /* __EEMI_API_H__ */

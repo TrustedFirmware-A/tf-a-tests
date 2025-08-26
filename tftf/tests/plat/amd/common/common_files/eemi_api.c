@@ -402,3 +402,15 @@ int xpm_init_finalize(void)
 
 	return eemi_call(PM_INIT_FINALIZE, 0, 0, 0, 0, 0, 0, 0, ret_payload);
 }
+
+int get_trustzone_version(uint32_t *tz_version)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	ret = eemi_call(PM_GET_TRUSTZONE_VERSION, 0, 0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*tz_version = ret_payload[1];
+
+	return ret;
+}

@@ -29,6 +29,7 @@
       <testcase name="Set pin function without requesting pin" function="test_set_pin_function_of_unrequested_pin" />
       <testcase name="Set pin parameter without requesting pin" function="test_set_pin_parameter_of_unrequested_pin" />
       <testcase name="PM Init Finalize" function="test_init_finalize" />
+      <testcase name="Trustzone version" function="test_trustzone_version" />
     </testsuite>
 
   </testsuites>

@@ -29,8 +29,9 @@
 #define PM_ERR_VERSION		2014L
 
 /* TF-A only commands */
-#define PM_GET_CALLBACK_DATA	0xa01U
-#define TF_A_PM_REGISTER_SGI	0xa04U
+#define PM_GET_CALLBACK_DATA		0xa01U
+#define PM_GET_TRUSTZONE_VERSION	0xa03U
+#define TF_A_PM_REGISTER_SGI		0xa04U
 
 /* RPU operation mode */
 #define XPM_RPU_MODE_LOCKSTEP   0U

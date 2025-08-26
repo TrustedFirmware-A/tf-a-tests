@@ -434,3 +434,16 @@ int tf_a_pm_register_sgi(uint32_t sgi_num, uint32_t reset)
 	return eemi_call(TF_A_PM_REGISTER_SGI, ((uint64_t)reset << 32 | sgi_num),
 			 0, 0, 0, 0, 0, 0, ret_payload);
 }
+
+int xpm_op_characteristics(uint32_t const device_id, uint32_t const type, uint32_t *result)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	ret = eemi_call(PM_GET_OP_CHARACTERISTIC, ((uint64_t)type << 32 | device_id),
+			0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*result = ret_payload[1];
+
+	return ret;
+}

@@ -15,6 +15,7 @@
 #define PM_DEV_RTC              0x18224034U
 #define PM_DEV_GEM_0            0x18224019U
 #define PM_DEV_QSPI		0x1822402BU
+#define PM_DEV_SOC              0x18428044U
 
 /*
  * Clock Nodes

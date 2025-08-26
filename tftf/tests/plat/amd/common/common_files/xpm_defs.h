@@ -246,4 +246,13 @@ enum pm_pinctrl_slew_rate {
 	PINCTRL_SLEW_RATE_SLOW,                         /**< Slow slew rate */
 };
 
+/**
+ * PM operating characteristic types
+ */
+enum xpm_opchar_type {
+	PM_OPCHAR_TYPE_POWER = 1,                       /**< Operating characteristic ID power */
+	PM_OPCHAR_TYPE_TEMP,                            /**< Operating characteristic ID temp */
+	PM_OPCHAR_TYPE_LATENCY,                         /**< Operating characteristic ID latency */
+};
+
 #endif /* XPM_DEFS_H_ */

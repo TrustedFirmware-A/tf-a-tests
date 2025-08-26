@@ -65,5 +65,6 @@ int xpm_pinctrl_set_parameter(const uint32_t pin_id, const uint32_t param_id,
 			      const uint32_t param_val);
 int xpm_init_finalize(void);
 int get_trustzone_version(uint32_t *tz_version);
+int tf_a_feature_check(const uint32_t api_id, uint32_t *const version);
 
 #endif /* __EEMI_API_H__ */

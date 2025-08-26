@@ -414,3 +414,15 @@ int get_trustzone_version(uint32_t *tz_version)
 
 	return ret;
 }
+
+int tf_a_feature_check(const uint32_t api_id, uint32_t *const version)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	ret = eemi_call(TF_A_FEATURE_CHECK, api_id, 0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*version = ret_payload[1];
+
+	return ret;
+}

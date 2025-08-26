@@ -43,6 +43,10 @@ struct sys_shutdown {
 	uint32_t shutdown_subtype;      /**< Shutdown subtype (subsystem-only/PU-only/system) */
 };
 
+struct test_pll_api {
+	uint32_t clock_id;               /**< Clock ID */
+};
+
 int xpm_get_api_version(uint32_t *version);
 int xpm_get_chip_id(uint32_t *id_code, uint32_t *version);
 int xpm_feature_check(const uint32_t api_id, uint32_t *const version);
@@ -79,5 +83,11 @@ int tf_a_feature_check(const uint32_t api_id, uint32_t *const version);
 int tf_a_pm_register_sgi(uint32_t sgi_num, uint32_t reset);
 int xpm_op_characteristics(uint32_t const device_id, uint32_t const type, uint32_t *result);
 int xpm_system_shutdown(const uint32_t type, const uint32_t subtype);
+int xpm_pll_set_parameter(const uint32_t clock_id, const uint32_t param_id,
+			  const uint32_t value);
+int xpm_pll_get_parameter(const uint32_t clock_id, const uint32_t param_id,
+			  uint32_t *value);
+int xpm_pll_set_mode(const uint32_t clock_id, const uint32_t value);
+int xpm_pll_get_mode(const uint32_t clock_id, uint32_t *value);
 
 #endif /* __EEMI_API_H__ */

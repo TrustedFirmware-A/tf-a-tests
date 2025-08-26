@@ -265,4 +265,30 @@ enum xpm_opchar_type {
 	PM_OPCHAR_TYPE_LATENCY,                         /**< Operating characteristic ID latency */
 };
 
+/**
+ * PLL parameters
+ */
+enum xpm_pll_config_params {
+	PM_PLL_PARAM_ID_DIV2,                           /**< PLL param ID DIV2 */
+	PM_PLL_PARAM_ID_FBDIV,                          /**< PLL param ID FBDIV */
+	PM_PLL_PARAM_ID_DATA,                           /**< PLL param ID DATA */
+	PM_PLL_PARAM_ID_PRE_SRC,                        /**< PLL param ID PRE_SRC */
+	PM_PLL_PARAM_ID_POST_SRC,                       /**< PLL param ID POST_SRC */
+	PM_PLL_PARAM_ID_LOCK_DLY,                       /**< PLL param ID LOCK_DLY */
+	PM_PLL_PARAM_ID_LOCK_CNT,                       /**< PLL param ID LOCK_CNT */
+	PM_PLL_PARAM_ID_LFHF,                           /**< PLL param ID LFHF */
+	PM_PLL_PARAM_ID_CP,                             /**< PLL param ID CP */
+	PM_PLL_PARAM_ID_RES,                            /**< PLL param ID RES */
+	PM_PLL_PARAM_MAX,                               /**< PLL param ID max */
+};
+
+/**
+ * PLL modes
+ */
+enum xpm_pll_mode {
+	PM_PLL_MODE_INTEGER             = (0U),         /**< PLL mode integer */
+	PM_PLL_MODE_FRACTIONAL          = (1U),         /**< PLL mode fractional */
+	PM_PLL_MODE_RESET               = (2U),         /**< PLL mode reset */
+};
+
 #endif /* XPM_DEFS_H_ */

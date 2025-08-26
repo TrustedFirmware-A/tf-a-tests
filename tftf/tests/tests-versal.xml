@@ -35,6 +35,10 @@
       <testcase name="Get operating characteristics" function="test_op_characteristics" />
       <testcase name="Get operating characteristics with invalid params" function="test_op_characteristics_invalid_param" />
       <testcase name="System Shutdown" function="test_system_shutdown" />
+      <testcase name="Set PLL Mode" function="test_pll_set_mode" />
+      <testcase name="Get PLL Mode" function="test_pll_get_mode" />
+      <testcase name="Set PLL parameter " function="test_pll_set_parameter" />
+      <testcase name="Get PLL parameter " function="test_pll_get_parameter" />
     </testsuite>
 
   </testsuites>

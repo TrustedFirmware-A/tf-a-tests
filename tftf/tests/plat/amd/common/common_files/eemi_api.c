@@ -455,3 +455,43 @@ int xpm_system_shutdown(const uint32_t type, const uint32_t subtype)
 	return eemi_call(PM_SYSTEM_SHUTDOWN, ((uint64_t)subtype << 32 | type),
 			 0, 0, 0, 0, 0, 0, ret_payload);
 }
+
+int xpm_pll_set_parameter(const uint32_t clock_id, const uint32_t param_id, const uint32_t value)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_PLL_SET_PARAMETER, ((uint64_t)param_id << 32 | clock_id),
+			 value, 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_pll_get_parameter(const uint32_t clock_id, const uint32_t param_id, uint32_t *value)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	ret = eemi_call(PM_PLL_GET_PARAMETER, clock_id, param_id, 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*value = ret_payload[1];
+
+	return ret;
+}
+
+int xpm_pll_set_mode(const uint32_t clock_id, const uint32_t value)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_PLL_SET_MODE, ((uint64_t)value << 32 | clock_id), 0,
+			 0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_pll_get_mode(const uint32_t clock_id, uint32_t *value)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	ret = eemi_call(PM_PLL_GET_MODE, clock_id, 0, 0, 0, 0, 0, 0, ret_payload);
+	if (ret == PM_RET_SUCCESS)
+		*value = ret_payload[1];
+
+	return ret;
+}

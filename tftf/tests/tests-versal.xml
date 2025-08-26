@@ -34,7 +34,7 @@
       <testcase name="TF-A register sgi" function="test_tf_a_register_sgi" />
       <testcase name="Get operating characteristics" function="test_op_characteristics" />
       <testcase name="Get operating characteristics with invalid params" function="test_op_characteristics_invalid_param" />
-
+      <testcase name="System Shutdown" function="test_system_shutdown" />
     </testsuite>
 
   </testsuites>

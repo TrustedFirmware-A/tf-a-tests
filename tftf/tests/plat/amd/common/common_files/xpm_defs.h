@@ -44,6 +44,16 @@
 /* SGI number used for Event management driver */
 #define XLNX_EVENT_SGI_NUM      (15)
 
+/**
+ * System shutdown macros
+ */
+#define PM_SHUTDOWN_TYPE_SHUTDOWN               (0U)
+#define PM_SHUTDOWN_TYPE_RESET                  (1U)
+
+#define PM_SHUTDOWN_SUBTYPE_RST_SUBSYSTEM       (0U)
+#define PM_SHUTDOWN_SUBTYPE_RST_PS_ONLY         (1U)
+#define PM_SHUTDOWN_SUBTYPE_RST_SYSTEM          (2U)
+
 /* API IDs */
 enum pm_api_id {
 	PM_API_MIN,                                     /**< 0x0 */

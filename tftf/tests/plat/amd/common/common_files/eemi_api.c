@@ -447,3 +447,11 @@ int xpm_op_characteristics(uint32_t const device_id, uint32_t const type, uint32
 
 	return ret;
 }
+
+int xpm_system_shutdown(const uint32_t type, const uint32_t subtype)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_SYSTEM_SHUTDOWN, ((uint64_t)subtype << 32 | type),
+			 0, 0, 0, 0, 0, 0, ret_payload);
+}

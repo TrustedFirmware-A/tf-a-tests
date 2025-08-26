@@ -31,6 +31,7 @@
       <testcase name="PM Init Finalize" function="test_init_finalize" />
       <testcase name="Trustzone version" function="test_trustzone_version" />
       <testcase name="TF-A feature check" function="test_tf_a_feature_check" />
+      <testcase name="TF-A register sgi" function="test_tf_a_register_sgi" />
     </testsuite>
 
   </testsuites>

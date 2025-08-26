@@ -33,6 +33,11 @@ typedef struct xpm_ndstatus {
 	uint32_t usage;                 /**< Indicates which master is using the slave */
 } xpm_node_status;
 
+struct register_sgi {
+	uint32_t sgi_num;               /**< SGI number to be used for communication */
+	uint32_t reset;                 /**<  Reset to invalid SGI when reset=1 */
+};
+
 int xpm_get_api_version(uint32_t *version);
 int xpm_get_chip_id(uint32_t *id_code, uint32_t *version);
 int xpm_feature_check(const uint32_t api_id, uint32_t *const version);
@@ -66,5 +71,6 @@ int xpm_pinctrl_set_parameter(const uint32_t pin_id, const uint32_t param_id,
 int xpm_init_finalize(void);
 int get_trustzone_version(uint32_t *tz_version);
 int tf_a_feature_check(const uint32_t api_id, uint32_t *const version);
+int tf_a_pm_register_sgi(uint32_t sgi_num, uint32_t reset);
 
 #endif /* __EEMI_API_H__ */

@@ -426,3 +426,11 @@ int tf_a_feature_check(const uint32_t api_id, uint32_t *const version)
 
 	return ret;
 }
+
+int tf_a_pm_register_sgi(uint32_t sgi_num, uint32_t reset)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(TF_A_PM_REGISTER_SGI, ((uint64_t)reset << 32 | sgi_num),
+			 0, 0, 0, 0, 0, 0, ret_payload);
+}

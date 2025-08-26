@@ -41,6 +41,9 @@
 /* Requirement limits */
 #define XPM_MAX_LATENCY         0xFFFFU
 
+/* SGI number used for Event management driver */
+#define XLNX_EVENT_SGI_NUM      (15)
+
 /* API IDs */
 enum pm_api_id {
 	PM_API_MIN,                                     /**< 0x0 */

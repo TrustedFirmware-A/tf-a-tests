@@ -513,3 +513,15 @@ int xpm_set_wakeup_source(const uint32_t target_node_id, const uint32_t source_n
 	return eemi_call(PM_SET_WAKEUP_SOURCE, ((uint64_t)source_node_id << 32 | target_node_id),
 			 enable, 0, 0, 0, 0, 0, ret_payload);
 }
+
+int xpm_query_data(const uint32_t qid, const uint32_t arg1, const uint32_t arg2,
+		   const uint32_t arg3, uint32_t *output)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int32_t ret;
+
+	ret = eemi_call(PM_QUERY_DATA, qid, arg1, arg2, arg3, 0, 0, 0, ret_payload);
+	*output = ret_payload[1];
+
+	return ret;
+}

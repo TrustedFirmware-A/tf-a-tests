@@ -41,6 +41,7 @@
       <testcase name="Get PLL parameter " function="test_pll_get_parameter" />
       <testcase name="Set Wake Up Source" function="test_set_wakeup_source" />
       <testcase name="Self Suspend" function="test_self_suspend" />
+      <testcase name="Query Data" function="test_query_data" />
     </testsuite>
 
   </testsuites>

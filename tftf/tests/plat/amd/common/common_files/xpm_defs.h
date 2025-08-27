@@ -298,4 +298,26 @@ enum xpm_pll_mode {
 	PM_PLL_MODE_RESET               = (2U),         /**< PLL mode reset */
 };
 
+/**
+ * Query IDs
+ */
+enum pm_query_id {
+	XPM_QID_INVALID,                                /**< Invalid Query ID */
+	XPM_QID_CLOCK_GET_NAME,                         /**< Get clock name */
+	XPM_QID_CLOCK_GET_TOPOLOGY,                     /**< Get clock topology */
+	XPM_QID_CLOCK_GET_FIXEDFACTOR_PARAMS,           /**< Get clock fixedfactor parameter */
+	XPM_QID_CLOCK_GET_MUXSOURCES,                   /**< Get clock mux sources */
+	XPM_QID_CLOCK_GET_ATTRIBUTES,                   /**< Get clock attributes */
+	XPM_QID_PINCTRL_GET_NUM_PINS,                   /**< Get total pins */
+	XPM_QID_PINCTRL_GET_NUM_FUNCTIONS,              /**< Get total pin functions */
+	XPM_QID_PINCTRL_GET_NUM_FUNCTION_GROUPS,        /**< Get total pin function groups */
+	XPM_QID_PINCTRL_GET_FUNCTION_NAME,              /**< Get pin function name */
+	XPM_QID_PINCTRL_GET_FUNCTION_GROUPS,            /**< Get pin function groups */
+	XPM_QID_PINCTRL_GET_PIN_GROUPS,                 /**< Get pin groups */
+	XPM_QID_CLOCK_GET_NUM_CLOCKS,                   /**< Get number of clocks */
+	XPM_QID_CLOCK_GET_MAX_DIVISOR,                  /**< Get max clock divisor */
+	XPM_QID_PLD_GET_PARENT,                         /**< Get PLD parent */
+	XPM_QID_PINCTRL_GET_ATTRIBUTES,                 /**< Get pin attributes */
+};
+
 #endif /* XPM_DEFS_H_ */

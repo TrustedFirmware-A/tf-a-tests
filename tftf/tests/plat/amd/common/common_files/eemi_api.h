@@ -47,6 +47,13 @@ struct test_pll_api {
 	uint32_t clock_id;               /**< Clock ID */
 };
 
+struct test_query {
+	uint32_t query_id;       /**<  Query ID */
+	uint32_t query_arg1;     /**<  Arg1 for Query-ID if required */
+	uint32_t query_arg2;     /**<  Arg2 for Query-ID if required */
+	uint32_t query_arg3;     /**<  Arg3 for Query-ID if required */
+};
+
 int xpm_get_api_version(uint32_t *version);
 int xpm_get_chip_id(uint32_t *id_code, uint32_t *version);
 int xpm_feature_check(const uint32_t api_id, uint32_t *const version);
@@ -93,5 +100,7 @@ int xpm_self_suspend(const uint32_t device_id, const uint32_t latency,
 		     const uint8_t state, uint32_t address);
 int xpm_set_wakeup_source(const uint32_t target_node_id, const uint32_t source_node_id,
 			  const uint32_t enable);
+int xpm_query_data(const uint32_t qid, const uint32_t arg1, const uint32_t arg2,
+		   const uint32_t arg3, uint32_t *output);
 
 #endif /* __EEMI_API_H__ */

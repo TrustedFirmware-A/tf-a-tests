@@ -23,9 +23,6 @@
 #include <tftf.h>
 #include <tftf_lib.h>
 #include <timer.h>
-#if TRANSFER_LIST
-#include <transfer_list.h>
-#endif
 
 #define MIN_RETRY_TO_POWER_ON_LEAD_CPU       10
 

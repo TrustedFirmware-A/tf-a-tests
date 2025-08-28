@@ -11,5 +11,6 @@ INCLUDES	+= -I$(LIBTL_PATH)/include/ \
 
 LIBTL_SOURCES	+= $(addprefix ${LIBTL_PATH}/src/generic/, \
 			transfer_list.c	\
+			tpm_event_log.c \
 			logging.c	\
 			)

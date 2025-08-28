@@ -110,6 +110,13 @@ extern const psci_function_t psci_functions[PSCI_NUM_CALLS];
 #endif /* __ASSEMBLY__ */
 
 /*******************************************************************************
+ * PSCI target CPU defines
+ ******************************************************************************/
+
+#define PSCI_TARGET_CPU_MASK	ULL(0x000000FF00FFFFFF)
+#define psci_target_cpu_from_mpid(mpidr) ((mpidr) & PSCI_TARGET_CPU_MASK)
+
+/*******************************************************************************
  * PSCI Migrate specific defines
  ******************************************************************************/
 #define PSCI_TOS_UP_MIG_CAP	0

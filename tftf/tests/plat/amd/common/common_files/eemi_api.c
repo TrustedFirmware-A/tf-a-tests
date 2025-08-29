@@ -525,3 +525,20 @@ int xpm_query_data(const uint32_t qid, const uint32_t arg1, const uint32_t arg2,
 
 	return ret;
 }
+
+int xpm_force_powerdown(const uint32_t node_id, const uint32_t ack)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_FORCE_POWERDOWN, ((uint64_t)ack << 32 | node_id), 0,
+					      0, 0, 0, 0, 0, ret_payload);
+}
+
+int xpm_request_wakeup(const uint32_t node_id, const uint32_t set_address,
+		       const uint32_t address, const uint32_t ack)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+
+	return eemi_call(PM_REQUEST_WAKEUP, ((uint64_t)set_address << 32 | node_id),
+			 ((uint64_t)ack << 32 | address), 0, 0, 0, 0, 0, ret_payload);
+}

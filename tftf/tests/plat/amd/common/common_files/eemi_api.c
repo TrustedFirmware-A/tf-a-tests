@@ -542,3 +542,14 @@ int xpm_request_wakeup(const uint32_t node_id, const uint32_t set_address,
 	return eemi_call(PM_REQUEST_WAKEUP, ((uint64_t)set_address << 32 | node_id),
 			 ((uint64_t)ack << 32 | address), 0, 0, 0, 0, 0, ret_payload);
 }
+
+int xpm_reset_get_status(const uint32_t reset_id, uint32_t *status)
+{
+	uint32_t ret_payload[PAYLOAD_ARG_CNT];
+	int32_t ret;
+
+	ret = eemi_call(PM_RESET_GET_STATUS, reset_id, 0, 0, 0, 0, 0, 0, ret_payload);
+	*status = ret_payload[1];
+
+	return ret;
+}

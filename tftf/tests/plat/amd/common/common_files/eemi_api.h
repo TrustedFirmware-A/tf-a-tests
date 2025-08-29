@@ -105,5 +105,6 @@ int xpm_query_data(const uint32_t qid, const uint32_t arg1, const uint32_t arg2,
 int xpm_force_powerdown(const uint32_t node_id, const uint32_t ack);
 int xpm_request_wakeup(const uint32_t node_id, const uint32_t set_address, const uint32_t address,
 		       const uint32_t ack);
+int xpm_reset_get_status(const uint32_t reset_id, uint32_t *status);
 
 #endif /* __EEMI_API_H__ */

@@ -44,6 +44,8 @@
       <testcase name="Query Data" function="test_query_data" />
       <testcase name="Force Powerdown" function="test_force_powerdown" />
       <testcase name="Request Wakeup" function="test_request_wake_up" />
+      <testcase name="Get Reset Status" function="test_reset_get_status" />
+
     </testsuite>
 
   </testsuites>

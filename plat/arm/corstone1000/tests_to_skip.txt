@@ -16,3 +16,4 @@ PSCI CPU Suspend in OSI mode
 PSCI STAT/for valid composite state CPU suspend
 FF-A Setup and Discovery/FF-A RXTX remap unmapped region success
 FF-A Memory Sharing/Normal World VM retrieve request into SPMC
+Boot requirement tests

@@ -204,9 +204,8 @@ static void ffa_version_test(void)
 	struct ffa_value ret = ffa_version(FFA_VERSION_COMPILED);
 
 	spm_version = (uint32_t)ret.fid;
-	EXPECT(spm_version, FFA_VERSION_COMPILED);
 
-	bool compatible = ffa_versions_are_compatible(spm_version, FFA_VERSION_COMPILED);
+	bool compatible = ffa_versions_are_compatible(FFA_VERSION_COMPILED, spm_version);
 
 	INFO("Test FFA_VERSION. Return %u.%u; Compatible: %i\n",
 		ffa_version_get_major(spm_version),

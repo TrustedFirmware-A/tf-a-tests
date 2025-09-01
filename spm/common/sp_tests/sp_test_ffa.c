@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -14,10 +14,6 @@
 #include <spm_helpers.h>
 #include <spm_common.h>
 #include <lib/libc/string.h>
-
-/* FFA version test helpers */
-#define FFA_MAJOR 1U
-#define FFA_MINOR 2U
 
 static uint32_t spm_version;
 

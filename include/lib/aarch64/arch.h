@@ -614,6 +614,11 @@
 #define SCTLR2_EASE_BIT		(UL(1) << 5)
 #define SCTLR2_EnIDCP128_BIT	(UL(1) << 6)
 
+/* MPAMIDR_EL1 register definitions */
+#define MPAMIDR_HAS_BW_CTRL_SHIFT		U(56)
+#define MPAMIDR_HAS_BW_CTRL_MASK		ULL(1)
+#define MPAMIDR_HAS_BW_CTRL_WIDTH		U(1)
+
 /* CPACR_El1 definitions */
 #define CPACR_EL1_FPEN(x)	((x) << 20)
 #define CPACR_EL1_FP_TRAP_EL0	U(0x1)
@@ -1430,6 +1435,10 @@
 
 #define MPAM2_EL2_TRAPMPAM0EL1		(ULL(1) << 49)
 #define MPAM2_EL2_TRAPMPAM1EL1		(ULL(1) << 48)
+
+#define MPAMBW2_EL2			S3_4_C10_C5_4
+#define MPAMBW1_EL1			S3_0_C10_C5_4
+#define MPAMBWIDR_EL1			S3_0_C10_C4_5
 
 #define MPAMIDR_HAS_HCR_BIT		(ULL(1) << 17)
 

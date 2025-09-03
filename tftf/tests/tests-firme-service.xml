@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2025, Arm Limited. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<testsuites>
+
+  <testsuite name="FIRME service tests" description="Tests for the FIRME service.">
+    <testcase name="Test the FIRME version ABI"
+    function="test_firme_base_version" />
+    <testcase name="Test the FIRME Granule Management service version"
+    function="test_firme_granule_mgmt_version" />
+    <testcase name="Test the FIRME Base Service feature registers ABI"
+    function="test_firme_base_features" />
+    <testcase name="Test the FIRME Granule Management Service feature registers ABI"
+    function="test_firme_granule_mgmt_features" />
+  </testsuite>
+
+</testsuites>

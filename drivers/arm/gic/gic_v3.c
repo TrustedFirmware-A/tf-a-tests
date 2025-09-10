@@ -1,15 +1,16 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
+#include <arch_features.h>
 #include <arch_helpers.h>
 #include <assert.h>
 #include <debug.h>
 #include <drivers/arm/arm_gic.h>
-#include <drivers/arm/gic_common.h>
+#include <drivers/arm/gic_v2v3_common.h>
 #include <drivers/arm/gic_v3.h>
 #include <mmio.h>
 #include <platform.h>
@@ -477,12 +478,8 @@ void gicv3_setup_distif(void)
 	assert(gicd_base_addr);
 
 	/* Check for system register support */
-#ifdef __aarch64__
-	assert(read_id_aa64pfr0_el1() &
-			(ID_AA64PFR0_GIC_MASK << ID_AA64PFR0_GIC_SHIFT));
-#else
-	assert(read_id_pfr1() & (ID_PFR1_GIC_MASK << ID_PFR1_GIC_SHIFT));
-#endif
+
+	assert(is_feat_gic_supported());
 
 	/* Assert that system register access is enabled */
 	assert(is_sre_enabled());

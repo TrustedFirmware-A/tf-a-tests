@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2019-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -64,6 +64,11 @@ static inline unsigned int amu_get_version(void)
 {
 	return (unsigned int)(read_id_pfr0() >> ID_PFR0_AMU_SHIFT) &
 		ID_PFR0_AMU_MASK;
+}
+
+static inline bool is_feat_gic_supported(void)
+{
+	return EXTRACT(ID_PFR1_GIC, read_id_pfr1()) >= 1;
 }
 
 #endif /* ARCH_FEATURES_H */

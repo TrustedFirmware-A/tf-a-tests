@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -10,7 +10,6 @@
 #include <irq.h>
 #include <platform.h>
 #include <trng.h>
-#include <sgi.h>
 #include <tftf.h>
 #include <tftf_lib.h>
 

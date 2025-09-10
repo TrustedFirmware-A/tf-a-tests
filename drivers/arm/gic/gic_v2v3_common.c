@@ -1,13 +1,14 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
 #include <arch_helpers.h>
+#include <arch_features.h>
 #include <assert.h>
-#include <drivers/arm/gic_common.h>
+#include <drivers/arm/gic_v2v3_common.h>
 #include <drivers/arm/gic_v3.h>
 #include <mmio.h>
 
@@ -187,16 +188,11 @@ void gicd_set_ipriorityr(uintptr_t base, unsigned int interrupt_id,
 			priority & GIC_PRI_MASK);
 }
 
-unsigned int is_gicv3_mode(void)
+bool is_gicv3_mode(void)
 {
 	/* Check if GICv3 system register available */
-#ifdef __aarch64__
-	if (!(read_id_aa64pfr0_el1() & (ID_AA64PFR0_GIC_MASK << ID_AA64PFR0_GIC_SHIFT)))
+	if (!is_feat_gic_supported())
 		return 0;
-#else
-	if (!(read_id_pfr1() & (ID_PFR1_GIC_MASK << ID_PFR1_GIC_SHIFT)))
-		return 0;
-#endif
 
 	/* Check whether the system register interface is enabled */
 	return !!is_sre_enabled();

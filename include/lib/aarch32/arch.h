@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2025, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -142,7 +142,7 @@
 #define ID_PFR1_GENTIMER_SHIFT	U(16)
 #define ID_PFR1_GENTIMER_MASK	U(0xf)
 #define ID_PFR1_GIC_SHIFT	U(28)
-#define ID_PFR1_GIC_MASK	U(0xf)
+#define ID_PFR1_GIC_WIDTH	U(4)
 
 /* SCTLR definitions */
 #define SCTLR_RES1_DEF		((U(1) << 23) | (U(1) << 22) | (U(1) << 4) | \

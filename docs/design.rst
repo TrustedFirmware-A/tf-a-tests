@@ -80,16 +80,12 @@ the top level or under the ``tftf/`` directory):
    -  ``irq.h``
 
       IRQ handling support. Used to configure IRQs and register/unregister
-      handlers called upon reception of a specific IRQ.
+      handlers called upon reception of a specific IRQ. Also raises software
+      generated interrupts (SGI).
 
    -  ``power_management.h``
 
       Power management operations (CPU ON/OFF, CPU suspend, etc.).
-
-   -  ``sgi.h``
-
-      Software Generated Interrupt support. Used as an inter-CPU communication
-      mechanism.
 
    -  ``spinlock.h``
 
@@ -242,6 +238,6 @@ state.
 
 --------------
 
-*Copyright (c) 2018-2019, Arm Limited. All rights reserved.*
+*Copyright (c) 2018-2025, Arm Limited. All rights reserved.*
 
 .. _Firmware update: https://trustedfirmware-a.readthedocs.io/en/latest/components/firmware-update.html

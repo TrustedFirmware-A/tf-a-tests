@@ -1,11 +1,13 @@
 /*
- * Copyright (c) 2018-2019, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __GIC_COMMON_H__
 #define __GIC_COMMON_H__
+
+#include <stdbool.h>
 
 /***************************************************************************
  * Defines and prototypes common to GIC v2 and v3 drivers.
@@ -49,7 +51,7 @@
 #include <mmio.h>
 
 /* Helper to detect the GIC mode (GICv2 or GICv3) configured in the system */
-unsigned int is_gicv3_mode(void);
+bool is_gicv3_mode(void);
 
 /*******************************************************************************
  * Private GIC Distributor function prototypes for use by GIC drivers

@@ -1,14 +1,12 @@
 #
-# Copyright (c) 2022, Arm Limited. All rights reserved.
+# Copyright (c) 2022-2025, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
 PLAT_INCLUDES	:=	-Iplat/arm/corstone1000/include/
 
-PLAT_SOURCES	:=	drivers/arm/gic/arm_gic_v2.c			\
-			drivers/arm/gic/gic_v2.c			\
-			drivers/arm/timer/private_timer.c		\
+PLAT_SOURCES	:=	drivers/arm/timer/private_timer.c		\
 			drivers/arm/timer/system_timer.c		\
 			plat/arm/corstone1000/plat_helpers.S		\
 			plat/arm/corstone1000/corstone1000_pwr_state.c	\

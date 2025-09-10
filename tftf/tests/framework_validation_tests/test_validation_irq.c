@@ -8,7 +8,6 @@
 #include <drivers/arm/arm_gic.h>
 #include <irq.h>
 #include <platform.h>
-#include <sgi.h>
 #include <tftf_lib.h>
 
 static volatile unsigned int counter;

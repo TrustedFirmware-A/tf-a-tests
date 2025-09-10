@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -17,7 +17,6 @@
 #include <platform_def.h>
 #include <power_management.h>
 #include <psci.h>
-#include <sgi.h>
 #include <test_helpers.h>
 #include <tftf.h>
 #include <tftf_lib.h>
@@ -44,7 +43,7 @@ static event_t waitq[PLATFORM_CORE_COUNT];
 
 static volatile int wakeup_irq_rcvd[PLATFORM_CORE_COUNT];
 static volatile unsigned int sgi_handled[PLATFORM_CORE_COUNT];
-static sgi_data_t sgi_data;
+static unsigned int sgi_data;
 static volatile int cpu_ref_count;
 
 extern unsigned long __TEXT_START__;
@@ -67,7 +66,7 @@ static int sgi_handler(void *data)
 	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
 	unsigned int core_pos = platform_get_core_pos(mpid);
 
-	sgi_data = *(sgi_data_t *) data;
+	sgi_data = *(unsigned int *) data;
 	sgi_handled[core_pos] = 1;
 	return 0;
 }
@@ -518,9 +517,9 @@ test_result_t test_psci_sys_susp_pending_irq(void)
 		;
 
 	/* Verify the sgi data received by the SGI handler */
-	if (sgi_data.irq_id != sgi_id) {
+	if (sgi_data != sgi_id) {
 		tftf_testcase_printf("Wrong IRQ ID, expected %u, got %u\n",
-				sgi_id, sgi_data.irq_id);
+				sgi_id, sgi_data);
 		ret = TEST_RESULT_FAIL;
 	}
 

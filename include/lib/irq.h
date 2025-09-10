@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -57,6 +57,11 @@ void tftf_irq_setup(void);
  * complete.
  */
 int tftf_irq_handler_dispatcher(void);
+
+/*
+ * Send an SGI to a given core.
+ */
+void tftf_send_sgi(unsigned int sgi_id, unsigned int core_pos);
 
 /*
  * Enable interrupt #irq_num for the calling core.

@@ -15,7 +15,6 @@
 #include <platform_def.h>
 #include <power_management.h>
 #include <psci.h>
-#include <sgi.h>
 #include <tftf_lib.h>
 #include <timer.h>
 

@@ -58,6 +58,10 @@ FRAMEWORK_SOURCES	+=						\
 	${EVENT_LOG_SOURCES}						\
 	lib/extensions/amu/${ARCH}/amu.c				\
 	lib/extensions/amu/${ARCH}/amu_helpers.S			\
+	drivers/arm/gic/arm_gic.c					\
+	drivers/arm/gic/gic_v2v3_common.c				\
+	drivers/arm/gic/gic_v2.c					\
+	drivers/arm/gic/gic_v3.c					\
 	lib/exceptions/irq.c						\
 	lib/hob/hob.c						\
 	lib/locks/${ARCH}/spinlock.S					\

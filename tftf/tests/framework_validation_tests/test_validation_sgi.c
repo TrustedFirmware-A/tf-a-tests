@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,14 +9,13 @@
 #include <drivers/arm/arm_gic.h>
 #include <irq.h>
 #include <platform.h>
-#include <sgi.h>
 #include <tftf_lib.h>
 
 /*
  * The 2 following global variables are used by the SGI handler to return
  * information to the main test function.
  */
-static sgi_data_t sgi_data;
+static unsigned int sgi_data;
 
 /* Flag to indicate whether the SGI has been handled */
 static volatile unsigned int sgi_handled;
@@ -24,7 +23,7 @@ static volatile unsigned int sgi_handled;
 static int sgi_handler(void *data)
 {
 	/* Save SGI data */
-	sgi_data = *(sgi_data_t *) data;
+	sgi_data = *(unsigned int *) data;
 	sgi_handled = 1;
 
 	/* Return value doesn't matter */
@@ -69,9 +68,9 @@ test_result_t test_validation_sgi(void)
 		continue;
 
 	/* Verify the data received in the SGI handler */
-	if (sgi_data.irq_id != sgi_id) {
+	if (sgi_data != sgi_id) {
 		tftf_testcase_printf("Wrong IRQ ID, expected %u, got %u\n",
-			sgi_id, sgi_data.irq_id);
+			sgi_id, sgi_data);
 		test_res = TEST_RESULT_FAIL;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -14,7 +14,6 @@
 #include <platform_def.h>
 #include <power_management.h>
 #include <psci.h>
-#include <sgi.h>
 #include <stdlib.h>
 #include <test_helpers.h>
 #include <tftf.h>

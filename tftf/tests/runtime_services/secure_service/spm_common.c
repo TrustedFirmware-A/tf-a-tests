@@ -202,6 +202,8 @@ static const struct ffa_features_test ffa_feature_test_target[] = {
 		FFA_SUCCESS_SMC32},
 	{"FFA_NOTIFICATION_INFO_GET_64", FFA_NOTIFICATION_INFO_GET_SMC64,
 		FFA_SUCCESS_SMC32},
+	{"FFA_ABORT_32", FFA_ABORT_32, FFA_ERROR},
+	{"FFA_ABORT_64", FFA_ABORT_64, FFA_ERROR},
 	{"Check non-existent command", 0xFFFF, FFA_ERROR},
 };
 

@@ -129,6 +129,9 @@ static inline const char *ffa_error_name(enum ffa_error error)
 #define FFA_FNUM_PARTITION_INFO_GET_REGS	U(0x8B)
 #define FFA_FNUM_EL3_INTR_HANDLE                U(0x8C)
 
+/* FF-A v1.3 ALP1 */
+#define FFA_FNUM_ABORT				U(0x90)
+
 /* FFA SMC32 FIDs */
 #define FFA_ERROR		FFA_FID(SMC_32, FFA_FNUM_ERROR)
 #define FFA_SUCCESS_SMC32	FFA_FID(SMC_32, FFA_FNUM_SUCCESS)
@@ -176,6 +179,7 @@ static inline const char *ffa_error_name(enum ffa_error error)
 #define FFA_NOTIFICATION_INFO_GET \
 	FFA_FID(SMC_32, FFA_FNUM_NOTIFICATION_INFO_GET)
 #define FFA_SPM_ID_GET		FFA_FID(SMC_32, FFA_FNUM_SPM_ID_GET)
+#define FFA_ABORT_32		FFA_FID(SMC_32, FFA_FNUM_ABORT)
 
 /* Implementation defined SMC32 FIDs */
 #define FFA_CONSOLE_LOG_SMC32	FFA_FID(SMC_32, FFA_FNUM_CONSOLE_LOG)
@@ -200,6 +204,7 @@ static inline const char *ffa_error_name(enum ffa_error error)
 #define FFA_FEATURES_MEM_RETRIEVE_REQ_NS_SUPPORT (UINT32_C(1) << 1)
 #define FFA_PARTITION_INFO_GET_REGS_SMC64 \
 	FFA_FID(SMC_64, FFA_FNUM_PARTITION_INFO_GET_REGS)
+#define FFA_ABORT_64		FFA_FID(SMC_64, FFA_FNUM_ABORT)
 
 /* Implementation defined SMC64 FIDs */
 #define FFA_CONSOLE_LOG_SMC64	FFA_FID(SMC_64, FFA_FNUM_CONSOLE_LOG)

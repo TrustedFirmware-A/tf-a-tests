@@ -23,6 +23,7 @@ void __dead2 ivy_main(void)
 	struct ffa_value ret;
 	ffa_id_t my_id;
 	struct mailbox_buffers mb;
+	bool el1_partition = IVY_SHIM == 1;
 
 	set_putc_impl(FFA_SVC_SMC_CALL_AS_STDOUT);
 
@@ -47,7 +48,7 @@ init:
 		panic();
 	}
 
-	ffa_tests(&mb, false);
+	ffa_tests(&mb, el1_partition);
 
 	ret = ffa_msg_wait();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -32,8 +32,8 @@
 #define PLAT_CACTUS_MEMCPY_RANGE		ULL(0x8000)
 
 /* Base address of user and PRIV frames in SMMUv3TestEngine */
-#define USR_BASE_FRAME			ULL(0x2BFE0000)
-#define PRIV_BASE_FRAME			ULL(0x2BFF0000)
+#define USR_BASE_FRAME			ULL(0x2B500000)
+#define PRIV_BASE_FRAME			ULL(0x2B510000)
 
 /* Base address for memory sharing tests. */
 #define CACTUS_SP1_MEM_SHARE_BASE 0x7500000

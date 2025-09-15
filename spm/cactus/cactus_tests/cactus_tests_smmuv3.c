@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -24,6 +24,30 @@
 #define NO_SUBSTREAMID	(0xFFFFFFFFU)
 #define LOOP_COUNT	(5000U)
 
+/*
+ * This function will configure an SMMUv3TestEngine to make access to the Secure
+ * PAS. To do that it uses a regularly (non-PCIe) connected device in place of
+ * the PL 330 cluster. This is non standard and must be enabled on the FVP
+ * commandline with:
+ * -C pci.dma330x4.use_smmuv3testengine_not_dmacs=1
+ *
+ * Some notes about the model:
+ *
+ * A DMAC is a DMA-Controller a DMA-330 (a.k.a. DMAC_PL_330, a.k.a. PL_330). It
+ * is an ancient (32b) device that has its own little instruction set and
+ * several concurrent threads of execution that can be used to move memory
+ * about.
+ *
+ * The original DMAC cluster was put in so that it provides an easy work-load to
+ * program for the SMMU rather than a full PCIe device.
+ *
+ * The PCIe block diagram is not quite right depending on your point of view.
+ * The PCIe Subsystem is above the SMMU – i.e. all accesses made by PCIe devices
+ * go through the SMMU.
+ *
+ * The DMAC cluster is also above the same SMMU and so is (mostly)
+ * indistinguishable from the PCIe device traffic.
+ */
 static bool run_testengine(uint32_t operation, uintptr_t source_addr,
 			   uintptr_t target_addr, size_t transfer_size,
 			   uint32_t attributes)

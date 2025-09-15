@@ -40,7 +40,7 @@ static uint128_t pauth_keys_after[NUM_KEYS];
 #endif
 
 /*
- * @Test_Aim@ Test RSI_PLANE_REG_READ/WRITE
+ * @Test_Aim@ Test RSI_PLANE_SYSREG_READ/WRITE
  */
 test_result_t host_test_realm_create_planes_register_rw(void)
 {

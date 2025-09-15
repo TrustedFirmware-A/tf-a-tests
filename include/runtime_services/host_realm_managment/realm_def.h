@@ -29,9 +29,31 @@
 #if (PAGE_SIZE == PAGE_SIZE_4KB)
 #define PAGE_ALIGNMENT			PAGE_SIZE_4KB
 #define TCR_TG0				TCR_TG0_4K
+#define GRANULE_SHIFT			U(12)
 #else
 #error "Undefined value for PAGE_SIZE"
 #endif
+
+/*
+ * TTE_STRIDE: The number of bits resolved in a single level of translation
+ * walk (except for the starting level which may resolve more or fewer bits)
+ */
+#define MAX_IPA_BITS			U(48)
+#define TTE_STRIDE			(GRANULE_SHIFT - 3U)
+
+/*
+ * TTE_STRIDE_LM1: The number of bits resolved al level -1 when FEAT_LPA2
+ * is enabled. This value is equal to
+ * MAX_IPA_BITS_LPA2 - ((4 * S2TTE_STRIDE) + GRANULE_SHIFT)
+ * as Level -1 only has 4 bits for the index (bits [51:48])
+ */
+#define MAX_IPA_BITS_LPA2		U(52)
+#define TTE_STRIDE_LM1			U(4)
+
+#define TT_PAGE_LEVEL			U(3)
+#define tte_map_size(level)						\
+	(1ULL << (unsigned int)(((TT_PAGE_LEVEL - (level)) *		\
+				 (int)TTE_STRIDE) + (int)GRANULE_SHIFT))
 
 /*
  * 'MPIDR_EL1_AFF<n>_VAL_SHIFT' constants specify the left shift

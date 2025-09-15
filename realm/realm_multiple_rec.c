@@ -48,6 +48,11 @@ static void plane0_recn_handler(u_register_t cxt_id)
 	/* enter plane */
 	u_register_t flags = 0U;
 
+	/* Setup the initial PSTATE for the plane */
+	run[rec].enter.pstate = ((SPSR_M3_0_EL1_SP_EL1 << SPSR_M3_0_SHIFT) |
+				 (SPSR_M_AARCH64 << SPSR_M_SHIFT) |
+				 (0xf << SPSR_DAIF_SHIFT));
+
 	/* Use Base adr, plane_index, perm_index programmed by P0 rec0 */
 	run[rec].enter.pc = base;
 	realm_printf("Entering plane %ld, ep=0x%lx rec=0x%lx\n", plane_index, base, rec);

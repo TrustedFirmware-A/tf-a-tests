@@ -445,6 +445,18 @@ test_result_t test_psci_suspend_standby_level3(void)
 				       false);
 }
 
+static test_result_t check_osi_mode_support(void) {
+	int feat;
+
+	feat = tftf_get_psci_feature_info(SMC_PSCI_CPU_SUSPEND);
+	if (feat < 0)
+		return TEST_RESULT_FAIL;
+	if ((feat & (1 << CPU_SUSPEND_FEAT_OS_INIT_MODE_SHIFT)) == 0)
+		return TEST_RESULT_SKIPPED;
+
+	return TEST_RESULT_SUCCESS;
+}
+
 /*
  * @Test_Aim@ Suspend to the specified suspend type targeted at affinity level 0
  * in OS-initiated mode
@@ -452,6 +464,10 @@ test_result_t test_psci_suspend_standby_level3(void)
 static test_result_t test_psci_suspend_level0_osi(unsigned int suspend_type)
 {
 	int err, rc;
+
+	err = check_osi_mode_support();
+	if (err != TEST_RESULT_SUCCESS)
+		return err;
 
 	err = tftf_psci_set_suspend_mode(PSCI_OS_INIT);
 	if (err != PSCI_E_SUCCESS)
@@ -497,6 +513,10 @@ static test_result_t test_psci_suspend_level1_osi(unsigned int suspend_type)
 	unsigned int core_pos;
 	tftf_pwr_domain_node_t pd_node;
 	int err, rc;
+
+	err = check_osi_mode_support();
+	if (err != TEST_RESULT_SUCCESS)
+		return err;
 
 	err = test_init(PSTATE_AFF_LVL_1, suspend_type);
 	if (err != TEST_RESULT_SUCCESS)
@@ -571,6 +591,10 @@ static test_result_t test_psci_suspend_level2_osi(unsigned int suspend_type,
 	unsigned int core_pos;
 	tftf_pwr_domain_node_t lvl_1_pd_node, lvl_2_pd_node;
 	int err, rc;
+
+	err = check_osi_mode_support();
+	if (err != TEST_RESULT_SUCCESS)
+		return err;
 
 	err = test_init(PSTATE_AFF_LVL_2, suspend_type);
 	if (err != TEST_RESULT_SUCCESS)
@@ -655,6 +679,10 @@ test_result_t test_psci_suspend_invalid(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
+	err = check_osi_mode_support();
+	if (err != TEST_RESULT_SUCCESS)
+		return err;
+
 	/*
 	 * Non-lead CPUs should be suspended, and the lead CPU should
 	 * attempt to supend to level 2. As there is a cpu running in another
@@ -722,6 +750,10 @@ static test_result_t test_psci_suspend_level3_osi(unsigned int suspend_type)
 	unsigned int core_pos;
 	tftf_pwr_domain_node_t lvl_1_pd_node, lvl_2_pd_node, lvl_3_pd_node;
 	int err, rc;
+
+	err = check_osi_mode_support();
+	if (err != TEST_RESULT_SUCCESS)
+		return err;
 
 	err = test_init(PSTATE_AFF_LVL_3, PSTATE_TYPE_POWERDOWN);
 	if (err != TEST_RESULT_SUCCESS)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2019-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -114,10 +114,10 @@
 			/*
 			 * SMMUv3TestEngine is a DMA IP modeled in the
 			 * Base-RevC FVP Model.
-			 * User Frame: 0x2bfe0000
-			 * Privileged Frame: 0x2bff0000
+			 * User Frame: 0x2b500000
+			 * Privileged Frame: 0x25100000
 			 */
-			base-address = <0x00000000 0x2bfe0000>;
+			base-address = <0x00000000 0x2b500000>;
 			pages-count = <32>; /* Two 64KB pages */
 			attributes = <0x3>; /* read-write */
 			smmu-id = <0>;

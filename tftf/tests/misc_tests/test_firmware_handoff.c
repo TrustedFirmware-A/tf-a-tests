@@ -11,7 +11,7 @@
 #include <tftf_lib.h>
 #include <transfer_list.h>
 
-#include "event_log.h"
+#include "event_print.h"
 
 extern u_register_t hw_config_base;
 extern u_register_t ns_tl;

@@ -26,6 +26,8 @@ as a git submodule.
         Name             Version
 ======================== =====================
 Mbed TLS                 3.6.3
+Transfer List Library    0.0.1
+Event Log Library        0.0.1
 ======================== =====================
 
 Toolchain

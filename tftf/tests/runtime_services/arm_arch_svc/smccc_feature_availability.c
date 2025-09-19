@@ -65,7 +65,8 @@ test_result_t test_smccc_arch_feature_availability(void)
 #ifdef __aarch64__
 
 	SKIP_TEST_IF_SMCCC_VERSION_LT(1, 1);
-	SKIP_TEST_IF_SMCCC_FUNC_NOT_SUPPORTED(SMCCC_ARCH_FEATURE_AVAILABILITY);
+	SKIP_TEST_IF_SMCCC_FUNC_NOT_SUPPORTED(SMCCC_ARCH_FEATURE_AVAILABILITY |
+						(SMC_64 << FUNCID_CC_SHIFT));
 
 	u_register_t reg;
 	bool bad = false;

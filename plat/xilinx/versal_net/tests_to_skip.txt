@@ -70,3 +70,6 @@ Runtime Instrumentation Validation
 
 #TESTS: debugfs
 DebugFS
+
+#TESTS: SDEI
+SDEI/Test binding more events than are available in the PPI range

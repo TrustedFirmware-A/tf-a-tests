@@ -97,6 +97,8 @@ test_result_t test_ffa_features(void)
 		{"FFA_FEATURE_NPI", FFA_FEATURE_NPI, FFA_ERROR, 0,
 			FFA_VERSION_1_1},
 		{"FFA_YIELD_32", FFA_MSG_YIELD, FFA_ERROR},
+		{"FFA_ABORT_32", FFA_ABORT_32, FFA_ERROR},
+		{"FFA_ABORT_64", FFA_ABORT_64, FFA_ERROR},
 	};
 	size_t test_target_size = get_ffa_feature_test_target(&func_ids_target);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -14,10 +14,6 @@
 #include <spm_helpers.h>
 #include <spm_common.h>
 #include <lib/libc/string.h>
-
-/* FFA version test helpers */
-#define FFA_MAJOR 1U
-#define FFA_MINOR 2U
 
 static uint32_t spm_version;
 
@@ -207,9 +203,8 @@ static void ffa_version_test(void)
 	struct ffa_value ret = ffa_version(FFA_VERSION_COMPILED);
 
 	spm_version = (uint32_t)ret.fid;
-	EXPECT(spm_version, FFA_VERSION_COMPILED);
 
-	bool compatible = ffa_versions_are_compatible(spm_version, FFA_VERSION_COMPILED);
+	bool compatible = ffa_versions_are_compatible(FFA_VERSION_COMPILED, spm_version);
 
 	INFO("Test FFA_VERSION. Return %u.%u; Compatible: %i\n",
 		ffa_version_get_major(spm_version),

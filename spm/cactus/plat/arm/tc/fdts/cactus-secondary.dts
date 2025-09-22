@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -15,7 +15,7 @@
 
 	/* Properties */
 	description = "cactus-2";
-	ffa-version = <0x00010002>; /* 31:16 - Major, 15:0 - Minor */
+	ffa-version = <0x00010003>; /* 31:16 - Major, 15:0 - Minor */
 	uuid = <0x092358d1 0xb94723f0 0x64447c82 0xc88f57f5>;
 	id = <2>;
 	execution-ctx-count = <8>;

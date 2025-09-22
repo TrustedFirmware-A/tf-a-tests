@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -23,7 +23,8 @@ enum ffa_version {
 	FFA_VERSION_1_0 = 0x10000,
 	FFA_VERSION_1_1 = 0x10001,
 	FFA_VERSION_1_2 = 0x10002,
-	FFA_VERSION_COMPILED = FFA_VERSION_1_2,
+	FFA_VERSION_1_3 = 0x10003,
+	FFA_VERSION_COMPILED = FFA_VERSION_1_3,
 };
 
 #define FFA_VERSION_MBZ_BIT (1U << 31U)

@@ -66,13 +66,13 @@
 #define GIC_BASE				GICD_REG_BASE
 #define GIC_SIZE				U(0x01000000)
 
-#define TTC_BASE				U(0xF1E70000)
+#define TTC_BASE				U(0xF1E60000)
 #define TTC_SIZE				U(0x00010000)
 
 #define SYS_CNT_BASE1				TTC_BASE
 #define SYS_CNT_SIZE				TTC_SIZE
 
-#define LPD_IOU_SLCR				U(0xEB410000)
+#define LPD_IOU_SLCR				U(0xF1A20000)
 #define LPD_IOU_SLCR_SIZE			U(0x00010000)
 
 /* ARM PL011 UART */

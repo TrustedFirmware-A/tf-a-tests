@@ -12,6 +12,7 @@
   -->
   <testsuite name="DebugFS" description="Test ARM SiP DebugFS service">
     <testcase name="Expose filesystem" function="test_debugfs" />
+    <testcase name="Out-of-bounds accesses" function="test_oob_access" />
   </testsuite>
 
 </testsuites>

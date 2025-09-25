@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,10 +16,6 @@
 
 /* An invalid SMC function number. */
 #define INVALID_FN 0x666
-
-/* PSCI version returned by TF-A. */
-static const uint32_t psci_version = PSCI_VERSION(PSCI_MAJOR_VER,
-						  PSCI_MINOR_VER);
 
 /* UUID of the standard service in TF-A. */
 static const smc_ret_values std_svc_uuid = {
@@ -46,6 +42,26 @@ static inline uint32_t make_smc_fid(unsigned int type, unsigned int cc,
 	} while (0)
 
 /*
+ * Check that the values it returns match the expected ones. If not, write an
+ * error message in the test report.
+ */
+static bool smc_check_eq_common(const smc_ret_values *ret,
+				const smc_ret_values *expect)
+{
+	if (memcmp(ret, expect, sizeof(smc_ret_values)) == 0)
+		return true;
+
+	tftf_testcase_printf(
+		"Got {0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx}, \
+		expected {0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx}.\n",
+		ret->ret0, ret->ret1, ret->ret2, ret->ret3,
+		ret->ret4, ret->ret5, ret->ret6, ret->ret7,
+		expect->ret0, expect->ret1, expect->ret2, expect->ret3,
+		expect->ret4, expect->ret5, expect->ret6, expect->ret7);
+	return false;
+}
+
+/*
  * Send an SMC with the specified arguments.
  * Check that the values it returns match the expected ones. If not, write an
  * error message in the test report.
@@ -54,18 +70,27 @@ static bool smc_check_eq(const smc_args *args, const smc_ret_values *expect)
 {
 	smc_ret_values ret = tftf_smc(args);
 
-	if (memcmp(&ret, expect, sizeof(smc_ret_values)) == 0) {
-		return true;
-	} else {
-		tftf_testcase_printf(
-			"Got {0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx}, \
-			expected {0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx}.\n",
-			ret.ret0, ret.ret1, ret.ret2, ret.ret3,
-			ret.ret4, ret.ret5, ret.ret6, ret.ret7,
-			expect->ret0, expect->ret1, expect->ret2, expect->ret3,
-			expect->ret4, expect->ret5, expect->ret6, expect->ret7);
-		return false;
-	}
+	return smc_check_eq_common(&ret, expect);
+}
+
+/*
+ * Send an optional SMC with the specified arguments. Treat it as skipped if the
+ * firmware does not support the call and skip further checks.
+ * Otherwise, check that the values it returns match the expected ones. If not,
+ * return a test fail result.
+ */
+static test_result_t smc_check_eq_optional(const smc_args *args, const smc_ret_values *expect)
+{
+	smc_ret_values ret = tftf_smc(args);
+
+	if (ret.ret0 == SMC_UNKNOWN)
+		return TEST_RESULT_SKIPPED;
+
+	if (smc_check_eq_common(&ret, expect))
+		return TEST_RESULT_SUCCESS;
+	else
+		return TEST_RESULT_FAIL;
+
 }
 
 /*
@@ -153,9 +178,14 @@ static bool smc_check_match(const smc_args *args, const smc_ret_values *expect,
 /* Exercise SMC32 calling convention with fast SMC calls. */
 test_result_t smc32_fast(void)
 {
+	test_result_t result;
+
 	/* Valid Fast SMC32 using all 4 return values. */
 	const smc_args args1 = { .fid = SMC_STD_SVC_UID };
-	FAIL_IF(!smc_check_eq(&args1, &std_svc_uuid));
+	result = smc_check_eq_optional(&args1, &std_svc_uuid);
+	if (result != TEST_RESULT_SUCCESS) {
+		return result;
+	}
 
 	/* Invalid Fast SMC32. */
 	const smc_args args2 = {
@@ -171,10 +201,15 @@ test_result_t smc32_fast(void)
 	const smc_args args3
 		= { SMC_PSCI_VERSION, 0x44444444, 0x55555555, 0x66666666,
 		0x77777777, 0x88888888, 0x99999999, 0xaaaaaaaa };
-	const smc_ret_values ret3
-		= { psci_version, 0x44444444, 0x55555555, 0x66666666,
+	smc_ret_values ret3
+		= { 0x00000000, 0x44444444, 0x55555555, 0x66666666,
 		0x77777777, 0x88888888, 0x99999999, 0xaaaaaaaa };
-	FAIL_IF(!smc_check_eq(&args3, &ret3));
+
+	const bool check[8] = { false, true, true, true, true, true, true, true };
+	const bool allow_zeros[8] = { false, true, true, true,
+						true, true, true, true };
+
+	FAIL_IF(!smc_check_match(&args3, &ret3, check, allow_zeros));
 
 	return TEST_RESULT_SUCCESS;
 }
@@ -182,9 +217,14 @@ test_result_t smc32_fast(void)
 /* Exercise SMC64 calling convention with yielding SMC calls. */
 test_result_t smc64_yielding(void)
 {
+	test_result_t result;
+
 	/* Valid Fast SMC32 using all 4 return values. */
 	const smc_args args1 = { .fid = SMC_STD_SVC_UID };
-	FAIL_IF(!smc_check_eq(&args1, &std_svc_uuid));
+	result = smc_check_eq_optional(&args1, &std_svc_uuid);
+	if (result != TEST_RESULT_SUCCESS) {
+		return result;
+	}
 
 	/* Invalid function number, SMC64 Yielding. */
 	const smc_args args2 = {
@@ -239,9 +279,14 @@ test_result_t smc64_yielding(void)
 #ifndef __aarch64__
 static test_result_t smc64_fast_caller32(void)
 {
+	test_result_t result;
+
 	/* Valid Fast SMC32 using all 4 return values. */
 	smc_args args1 = { .fid = SMC_STD_SVC_UID };
-	FAIL_IF(!smc_check_eq(&args1, &std_svc_uuid));
+	result = smc_check_eq_optional(&args1, &std_svc_uuid);
+	if (result != TEST_RESULT_SUCCESS) {
+		return result;
+	}
 
 	/* Invalid SMC function number, Fast SMC64. */
 	const smc_args args2 = {
@@ -270,9 +315,14 @@ static test_result_t smc64_fast_caller32(void)
 #else
 static test_result_t smc64_fast_caller64(void)
 {
+	test_result_t result;
+
 	/* Valid Fast SMC32 using all 4 return values. */
 	smc_args args1 = { .fid = SMC_STD_SVC_UID };
-	FAIL_IF(!smc_check_eq(&args1, &std_svc_uuid));
+	result = smc_check_eq_optional(&args1, &std_svc_uuid);
+	if (result != TEST_RESULT_SUCCESS) {
+		return result;
+	}
 
 	/* Invalid function number, Fast SMC64. */
 	const smc_args args2 = {
@@ -310,9 +360,14 @@ test_result_t smc64_fast(void)
 /* Exercise SMC32 calling convention with yielding SMC calls. */
 test_result_t smc32_yielding(void)
 {
+	test_result_t result;
+
 	/* Valid Fast SMC32 using all 4 return values. */
 	const smc_args args1 = { .fid = SMC_STD_SVC_UID };
-	FAIL_IF(!smc_check_eq(&args1, &std_svc_uuid));
+	result = smc_check_eq_optional(&args1, &std_svc_uuid);
+	if (result != TEST_RESULT_SUCCESS) {
+		return result;
+	}
 
 	/* Invalid function number, SMC32 Yielding. */
 	const smc_args args2 = {

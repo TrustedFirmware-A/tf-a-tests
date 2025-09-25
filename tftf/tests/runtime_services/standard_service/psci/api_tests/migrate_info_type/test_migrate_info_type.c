@@ -89,7 +89,7 @@ test_result_t test_migrate_info_type(void)
 	 * Pass a valid MPID so that the MIGRATE call doesn't fail because of
 	 * invalid parameters
 	 */
-	args.arg1 = read_mpidr_el1() & MPID_MASK;
+	args.arg1 = psci_target_cpu_from_mpid(read_mpidr_el1());
 	ret = tftf_smc(&args);
 	migrate_ret = (int32_t) ret.ret0;
 

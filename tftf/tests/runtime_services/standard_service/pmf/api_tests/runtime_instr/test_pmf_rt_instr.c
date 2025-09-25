@@ -75,10 +75,11 @@ test_result_t test_check_pmf_version(void)
 	args.fid = PMF_SMC_GET_VERSION;
 	ret = tftf_smc(&args);
 
+	if (ret.ret0 == SMC_UNKNOWN)
+		return TEST_RESULT_SKIPPED;
+
 	if (ret.ret1 != PMF_SMC_VERSION)
-	{
 		return TEST_RESULT_FAIL;
-	}
 
 	return TEST_RESULT_SUCCESS;
 }

@@ -47,6 +47,10 @@ test_result_t test_query_std_svc(void)
 	std_svc_args.fid = SMC_STD_SVC_UID;
 	ret = tftf_smc(&std_svc_args);
 
+	/* These functions are optional, skip test when not supported. */
+	if (ret.ret0 == SMC_UNKNOWN)
+		return TEST_RESULT_SKIPPED;
+
 	make_uuid_from_4words(&std_svc_uuid,
 			ret.ret0, ret.ret1, ret.ret2, ret.ret3);
 	if (!uuid_equal(&std_svc_uuid, &armtf_std_svc_uuid)) {

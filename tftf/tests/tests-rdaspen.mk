@@ -6,6 +6,7 @@
 
 TESTS_SOURCES	+=						\
 	$(addprefix tftf/tests/plat/arm/automotive_rd/rdaspen/,	\
+		test_rdaspen_check_erxctlr.c			\
 		test_rdaspen_cpu_ras.c				\
 	)
 

@@ -25,10 +25,6 @@ test_result_t test_cpu_ras_ce(void)
 	/* Select Error Record 1, Error record 0 is for the DSU */
 	write_errselr_el1(1);
 
-	/* Enable FHI, CFI and allow Errors to generate interrupts */
-	write_erxctlr_el1(ERXCTLR_CFI_BIT | ERXCTLR_FI_BIT |
-			  ERXCTLR_ED_BIT);
-
 	/* Clear PFG control register */
 	write_cpu_erxpfgctl_el1(0U);
 

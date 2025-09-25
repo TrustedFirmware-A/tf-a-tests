@@ -1716,6 +1716,7 @@
 #define ERXCTLR_FI_BIT		(U(1) << 3)
 #define ERXCTLR_UE_BIT		(U(1) << 4)
 #define ERXCTLR_CFI_BIT		(U(1) << 8)
+#define ERXCTLR_TFPEN_BIT	(ULL(1) << 33)
 
 /* FEAT_RASv2 Error Pseudo-Fault Generation field definitions */
 #define ERXPFGCDN_CDN		U(0x1000)

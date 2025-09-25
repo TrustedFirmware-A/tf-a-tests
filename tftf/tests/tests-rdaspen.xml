@@ -8,6 +8,7 @@
 
 <testsuites>
   <testsuite name="RDAspen Tests" description="RDAspen platform test code">
+     <testcase name="AP CPU Check ERXCTLR state" function="test_check_erxctlr" />
      <testcase name="AP CPU RAS Test CE" function="test_cpu_ras_ce" />
      <testcase name="AP CPU RAS Test DE" function="test_cpu_ras_de" />
   </testsuite>

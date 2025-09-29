@@ -94,6 +94,8 @@ static void ffa_features_test(bool el1_partition)
 			FFA_VERSION_1_1},
 		{"FFA_YIELD_32", FFA_MSG_YIELD, FFA_SUCCESS_SMC32,
 			FFA_VERSION_1_0},
+		{"FFA_ABORT_32", FFA_ABORT_32, FFA_SUCCESS_SMC32},
+		{"FFA_ABORT_64", FFA_ABORT_64, FFA_SUCCESS_SMC32},
 	};
 
 	INFO("Test FFA_FEATURES.\n");

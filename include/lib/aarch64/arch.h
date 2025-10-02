@@ -1093,6 +1093,7 @@
 #define EC_AARCH64_HVC			U(0x16)
 #define EC_AARCH64_SMC			U(0x17)
 #define EC_AARCH64_SYS			U(0x18)
+#define EC_AARCH64_SVE			U(0x19)
 #define EC_IABORT_LOWER_EL		U(0x20)
 #define EC_IABORT_CUR_EL		U(0x21)
 #define EC_PC_ALIGN			U(0x22)

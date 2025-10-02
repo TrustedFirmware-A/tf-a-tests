@@ -556,6 +556,9 @@ struct rsi_dev_measure_params {
 #define RSI_PLANE_ENTRY_FLAG_TRAP_WFI	U(1UL << 0)
 #define RSI_PLANE_ENTRY_FLAG_TRAP_WFE	U(1UL << 1)
 #define RSI_PLANE_ENTRY_FLAG_TRAP_HC	U(1UL << 2)
+#define RSI_PLANE_ENTRY_FLAG_TRAP_SIMD	U(1UL << 4)
+
+#define RSI_PLANE_ENTRY_FLAG_MASK	U(0x1F)
 
 /* Data structure used to pass values from P0 to the RMM on Plane entry */
 struct rsi_plane_entry {

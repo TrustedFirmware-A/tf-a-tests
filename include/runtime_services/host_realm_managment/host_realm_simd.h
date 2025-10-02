@@ -8,6 +8,9 @@
 
 #include <stdint.h>
 
+/* Number of attempts, for plane N, to cause a SIMD access */
+#define SIMD_TRAP_ATTEMPTS		(3UL)
+
 struct sve_cmd_rdvl {
 	uint64_t rdvl;
 };

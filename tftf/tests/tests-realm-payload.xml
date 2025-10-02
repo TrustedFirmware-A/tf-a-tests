@@ -16,6 +16,8 @@
 	  function="host_test_realm_create_planes_register_rw" />
 	  <testcase name="Realm payload Planes multi rec multiple cpu"
 	  function="host_realm_multi_planes_multi_rec_multiple_cpu" />
+	  <testcase name="Access SVE registers from Plane N"
+	  function="host_realm_check_sve_in_planes" />
 	  <testcase name="Realm EL1 creation and execution test"
 	  function="host_test_realm_create_enter" />
 	  <testcase name="Realm RTT fold unfold test Unassigned Empty"

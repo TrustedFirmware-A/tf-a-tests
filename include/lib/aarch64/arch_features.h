@@ -596,6 +596,18 @@ static inline bool is_feat_mec_supported(void)
 		== ID_AA64MMFR3_EL1_MEC_SUPPORTED;
 }
 
+static inline bool is_feat_aie_supported(void)
+{
+	return EXTRACT(ID_AA64MMFR3_EL1_AIE, read_id_aa64mmfr3_el1())
+		== ID_AA64MMFR3_EL1_AIE_SUPPORTED;
+}
+
+static inline bool is_feat_pfar_supported(void)
+{
+	return EXTRACT(ID_AA64PFR1_EL1_PFAR, read_id_aa64pfr1_el1())
+		== ID_AA64PFR1_EL1_PFAR_SUPPORTED;
+}
+
 static inline bool is_feat_gic_supported(void)
 {
 	return EXTRACT(ID_AA64PFR0_GIC, read_id_aa64pfr0_el1())

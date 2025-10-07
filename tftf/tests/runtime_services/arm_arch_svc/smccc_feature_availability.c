@@ -93,6 +93,8 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(is_feat_csv2_2_present,			SCR_EnSCXT_BIT);
 	CHECK_BIT_SET(is_armv8_3_pauth_present,			SCR_APK_BIT);
 	CHECK_BIT_SET(is_feat_ras_present,			SCR_TERR_BIT);
+	CHECK_BIT_SET(is_feat_aie_supported,			SCR_AIEn_BIT);
+	CHECK_BIT_SET(is_feat_pfar_supported,			SCR_PFAREn_BIT);
 	CHECK_NO_BITS_SET(SCR_EL3);
 
 	reg = get_feature_for_reg(CPTR_EL3_OPCODE);

@@ -972,6 +972,7 @@ static inline u_register_t read_sp(void)
 #define IS_IN_EL1() IS_IN_EL(1)
 #define IS_IN_EL2() IS_IN_EL(2)
 #define IS_IN_EL3() IS_IN_EL(3)
+#define EL2_IS_IN_HOST()	(IS_IN_EL2() && (read_hcr_el2() & HCR_E2H_BIT))
 
 static inline unsigned int get_current_el(void)
 {

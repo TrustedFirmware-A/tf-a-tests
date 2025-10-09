@@ -30,7 +30,11 @@ void tftf_arch_setup(void)
 		 * The fields of the CPTR_EL2 register reset to an
 		 * architecturally UNKNOWN value.
 		 */
-		write_cptr_el2(CPTR_EL2_RESET_VAL);
+		if (EL2_IS_IN_HOST()) {
+			write_cptr_el2(CPACR_EL1_RESET_VAL);
+		} else {
+			write_cptr_el2(CPTR_EL2_RESET_VAL);
+		}
 		isb();
 
 		/*

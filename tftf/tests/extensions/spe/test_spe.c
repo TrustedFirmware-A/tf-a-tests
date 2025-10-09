@@ -14,7 +14,9 @@ test_result_t test_spe_support(void)
 #ifdef __aarch64__
 	unsigned int spe_ver = spe_get_version();
 
-	assert(spe_ver <= ID_AA64DFR0_SPE_V1P4);
+	if (spe_ver > ID_AA64DFR0_SPE_V1P4) {
+		WARN("Detected SPE version %d, please update test.\n", spe_ver);
+	}
 
 	if (spe_ver == ID_AA64DFR0_SPE_NOT_SUPPORTED) {
 		return TEST_RESULT_SKIPPED;

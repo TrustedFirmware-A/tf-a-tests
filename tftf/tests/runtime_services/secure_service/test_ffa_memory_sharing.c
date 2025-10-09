@@ -839,10 +839,16 @@ static test_result_t hypervisor_retrieve_request_test_helper(
 	struct ffa_memory_access *retrvd_receivers;
 	uint32_t expected_flags = 0;
 
+	/*
+	 * Do not expect the security state to be reported given that it has no
+	 * meaning in the normal world.
+	 * Given the hypervisor retrieve request should only be used for memory
+	 * shared/lent/donated from the NWd, hence all memory is non_secure.
+	 */
 	ffa_memory_attributes_t expected_attrs = {
 		.cacheability = FFA_MEMORY_CACHE_WRITE_BACK,
 		.shareability = FFA_MEMORY_INNER_SHAREABLE,
-		.security = FFA_MEMORY_SECURITY_NON_SECURE,
+		.security = FFA_MEMORY_SECURITY_UNSPECIFIED,
 		.type = (!multiple_receivers && mem_func != FFA_MEM_SHARE_SMC64)
 				? FFA_MEMORY_NOT_SPECIFIED_MEM
 				: FFA_MEMORY_NORMAL_MEM,

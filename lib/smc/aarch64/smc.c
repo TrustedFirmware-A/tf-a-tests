@@ -18,7 +18,12 @@
 static void sve_enable(void)
 {
 	if (IS_IN_EL2()) {
-		write_cptr_el2(read_cptr_el2() & ~CPTR_EL2_TZ_BIT);
+		if (EL2_IS_IN_HOST()) {
+			write_cptr_el2(read_cptr_el2() |
+				       CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE));
+		} else {
+			write_cptr_el2(read_cptr_el2() & ~CPTR_EL2_TZ_BIT);
+		}
 	} else {
 		write_cpacr_el1(read_cpacr_el1() |
 				CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE));
@@ -27,16 +32,20 @@ static void sve_enable(void)
 	isb();
 }
 
+#define CLEAR_ZEN_TRAP_CPACR(reg)					\
+	(((reg) & ~CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE)) |		\
+	 CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_ALL))
+
 static void sve_disable(void)
 {
 	if (IS_IN_EL2()) {
-		write_cptr_el2(read_cptr_el2() | CPTR_EL2_TZ_BIT);
+		if (read_hcr_el2() & HCR_E2H_BIT) {
+			write_cptr_el2(CLEAR_ZEN_TRAP_CPACR(read_cptr_el2()));
+		} else {
+			write_cptr_el2(read_cptr_el2() | CPTR_EL2_TZ_BIT);
+		}
 	} else {
-		unsigned long val = read_cpacr_el1();
-
-		val &= ~CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE);
-		val |= CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_ALL);
-		write_cpacr_el1(val);
+		write_cpacr_el1(CLEAR_ZEN_TRAP_CPACR(read_cpacr_el1()));
 	}
 
 	isb();

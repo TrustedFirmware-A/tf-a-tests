@@ -20,7 +20,12 @@ static unsigned long sve_traps_save_disable(void)
 
 	if (IS_IN_EL2()) {
 		flags = read_cptr_el2();
-		write_cptr_el2(flags & ~(CPTR_EL2_TZ_BIT));
+		if (EL2_IS_IN_HOST()) {
+			write_cptr_el2(flags |
+				CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE));
+		} else {
+			write_cptr_el2(flags & ~(CPTR_EL2_TZ_BIT));
+		}
 	} else {
 		flags = read_cpacr_el1();
 		write_cpacr_el1(flags |

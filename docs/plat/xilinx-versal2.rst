@@ -5,7 +5,7 @@
 
 
 AMD Versal Gen 2
-=============
+================
 
 - Logs are available only on console and not saved in memory(No NVM support).
 - Versal Gen 2 Platform uses TTC Timer

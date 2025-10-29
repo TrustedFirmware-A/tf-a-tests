@@ -280,7 +280,7 @@ Issues resolved since last release
     - Fixed test case test_smccc_callee_preserved.
     - Updated definitions for sysregs on older toolchains.
     - Fixed undef_injection_handler to clarify it catches both undef injections
-  and EL2 register traps.
+      and EL2 register traps.
 
 Version 2.11
 ------------

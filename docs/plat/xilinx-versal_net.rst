@@ -14,10 +14,13 @@ Build Command
 For individual tests/test suite:
 
 .. code-block:: shell
+
         make CROSS_COMPILE=aarch64-none-elf- PLAT=versal_net TESTS=<required tests> tftf
+
 For Versal NET Specific tests (includes AMD-Xilinx Tests cases + Standard Test Suite)
 
 .. code-block:: shell
+
         make CROSS_COMPILE=aarch64-none-elf- PLAT=versal_net TESTS=versal tftf
 
 Execution on Target
@@ -27,6 +30,7 @@ Execution on Target
 - To package the tftf.elf in BOOT.BIN, the u-boot entry in bootgen.bif needs to be replaced with following
 
 .. code-block:: shell
+
         the_ROM_image:
         {
                 image {

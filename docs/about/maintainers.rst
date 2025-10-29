@@ -7,6 +7,10 @@ contributions are ultimately merged by the maintainers listed below.
 Please note the maintainers' bandwidth is limited and contributions to this
 project will be reviewed and handled on a best-effort basis.
 
+.. |M| replace:: **Mail**
+.. |G| replace:: **GitHub ID**
+.. |F| replace:: **Files**
+
 Maintainers List
 ----------------
 
@@ -41,6 +45,10 @@ Xilinx platform port
 :|F|: docs/plat/xilinx-\*
 :|F|: tftf/tests/tests-versal.mk
 :|F|: tftf/tests/tests-versal.xml
+
+.. _Akshay-Belsare: https://github.com/Akshay-Belsare
+.. _amit-nagal: https://github.com/amit-nagal
+.. _michalsimek: https://github.com/michalsimek
 
 --------------
 

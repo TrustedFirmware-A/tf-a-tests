@@ -51,7 +51,7 @@ generate a watchdog timeout interrupt. This interrupt remains deliberately
 unserviced, which eventually asserts the reset signal.
 
 Function : plat_pcie_get_info_table()
-----------------------------
+-------------------------------------
 
 ::
 

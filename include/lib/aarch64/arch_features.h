@@ -322,6 +322,12 @@ static inline bool is_feat_sme2_supported(void)
 	return (features & ID_AA64PFR1_EL1_SME_MASK) >= ID_AA64PFR1_EL1_SME2_SUPPORTED;
 }
 
+/* Check if extended breakpoints are available part of Debugv8p9 */
+static inline bool is_feat_debugv8p9_ebwe_supported(void)
+{
+	return EXTRACT(ID_AA64DFR1_BRP, read_id_aa64dfr1_el1()) != 0U;
+}
+
 static inline u_register_t get_id_aa64mmfr0_el0_tgran4(void)
 {
 	return EXTRACT(ID_AA64MMFR0_EL1_TGRAN4, read_id_aa64mmfr0_el1());

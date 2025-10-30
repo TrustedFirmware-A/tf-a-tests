@@ -138,13 +138,13 @@ static void ffa_partition_info_get_regs_test(void)
 	}
 
 	EXPECT(ffa_partition_info_regs_helper(sp_uuids[3],
-		&ffa_expected_partition_info[3], 1), true);
+		&ffa_expected_partition_info[3], 1, 1), true);
 	EXPECT(ffa_partition_info_regs_helper(sp_uuids[2],
-		&ffa_expected_partition_info[2], 1), true);
+		&ffa_expected_partition_info[2], 1, 1), true);
 	EXPECT(ffa_partition_info_regs_helper(sp_uuids[1],
-		&ffa_expected_partition_info[1], 1), true);
+		&ffa_expected_partition_info[1], 1, 1), true);
 	EXPECT(ffa_partition_info_regs_helper(sp_uuids[0],
-		&ffa_expected_partition_info[0], 1), true);
+		&ffa_expected_partition_info[0], 1, 1), true);
 
 	/*
 	 * Check partition information if there is support for SPMD EL3
@@ -163,12 +163,12 @@ static void ffa_partition_info_get_regs_test(void)
 				" discovery\n");
 		EXPECT(ffa_partition_info_regs_helper(NULL_UUID,
 			ffa_expected_partition_info,
-			(ARRAY_SIZE(ffa_expected_partition_info) - 1)), true);
+			5, (ARRAY_SIZE(ffa_expected_partition_info) - 1)), true);
 	} else {
 		EXPECT(ffa_partition_info_regs_helper(sp_uuids[4],
-			&ffa_expected_partition_info[4], 1), true);
+			&ffa_expected_partition_info[4], 1, 1), true);
 		EXPECT(ffa_partition_info_regs_helper(NULL_UUID,
-			ffa_expected_partition_info,
+			ffa_expected_partition_info, 5,
 			ARRAY_SIZE(ffa_expected_partition_info)), true);
 	}
 }

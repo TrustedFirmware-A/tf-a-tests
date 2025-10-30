@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -787,13 +787,14 @@ static bool ffa_compare_partition_info(
  */
 bool ffa_partition_info_regs_helper(const struct ffa_uuid uuid,
 		       const struct ffa_partition_info *expected,
-		       const uint16_t expected_size)
+		       const uint16_t desc_count_per_invocation,
+		       const uint16_t desc_count_total)
 {
 	/*
 	 * TODO: For now, support only one invocation. Can be enhanced easily
 	 * to extend to arbitrary number of partitions.
 	 */
-	if (expected_size > 5) {
+	if (desc_count_per_invocation > 5) {
 		ERROR("%s only supports information received in"
 			" one invocation of the ABI (5 partitions)\n",
 			__func__);
@@ -807,10 +808,10 @@ bool ffa_partition_info_regs_helper(const struct ffa_uuid uuid,
 	}
 
 	if (ffa_partition_info_regs_partition_count(ret) !=
-	    expected_size) {
+	    desc_count_total) {
 		ERROR("Unexpected number of partitions %d (expected %d)\n",
 		      ffa_partition_info_regs_partition_count(ret),
-		      expected_size);
+		      desc_count_total);
 		return false;
 	}
 
@@ -821,7 +822,7 @@ bool ffa_partition_info_regs_helper(const struct ffa_uuid uuid,
 		return false;
 	}
 
-	for (unsigned int i = 0U; i < expected_size; i++) {
+	for (unsigned int i = 0U; i < desc_count_per_invocation; i++) {
 		struct ffa_partition_info info = { 0 };
 
 		ffa_partition_info_regs_get_part_info(&ret, i, &info);

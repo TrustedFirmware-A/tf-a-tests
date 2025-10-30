@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -160,7 +160,8 @@ bool ffa_partition_info_regs_get_part_info(
 	struct ffa_partition_info *partition_info);
 bool ffa_partition_info_regs_helper(const struct ffa_uuid uuid,
 		       const struct ffa_partition_info *expected,
-		       const uint16_t expected_size);
+		       const uint16_t desc_count_per_invocation,
+		       const uint16_t desc_count_total);
 
 struct ffa_memory_access ffa_memory_access_init_permissions_from_mem_func(
 	ffa_id_t receiver_id,

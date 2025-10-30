@@ -31,7 +31,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 			       FFA_PARTITION_DIRECT_REQ_SEND |
 			       FFA_PARTITION_INDIRECT_MSG |
 			       FFA_PARTITION_NOTIFICATION),
-		.uuid = {PRIMARY_UUID}
+		.protocol_uuid = {PRIMARY_UUID}
 	},
 	/* Secondary partition info */
 	{
@@ -41,7 +41,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 			       FFA_PARTITION_DIRECT_REQ_RECV |
 			       FFA_PARTITION_DIRECT_REQ_SEND |
 			       FFA_PARTITION_NOTIFICATION),
-		.uuid = {SECONDARY_UUID}
+		.protocol_uuid = {SECONDARY_UUID}
 	},
 	/* Tertiary partition info */
 	{
@@ -51,7 +51,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 			       FFA_PARTITION_DIRECT_REQ_RECV |
 			       FFA_PARTITION_DIRECT_REQ_SEND |
 			       FFA_PARTITION_NOTIFICATION),
-		.uuid = {TERTIARY_UUID}
+		.protocol_uuid = {TERTIARY_UUID}
 	},
 	/* Ivy partition info */
 	{
@@ -60,7 +60,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.properties = (FFA_PARTITION_AARCH64_EXEC |
 			       FFA_PARTITION_DIRECT_REQ_RECV |
 			       FFA_PARTITION_DIRECT_REQ_SEND),
-		.uuid = {IVY_UUID}
+		.protocol_uuid = {IVY_UUID}
 	},
 	/* EL3 SPMD logical partition */
 	{
@@ -68,7 +68,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.exec_context = EL3_SPMD_LP_EXEC_CTX_COUNT,
 		.properties = (FFA_PARTITION_AARCH64_EXEC |
 			       FFA_PARTITION_DIRECT_REQ_SEND),
-		.uuid = {EL3_SPMD_LP_UUID}
+		.protocol_uuid = {EL3_SPMD_LP_UUID}
 	},
 };
 
@@ -163,12 +163,14 @@ static void ffa_partition_info_get_regs_test(void)
 				" discovery\n");
 		EXPECT(ffa_partition_info_regs_helper(NULL_UUID,
 			ffa_expected_partition_info,
-			5, (ARRAY_SIZE(ffa_expected_partition_info) - 1)), true);
+			MAX_INFO_REGS_ENTRIES_PER_CALL,
+			(ARRAY_SIZE(ffa_expected_partition_info) - 1)), true);
 	} else {
 		EXPECT(ffa_partition_info_regs_helper(sp_uuids[4],
 			&ffa_expected_partition_info[4], 1, 1), true);
 		EXPECT(ffa_partition_info_regs_helper(NULL_UUID,
-			ffa_expected_partition_info, 5,
+			ffa_expected_partition_info,
+			MAX_INFO_REGS_ENTRIES_PER_CALL,
 			ARRAY_SIZE(ffa_expected_partition_info)), true);
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -47,7 +47,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 			      FFA_PARTITION_DIRECT_REQ_RECV |
 			      FFA_PARTITION_INDIRECT_MSG |
 			      FFA_PARTITION_NOTIFICATION,
-		.uuid = {PRIMARY_UUID}
+		.protocol_uuid = {PRIMARY_UUID}
 	},
 	/* Secondary partition info */
 	{
@@ -56,7 +56,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.properties = FFA_PARTITION_AARCH64_EXEC |
 			      FFA_PARTITION_DIRECT_REQ_RECV |
 			      FFA_PARTITION_NOTIFICATION,
-		.uuid = {SECONDARY_UUID}
+		.protocol_uuid = {SECONDARY_UUID}
 	},
 	/* Tertiary partition info */
 	{
@@ -65,7 +65,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.properties = FFA_PARTITION_AARCH64_EXEC |
 			      FFA_PARTITION_DIRECT_REQ_RECV |
 			      FFA_PARTITION_NOTIFICATION,
-		.uuid = {TERTIARY_UUID}
+		.protocol_uuid = {TERTIARY_UUID}
 	},
 	/* Ivy partition info */
 	{
@@ -73,7 +73,7 @@ static const struct ffa_partition_info ffa_expected_partition_info[] = {
 		.exec_context = IVY_EXEC_CTX_COUNT,
 		.properties = FFA_PARTITION_AARCH64_EXEC |
 			      FFA_PARTITION_DIRECT_REQ_RECV,
-		.uuid = {IVY_UUID}
+		.protocol_uuid = {IVY_UUID}
 	}
 };
 

@@ -107,6 +107,7 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_NO_BITS_SET(CPTR_EL3);
 
 	reg = get_feature_for_reg(MDCR_EL3_OPCODE);
+	CHECK_BIT_SET(is_feat_debugv8p9_ebwe_supported,		MDCR_EBWE_BIT);
 	CHECK_BIT_SET(get_feat_brbe_support,			MDCR_SBRBE(1));
 	CHECK_BIT_SET(is_armv8_6_fgt_present,			MDCR_TDCC_BIT);
 	CHECK_BIT_SET(is_feat_trbe_present,			MDCR_NSTB(1));

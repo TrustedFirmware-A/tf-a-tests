@@ -283,6 +283,10 @@
 #define EL_IMPL_A64ONLY		ULL(1)
 #define EL_IMPL_A64_A32		ULL(2)
 
+/* ID_AA64DFR1_EL1 definitions */
+#define ID_AA64DFR1_BRP_SHIFT			U(8)
+#define ID_AA64DFR1_BRP_WIDTH			U(8)
+
 /* ID_AA64ISAR0_EL1 definitions */
 #define ID_AA64ISAR0_EL1			S3_0_C0_C6_0
 #define ID_AA64ISAR0_RNDR_MASK			ULL(0xf)

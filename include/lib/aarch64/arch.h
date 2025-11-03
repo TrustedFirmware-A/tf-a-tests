@@ -493,6 +493,10 @@
 /* ID_AA64MMFR2_EL1 definitions */
 #define ID_AA64MMFR2_EL1		S3_0_C0_C7_2
 
+#define ID_AA64MMFR2_EL1_IDS_SHIFT	U(36)
+#define ID_AA64MMFR2_EL1_IDS_MASK	ULL(0xf)
+#define IDTE3_IMPLEMENTED		ULL(0x2)
+
 #define ID_AA64MMFR2_EL1_ST_SHIFT	U(28)
 #define ID_AA64MMFR2_EL1_ST_MASK	ULL(0xf)
 
@@ -743,6 +747,9 @@
 #define SCR_FGTEN_BIT		(UL(1) << 27)
 #define SCR_ATA_BIT		(UL(1) << 26)
 #define SCR_EnSCXT_BIT		(UL(1) << 25)
+#define SCR_IDTE3_BITS		(SCR_TID5_BIT | SCR_TID3_BIT)
+#define SCR_TID5_BIT		(UL(1) << 23)
+#define SCR_TID3_BIT		(UL(1) << 22)
 #define SCR_FIEN_BIT		(UL(1) << 21)
 #define SCR_NMEA_BIT		(UL(1) << 20)
 #define SCR_EASE_BIT		(UL(1) << 19)

@@ -156,6 +156,12 @@ static inline bool is_armv8_6_fgt_present(void)
 		ID_AA64MMFR0_EL1_FGT_MASK) != 0U);
 }
 
+static inline bool is_feat_idte3_present(void)
+{
+	return (((read_id_aa64mmfr2_el1() >> ID_AA64MMFR2_EL1_IDS_SHIFT) &
+		ID_AA64MMFR2_EL1_IDS_MASK) == IDTE3_IMPLEMENTED);
+}
+
 static inline bool is_armv8_9_fgt2_present(void)
 {
 	return ((read_id_aa64mmfr0_el1() >> ID_AA64MMFR0_EL1_FGT_SHIFT) &

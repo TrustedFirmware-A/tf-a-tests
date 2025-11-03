@@ -99,7 +99,7 @@ test_result_t host_sve_realm_cmd_rdvl(void)
 
 	sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
 
-	rc = host_create_sve_realm_payload(&realm, true, sve_vq);
+	rc = host_create_sve_realm_payload(&realm, true, sve_vq, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		ERROR("Failed to create Realm with SVE\n");
 		return TEST_RESULT_FAIL;
@@ -157,7 +157,7 @@ test_result_t host_sve_realm_test_invalid_vl(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	rc = host_create_sve_realm_payload(&realm, true, (sve_vq + 1));
+	rc = host_create_sve_realm_payload(&realm, true, (sve_vq + 1), 1U, 0U);
 	if (rc == TEST_RESULT_SUCCESS) {
 		ERROR("Error: Realm created with invalid SVE VL %u\n", (sve_vq + 1));
 		host_destroy_realm(&realm);
@@ -183,7 +183,7 @@ static test_result_t _host_sve_realm_check_id_registers(bool sve_en)
 		sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
 	}
 
-	rc = host_create_sve_realm_payload(&realm, sve_en, sve_vq);
+	rc = host_create_sve_realm_payload(&realm, sve_en, sve_vq, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}
@@ -264,7 +264,7 @@ test_result_t host_sve_realm_cmd_probe_vl(void)
 
 	sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
 
-	rc = host_create_sve_realm_payload(&realm, true, sve_vq);
+	rc = host_create_sve_realm_payload(&realm, true, sve_vq, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}
@@ -319,7 +319,7 @@ test_result_t host_sve_realm_check_config_register(void)
 
 	vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
 
-	rc = host_create_sve_realm_payload(&realm, true, vq);
+	rc = host_create_sve_realm_payload(&realm, true, vq, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}
@@ -396,7 +396,7 @@ static test_result_t run_sve_vectors_operations(bool realm_sve_en,
 	unsigned int i;
 	int val;
 
-	rc = host_create_sve_realm_payload(&realm, realm_sve_en, realm_sve_vq);
+	rc = host_create_sve_realm_payload(&realm, realm_sve_en, realm_sve_vq, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}
@@ -558,7 +558,7 @@ test_result_t host_sve_realm_check_vectors_leaked(void)
 	sve_config_vq(SVE_VQ_ARCH_MIN);
 
 	/* 3. Create Realm with max VQ (higher than NS SVE VQ) */
-	rc = host_create_sve_realm_payload(&realm, true, sve_vq);
+	rc = host_create_sve_realm_payload(&realm, true, sve_vq, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}
@@ -609,7 +609,7 @@ test_result_t host_non_sve_realm_check_undef_abort(void)
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 	SKIP_TEST_IF_SVE_NOT_SUPPORTED();
 
-	rc = host_create_sve_realm_payload(&realm, false, 0);
+	rc = host_create_sve_realm_payload(&realm, false, 0, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}
@@ -644,7 +644,7 @@ test_result_t host_realm_check_sme_id_registers(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	rc = host_create_sve_realm_payload(&realm, false, 0);
+	rc = host_create_sve_realm_payload(&realm, false, 0, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}
@@ -687,7 +687,7 @@ test_result_t host_realm_check_sme_undef_abort(void)
 	SKIP_TEST_IF_SME_NOT_SUPPORTED();
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	rc = host_create_sve_realm_payload(&realm, false, 0);
+	rc = host_create_sve_realm_payload(&realm, false, 0, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}
@@ -736,7 +736,7 @@ test_result_t host_realm_check_sme_configs(void)
 		sve_vq = 0;
 	}
 
-	rc = host_create_sve_realm_payload(&realm, sve_en, sve_vq);
+	rc = host_create_sve_realm_payload(&realm, sve_en, sve_vq, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}
@@ -806,6 +806,58 @@ test_result_t host_realm_check_sme_configs(void)
 	/* Exit Streaming SVE mode if test case enabled it */
 	if (ssve_mode) {
 		sme_smstop(SMSTOP_SM);
+	}
+
+	if (!host_destroy_realm(&realm)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return rc;
+}
+
+test_result_t host_realm_check_sve_in_planes(void)
+{
+	u_register_t rmi_feat_reg0;
+	uint8_t sve_vq;
+	test_result_t rc;
+
+	SKIP_TEST_IF_SME_NOT_SUPPORTED();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	CHECK_SVE_SUPPORT_IN_HW_AND_IN_RMI(rmi_feat_reg0);
+
+	sve_vq = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, rmi_feat_reg0);
+
+	/*
+	 * This test will create a realm with two RECs.
+	 *	- REC 0 will execute REALM_SVE_TEST_PLANE_N_FIRST_P0
+	 *	- REC 1 will ececute REALM_SVE_TEST_PLANE_N_FIRST_PN
+	 */
+	rc = host_create_sve_realm_payload(&realm, true, sve_vq, 2U, 1U);
+	if (rc != TEST_RESULT_SUCCESS) {
+		return rc;
+	}
+
+	/* Setup the configuration for Plane 1 on both RECs */
+	for (unsigned int i = 0U; i < 2U; i++) {
+		host_shared_data_set_realm_cmd(&realm, REALM_SVE_PLANE_N_ACCESS, 1U, i);
+		host_shared_data_set_host_val(&realm, 1U, i, HOST_ARG1_INDEX,
+					      SIMD_TRAP_ATTEMPTS);
+		host_realm_set_aux_plane_args(&realm, 1U, i);
+
+		/* Rest of P0 parameters */
+		host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, i,
+					      HOST_ARG3_INDEX, i);
+
+		/* Enter the REC */
+		rc = host_enter_realm_execute(&realm, REALM_SVE_TEST_PLANE_N,
+					      RMI_EXIT_HOST_CALL, i);
+
+		if (!rc) {
+			ERROR("Realm command REALM_SVE_TEST_PLANE_N failed\n");
+			rc = TEST_RESULT_FAIL;
+			break;
+		}
 	}
 
 	if (!host_destroy_realm(&realm)) {

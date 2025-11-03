@@ -193,7 +193,6 @@ bool plane_common_init(u_register_t plane_index,
 
 bool realm_plane_enter(u_register_t plane_index,
 		u_register_t perm_index,
-		u_register_t base,
 		u_register_t flags,
 		rsi_plane_run *run)
 {
@@ -226,3 +225,19 @@ bool realm_plane_enter(u_register_t plane_index,
 	}
 }
 
+bool realm_resume_plane_n(rsi_plane_run *run, u_register_t plane_index,
+			  u_register_t flags)
+{
+	u_register_t perm_index = plane_index + 1U;
+
+	/* Restore PSTATE on the plane */
+	run->enter.pstate = run->exit.pstate;
+
+	restore_plane_context(run);
+
+	flags &= RSI_PLANE_ENTRY_FLAG_MASK;
+
+	realm_printf("Resuming plane %ld, ep=0x%lx, run=0x%lx, flags=0x%lx\n",
+		     plane_index, run->enter.pc, run, flags);
+	return realm_plane_enter(plane_index, perm_index, flags, run);
+}

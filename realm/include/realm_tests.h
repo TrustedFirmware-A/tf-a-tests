@@ -23,6 +23,8 @@ bool test_realm_sve_ops(void);
 bool test_realm_sve_fill_regs(void);
 bool test_realm_sve_cmp_regs(void);
 bool test_realm_sve_undef_abort(void);
+bool test_realm_sve_plane_n_access(void);
+bool test_realm_sve_plane_n(void);
 bool test_realm_multiple_rec_psci_denied_cmd(void);
 bool test_realm_multiple_rec_multiple_cpu_cmd(void);
 bool test_realm_multiple_plane_multiple_rec_multiple_cpu_cmd(void);

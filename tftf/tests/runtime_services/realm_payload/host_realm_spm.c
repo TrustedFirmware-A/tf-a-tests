@@ -106,7 +106,7 @@ static test_result_t init_realm_payload(struct realm *realm, bool *sve_en_ret)
 
 	/* Create Realm with SVE enabled if RMI features supports it */
 	INFO("TFTF: create realm sve_en/sve_vq: %d/%d\n", sve_en, sve_vq);
-	rc = host_create_sve_realm_payload(realm, sve_en, sve_vq);
+	rc = host_create_sve_realm_payload(realm, sve_en, sve_vq, 1U, 0U);
 	if (rc != TEST_RESULT_SUCCESS) {
 		return rc;
 	}

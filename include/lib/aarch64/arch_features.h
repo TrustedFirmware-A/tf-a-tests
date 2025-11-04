@@ -625,4 +625,10 @@ static inline bool is_feat_gcie_supported(void)
 	return EXTRACT(ID_AA64PFR2_EL1_GCIE, read_id_aa64pfr2_el1())
 			>= ID_AA64PFR2_EL1_GCIE_SUPPORTED;
 }
+
+static inline bool is_feat_ebep_supported(void)
+{
+	return EXTRACT(ID_AA64DFR1_EBEP, read_id_aa64dfr1_el1())
+			>= ID_AA64DFR1_EBEP_SUPPORTED;
+}
 #endif /* ARCH_FEATURES_H */

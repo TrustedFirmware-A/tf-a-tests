@@ -1036,9 +1036,7 @@ static test_result_t test_ffa_mem_send_realm_expect_fail(
 		ffa_memory_access_init_permissions_from_mem_func(borrower,
 								 mem_func);
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	/***********************************************************************
 	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
@@ -1224,9 +1222,7 @@ test_result_t test_ffa_mem_share_tx_realm_expect_fail(void)
 		{(void *)share_page, 1, 0}
 	};
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	/***********************************************************************
 	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
@@ -1405,9 +1401,7 @@ test_result_t base_ffa_memory_retrieve_request_fail_buffer_realm(bool delegate_r
 
 	to_delegate = delegate_rx ? mb.recv : mb.send;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
@@ -1539,9 +1533,7 @@ test_result_t test_ffa_memory_relinquish_fail_tx_realm(void)
 
 	GET_TFTF_MAILBOX(mb);
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
@@ -1659,9 +1651,7 @@ test_result_t test_ffa_memory_share_fragmented_tx_realm(void)
 	test_result_t ret;
 	uint64_t handle;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
@@ -1812,9 +1802,7 @@ test_result_t test_ffa_memory_share_fragmented_rx_realm(void)
 	test_result_t ret;
 	uint64_t handle;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 

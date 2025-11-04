@@ -396,6 +396,33 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}								\
 	} while (false)
 
+/*
+ * Use this macro to skip test if RME not supported or R-EL2 payload of type
+ * either TRP or RMM is not present
+ */
+#define SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM()				\
+	do {									\
+		u_register_t retrmm = 0U;					\
+										\
+		if (get_armv9_2_feat_rme_support() == 0U) {			\
+			tftf_testcase_printf("FEAT_RME not supported\n");	\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+										\
+		host_rmi_init_cmp_result();					\
+		retrmm = host_rmi_version(RMI_ABI_VERSION_VAL);			\
+										\
+		/*								\
+		 * RMI_VERSION got SMC_UNKNOWN. No RMM at R-EL2. Skip the test.	\
+		 */								\
+		if (retrmm == SMC_UNKNOWN) {					\
+			tftf_testcase_printf("RMI_VERSION: SMC_UNKNOWN. "	\
+					     "No RMM\n");			\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)
+
+/* Use this macro to skip test if RME not supported or R-EL2 payload is TRP */
 #define SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP()				\
 	do {									\
 		u_register_t retrmm = 0U;					\
@@ -407,6 +434,15 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 										\
 		host_rmi_init_cmp_result();					\
 		retrmm = host_rmi_version(RMI_ABI_VERSION_VAL);			\
+										\
+		/*								\
+		 * RMI_VERSION got SMC_UNKNOWN. No RMM at R-EL2. Skip the test.	\
+		 */								\
+		if (retrmm == SMC_UNKNOWN) {					\
+			tftf_testcase_printf("RMI_VERSION: SMC_UNKNOWN. "	\
+					     "No RMM\n");			\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
 										\
 		VERBOSE("RMM version is: %lu.%lu\n",				\
 			RMI_ABI_VERSION_GET_MAJOR(retrmm),			\

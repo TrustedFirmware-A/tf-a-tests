@@ -57,9 +57,7 @@ test_result_t rl_memory_cannot_be_accessed_in_s(void)
 		ffa_memory_access_init_permissions_from_mem_func(
 			RECEIVER, FFA_MEM_SHARE_SMC64);
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
 
@@ -136,9 +134,7 @@ test_result_t test_ffa_rxtx_to_realm_pas(void)
 
 	GET_TFTF_MAILBOX(mb);
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	/***********************************************************************
 	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.

@@ -135,9 +135,7 @@ test_result_t test_ffa_indirect_message_sp_to_vm_rx_realm_fail(void)
 	u_register_t ret_rmm;
 	char msg[300];
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	/**********************************************************************
 	 * Check SPMC has ffa_version and expected FF-A endpoints are deployed.
@@ -284,9 +282,7 @@ test_result_t test_ffa_indirect_message_vm_to_sp_tx_realm_fail(void)
 	char payload[] = "Poisonous...";
 	struct ffa_partition_msg *message = (struct ffa_partition_msg *)vm1_tx_buffer;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	/**********************************************************************
 	 * Check SPMC has ffa_version and expected FF-A endpoints are deployed.

@@ -87,18 +87,6 @@
 #define CRASH_CONSOLE_BASE			PL011_UART1_BASE
 #define CRASH_CONSOLE_SIZE			PLAT_ARM_UART_SIZE
 
-/*******************************************************************************
- * Non-Secure Software Generated Interrupts IDs
- ******************************************************************************/
-#define IRQ_NS_SGI_0				0
-#define IRQ_NS_SGI_1				1
-#define IRQ_NS_SGI_2				2
-#define IRQ_NS_SGI_3				3
-#define IRQ_NS_SGI_4				4
-#define IRQ_NS_SGI_5				5
-#define IRQ_NS_SGI_6				6
-#define IRQ_NS_SGI_7				7
-
 /* Per-CPU Hypervisor Timer Interrupt ID */
 #define IRQ_PCPU_HP_TIMER			U(29)
 /* Datasheet: TIME00 event*/

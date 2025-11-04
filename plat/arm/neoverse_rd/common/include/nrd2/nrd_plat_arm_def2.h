@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2024-2025, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -75,14 +75,6 @@
 /* I/O Storage NOR flash device */
 #define MAX_IO_DEVICES			U(1)
 #define MAX_IO_HANDLES			U(1)
-
-/*******************************************************************************
- * Non-Secure Software Generated Interupts IDs
- ******************************************************************************/
-
-/* Non-Secure Software Generated Interupts IDs */
-#define IRQ_NS_SGI_0			U(0)
-#define IRQ_NS_SGI_7			U(7)
 
 /* Maximum SPI */
 #define PLAT_MAX_SPI_OFFSET_ID	U(256)

@@ -89,12 +89,12 @@ test_result_t test_ras_kfh_reflect_irq(void)
 
 	waitms(50);
 
-	ret = tftf_irq_register_handler(sgi_id, irq_handler);
+	ret = tftf_irq_register_handler_sgi(sgi_id, irq_handler);
 	 if (ret != 0) {
                 tftf_testcase_printf("Failed to register initial IRQ handler\n");
                 return TEST_RESULT_FAIL;
         }
-	tftf_irq_enable(sgi_id, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(sgi_id, GIC_HIGHEST_NS_PRIORITY);
 	tftf_send_sgi(sgi_id, core_pos);
 
 	if ((serror_triggered == false) || (irq_triggered == false)) {
@@ -102,7 +102,7 @@ test_result_t test_ras_kfh_reflect_irq(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	ret = tftf_irq_unregister_handler(sgi_id);
+	ret = tftf_irq_unregister_handler_sgi(sgi_id);
 	if (ret != 0) {
 		tftf_testcase_printf("Failed to unregister IRQ handler\n");
 		return TEST_RESULT_FAIL;

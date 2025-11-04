@@ -97,7 +97,7 @@ int tftf_initialise_timer(void)
 
 void tftf_initialise_timer_secondary_core(void)
 {
-	if (!IS_SPI(TIMER_IRQ)) {
+	if (!arm_gic_is_irq_shared(TIMER_IRQ)) {
 		arm_gic_set_intr_priority(TIMER_IRQ, GIC_HIGHEST_NS_PRIORITY);
 		arm_gic_intr_enable(TIMER_IRQ);
 	}
@@ -186,7 +186,7 @@ int tftf_program_timer(unsigned long time_out_ms)
 	if ((!get_current_prog_time()) || (interrupt_req_time[core_pos] <
 				(get_current_prog_time() - TIMER_STEP_VALUE))) {
 
-		if (IS_SPI(TIMER_IRQ)) {
+		if (arm_gic_is_irq_shared(TIMER_IRQ)) {
 			arm_gic_set_intr_target(TIMER_IRQ, core_pos);
 		}
 
@@ -490,7 +490,7 @@ int tftf_timer_register_handler(irq_handler_t irq_handler)
 	 * Also register same handler to IRQ_WAKE_SGI, as it can be waken
 	 * by it.
 	 */
-	ret = tftf_irq_register_handler(IRQ_WAKE_SGI, irq_handler);
+	ret = tftf_irq_register_handler_sgi(IRQ_WAKE_SGI, irq_handler);
 	assert(!ret);
 
 	return ret;
@@ -504,7 +504,7 @@ int tftf_timer_unregister_handler(void)
 	/*
 	 * Unregister the handler for IRQ_WAKE_SGI also
 	 */
-	ret = tftf_irq_unregister_handler(IRQ_WAKE_SGI);
+	ret = tftf_irq_unregister_handler_sgi(IRQ_WAKE_SGI);
 	assert(!ret);
 	/* Validate a handler is registered */
 	assert(timer_handler[core_pos]);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -133,18 +133,6 @@
  ******************************************************************************/
 #define CACHE_WRITEBACK_SHIFT   6
 #define CACHE_WRITEBACK_GRANULE (1 << CACHE_WRITEBACK_SHIFT)
-
-/*******************************************************************************
- * Non-Secure Software Generated Interupts IDs
- ******************************************************************************/
-#define IRQ_NS_SGI_0		0
-#define IRQ_NS_SGI_1		1
-#define IRQ_NS_SGI_2		2
-#define IRQ_NS_SGI_3		3
-#define IRQ_NS_SGI_4		4
-#define IRQ_NS_SGI_5		5
-#define IRQ_NS_SGI_6		6
-#define IRQ_NS_SGI_7		7
 
 #define PLAT_MAX_SPI_OFFSET_ID	220
 

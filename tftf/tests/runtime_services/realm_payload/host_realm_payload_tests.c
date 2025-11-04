@@ -12,6 +12,7 @@
 #include <irq.h>
 #include <drivers/arm/arm_gic.h>
 #include <drivers/arm/gic_v3.h>
+#include <drivers/arm/gic_v5.h>
 #include <heap/page_alloc.h>
 #include <lib/context_mgmt/context_el1.h>
 #include <lib/context_mgmt/context_el2.h>
@@ -38,6 +39,22 @@ static el2_sysregs_t el2_ctx_after = {0};
 static uint128_t pauth_keys_before[NUM_KEYS];
 static uint128_t pauth_keys_after[NUM_KEYS];
 #endif
+
+static unsigned int tftf_get_pmu_irq(void)
+{
+	if (arm_gic_get_version() == 5)
+		return PMU_PPI | INPLACE(INT_TYPE, INT_PPI);
+	else
+		return PMU_PPI;
+}
+
+static unsigned int tftf_get_pmu_virq(void)
+{
+	if (arm_gic_get_version() == 5)
+		return PMU_VIRQ | INPLACE(INT_TYPE, INT_PPI);
+	else
+		return PMU_VIRQ;
+}
 
 /*
  * @Test_Aim@ Test RSI_PLANE_SYSREG_READ/WRITE
@@ -669,8 +686,8 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr,
 		u_register_t exit_reason, retrmm;
 		int ret;
 
-		tftf_irq_disable(PMU_PPI);
-		ret = tftf_irq_unregister_handler(PMU_PPI);
+		tftf_irq_disable(tftf_get_pmu_irq());
+		ret = tftf_irq_unregister_handler(tftf_get_pmu_irq());
 		if (ret != 0) {
 			ERROR("Failed to %sregister IRQ handler\n", "un");
 			return false;
@@ -679,10 +696,10 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr,
 		/* Inject PMU virtual interrupt */
 		run->entry.gicv3_lrs[0] =
 			ICH_LRn_EL2_STATE_Pending | ICH_LRn_EL2_Group_1 |
-			(PMU_VIRQ << ICH_LRn_EL2_vINTID_SHIFT);
+			(tftf_get_pmu_virq() << ICH_LRn_EL2_vINTID_SHIFT);
 
 		/* Re-enter Realm */
-		INFO("Re-entering Realm with vIRQ %lu pending\n", PMU_VIRQ);
+		INFO("Re-entering Realm with vIRQ %u pending\n", tftf_get_pmu_virq());
 
 		retrmm = host_realm_rec_enter(realm_ptr, &exit_reason,
 						&host_call_result, rec_num);
@@ -810,17 +827,17 @@ static test_result_t host_realm_pmuv3_overflow_interrupt(uint8_t cmd)
 	test_result_t ret;
 
 	/* Register PMU IRQ handler */
-	if (tftf_irq_register_handler(PMU_PPI, host_overflow_interrupt) != 0) {
+	if (tftf_irq_register_handler(tftf_get_pmu_irq(), host_overflow_interrupt) != 0) {
 		tftf_testcase_printf("Failed to %sregister IRQ handler\n", "");
 		return TEST_RESULT_FAIL;
 	}
 
-	tftf_irq_enable(PMU_PPI, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable(tftf_get_pmu_irq(), GIC_HIGHEST_NS_PRIORITY);
 
 	ret = host_test_realm_pmuv3(cmd);
 	if (ret != TEST_RESULT_SUCCESS) {
-		tftf_irq_disable(PMU_PPI);
-		if (tftf_irq_unregister_handler(PMU_PPI) != 0) {
+		tftf_irq_disable(tftf_get_pmu_irq());
+		if (tftf_irq_unregister_handler(tftf_get_pmu_irq()) != 0) {
 			ERROR("Failed to %sregister IRQ handler\n", "un");
 			return TEST_RESULT_FAIL;
 		}

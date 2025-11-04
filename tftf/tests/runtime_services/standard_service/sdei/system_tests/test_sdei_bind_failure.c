@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,6 +8,7 @@
 #include <tftf_lib.h>
 #include <sdei.h>
 #include <drivers/arm/arm_gic.h>
+#include <drivers/arm/gic_v2v3_common.h>
 
 /*
  * Only this many events can be bound in the PPI range. If you attempt to bind

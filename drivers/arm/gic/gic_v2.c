@@ -364,4 +364,6 @@ void gicv2_init(uintptr_t gicc_base,
 	assert(!is_gicv3_mode());
 	gicc_base_addr = gicc_base;
 	gicd_base_addr = gicd_base;
+
+	gicv2v3_irq_setup();
 }

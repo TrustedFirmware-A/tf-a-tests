@@ -89,6 +89,28 @@ static inline void _op ## _type(uint64_t v)		\
 	 __asm__ (#_op " " #_type ", %0" : : "r" (v));	\
 }
 
+/* Define an instruction with an encoding. Useful when no compiler support */
+#define DEFINE_INSN(_op, _type, _op1, _CRn, _CRm, _op2)				\
+static inline void _op ## _type(void)						\
+{										\
+	__asm__ ("sys " #_op1 ", " #_CRn ", " #_CRm ", " #_op2 : : : "memory");	\
+}
+
+#define DEFINE_INSN_RET(_op, _type, _op1, _CRn, _CRm, _op2)			\
+static inline u_register_t _op ## _type(void)					\
+{										\
+	u_register_t v;								\
+	__asm__ ("sysl %0, " #_op1 ", " #_CRn ", " #_CRm ", " #_op2 : "=r" (v));\
+	return v;								\
+}
+
+/* Define an instruction with an encoding. Useful when no compiler support */
+#define DEFINE_INSN_PARAM(_op, _type, _op1, _CRn, _CRm, _op2)			\
+static inline void _op ## _type(u_register_t v)					\
+{										\
+	__asm__ ("sys " #_op1 ", " #_CRn ", " #_CRm ", " #_op2 ", %0" : : "r" (v));\
+}
+
 /*******************************************************************************
  * TLB maintenance accessor prototypes
  ******************************************************************************/
@@ -166,6 +188,25 @@ DEFINE_SYSOP_TYPE_PARAM_FUNC(at, s12e0w)
 DEFINE_SYSOP_TYPE_PARAM_FUNC(at, s1e1r)
 DEFINE_SYSOP_TYPE_PARAM_FUNC(at, s1e2r)
 DEFINE_SYSOP_TYPE_PARAM_FUNC(at, s1e3r)
+
+/*******************************************************************************
+ * GICv5 system instructions for the Current Interrupt Domain
+ ******************************************************************************/
+DEFINE_INSN_PARAM(gic, cddis,  0, c12, c1, 0)
+DEFINE_INSN_PARAM(gic, cden,   0, c12, c1, 1)
+DEFINE_INSN_PARAM(gic, cdpri,  0, c12, c1, 2)
+DEFINE_INSN_PARAM(gic, cdaff,  0, c12, c1, 3)
+DEFINE_INSN_PARAM(gic, cdpend, 0, c12, c1, 4)
+DEFINE_INSN_PARAM(gic, cdrcfg, 0, c12, c1, 5)
+DEFINE_INSN_RET(gicr,  cdia,   0, c12, c3, 0)
+DEFINE_INSN_PARAM(gic, cddi,   0, c12, c2, 0)
+DEFINE_INSN(gic,       cdeoi,  0, c12, c1, 7)
+
+/*******************************************************************************
+ * GICv5 barriers
+ ******************************************************************************/
+DEFINE_INSN(gsb,       sys,    0, c12, c0, 0)
+DEFINE_INSN(gsb,       ack,    0, c12, c0, 1)
 
 void flush_dcache_range(uintptr_t addr, size_t size);
 void clean_dcache_range(uintptr_t addr, size_t size);
@@ -519,6 +560,42 @@ DEFINE_RENAME_SYSREG_RW_FUNCS(amcntenclr0_el0, AMCNTENCLR0_EL0)
 DEFINE_RENAME_SYSREG_RW_FUNCS(amcntenset0_el0, AMCNTENSET0_EL0)
 DEFINE_RENAME_SYSREG_RW_FUNCS(amcntenclr1_el0, AMCNTENCLR1_EL0)
 DEFINE_RENAME_SYSREG_RW_FUNCS(amcntenset1_el0, AMCNTENSET1_EL0)
+
+/* GICv5 System Registers */
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_cr0_el1, ICC_CR0_EL1)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_pcr_el1, ICC_PCR_EL1)
+DEFINE_RENAME_SYSREG_READ_FUNC(icc_iaffidr_el1, ICC_IAFFIDR_EL1)
+DEFINE_RENAME_SYSREG_READ_FUNC(icc_icsr_el1, ICC_ICSR_EL1)
+
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_enabler0, ICC_PPI_ENABLER0)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_enabler1, ICC_PPI_ENABLER1)
+
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_cpendr0, ICC_PPI_CPENDR0)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_cpendr1, ICC_PPI_CPENDR1)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_spendr0, ICC_PPI_SPENDR0)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_spendr1, ICC_PPI_SPENDR1)
+
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_cactiver0, ICC_PPI_CACTIVER0)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_cactiver1, ICC_PPI_CACTIVER1)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_sactiver0, ICC_PPI_SACTIVER0)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_sactiver1, ICC_PPI_SACTIVER1)
+
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr0, ICC_PPI_PRIORITYR0)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr1, ICC_PPI_PRIORITYR1)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr2, ICC_PPI_PRIORITYR2)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr3, ICC_PPI_PRIORITYR3)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr4, ICC_PPI_PRIORITYR4)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr5, ICC_PPI_PRIORITYR5)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr6, ICC_PPI_PRIORITYR6)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr7, ICC_PPI_PRIORITYR7)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr8, ICC_PPI_PRIORITYR8)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr9, ICC_PPI_PRIORITYR9)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr10, ICC_PPI_PRIORITYR10)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr11, ICC_PPI_PRIORITYR11)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr12, ICC_PPI_PRIORITYR12)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr13, ICC_PPI_PRIORITYR13)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr14, ICC_PPI_PRIORITYR14)
+DEFINE_RENAME_SYSREG_RW_FUNCS(icc_ppi_priorityr15, ICC_PPI_PRIORITYR15)
 
 /* Armv8.4 Memory Partitioning and Monitoring Extension Registers */
 DEFINE_RENAME_SYSREG_READ_FUNC(mpamidr_el1, MPAMIDR_EL1)

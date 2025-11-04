@@ -564,6 +564,8 @@ void __dead2 tftf_cold_boot_main(void)
 	pauth_init_enable();
 #endif /* ENABLE_PAUTH */
 
+	arm_gic_probe();
+
 	tftf_platform_setup();
 	tftf_init_topology();
 
@@ -576,7 +578,7 @@ void __dead2 tftf_cold_boot_main(void)
 	}
 
 	/* Enable the SGI used by the timer management framework */
-	tftf_irq_enable(IRQ_WAKE_SGI, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(IRQ_WAKE_SGI, GIC_HIGHEST_NS_PRIORITY);
 	enable_irq();
 
 	if (new_test_session()) {

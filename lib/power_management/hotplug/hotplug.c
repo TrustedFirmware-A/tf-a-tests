@@ -301,7 +301,7 @@ void __dead2 tftf_warm_boot_main(void)
 	arm_gic_setup_local();
 
 	/* Enable the SGI used by the timer management framework */
-	tftf_irq_enable(IRQ_WAKE_SGI, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(IRQ_WAKE_SGI, GIC_HIGHEST_NS_PRIORITY);
 	tftf_initialise_timer_secondary_core();
 
 	enable_irq();

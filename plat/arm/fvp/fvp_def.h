@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -69,6 +69,11 @@
 #define GICD_BASE		0x2f000000
 #define GICR_BASE		0x2f100000
 #define GICC_BASE		0x2c000000
+
+/*******************************************************************************
+ * GICv5 related constants
+ ******************************************************************************/
+#define IRS_BASE		0x2f1a0000
 
 /*******************************************************************************
  * PL011 related constants

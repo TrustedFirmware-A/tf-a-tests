@@ -111,6 +111,58 @@
 #define ICV_PMR_EL1		S3_0_C4_C6_0
 
 /*******************************************************************************
+ * Definitions for CPU system register interface to GICv5
+ ******************************************************************************/
+#define ICC_CR0_EL1		S3_1_C12_C0_1
+#define ICC_PCR_EL1		S3_1_C12_C0_2
+#define ICC_IAFFIDR_EL1		S3_0_C12_C10_5
+#define ICC_ICSR_EL1		S3_0_C12_C10_4
+
+#define ICC_PPI_ENABLER0	S3_0_C12_C10_6
+#define ICC_PPI_ENABLER1	S3_0_C12_C10_7
+
+#define ICC_PPI_CPENDR0		S3_0_C12_C13_4
+#define ICC_PPI_CPENDR1		S3_0_C12_C13_5
+#define ICC_PPI_SPENDR0		S3_0_C12_C13_6
+#define ICC_PPI_SPENDR1		S3_0_C12_C13_7
+
+#define ICC_PPI_CACTIVER0	S3_0_C12_C13_0
+#define ICC_PPI_CACTIVER1	S3_0_C12_C13_1
+#define ICC_PPI_SACTIVER0	S3_0_C12_C13_2
+#define ICC_PPI_SACTIVER1	S3_0_C12_C13_3
+
+#define ICC_PPI_PRIORITYR0	S3_0_C12_C14_0
+#define ICC_PPI_PRIORITYR1	S3_0_C12_C14_1
+#define ICC_PPI_PRIORITYR2	S3_0_C12_C14_2
+#define ICC_PPI_PRIORITYR3	S3_0_C12_C14_3
+#define ICC_PPI_PRIORITYR4	S3_0_C12_C14_4
+#define ICC_PPI_PRIORITYR5	S3_0_C12_C14_5
+#define ICC_PPI_PRIORITYR6	S3_0_C12_C14_6
+#define ICC_PPI_PRIORITYR7	S3_0_C12_C14_7
+#define ICC_PPI_PRIORITYR8	S3_0_C12_C15_0
+#define ICC_PPI_PRIORITYR9	S3_0_C12_C15_1
+#define ICC_PPI_PRIORITYR10	S3_0_C12_C15_2
+#define ICC_PPI_PRIORITYR11	S3_0_C12_C15_3
+#define ICC_PPI_PRIORITYR12	S3_0_C12_C15_4
+#define ICC_PPI_PRIORITYR13	S3_0_C12_C15_5
+#define ICC_PPI_PRIORITYR14	S3_0_C12_C15_6
+#define ICC_PPI_PRIORITYR15	S3_0_C12_C15_7
+
+#define ICC_CR0_EL1_EN_BIT			BIT(0)
+#define ICC_ICSR_EL1_F_BIT			BIT(0)
+#define ICC_ICSR_EL1_PENDING_BIT		BIT(2)
+#define ICC_PPI_PRIORITYR_FIELD_NUM		8UL
+#define ICC_PPI_PRIORITYR_FIELD_MASK		GENMASK(7, 0)
+#define ICC_PPI_ENABLER_FIELD_NUM		64UL
+#define ICC_PPI_XPENDR_FIELD_NUM		64UL
+
+#define GICCDAFF_IAFFID_SHIFT			32UL
+#define GICCDPRI_PRIORITY_SHIFT			35UL
+#define GICCDPRI_PRIORITY_WIDTH			5UL
+#define GICCDPEND_PENDING_BIT			BIT(32)
+#define GICRCDIA_VALID_BIT			BIT(32)
+
+/*******************************************************************************
  * Definitions for EL2 system registers.
  ******************************************************************************/
 #define CNTPOFF_EL2		S3_4_C14_C0_6
@@ -567,6 +619,11 @@
 #define ID_AA64PFR2_EL1_FPMR_MASK		ULL(0xf)
 #define ID_AA64PFR2_EL1_FPMR_WIDTH		U(4)
 #define ID_AA64PFR2_EL1_FPMR_SUPPORTED		ULL(0x1)
+
+#define ID_AA64PFR2_EL1_GCIE_SHIFT		U(12)
+#define ID_AA64PFR2_EL1_GCIE_MASK		ULL(0xf)
+#define ID_AA64PFR2_EL1_GCIE_WIDTH		U(4)
+#define ID_AA64PFR2_EL1_GCIE_SUPPORTED		ULL(0x1)
 
 /* ID_PFR1_EL1 definitions */
 #define ID_PFR1_VIRTEXT_SHIFT	U(12)

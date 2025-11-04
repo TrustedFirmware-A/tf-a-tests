@@ -46,13 +46,13 @@ test_result_t test_validation_irq(void)
 	counter = 0;
 
 	/* Now register a handler */
-	ret = tftf_irq_register_handler(sgi_id, increment_counter);
+	ret = tftf_irq_register_handler_sgi(sgi_id, increment_counter);
 	if (ret != 0) {
 		tftf_testcase_printf("Failed to register initial IRQ handler\n");
 		return TEST_RESULT_FAIL;
 	}
 
-	tftf_irq_enable(sgi_id, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_enable_sgi(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
 
 	/*
 	 * Send the SGI to the calling core and check the IRQ handler has been
@@ -64,6 +64,8 @@ test_result_t test_validation_irq(void)
 	while (counter != 1)
 		;
 
+	// TODO all this crap tests tftf itself. It's just slow. Drop?
+	// or add it to some test group that's not built/run by default.
 	/*
 	 * Try to overwrite the IRQ handler. This should fail.
 	 * In debug builds, it would trigger an assertion so we can't test that
@@ -72,7 +74,7 @@ test_result_t test_validation_irq(void)
 	 * replace the existing handler and that's something that can be tested.
 	 */
 #if !DEBUG
-	ret = tftf_irq_register_handler(sgi_id, set_counter_to_42);
+	ret = tftf_irq_register_handler_sgi(sgi_id, set_counter_to_42);
 	if (ret == 0) {
 		tftf_testcase_printf(
 			"Overwriting the IRQ handler should have failed\n");
@@ -85,7 +87,7 @@ test_result_t test_validation_irq(void)
 		;
 
 	/* Unregister the IRQ handler */
-	ret = tftf_irq_unregister_handler(sgi_id);
+	ret = tftf_irq_unregister_handler_sgi(IRQ_NS_SGI_0);
 	if (ret != 0) {
 		tftf_testcase_printf("Failed to unregister IRQ handler\n");
 		return TEST_RESULT_FAIL;
@@ -116,7 +118,7 @@ test_result_t test_validation_irq(void)
 	 * In release builds though, it should just do nothing.
 	 */
 #if !DEBUG
-	ret = tftf_irq_unregister_handler(sgi_id);
+	ret = tftf_irq_unregister_handler_sgi(sgi_id);
 	if (ret == 0) {
 		tftf_testcase_printf(
 			"Unregistering the IRQ handler again should have failed\n");
@@ -124,7 +126,7 @@ test_result_t test_validation_irq(void)
 	}
 #endif
 
-	tftf_irq_disable(sgi_id);
+	tftf_irq_disable_sgi(sgi_id);
 
 	return TEST_RESULT_SUCCESS;
 }

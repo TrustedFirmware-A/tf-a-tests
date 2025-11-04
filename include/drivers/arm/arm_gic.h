@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -10,32 +10,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/***************************************************************************
- * Defines and prototypes for ARM GIC driver.
- **************************************************************************/
-#define MAX_SGIS		16
-#define MIN_SGI_ID		0
-#define MAX_SGI_ID		15
-#define MIN_PPI_ID		16
-#define MAX_PPI_ID		31
-#define MIN_SPI_ID		32
-#define MAX_SPI_ID		1019
-
-#define IS_SGI(irq_num)							\
-	(((irq_num) >= MIN_SGI_ID) && ((irq_num) <= MAX_SGI_ID))
-
-#define IS_PPI(irq_num)							\
-	(((irq_num) >= MIN_PPI_ID) && ((irq_num) <= MAX_PPI_ID))
-
-#define IS_SPI(irq_num)							\
-	(((irq_num) >= MIN_SPI_ID) && ((irq_num) <= MAX_SPI_ID))
-
-#define IS_VALID_INTR_ID(irq_num)					\
-	(((irq_num) >= MIN_SGI_ID) && ((irq_num) <= MAX_SPI_ID))
-
 #define GIC_HIGHEST_NS_PRIORITY	0
 #define GIC_LOWEST_NS_PRIORITY	254 /* 255 would disable an interrupt */
 #define GIC_SPURIOUS_INTERRUPT	1023
+
+/* Prototype of a handler function for an IRQ */
+typedef int (*irq_handler_t)(void *data);
+
+/* return the GIC version detected */
+int arm_gic_get_version(void);
 
 /******************************************************************************
  * Setup the global GIC interface. In case of GICv2, it would be the GIC
@@ -63,6 +46,12 @@ void arm_gic_enable_interrupts_local(void);
  * Send SGI with ID `sgi_id` to a core with index `core_pos`.
  *****************************************************************************/
 void arm_gic_send_sgi(unsigned int sgi_id, unsigned int core_pos);
+
+/******************************************************************************
+ * Get the INTID for an SGI with number `seq_id` for a core with index
+ * `core_pos`.
+ *****************************************************************************/
+unsigned int arm_gic_get_sgi_num(unsigned int seq_id, unsigned int core_pos);
 
 /******************************************************************************
  * Set the interrupt target of interrupt ID `num` to a core with index
@@ -121,6 +110,11 @@ unsigned int arm_gic_is_intr_pending(unsigned int num);
 void arm_gic_intr_clear(unsigned int num);
 
 /******************************************************************************
+ * Discover the GIC version in use.
+ *****************************************************************************/
+void arm_gic_probe(void);
+
+/******************************************************************************
  * Initialize the GIC Driver. This function will detect the GIC Architecture
  * present on the system and initialize the appropriate driver. The
  * `gicr_base` argument will be ignored on GICv2 systems.
@@ -155,5 +149,16 @@ void arm_gic_restore_context_global(void);
  * Check if extended SPI range is implemented by GIC.
  *****************************************************************************/
 bool arm_gic_is_espi_supported(void);
+
+/******************************************************************************
+ * Gets the handler for an interrupt
+ *****************************************************************************/
+irq_handler_t *arm_gic_get_irq_handler(unsigned int irq_num);
+
+/******************************************************************************
+ * Returns true if the IRQ number is shared between cores (as opposed to
+ * individual or banked for each).
+ *****************************************************************************/
+bool arm_gic_is_irq_shared(unsigned int irq_num);
 
 #endif /* __ARM_GIC_H__ */

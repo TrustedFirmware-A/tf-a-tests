@@ -408,8 +408,8 @@ static test_result_t test_execute_test_function(void)
 	test_result_t ret;
 	unsigned int core_pos = platform_get_core_pos(read_mpidr_el1());
 
-	tftf_irq_register_handler(IRQ_NS_SGI_0, validate_pstate_sgi_handler);
-	tftf_irq_enable(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
+	tftf_irq_register_handler_sgi(IRQ_NS_SGI_0, validate_pstate_sgi_handler);
+	tftf_irq_enable_sgi(IRQ_NS_SGI_0, GIC_HIGHEST_NS_PRIORITY);
 
 	/*
 	 * Mask IRQ to prevent the interrupt handler being invoked
@@ -428,8 +428,8 @@ static test_result_t test_execute_test_function(void)
 	while (!sgi_received[core_pos])
 		;
 
-	tftf_irq_disable(IRQ_NS_SGI_0);
-	tftf_irq_unregister_handler(IRQ_NS_SGI_0);
+	tftf_irq_disable_sgi(IRQ_NS_SGI_0);
+	tftf_irq_unregister_handler_sgi(IRQ_NS_SGI_0);
 
 	return ret;
 }

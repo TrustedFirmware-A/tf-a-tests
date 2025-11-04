@@ -70,17 +70,6 @@
 #define CACHE_WRITEBACK_SHIFT		6
 #define CACHE_WRITEBACK_GRANULE		(1 << CACHE_WRITEBACK_SHIFT)
 
-/* Non-Secure Software Generated Interrupts IDs */
-
-#define IRQ_NS_SGI_0			0
-#define IRQ_NS_SGI_1			1
-#define IRQ_NS_SGI_2			2
-#define IRQ_NS_SGI_3			3
-#define IRQ_NS_SGI_4			4
-#define IRQ_NS_SGI_5			5
-#define IRQ_NS_SGI_6			6
-#define IRQ_NS_SGI_7			7
-
 /* Platform specific page table and MMU setup constants */
 
 #define PLAT_PHY_ADDR_SPACE_SIZE	(ULL(1) << 32)

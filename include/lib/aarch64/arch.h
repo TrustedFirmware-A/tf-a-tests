@@ -338,6 +338,9 @@
 /* ID_AA64DFR1_EL1 definitions */
 #define ID_AA64DFR1_BRP_SHIFT			U(8)
 #define ID_AA64DFR1_BRP_WIDTH			U(8)
+#define ID_AA64DFR1_EBEP_SHIFT			U(48)
+#define ID_AA64DFR1_EBEP_WIDTH			U(4)
+#define ID_AA64DFR1_EBEP_SUPPORTED		U(1)
 
 /* ID_AA64ISAR0_EL1 definitions */
 #define ID_AA64ISAR0_EL1			S3_0_C0_C6_0
@@ -771,7 +774,7 @@
 #define MDCR_EnPMSS_BIT		(ULL(1) << 44)
 #define MDCR_EBWE_BIT		(ULL(1) << 43)
 #define MDCR_EnPMS3_BIT		(ULL(1) << 42)
-#define MDCR_PMEE(x)		((x) << 40)
+#define MDCR_PMEE(x)		(ULL(x) << 40)
 #define MDCR_EnTB2_BIT		(ULL(1) << 39)
 #define MDCR_E3BREC_BIT		(ULL(1) << 38)
 #define MDCR_E3BREW_BIT		(ULL(1) << 37)

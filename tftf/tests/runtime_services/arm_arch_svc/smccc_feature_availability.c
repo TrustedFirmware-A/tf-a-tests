@@ -74,6 +74,11 @@ test_result_t test_smccc_arch_feature_availability(void)
 	reg = get_feature_for_reg(SCR_EL3_OPCODE);
 	CHECK_BIT_SET(is_armv8_9_fgt2_present,			SCR_FGTEN2_BIT);
 	CHECK_BIT_SET(is_feat_fpmr_present,			SCR_EnFPM_BIT);
+
+	if (get_armv9_2_feat_rme_support()) {
+		CHECK_BIT_SET(is_feat_mec_supported,		SCR_MECEn_BIT);
+	}
+
 	CHECK_BIT_SET(is_feat_d128_supported,			SCR_D128En_BIT);
 	CHECK_BIT_SET(is_feat_s1pie_present,			SCR_PIEN_BIT);
 	CHECK_BIT_SET(is_feat_sctlr2_supported,			SCR_SCTLR2En_BIT);
@@ -113,7 +118,7 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(is_feat_trbe_present,			MDCR_NSTB(1));
 	CHECK_BIT_SET(get_armv8_4_trf_support,			MDCR_TTRF_BIT);
 	CHECK_BIT_SET(is_feat_spe_supported,			MDCR_NSPB(1));
-	CHECK_BIT_SET(is_feat_pmuv3p9_present,			MDCR_EnPM2_BIT);
+	CHECK_BIT_SET(always_present, 				MDCR_EnPM2_BIT);
 	CHECK_BIT_SET(is_feat_doublelock_present,		MDCR_TDOSA_BIT);
 	CHECK_BIT_SET(always_present,				MDCR_TDA_BIT);
 	CHECK_BIT_SET(get_feat_pmuv3_supported,			MDCR_TPM_BIT);

@@ -15,5 +15,6 @@
      <testcase name="Prime" function="test_lfa_prime" />
      <testcase name="Activate" function="test_lfa_activate" />
      <testcase name="Cancel" function="test_lfa_cancel" />
+     <testcase name="RMM Live Activation" function="test_lfa_activate_rmm" />
   </testsuite>
 </testsuites>

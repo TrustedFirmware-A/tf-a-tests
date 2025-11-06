@@ -5,5 +5,6 @@
 #
 
 TESTS_SOURCES	+=	$(addprefix tftf/tests/runtime_services/lfa/,	\
-			test_lfa_single_cpu.c				\
+				test_lfa_single_cpu.c			\
+				test_lfa_multi_cpu.c			\
 )

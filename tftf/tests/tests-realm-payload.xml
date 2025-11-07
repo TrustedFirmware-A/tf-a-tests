@@ -184,5 +184,8 @@
 	  <!-- Invoke DA workflow on PCIe off-chip device -->
 	  <testcase name="DA workflow on all PCIe off-chip devices"
 	  function="host_da_workflow_on_all_offchip_devices" />
+	  <!-- Test case for LFA with Realm Payload -->
+	  <testcase name="Test Live Firmware Activation of RMM with Realm Payload"
+	  function="host_test_realm_rsi_version_with_lfa" />
   </testsuite>
 </testsuites>

@@ -94,6 +94,7 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(is_feat_twed_present,			SCR_TWEDEn_BIT);
 	CHECK_BIT_SET(get_armv8_6_ecv_support,			SCR_ECVEN_BIT);
 	CHECK_BIT_SET(is_armv8_6_fgt_present,			SCR_FGTEN_BIT);
+	CHECK_BIT_SET(is_feat_idte3_present,			SCR_IDTE3_BITS);
 	CHECK_BIT_SET(is_feat_mte2_present,			SCR_ATA_BIT);
 	CHECK_BIT_SET(is_feat_csv2_2_present,			SCR_EnSCXT_BIT);
 	CHECK_BIT_SET(is_armv8_3_pauth_present,			SCR_APK_BIT);

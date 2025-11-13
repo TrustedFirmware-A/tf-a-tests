@@ -267,6 +267,13 @@ void gicv2_set_itargetsr(unsigned int num, unsigned int core_pos)
 {
 	unsigned int gic_cpu_id;
 	assert(gicd_base_addr);
+
+	/* only relevant for SPIs */
+	if (!IS_PLAT_SPI(num)) {
+		return;
+	}
+
+	/* Routing information can be set only for SPIs */
 	assert(IS_SPI(num));
 
 	gic_cpu_id = core_pos_to_gic_id(core_pos);

@@ -7,6 +7,195 @@ Firmware-A version for simplicity. At any point in time, TF-A Tests version
 Tests are not guaranteed to be compatible. This also means that a version
 upgrade on the TF-A-Tests side might not necessarily introduce any new feature.
 
+Version 2.14
+------------
+
+New features
+^^^^^^^^^^^^
+
+More features and tests are introduced in this release to enhance validation and
+support in the following areas:
+
+- Realm Management Extension
+- FF-A and SPM Testing
+- New Architecture and Fuzzing Tests
+- Platform Enhancements (AMD, Arm, FVP, Xilinx/AMD)
+- Test Infrastructure and Performance Improvements
+- Bug Fixes and Stability Updates
+
+Realm Management Extension
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    - Added dev granules tests.
+    - Added dev mem map/unmap tests.
+    - Added DVSEC helpers.
+    - Added init for PCIe device capabilities.
+    - Added support for multiple devices in DA test.
+    - Added support to call RMI VDEV ABIs.
+    - Added support to invoke RSI RDEV ABIs.
+    - Added test for access outside PAR from Plane N.
+    - Added test for SIMD access from plane N.
+    - Added tests for FEAT_MEC.
+    - Added tests for FEAT_TCR2 on RMM.
+    - Added tests for min, max and default  MECID.
+    - Aligned DA RMI ABIs with RMM spec 1.1-alp12.
+    - Aligned RSI ABIs with RMM spec 1.1-alp12.
+    - Assigned MECID when creating realms.
+    - Added pdev clean-up after setup.
+    - Fixed DA test case to allow partial success.
+    - Fixed error messages in Realm payload tests.
+    - Fixed missing realm_printf() parameters.
+    - Fixed missing size definitions for Juno.
+    - Fixed pdev_create arguments.
+    - Fixed RMM is not taking PSTATE into account on PN entry/exit.
+    - Fixed skip test setting invalid SVE VL.
+    - Imported PCIe enumeration helpers from RMM-ACS.
+    - Moved realm DA support functions.
+    - Refactored dev granules delegation tests to use all existing PCIe memory regions.
+    - Refactored get device memory regions for map/unmap.
+    - Removed hardcoded MECID.
+    - Renamed ``rsi_ripas_respose_type`` to ``rsi_response_type``.
+    - Renamed macro ``CHECK_DA_SUPPORT_IN_RMI``.
+    - Set the PMU IRQ number depending on GIC version.
+    - Updated SMC RMI commands.
+    - Updated tests to alp14.
+    - Uplifted ``RSI_SYSREG_READ/WRITE`` tests to alp13.
+
+TFTF
+^^^^
+
+- SPM/FF-A Testing
+
+    - Added FFA_ABORT ABI not supported at Nwd interface test.
+    - Deprecated per-vCPU notification test coverage.
+    - Dropped unused FF-A version macros.
+    - Fixed incorrect expectation for FFA_ABORT interface in ffa_features.
+    - Fixed ivy shim receives NPI feature.
+    - Fixed no NS attribute in hypervisor retrieve request.
+    - Fixed the FF-A version compatibility check.
+    - Refactored FF-A helpers to print error codes and func ID.
+
+- New Tests
+
+    - Firmware Update (FWU)
+
+        - Added test to validate scenario of invalid FWU image size.
+        - Added test for scenario where there is a corrupt ROTPK in the FIP certificate.
+
+    - Functionality Tests
+
+        - Added SDEI event signaling state (registered, enabled, unmasked).
+        - Added SoC Name test support to ``SMCCC_ARCH_SOC_ID``.
+        - Added OOB DebugFS test case.
+        - Added support to detect and test ``FEAT_IDTE3``.
+        - Added test for ``FEAT_MPAM_PE_BW_CTRL`` register access.
+        - Added ``FEAT_EBEP`` to ``FEATURE_AVAILABILITY``.
+        - Added ``FEAT_AIE`` and ``FEAT_PFAR`` checks.
+
+    - Fuzzing
+
+        - Added fuzzing documentation.
+        - Added fuzzing variable coverage documentation.
+
+    - GICv5
+
+        - Prepared TFTF for a new GIC revision.
+        - Made the GIC driver generic.
+        - Made SGIs generic and controller-independent.
+        - Added a GICv5 driver.
+        - Added GICv5 instructions and register accessors.
+        - Deferred IRQ handler management to the GIC driver.
+
+    - Live Firmware Activation
+
+        - Added LFA SMCs tests using a single CPU.
+        - Added multi-CPU test for LFA of RMM.
+        - Added test to perform LFA of RMM with Realm Payload.
+
+- Platform
+
+   - AMD
+
+      - Added platform specific test cases.
+      - Added test for operating characteristics EEMI API.
+      - Added test for query data EEMI API.
+      - Added test for self suspend EEMI API.
+      - Added test for pin EEMI APIs.
+      - Added test for get reset status EEMI API.
+      - Added test for trustzone version API.
+      - Added test for init finalize EEMI API.
+      - Added test for TF-A feature check API.
+      - Added test for pll EEMI APIs.
+      - Added test for IOCTL EEMI API.
+      - Added test for system shutdown EEMI API.
+      - Added test for node EEMI APIs.
+      - Added test for force powerdown EEMI API.
+      - Added test for clock EEMI APIs.
+      - Added test for TF-A register SGI API.
+      - Added test for register notifier EEMI API.
+
+   - Xilinx/AMD
+
+      - Updated test skip list.
+      - Fixed SLCR base for timer interrupt.
+
+   - Arm
+
+      - Increased reserved DRAM1 mem for NS images.
+
+   - FVP
+
+      - Set the timer IRQ number depending on GIC version.
+      - Changed ``ARM_SECURE_SERVICE_BUFFER_BASE``.
+      - Increased ``NS_BL2U`` limit.
+
+   - Corstone-1000
+
+      - Excluded Boot requirement tests for Corstone-1000.
+
+- Miscellaneous
+
+    - Added a ``is_feat_gic_supported()`` standard helper.
+    - Added fix to ignore errors on optional General service queries.
+    - Added fix to mask MBZ bits in PSCI ``target_cpu`` arguments.
+    - Added fix to skip PSCI OSI mode tests if not supported.
+    - Added performance improvement to not use ``waitms()`` for events testing.
+    - Added performance improvement to reduce the IRQ validation wait.
+    - Added v1.2 and v1.3 PSCI versions to allowed versions list.
+    - Converted SPE assert into warning for newer SPE versions.
+    - Integrated Event Log Library as submodule.
+    - Integrated Transfer List Library as submodule.
+    - Moved ``el3_payload`` to the build directory.
+    - Removed dead Make command in LibFDT.
+    - Set commit line length to 72 characters in commitlint.
+    - Unified SGI exception data.
+    - Updated ``SMCCC_ARCH_FEATURE_AVAILABILITY`` test.
+    - Updated MbedTLS 3.6.5.
+    - Updated SMC Vendor EL3 version.
+    - Updated toolchain requirements to 14.3.Rel1.
+
+Cactus (Secure-EL1 FF-A test partition)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - Bumped FF-A version and partitions to v1.3.
+    - Fixed SMMUv3 to use an ``SMMUv3TestEngine`` that can issue Secure accesses.
+
+Issues resolved since last release
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    - Fixed ``cntfrq_check`` log message.
+    - Fixed Debugv8p9 access to ``mdselr_el1``.
+    - Fixed fuzzing build issues.
+    - Fixed fuzzing script issue.
+    - Fixed GIC driver to not access a GIC register if it's not supported.
+    - Fixed LS64 type mismatch in verbose printing build.
+    - Fixed SMCCC feat discovery testcase to use ``SMC64``.
+    - Fixed SME to update ``smcr_el2`` after ``hcr_el2`` has taken effect.
+    - Fixed Sphinx build errors in maintainers and platform docs.
+    - Fixed the check for the MbedTLS makefile.
+    - Removed dependency on fixed PSCI version in ``smc32_fast``.
+    - Resolved static-check issues in ``smccc_arch_soc_id`` test.
+
 Version 2.13
 ------------
 

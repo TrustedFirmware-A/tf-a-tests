@@ -19,16 +19,37 @@ can be installed.
 Dependencies
 ------------
 
-This section lists the dependencies for TF-A-Tests which are added as
-as a git submodule.
+TFTF includes several dependencies managed as Git submodules. You can find the
+full list of these dependencies in the `.gitmodules`_ file.
 
-======================== =====================
-        Name             Version
-======================== =====================
-Mbed TLS                 3.6.5
-Transfer List Library    0.0.1
-Event Log Library        0.0.1
-======================== =====================
+Initial Clone with Submodules
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you're cloning the repository for the first time, run the following commands
+to initialize and fetch all submodules:
+
+.. code-block:: bash
+
+   git clone --recurse-submodules "https://git.trustedfirmware.org/TF-A/tf-a-tests"
+
+This ensures all submodules are correctly checked out.
+
+Updating Submodules
+^^^^^^^^^^^^^^^^^^^
+
+If the project updates the reference to a submodule (e.g., points to a new
+commit of ``libtl``), you can update your local copy by running:
+
+.. code-block:: bash
+
+   git pull --rebase --no-ff
+   git submodule update --init --recursive
+
+To fetch the latest commits from all submodules, you can use:
+
+.. code-block:: bash
+
+   git submodule update --remote
 
 Toolchain
 ---------
@@ -52,6 +73,7 @@ In addition, the following optional packages and tools may be needed:
 
 .. _GCC cross-toolchain: https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/downloads
 .. _Development Studio (Arm-DS): https://developer.arm.com/Tools%20and%20Software/Arm%20Development%20Studio
+.. _.gitmodules: https://review.trustedfirmware.org/plugins/gitiles/TF-A/tf-a-tests/+/refs/heads/master/.gitmodules
 
 --------------
 

@@ -6,7 +6,6 @@ Getting Started
 
    requirements
    docs-build
-   obtain
    build
    build-options
    run

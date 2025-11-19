@@ -1,5 +1,5 @@
 [submodule "ext/mbedtls"]
-	path = ext/mbedtls
+	path = contrib/mbedtls
 	url = https://github.com/Mbed-TLS/mbedtls.git
 [submodule "libtl"]
 	path = contrib/libtl

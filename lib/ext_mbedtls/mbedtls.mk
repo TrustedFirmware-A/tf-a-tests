@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-MBEDTLS_DIR ?= ext/mbedtls
+MBEDTLS_DIR ?= contrib/mbedtls
 ifeq (${MBEDTLS_DIR},)
 $(error Error: MBEDTLS_DIR not set)
 endif

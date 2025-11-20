@@ -99,5 +99,6 @@ TESTS_SOURCES	+=							\
 		tsp_fuzz_helper.c					\
 		nfifo.c							\
 		constraint.c						\
-		vendor_fuzz_helper.c \
+		vendor_fuzz_helper.c					\
+		vec_container.c						\
 	)

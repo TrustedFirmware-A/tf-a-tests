@@ -42,7 +42,7 @@ commit of ``libtl``), you can update your local copy by running:
 
 .. code-block:: bash
 
-   git pull --rebase --no-ff
+   git pull --rebase --ff-only
    git submodule update --init --recursive
 
 To fetch the latest commits from all submodules, you can use:

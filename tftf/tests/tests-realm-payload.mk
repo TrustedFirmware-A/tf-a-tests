@@ -74,6 +74,7 @@ TESTS_SOURCES	+=		\
 	$(addprefix tftf/tests/runtime_services/lfa/,	\
 		test_lfa_single_cpu.c \
 		test_lfa_multi_cpu.c \
+		lfa_helpers.S \
 	)
 
 ifeq (${ENABLE_REALM_PAYLOAD_TESTS},1)

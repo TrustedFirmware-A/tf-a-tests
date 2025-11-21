@@ -58,7 +58,7 @@ test_result_t host_test_realm_rsi_version_with_lfa(void)
 	}
 
 	/* Activate new RMM and then request RSI version again */
-	lfa_ret = test_lfa_activate_rmm();
+	lfa_ret = test_lfa_activate_rmm_multiple_cpu();
 	if (lfa_ret != TEST_RESULT_SUCCESS) {
 		ERROR("%s(): LFA of RMM failed=%d\n", __func__, lfa_ret);
 		goto cleanup;

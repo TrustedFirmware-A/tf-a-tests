@@ -12,9 +12,11 @@
      <testcase name="Check features" function="test_lfa_features" />
      <testcase name="Get Info" function="test_lfa_get_info" />
      <testcase name="Get Inventory" function="test_lfa_get_inventory" />
-     <testcase name="Prime" function="test_lfa_prime" />
-     <testcase name="Activate" function="test_lfa_activate" />
-     <testcase name="Cancel" function="test_lfa_cancel" />
-     <testcase name="RMM Live Activation" function="test_lfa_activate_rmm" />
+     <testcase name="RMM Prime" function="test_lfa_prime_rmm" />
+     <testcase name="RMM Activate" function="test_lfa_activate_rmm" />
+     <testcase name="RMM Cancel" function="test_lfa_cancel_rmm" />
+     <testcase name="BL31 Prime" function="test_lfa_prime_bl31" />
+     <testcase name="BL31 Cancel" function="test_lfa_cancel_bl31" />
+     <testcase name="BL31 Live Activation" function="test_lfa_activate_bl31" />
   </testsuite>
 </testsuites>

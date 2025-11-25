@@ -171,3 +171,13 @@ uint64_t tftf_plat_get_mpidr(unsigned int core_pos)
 
 	return INVALID_MPID;
 }
+
+unsigned long long tftf_platform_get_cluster_id(int mpidr)
+{
+	return (unsigned long long)MPIDR_AFF_ID(mpidr, 1);
+}
+
+unsigned long long tftf_platform_get_core_id(int mpidr)
+{
+	return (unsigned long long)MPIDR_AFF_ID(mpidr, 0);
+}

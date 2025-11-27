@@ -158,6 +158,7 @@ restore_callee_regs:
 	ldp	x1, x2, [x0, #SUSPEND_CTX_APIAKEY_OFFSET]
 	msr     APIAKeyLo_EL1, x1
 	msr     APIAKeyHi_EL1, x2
+	isb
 #endif
 	ldr	x2, [x0, #SUSPEND_CTX_SP_OFFSET]
 	mov	sp, x2

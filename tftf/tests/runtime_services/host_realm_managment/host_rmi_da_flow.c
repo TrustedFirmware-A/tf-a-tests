@@ -219,12 +219,46 @@ static test_result_t realm_assign_unassign_device(struct realm *realm_ptr,
 	rc = host_assign_vdev_to_realm(realm_ptr, h_vdev, tdi_id, pdev_ptr);
 	if (rc != 0) {
 		ERROR("VDEV assign to realm failed\n");
-		/* TF-RMM has support till here. Change error code temporarily */
-		return TEST_RESULT_SUCCESS;
-		/* return TEST_RESULT_FAIL */
+		return TEST_RESULT_FAIL;
+	}
+	/* execute communicate until vdev reaches VDEV_UNLOCKED state */
+	rc = host_vdev_transition(realm_ptr, h_vdev, RMI_VDEV_STATE_UNLOCKED);
+	if (rc != 0) {
+		ERROR("Transitioning to RMI_VDEV_STATE_UNLOCKED state failed\n");
+		return TEST_RESULT_FAIL;
 	}
 
-	/* Enter Realm. Lock -> Accept -> Unlock the assigned device */
+	rc = host_vdev_get_measurements(realm_ptr, h_vdev, RMI_VDEV_STATE_UNLOCKED);
+	if (rc != 0) {
+		ERROR("Getting measurements failed\n");
+		return TEST_RESULT_FAIL;
+	}
+	/* execute communicate until vdev reaches VDEV_LOCKED state */
+	rc = host_vdev_transition(realm_ptr, h_vdev, RMI_VDEV_STATE_LOCKED);
+	if (rc != 0) {
+		ERROR("Transitioning to RMI_VDEV_STATE_LOCKED state failed\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	rc = host_vdev_get_measurements(realm_ptr, h_vdev, RMI_VDEV_STATE_LOCKED);
+	if (rc != 0) {
+		ERROR("Getting measurements failed\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	rc = host_vdev_get_interface_report(realm_ptr, h_vdev, RMI_VDEV_STATE_LOCKED);
+	if (rc != 0) {
+		ERROR("Getting if report failed\n");
+		return TEST_RESULT_FAIL;
+	}
+	/* execute communicate until vdev reaches VDEV_LOCKED state */
+	rc = host_vdev_transition(realm_ptr, h_vdev, RMI_VDEV_STATE_STARTED);
+	if (rc != 0) {
+		ERROR("Transitioning to RMI_VDEV_STATE_STARTED state failed\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Enter Realm. Execute realm DA commands */
 	realm_rc = host_enter_realm_execute(realm_ptr, REALM_DA_RSI_CALLS,
 					    RMI_EXIT_HOST_CALL, 0U);
 

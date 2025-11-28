@@ -118,7 +118,17 @@ int host_pdev_create(struct host_pdev *h_pdev);
 int host_pdev_reclaim(struct host_pdev *h_pdev);
 int host_pdev_setup(struct host_pdev *h_pdev);
 int host_pdev_transition(struct host_pdev *h_pdev, unsigned char to_state);
+int host_vdev_transition(struct realm *realm, struct host_vdev *h_vdev, unsigned char to_state);
 
+int host_vdev_get_interface_report(struct realm *realm,
+			       struct host_vdev *h_vdev,
+			       unsigned char target_state);
+int host_vdev_get_measurements(struct realm *realm,
+			       struct host_vdev *h_vdev,
+			       unsigned char target_state);
+int host_vdev_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t ipa,
+		  u_register_t level, u_register_t addr);
+int host_vdev_unlock(struct realm *realm, struct host_vdev *h_vdev, unsigned char target_state);
 int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
 			      unsigned long tdi_id, void *pdev_ptr);
 int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev);

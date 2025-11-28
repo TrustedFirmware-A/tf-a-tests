@@ -138,6 +138,6 @@ static inline unsigned short get_test_mecid(void)
 void host_do_vdev_complete(u_register_t rec_ptr, unsigned long vdev_id);
 
 /* Handle REC exit due to VDEV communication */
-void host_do_vdev_communicate(u_register_t vdev_ptr, unsigned long vdev_action);
+void host_do_vdev_communicate(struct realm *realm, u_register_t vdev_ptr);
 
 #endif /* HOST_REALM_HELPER_H */

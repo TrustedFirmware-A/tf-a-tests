@@ -20,20 +20,9 @@
 
 struct rdev {
 	unsigned long id;
-	unsigned long inst_id;
 };
 
 unsigned long realm_rdev_init(struct rdev *rdev, unsigned long rdev_id);
-unsigned long realm_rsi_rdev_start(struct rdev *rdev);
-unsigned long realm_rsi_rdev_stop(struct rdev *rdev);
-unsigned long realm_rsi_rdev_get_interface_report(struct rdev *rdev);
-unsigned long realm_rsi_rdev_get_state(struct rdev *rdev);
-unsigned long realm_rsi_rdev_lock(struct rdev *rdev);
-int realm_verify_device_attestation(struct rdev *rdev,
-				    struct rsi_dev_info *rdev_info);
-unsigned long realm_rsi_rdev_get_measurements(struct rdev *rdev,
-					      struct rsi_dev_measure_params *mparams);
-unsigned long realm_rsi_rdev_get_info(struct rdev *rdev,
-					struct rsi_dev_info *rdev_info);
+unsigned long realm_rsi_vdev_get_info(struct rdev *rdev, struct rsi_vdev_info *rdev_info);
 
 #endif /* REALM_DA_HELPERS_H */

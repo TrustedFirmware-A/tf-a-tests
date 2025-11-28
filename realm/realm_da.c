@@ -18,12 +18,8 @@
 
 static struct rdev gbl_rdev;
 
-/* Measurement parameters */
-static struct rsi_dev_measure_params gbl_rdev_meas_params
-__aligned(GRANULE_SIZE);
-
 /* RDEV info. decice type and attestation evidence digest */
-static struct rsi_dev_info gbl_rdev_info __aligned(GRANULE_SIZE);
+static struct rsi_vdev_info gbl_vdev_info[2] __aligned(GRANULE_SIZE);
 
 /*
  * If the Realm supports DA feature, this function calls series of RSI RDEV
@@ -36,8 +32,7 @@ bool test_realm_da_rsi_calls(void)
 	struct rdev *rdev;
 	unsigned long rsi_rc;
 	u_register_t rsi_feature_reg0;
-	struct rsi_dev_measure_params *rdev_meas_params;
-	struct rsi_dev_info *rdev_info;
+	struct rsi_vdev_info *vdev_info;
 
 	/* Check if RSI_FEATURES support DA */
 	rsi_rc = rsi_features(RSI_FEATURE_REGISTER_0_INDEX, &rsi_feature_reg0);
@@ -53,65 +48,15 @@ bool test_realm_da_rsi_calls(void)
 
 	/* Get the global RDEV. Currently only one RDEV is supported */
 	rdev = &gbl_rdev;
-	rdev_meas_params = &gbl_rdev_meas_params;
-	rdev_info = &gbl_rdev_info;
-
-	rsi_rc = realm_rdev_init(rdev, RDEV_ID);
+	/* Use idx 1 to have struct size alignment */
+	vdev_info = &gbl_vdev_info[1];
 	if (rdev == NULL) {
 		realm_printf("realm_rdev_init failed\n");
 		return false;
 	}
 
-	realm_printf("======================================\n");
-	realm_printf("Realm: Lock -> Accept -> Unlock device: (bdf: 0x%x)\n",
-		     rdev->id);
-	realm_printf("======================================\n");
-
-	rsi_rc = realm_rsi_rdev_get_state(rdev);
-	if (rsi_rc != RSI_SUCCESS) {
-		return false;
-	}
-
-	/* Before lock get_measurement */
-	rsi_rc = realm_rsi_rdev_get_measurements(rdev, rdev_meas_params);
-	if (rsi_rc != RSI_SUCCESS) {
-		return false;
-	}
-
-	rsi_rc = realm_rsi_rdev_lock(rdev);
-	if (rsi_rc != RSI_SUCCESS) {
-		return false;
-	}
-
-	/* After lock get_measurement */
-	rsi_rc = realm_rsi_rdev_get_measurements(rdev, rdev_meas_params);
-	if (rsi_rc != RSI_SUCCESS) {
-		return false;
-	}
-
-	rsi_rc = realm_rsi_rdev_get_interface_report(rdev);
-	if (rsi_rc != RSI_SUCCESS) {
-		return false;
-	}
-
 	/* After meas and ifc_report, get device info */
-	rsi_rc = realm_rsi_rdev_get_info(rdev, rdev_info);
-	if (rsi_rc != RSI_SUCCESS) {
-		return false;
-	}
-
-	/*
-	 * Get cached device attestation from Host and verify it with device
-	 * attestation digest
-	 */
-	(void)realm_verify_device_attestation(rdev, rdev_info);
-
-	rsi_rc = realm_rsi_rdev_start(rdev);
-	if (rsi_rc != RSI_SUCCESS) {
-		return false;
-	}
-
-	rsi_rc = realm_rsi_rdev_stop(rdev);
+	rsi_rc = realm_rsi_vdev_get_info(rdev, vdev_info);
 	if (rsi_rc != RSI_SUCCESS) {
 		return false;
 	}

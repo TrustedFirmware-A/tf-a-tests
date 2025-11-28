@@ -2013,22 +2013,6 @@ u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr)
 				2U).ret0;
 }
 
-u_register_t host_rmi_dev_mem_unmap(u_register_t rd,
-				    u_register_t map_addr,
-				    u_register_t level,
-				    u_register_t *pa,
-				    u_register_t *top)
-{
-	smc_ret_values rets;
-
-	rets = host_rmi_handler(&(smc_args) {SMC_RMI_DEV_MEM_UNMAP, rd, map_addr,
-				level, (u_register_t)&rets}, 5U);
-
-	*pa = rets.ret1;
-	*top = rets.ret2;
-	return rets.ret0;
-}
-
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 				  u_register_t vdev_ptr,
 				  u_register_t params_ptr)
@@ -2055,6 +2039,19 @@ u_register_t host_rmi_vdev_map(u_register_t rd_ptr, u_register_t vdev_ptr,
 {
 	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_MAP, rd_ptr, vdev_ptr,
 			ipa, level, addr}, 6U).ret0;
+}
+
+u_register_t host_rmi_vdev_unmap(u_register_t rd_ptr, u_register_t vdev_ptr,
+			       u_register_t ipa, u_register_t level,
+			       u_register_t *pa, u_register_t *top)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_UNMAP, rd_ptr, vdev_ptr,
+			ipa, level}, 5U);
+	*pa = rets.ret1;
+	*top = rets.ret2;
+	return rets.ret0;
 }
 
 u_register_t host_rmi_vdev_get_measurements(u_register_t rd_ptr, u_register_t pdev_ptr,

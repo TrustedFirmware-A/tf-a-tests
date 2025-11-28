@@ -371,16 +371,16 @@
 /*
  * FID: 0xC4000173
  *
- * arg0 == RD address
- * arg1 == map address
- * arg2 == level
+ * arg0 == PA of the RD which owns the target device memory
+ * arg1 == PA of the VDEV
+ * arg2 == IPA at which the memory is mapped in the target Realm
+ * arg3 == RTT level
  *
- * ret1 == Address (PA) of the device memory granule, if ret0 == RMI_SUCCESS
- *         Otherwise, undefined.
- * ret2 == Top of the non-live address region. Only valid
- *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT, x)
+ * ret1 == PA of the device memory which was unmapped
+ * ret2 == Top IPA of non-live RTT entries, from entry at which the RTT walk
+ *         terminated
  */
-#define SMC_RMI_DEV_MEM_UNMAP			SMC64_RMI_FID(U(0x23))
+#define SMC_RMI_VDEV_UNMAP			SMC64_RMI_FID(U(0x23))
 
 /*
  * FID: 0xC4000174
@@ -1569,13 +1569,6 @@ u_register_t host_rmi_pdev_set_pubkey(u_register_t pdev_ptr,
 				      u_register_t pubkey_params_ptr);
 u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr);
 u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr);
-
-u_register_t host_rmi_dev_mem_map(u_register_t rd, u_register_t map_addr,
-				  u_register_t level, u_register_t dev_mem_addr);
-u_register_t host_rmi_dev_mem_unmap(u_register_t rd, u_register_t map_addr,
-				    u_register_t level, u_register_t *pa,
-				    u_register_t *top);
-
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 				  u_register_t vdev_ptr,
 				  u_register_t params_ptr);
@@ -1584,6 +1577,9 @@ u_register_t host_rmi_vdev_get_interface_report(u_register_t rd_ptr, u_register_
 						u_register_t vdev_ptr);
 u_register_t host_rmi_vdev_map(u_register_t rd_ptr, u_register_t vdev_ptr,
 			       u_register_t ipa, u_register_t level, u_register_t addr);
+u_register_t host_rmi_vdev_unmap(u_register_t rd_ptr, u_register_t vdev_ptr,
+			       u_register_t ipa, u_register_t level,
+			       u_register_t *pa, u_register_t *top);
 u_register_t host_rmi_vdev_get_measurements(u_register_t rd_ptr, u_register_t pdev_ptr,
 					    u_register_t vdev_ptr, u_register_t params_ptr);
 u_register_t host_rmi_vdev_lock(u_register_t rd_ptr, u_register_t pdev_ptr,

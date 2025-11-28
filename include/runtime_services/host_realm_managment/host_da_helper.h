@@ -133,7 +133,7 @@ int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
 			      unsigned long tdi_id, void *pdev_ptr);
 int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev);
 
-u_register_t host_dev_mem_map(struct realm *realm, u_register_t dev_pa,
+u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t dev_pa,
 				long map_level, u_register_t *dev_ipa);
 
 #endif /* HOST_DA_HELPER_H */

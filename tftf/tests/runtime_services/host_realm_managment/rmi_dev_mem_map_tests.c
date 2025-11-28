@@ -8,6 +8,7 @@
 
 #include <arch_features.h>
 #include <cassert.h>
+#include <host_da_flow_helper.h>
 #include <host_da_helper.h>
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
@@ -39,6 +40,8 @@ struct dev_mem_region {
 	size_t size;			/* Dev memory region size */
 };
 
+extern struct host_vdev gbl_host_vdev;
+
 /*
  * @Test_Aim@ Test device memory map and unmap commands
  *
@@ -56,6 +59,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	u_register_t res, rmi_features;
 	__unused size_t dev_size;
 	test_result_t ret = TEST_RESULT_FAIL;
+	int rc;
 	long sl = RTT_MIN_LEVEL;
 	struct realm realm;
 	struct rtt_entry rtt;
@@ -75,6 +79,8 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	};
 	unsigned int num[NUM_INFO_TESTS];
 	unsigned int num_reg, offset, i, j;
+	struct host_vdev *h_vdev = &gbl_host_vdev;
+	struct host_pdev *h_pdev;
 
 	SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_features);
 
@@ -221,6 +227,23 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		}
 	}
 
+	host_pdevs_init();
+
+	/* Create PDEV and ready*/
+	ret = tsm_connect_first_device(&h_pdev);
+	if (ret != TEST_RESULT_SUCCESS) {
+		ERROR("Connecting to device failed\n");
+		goto undelegate_granules;
+	}
+
+	/* Create VDEV */
+	rc = host_assign_vdev_to_realm(&realm, h_vdev,
+			      h_pdev->dev->bdf, h_pdev->pdev);
+	if (rc != 0) {
+		ERROR("Creating VDEV failed\n");
+		goto undelegate_granules;
+	}
+
 	/* Map device memory */
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
 		/* Skip non-initialised test region */
@@ -229,7 +252,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		}
 
 		for (j = 0U; j < mem_info[i].num_regions; j++) {
-			res = host_dev_mem_map(&realm,
+			res = host_dev_mem_map(&realm, h_vdev,
 					mem_info[i].base_pa + j * mem_info[i].map_size,
 					mem_info[i].map_level, &map_addr[i][j]);
 			if (res != REALM_SUCCESS) {
@@ -285,12 +308,13 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		for (j = 0U; j < mem_info[i].num_regions; j++) {
 			u_register_t pa, pa_exp, top, top_exp;
 
-			res = host_rmi_dev_mem_unmap(realm.rd, map_addr[i][j],
+			res = host_rmi_vdev_unmap(realm.rd, (u_register_t)h_vdev->vdev_ptr,
+							map_addr[i][j],
 							mem_info[i].map_level,
 							&pa, &top);
 			if (res != RMI_SUCCESS) {
 				ERROR("%s() for 0x%lx failed, 0x%lx\n",
-					"host_rmi_dev_mem_unmap",
+					"host_rmi_vdev_unmap",
 					map_addr[i][j], res);
 				goto undelegate_granules;
 			}
@@ -304,7 +328,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 			if (pa != pa_exp) {
 				ERROR("%s() for 0x%lx failed, "
 					"expected pa 0x%lx, returned 0x%lx\n",
-					"host_rmi_dev_mem_unmap",
+					"host_rmi_vdev_unmap",
 					map_addr[i][j], pa_exp, pa);
 				goto undelegate_granules;
 			}
@@ -326,7 +350,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 			if (top != top_exp) {
 				ERROR("%s() for 0x%lx failed, "
 					"expected top 0x%lx, returned 0x%lx\n",
-					"host_rmi_dev_mem_unmap",
+					"host_rmi_vdev_unmap",
 					map_addr[i][j], top_exp, top);
 				goto undelegate_granules;
 			}
@@ -360,6 +384,19 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 				goto undelegate_granules;
 			}
 		}
+	}
+
+	rc = host_unassign_vdev_from_realm(&realm, h_vdev);
+	if (rc != 0) {
+		ERROR("Destroying VDEV failed\n");
+		goto undelegate_granules;
+	}
+
+	/* Destroy PDEV */
+	ret = tsm_disconnect_device(h_pdev);
+	if (ret != TEST_RESULT_SUCCESS) {
+		ERROR("Destroying PDEV failed\n");
+		goto undelegate_granules;
 	}
 
 	ret = TEST_RESULT_SUCCESS;

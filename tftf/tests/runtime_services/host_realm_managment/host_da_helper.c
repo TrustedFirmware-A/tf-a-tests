@@ -1091,16 +1091,16 @@ void host_do_vdev_communicate(struct realm *realm, u_register_t vdev_ptr)
 	}
 }
 
-u_register_t host_dev_mem_map(struct realm *realm, u_register_t dev_pa,
-				long map_level, u_register_t *dev_ipa)
+u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev,
+			      u_register_t dev_pa, long map_level, u_register_t *dev_ipa)
 {
-	u_register_t rd = realm->rd;
 	u_register_t map_addr = dev_pa;	/* 1:1 PA->IPA mapping */
 	u_register_t ret;
 
 	*dev_ipa = 0UL;
 
-	ret = host_rmi_dev_mem_map(rd, map_addr, map_level, dev_pa);
+
+	ret = host_vdev_map(realm, h_vdev, map_addr, map_level, dev_pa);
 
 	if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
 		/* Create missing RTTs and retry */
@@ -1114,11 +1114,11 @@ u_register_t host_dev_mem_map(struct realm *realm, u_register_t dev_pa,
 			return REALM_ERROR;
 		}
 
-		ret = host_rmi_dev_mem_map(rd, map_addr, map_level, dev_pa);
+		ret = host_vdev_map(realm, h_vdev, map_addr, map_level, dev_pa);
 	}
 	if (ret != RMI_SUCCESS) {
 		tftf_testcase_printf("%s() failed, 0x%lx\n",
-			"host_rmi_dev_mem_map", ret);
+			"host_rmi_vdev_map", ret);
 		return REALM_ERROR;
 	}
 

@@ -253,7 +253,7 @@ static int host_pdev_cache_device_object(struct host_pdev *h_pdev,
 	int rc = -1;
 
 	/*
-	 * During PDEV communicate only device object of type certificate is
+	 * During PDEV communicate device object of type certificate or VCA is
 	 * cached
 	 */
 	if (dev_obj_id == RMI_DEV_COMM_OBJECT_CERTIFICATE) {
@@ -269,8 +269,20 @@ static int host_pdev_cache_device_object(struct host_pdev *h_pdev,
 		       dev_obj_buf, dev_obj_buf_len);
 		h_pdev->cert_chain_len += dev_obj_buf_len;
 		rc = 0;
-	}
+	} else if (dev_obj_id == RMI_DEV_COMM_OBJECT_VCA) {
+		if ((h_pdev->vca_len + dev_obj_buf_len) >
+		    HOST_PDEV_VCA_LEN_MAX) {
+			return -1;
+		}
 
+		INFO("%s: vca: offset: 0x%lx, len: 0x%lx\n",
+		     __func__, h_pdev->vca_len, dev_obj_buf_len);
+
+		memcpy((void *)(h_pdev->vca + h_pdev->vca_len),
+		       dev_obj_buf, dev_obj_buf_len);
+		h_pdev->vca_len += dev_obj_buf_len;
+		rc = 0;
+	}
 	return rc;
 }
 
@@ -318,38 +330,72 @@ static int host_vdev_cache_device_object(struct host_vdev *h_vdev,
 
 static int host_dev_cache_dev_object(struct host_pdev *h_pdev,
 				     struct host_vdev *h_vdev,
-				     struct rmi_dev_comm_enter *dcomm_enter,
-				     struct rmi_dev_comm_exit *dcomm_exit)
+				     uint8_t *dev_obj_buf,
+				     unsigned char cache_obj_id,
+				     size_t cache_offset, size_t cache_len)
 {
-	unsigned long dev_obj_buf_len;
-	uint8_t *dev_obj_buf;
+	uint8_t *dev_obj_cache;
 	int rc;
 
-	if ((dcomm_exit->cache_rsp_len == 0) ||
-	    ((dcomm_exit->cache_rsp_offset + dcomm_exit->cache_rsp_len) >
-	     GRANULE_SIZE)) {
+	if ((cache_len != 0) &&
+	    ((cache_offset + cache_len) > GRANULE_SIZE)) {
 		ERROR("Invalid cache offset/length\n");
 		return -1;
 	}
 
-	dev_obj_buf = (uint8_t *)dcomm_enter->resp_addr +
-		dcomm_exit->cache_rsp_offset;
-	dev_obj_buf_len = dcomm_exit->cache_rsp_len;
+	dev_obj_cache = dev_obj_buf + cache_offset;
 
 	if (h_vdev) {
 		rc = host_vdev_cache_device_object(h_vdev,
-						   dcomm_exit->cache_obj_id,
-						   dev_obj_buf,
-						   dev_obj_buf_len);
+						   cache_obj_id,
+						   dev_obj_cache,
+						   cache_len);
 	} else {
 		rc = host_pdev_cache_device_object(h_pdev,
-						   dcomm_exit->cache_obj_id,
-						   dev_obj_buf,
-						   dev_obj_buf_len);
+						   cache_obj_id,
+						   dev_obj_cache,
+						   cache_len);
 	}
 
 	if (rc != 0) {
 		ERROR("host_dev_cache_device_object failed\n");
+	}
+
+	return rc;
+}
+
+static int host_dev_cache_dev_req_resp(struct host_pdev *h_pdev,
+				       struct host_vdev *h_vdev,
+				       struct rmi_dev_comm_enter *dcomm_enter,
+				       struct rmi_dev_comm_exit *dcomm_exit)
+{
+	int rc;
+
+	if ((dcomm_exit->cache_req_len == 0) &&
+	    (dcomm_exit->cache_rsp_len == 0)) {
+		ERROR("Both cache_req_len and cache_rsp_len are 0\n");
+		return -1;
+	}
+
+	rc = host_dev_cache_dev_object(h_pdev, h_vdev,
+				       (uint8_t *)dcomm_enter->req_addr,
+				       dcomm_exit->cache_obj_id,
+				       dcomm_exit->cache_req_offset,
+				       dcomm_exit->cache_req_len);
+
+	if (rc != 0) {
+		ERROR("host_dev_cache_device_object req failed\n");
+		return -1;
+	}
+
+	rc = host_dev_cache_dev_object(h_pdev, h_vdev,
+				       (uint8_t *)dcomm_enter->resp_addr,
+				       dcomm_exit->cache_obj_id,
+				       dcomm_exit->cache_rsp_offset,
+				       dcomm_exit->cache_rsp_len);
+
+	if (rc != 0) {
+		ERROR("host_dev_cache_device_object rsp failed\n");
 	}
 
 	return rc;
@@ -442,12 +488,14 @@ static int host_dev_communicate(struct realm *realm,
 		}
 
 		/*
-		 * If cache is set, then response buffer has the device object
-		 * to be cached.
+		 * If cache is set, then the corresponding buffer(s) has the
+		 * device object to be cached.
 		 */
-		if (EXTRACT(RMI_DEV_COMM_EXIT_FLAGS_CACHE_RSP,
-			    dcomm_exit->flags)) {
-			rc = host_dev_cache_dev_object(h_pdev, h_vdev,
+		if ((EXTRACT(RMI_DEV_COMM_EXIT_FLAGS_CACHE_REQ,
+			dcomm_exit->flags) != 0U) ||
+		    (EXTRACT(RMI_DEV_COMM_EXIT_FLAGS_CACHE_RSP,
+			dcomm_exit->flags) != 0U)) {
+			rc = host_dev_cache_dev_req_resp(h_pdev, h_vdev,
 						       dcomm_enter, dcomm_exit);
 			if (rc != 0) {
 				ERROR("host_dev_cache_dev_object failed\n");
@@ -784,6 +832,13 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 	h_pdev->cert_chain = (uint8_t *)page_alloc(HOST_PDEV_CERT_LEN_MAX);
 	h_pdev->cert_chain_len = 0;
 	if (h_pdev->cert_chain == NULL) {
+		goto err_undelegate_pdev_aux;
+	}
+
+	/* Allocate buffer to cache VCA */
+	h_pdev->vca = (uint8_t *)page_alloc(HOST_PDEV_VCA_LEN_MAX);
+	h_pdev->vca_len = 0;
+	if (h_pdev->vca == NULL) {
 		goto err_undelegate_pdev_aux;
 	}
 

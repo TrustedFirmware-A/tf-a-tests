@@ -36,6 +36,9 @@
 /* SPDM_MAX_CERTIFICATE_CHAIN_SIZE is 64KB */
 #define HOST_PDEV_CERT_LEN_MAX		(64 * 1024)
 
+/* A single page for storing VCA should be enough */
+#define HOST_PDEV_VCA_LEN_MAX		(4 * 1024)
+
 /* todo: This macro can come from platform layer */
 #define HOST_PDEV_MAX		32
 
@@ -66,6 +69,8 @@ struct host_pdev {
 	uint8_t cert_slot_id;
 	uint8_t *cert_chain;
 	size_t cert_chain_len;
+	uint8_t *vca;
+	size_t vca_len;
 	void *public_key;
 	size_t public_key_len;
 	void *public_key_metadata;

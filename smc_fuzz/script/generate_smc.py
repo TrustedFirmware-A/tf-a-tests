@@ -34,6 +34,7 @@ argfieldname = readsmclist.argfieldname
 argstartbit = readsmclist.argstartbit
 argendbit = readsmclist.argendbit
 argdefval = readsmclist.argdefval
+argres = readsmclist.argres
 smcname = readsmclist.smcname
 argnum = readsmclist.argnum
 argname = readsmclist.argname
@@ -41,5 +42,5 @@ argname = readsmclist.argname
 gen_arg_struct_def.gen_arg_struct_def("./include/arg_struct_def.h",argfieldname,arglst,argnumfield)
 
 gen_field_specification.gen_field_specification("./include/field_specification.h",
-argfieldname,argendbit,argstartbit,argdefval,argnumfield)
+argfieldname,argendbit,argstartbit,argdefval,argnumfield,argres)
 

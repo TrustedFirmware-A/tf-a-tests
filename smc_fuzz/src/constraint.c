@@ -412,9 +412,23 @@ uint64_t generate_field_uncon(int smccall, int rsel)
 	for (int i = 0; i <= (fuzzer_arg_array_lst[argptr].arg_span[1] -
 	fuzzer_arg_array_lst[argptr].arg_span[0]); i++) {
 		fieldptr = fuzzer_arg_array_lst[argptr].arg_span[0] + i;
-		shiftreg = shiftlft((rand() % shiftlft(1, fuzzer_arg_array[fieldptr].bitw)),
-		fuzzer_arg_array[fieldptr].bitst);
-		resreg = resreg | shiftreg;
+		if (fuzzer_arg_array[fieldptr].reserved == 1) {
+			if (fuzzer_arg_array[fieldptr].defval >
+				(shiftlft(1, fuzzer_arg_array[fieldptr].bitw) - 1)) {
+				printf("Default constraint will not fit inside bitfield %llx %llx\n",
+				fuzzer_arg_array[fieldptr].defval,
+				(shiftlft(1, fuzzer_arg_array[fieldptr].bitw) - 1));
+				panic();
+			} else {
+				shiftreg = shiftlft(fuzzer_arg_array[fieldptr].defval,
+				fuzzer_arg_array[fieldptr].bitst);
+				resreg = resreg | shiftreg;
+			}
+		} else {
+			shiftreg = shiftlft ((rand() % shiftlft(1, fuzzer_arg_array[fieldptr].bitw)),
+			fuzzer_arg_array[fieldptr].bitst);
+			resreg = resreg | shiftreg;
+		}
 	}
 	return resreg;
 }
@@ -923,7 +937,7 @@ uint64_t get_generated_value(int fieldnameptr, struct inputparameters inp)
 	int fieldname = fuzzer_fieldfld[fieldnameptr];
 	int fieldptr = fuzzer_arg_array_lst[argdef].arg_span[0] + fieldname;
 
-	switch(fuzzer_arg_array[fieldptr].regnum) {
+	switch (fuzzer_arg_array[fieldptr].regnum) {
 		case 1: {
 			xval = shiftrht(inp.x1, fuzzer_arg_array[fieldptr].bitst) &
 			((shiftlft(1, fuzzer_arg_array[fieldptr].bitw)) -  1);

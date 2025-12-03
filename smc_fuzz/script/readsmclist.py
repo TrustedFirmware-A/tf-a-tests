@@ -14,6 +14,7 @@ argfieldname = {}
 argstartbit = {}
 argendbit = {}
 argdefval = {}
+argres = {}
 smcid = {}
 defval = {}
 sdef = {}
@@ -39,6 +40,7 @@ def readsmclist(smclist,seq):
 			argstartbit[sinstr.group(1)] = {}
 			argendbit[sinstr.group(1)] = {}
 			argdefval[sinstr.group(1)] = {}
+			argres[sinstr.group(1)] = {}
 			smcid[sinstr.group(2)] = sinstr.group(1)
 			svar = 1
 			lcon = 1
@@ -54,7 +56,6 @@ def readsmclist(smclist,seq):
 					seq = 1
 		sinstr = re.search(r'^smc:\s*([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_]+)\s*$',sl)
 		if sinstr and (svar == 0):
-			print("in second")
 			smcname = sinstr.group(1)
 			arglst[sinstr.group(1)] = []
 			argnumfield[sinstr.group(1)] = {}
@@ -62,6 +63,7 @@ def readsmclist(smclist,seq):
 			argstartbit[sinstr.group(1)] = {}
 			argendbit[sinstr.group(1)] = {}
 			argdefval[sinstr.group(1)] = {}
+			argres[sinstr.group(1)] = {}
 			sdef[sinstr.group(1)] = sinstr.group(2)
 			smcid[sinstr.group(2)] = sinstr.group(1)
 			lcon = 1
@@ -84,6 +86,7 @@ def readsmclist(smclist,seq):
 			argstartbit[sinstr.group(1)] = {}
 			argendbit[sinstr.group(1)] = {}
 			argdefval[sinstr.group(1)] = {}
+			argres[sinstr.group(1)] = {}
 			lcon = 1
 			argoccupy = {}
 			if not seq:
@@ -111,6 +114,7 @@ def readsmclist(smclist,seq):
 			argstartbit[smcname][sinstr.group(2)] = {}
 			argendbit[smcname][sinstr.group(2)] = {}
 			argdefval[smcname][sinstr.group(2)] = {}
+			argres[smcname][sinstr.group(2)] = {}
 			lcon = 1
 			argoccupy[argnum] = 1
 			fieldoccupy = []
@@ -127,7 +131,7 @@ def readsmclist(smclist,seq):
 			else:
 				seq = seq + 1
 
-		sinstr = re.search(r'^arg(\d+)\s*=\s*(0x[a-fA-F0-9]+|\d+)$',sl)
+		sinstr = re.search(r'^arg(\d+)\s*(\:*)=\s*(0x[a-fA-F0-9]+|\d+)$',sl)
 		if sinstr:
 			if sinstr.group(1) in argoccupy:
 				print("Error: register already specified for SMC call",end=" ")
@@ -146,11 +150,16 @@ def readsmclist(smclist,seq):
 			argstartbit[smcname][argname] = {}
 			argendbit[smcname][argname] = {}
 			argdefval[smcname][argname] = {}
+			argres[smcname][argname] = {}
 			argnumfield[smcname][argname][fieldnameargdef] = argnum
 			argfieldname[smcname][argname].append(fieldnameargdef)
 			argstartbit[smcname][argname][fieldnameargdef] = str(0)
 			argendbit[smcname][argname][fieldnameargdef] = str(63)
-			argdefval[smcname][argname][fieldnameargdef] = sinstr.group(2)
+			argdefval[smcname][argname][fieldnameargdef] = sinstr.group(3)
+			if ':' in sinstr.group(2):
+				argres[smcname][argname][fieldnameargdef] = 1
+			else:
+				argres[smcname][argname][fieldnameargdef] = 0
 			lcon = 1
 			argoccupy[argnum] = 1
 			if seq != 1:
@@ -163,7 +172,7 @@ def readsmclist(smclist,seq):
 					sys.exit()
 			else:
 				seq = seq + 1
-		sinstr = re.search(r'^arg(\d+)-arg(\d+)\s*=\s*(0x[a-fA-F0-9]+|\d+)$',sl)
+		sinstr = re.search(r'^arg(\d+)-arg(\d+)\s*(\:*)=\s*(0x[a-fA-F0-9]+|\d+)$',sl)
 		if sinstr:
 			srange = int(sinstr.group(1))
 			erange = int(sinstr.group(2))
@@ -184,11 +193,16 @@ def readsmclist(smclist,seq):
 				argstartbit[smcname][argname] = {}
 				argendbit[smcname][argname] = {}
 				argdefval[smcname][argname] = {}
+				argres[smcname][argname] = {}
 				argnumfield[smcname][argname][fieldnameargdef] = str(argnum)
 				argfieldname[smcname][argname].append(fieldnameargdef)
 				argstartbit[smcname][argname][fieldnameargdef] = str(0)
 				argendbit[smcname][argname][fieldnameargdef] = str(63)
-				argdefval[smcname][argname][fieldnameargdef] = sinstr.group(3)
+				argdefval[smcname][argname][fieldnameargdef] = sinstr.group(4)
+				if ':' in sinstr.group(3):
+					argres[smcname][argname][fieldnameargdef] = 1
+				else:
+					argres[smcname][argname][fieldnameargdef] = 0
 				argoccupy[str(argnum)] = 1
 			lcon = 1
 			if seq != 1:
@@ -203,7 +217,7 @@ def readsmclist(smclist,seq):
 					seq = 2
 			else:
 				seq = seq + 1
-		sinstr = re.search(r'^field:([a-zA-Z0-9_]+):\[(\d+),(\d+)\]\s*=\s*(0x[a-fA-F0-9]+|\d+)$',sl)
+		sinstr = re.search(r'^field:([a-zA-Z0-9_]+):\[(\d+),(\d+)\]\s*(\:*)=\s*(0x[a-fA-F0-9]+|\d+)$',sl)
 		if sinstr:
 			for fs in fieldoccupy:
 				if(((fs[0] <= int(sinstr.group(3))) and (fs[0] >= int(sinstr.group(2)))) or
@@ -222,7 +236,11 @@ def readsmclist(smclist,seq):
 			argfieldname[smcname][argname].append(sinstr.group(1))
 			argstartbit[smcname][argname][sinstr.group(1)] = sinstr.group(2)
 			argendbit[smcname][argname][sinstr.group(1)] = sinstr.group(3)
-			argdefval[smcname][argname][sinstr.group(1)] = sinstr.group(4)
+			argdefval[smcname][argname][sinstr.group(1)] = sinstr.group(5)
+			if ':' in sinstr.group(4):
+				argres[smcname][argname][sinstr.group(1)] = 1
+			else:
+				argres[smcname][argname][sinstr.group(1)] = 0
 			flist = []
 			flist.append(int(sinstr.group(2)))
 			flist.append(int(sinstr.group(3)))

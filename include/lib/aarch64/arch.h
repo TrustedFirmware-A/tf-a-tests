@@ -1508,13 +1508,33 @@
 #define AMEVTYPER1E_EL0		S3_3_C13_C15_6
 #define AMEVTYPER1F_EL0		S3_3_C13_C15_7
 
+/* AMCNTENSET0_EL0 definitions */
+#define AMCNTENSET0_EL0_Pn_ENABLED	ULL(0xf)
+#define AMCNTENSET0_EL0_Pn_CONTEXTED	ULL(0xc)
+
+/* AMCNTENSET1_EL0 definitions */
+#define AMCNTENSET1_EL0_Pn_SHIFT	U(0)
+#define AMCNTENSET1_EL0_Pn_MASK		ULL(0xffff)
+
+/* AMCNTENCLR0_EL0 definitions */
+#define AMCNTENCLR0_EL0_Pn_ENABLED	ULL(0xf)
+#define AMCNTENCLR0_EL0_Pn_CONTEXTED	ULL(0xc)
+
+/* AMCNTENCLR1_EL0 definitions */
+#define AMCNTENCLR1_EL0_Pn_SHIFT	U(0)
+#define AMCNTENCLR1_EL0_Pn_MASK		ULL(0xffff)
+
 /* AMCFGR_EL0 definitions */
 #define AMCFGR_EL0_NCG_SHIFT		U(28)
 #define AMCFGR_EL0_NCG_MASK		U(0xf)
+#define AMCFGR_EL0_N_SHIFT		U(0)
+#define AMCFGR_EL0_N_MASK		U(0xff)
 
 /* AMCGCR_EL0 definitions */
+#define AMCGCR_EL0_CG0NC_SHIFT		U(0)
+#define AMCGCR_EL0_CG0NC_MASK		U(0xff)
 #define AMCGCR_EL0_CG1NC_SHIFT		U(8)
-#define AMCGCR_EL0_CG1NC_LENGTH		U(8)
+#define AMCGCR_EL0_CG1NC_WIDTH		U(8)
 #define AMCGCR_EL0_CG1NC_MASK		U(0xff)
 
 /* MPAM register definitions */

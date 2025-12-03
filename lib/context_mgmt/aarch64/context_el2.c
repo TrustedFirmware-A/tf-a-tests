@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -27,9 +27,6 @@ static void el2_save_common_registers(el2_common_regs_t *ctx)
 	EL2_SAVE_CTX_REG(ctx, hcr_el2);
 	EL2_SAVE_CTX_REG(ctx, hpfar_el2);
 	EL2_SAVE_CTX_REG(ctx, hstr_el2);
-	EL2_SAVE_CTX_REG(ctx, icc_sre_el2);
-	EL2_SAVE_CTX_REG(ctx, ich_hcr_el2);
-	EL2_SAVE_CTX_REG(ctx, ich_vmcr_el2);
 	EL2_SAVE_CTX_REG(ctx, mair_el2);
 	EL2_SAVE_CTX_REG(ctx, mdcr_el2);
 	EL2_SAVE_CTX_REG(ctx, pmscr_el2);
@@ -201,9 +198,6 @@ static void el2_write_common_registers_with_mask(const el2_common_regs_t *ctx, u
 	EL2_WRITE_MASK_CTX_REG(ctx, hcr_el2, or_mask);
 	EL2_WRITE_MASK_CTX_REG(ctx, hpfar_el2, or_mask);
 	EL2_WRITE_MASK_CTX_REG(ctx, hstr_el2, or_mask);
-	EL2_WRITE_MASK_CTX_REG(ctx, icc_sre_el2, or_mask);
-	EL2_WRITE_MASK_CTX_REG(ctx, ich_hcr_el2, or_mask);
-	/* Unable to restore ICH_VMCR_EL2 to original value after modification, so it is omitted. */
 	EL2_WRITE_MASK_CTX_REG(ctx, mair_el2, or_mask);
 	EL2_WRITE_MASK_CTX_REG(ctx, mdcr_el2, or_mask);
 	EL2_WRITE_MASK_CTX_REG(ctx, pmscr_el2, or_mask);
@@ -372,9 +366,6 @@ static void el2_dump_common_register_context(const el2_common_regs_t *ctx)
 	EL2_PRINT_CTX_MEMBER(ctx, "HCR_EL2", hcr_el2);
 	EL2_PRINT_CTX_MEMBER(ctx, "HPFAR_EL2", hpfar_el2);
 	EL2_PRINT_CTX_MEMBER(ctx, "HSTR_EL2", hstr_el2);
-	EL2_PRINT_CTX_MEMBER(ctx, "ICC_SRE_EL2", icc_sre_el2);
-	EL2_PRINT_CTX_MEMBER(ctx, "ICH_HCR_EL2", ich_hcr_el2);
-	EL2_PRINT_CTX_MEMBER(ctx, "ICH_VMCR_EL2", ich_vmcr_el2);
 	EL2_PRINT_CTX_MEMBER(ctx, "MAIR_EL2", mair_el2);
 	EL2_PRINT_CTX_MEMBER(ctx, "MDCR_EL2", mdcr_el2);
 	EL2_PRINT_CTX_MEMBER(ctx, "PMSCR_EL2", pmscr_el2);

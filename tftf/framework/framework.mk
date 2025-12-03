@@ -57,7 +57,6 @@ FRAMEWORK_SOURCES	+=						\
 	lib/events/events.c						\
 	${EVENT_LOG_SOURCES}						\
 	lib/extensions/amu/${ARCH}/amu.c				\
-	lib/extensions/amu/${ARCH}/amu_helpers.S			\
 	drivers/arm/gic/arm_gic.c					\
 	drivers/arm/gic/gic_v2v3_common.c				\
 	drivers/arm/gic/gic_v2.c					\

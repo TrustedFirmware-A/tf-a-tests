@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -134,7 +134,7 @@ test_result_t test_amu_valid_ctr(void)
 	for (i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {
 		uint64_t value;
 
-		value = amu_group0_cnt_read(i);
+		value = read_amevcntr0(i);
 		if (amu_group0_cnt_valid(i, value)) {
 			tftf_testcase_printf("Group0 counter %d has invalid value %lld\n", i, value);
 			return TEST_RESULT_FAIL;
@@ -163,7 +163,7 @@ test_result_t test_amu_suspend_resume(void)
 
 	/* Save counters values before suspend */
 	for (i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {
-		group0_ctrs[i] = amu_group0_cnt_read(i);
+		group0_ctrs[i] = read_amevcntr0(i);
 	}
 
 	/*
@@ -178,19 +178,17 @@ test_result_t test_amu_suspend_resume(void)
 		write_hcr_el2(read_hcr_el2() | HCR_AMVOFFEN_BIT);
 
 		/* Writing known values into voffset registers. */
-		amu_group0_voffset_write(0U, 0xDEADBEEF);
-		amu_group0_voffset_write(2U, 0xDEADBEEF);
-		amu_group0_voffset_write(3U, 0xDEADBEEF);
+		write_amevcntvoff0(0U, 0xDEADBEEF);
+		write_amevcntvoff0(2U, 0xDEADBEEF);
+		write_amevcntvoff0(3U, 0xDEADBEEF);
 
-#if AMU_GROUP1_NR_COUNTERS
 		u_register_t amcg1idr = read_amcg1idr_el0() >> 16;
 
-		for (i = 0U; i < AMU_GROUP1_NR_COUNTERS; i++) {
+		for (i = 0U; i < amu_group1_num_counters(); i++) {
 			if (((amcg1idr >> i) & 1U) != 0U) {
-				amu_group1_voffset_write(i, 0xDEADBEEF);
+				write_amevcntvoff1(i, 0xDEADBEEF);
 			}
 		}
-#endif
 	}
 #endif
 
@@ -204,7 +202,7 @@ test_result_t test_amu_suspend_resume(void)
 	for (i = 0; i < AMU_GROUP0_NR_COUNTERS; i++) {
 		uint64_t value;
 
-		value = amu_group0_cnt_read(i);
+		value = read_amevcntr0(i);
 		if (value < group0_ctrs[i]) {
 			tftf_testcase_printf("Invalid counter value: before: %llx, after: %llx\n",
 				(unsigned long long)group0_ctrs[i],
@@ -217,28 +215,26 @@ test_result_t test_amu_suspend_resume(void)
 	if (amu_get_version() >= ID_AA64PFR0_AMU_V1P1) {
 		for (i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {
 			if ((i != 1U) &&
-				(amu_group0_voffset_read(i) != 0xDEADBEEF)) {
+				(read_amevcntvoff0(i) != 0xDEADBEEF)) {
 				tftf_testcase_printf(
 					"Invalid G0 voffset %u: 0x%llx\n", i,
-					amu_group0_voffset_read(i));
+					read_amevcntvoff0(i));
 				return TEST_RESULT_FAIL;
 			}
 		}
 
-#if AMU_GROUP1_NR_COUNTERS
 		u_register_t amcg1idr = read_amcg1idr_el0() >> 16;
 
-		for (i = 0U; i < AMU_GROUP1_NR_COUNTERS; i++) {
+		for (i = 0U; i < read_amcg1idr_el0(); i++) {
 			if (((amcg1idr >> i) & 1U) != 0U) {
-				if (amu_group1_voffset_read(i) != 0xDEADBEEF) {
+				if (read_amevcntvoff0(i) != 0xDEADBEEF) {
 					tftf_testcase_printf("Invalid G1 " \
 						"voffset %u: 0x%llx\n", i,
-						amu_group1_voffset_read(i));
+						read_amevcntvoff1(i));
 					return TEST_RESULT_FAIL;
 				}
 			}
 		}
-#endif
 	}
 #endif
 
@@ -257,8 +253,8 @@ test_result_t test_amu_group1_raz(void)
 	uint64_t counters_final[AMU_GROUP1_NR_COUNTERS] = {0};
 
 	for (unsigned int i = 0; i < amu_group1_num_counters(); i++) {
-		INFO("AMUEVTYPER1%x: 0x%llx\n", i, amu_group1_evtype_read(i));
-		counters_initial[i] = amu_group1_cnt_read(i);
+		INFO("AMUEVTYPER1%x: 0x%llx\n", i, read_amevtyper1(i));
+		counters_initial[i] = read_amevcntr1(i);
 	}
 
 	for (int i = 0; i < MAX_MPMM_TEST_ITERATIONS; i++) {
@@ -283,7 +279,7 @@ test_result_t test_amu_group1_raz(void)
 	}
 
 	for (unsigned int i = 0; i < amu_group1_num_counters(); i++) {
-		counters_final[i] = amu_group1_cnt_read(i);
+		counters_final[i] = read_amevcntr1(i);
 		if (counters_final[i] == counters_initial[i]) {
 			return TEST_RESULT_FAIL;
 		}

@@ -16,9 +16,6 @@
 #define AMU_GROUP0_COUNTERS_MASK	U(0xf)
 #define AMU_GROUP0_NR_COUNTERS		U(4)
 
-/* maximum number of counters */
-#define AMU_GROUP1_NR_COUNTERS		U(16)
-
 uint64_t amu_group1_num_counters(void);
 
 uint64_t read_amevcntr0(unsigned int idx);

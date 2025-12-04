@@ -322,6 +322,7 @@ DEFINE_COPROCR_RW_FUNCS(amcntenset1, AMCNTENSET1)
 DEFINE_COPROCR_RW_FUNCS(amcntenclr0, AMCNTENCLR0)
 DEFINE_COPROCR_RW_FUNCS(amcntenclr1, AMCNTENCLR1)
 DEFINE_COPROCR_RW_FUNCS(amcgcr, AMCGCR)
+DEFINE_COPROCR_RW_FUNCS(amcr, AMCR)
 
 DEFINE_COPROCR_RW_FUNCS_64(amevcntr00, AMEVCNTR00)
 DEFINE_COPROCR_RW_FUNCS_64(amevcntr01, AMEVCNTR01)
@@ -467,6 +468,7 @@ static inline unsigned int get_current_el(void)
 
 #define read_amcntenset0_el0()	read_amcntenset0()
 #define read_amcntenset1_el0()	read_amcntenset1()
+#define read_amcr_el0()		read_amcr()
 
 /* Helper functions to manipulate CPSR */
 static inline void enable_irq(void)

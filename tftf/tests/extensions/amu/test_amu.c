@@ -126,9 +126,9 @@ test_result_t test_amu_valid_ctr(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	/* If counters are not enabled, then skip the test */
-	if (read_amcntenset0_el0() != AMU_GROUP0_COUNTERS_MASK) {
-		return TEST_RESULT_SKIPPED;
+	/* Counters must be enabled for system performance management. */
+	if (read_amcntenset0_el0() == 0) {
+		return TEST_RESULT_FAIL;
 	}
 
 	for (i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {
@@ -156,10 +156,6 @@ test_result_t test_amu_suspend_resume(void)
 	if (amu_get_version() == 0U) {
 		return TEST_RESULT_SKIPPED;
 	}
-
-	/* If counters are not enabled, then skip the test */
-	if (read_amcntenset0_el0() != AMU_GROUP0_COUNTERS_MASK)
-		return TEST_RESULT_SKIPPED;
 
 	/* Save counters values before suspend */
 	for (i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {

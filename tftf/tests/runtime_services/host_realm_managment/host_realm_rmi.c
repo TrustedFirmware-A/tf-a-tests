@@ -2041,14 +2041,14 @@ u_register_t host_rmi_vdev_map(u_register_t rd_ptr, u_register_t vdev_ptr,
 			ipa, level, addr}, 6U).ret0;
 }
 
-u_register_t host_rmi_vdev_unmap(u_register_t rd_ptr, u_register_t vdev_ptr,
+u_register_t host_rmi_vdev_unmap(u_register_t rd_ptr,
 			       u_register_t ipa, u_register_t level,
 			       u_register_t *pa, u_register_t *top)
 {
 	smc_ret_values rets;
 
-	rets = host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_UNMAP, rd_ptr, vdev_ptr,
-			ipa, level}, 5U);
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_UNMAP, rd_ptr,
+			ipa, level}, 4U);
 	*pa = rets.ret1;
 	*top = rets.ret2;
 	return rets.ret0;

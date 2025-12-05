@@ -1577,7 +1577,7 @@ u_register_t host_rmi_vdev_get_interface_report(u_register_t rd_ptr, u_register_
 						u_register_t vdev_ptr);
 u_register_t host_rmi_vdev_map(u_register_t rd_ptr, u_register_t vdev_ptr,
 			       u_register_t ipa, u_register_t level, u_register_t addr);
-u_register_t host_rmi_vdev_unmap(u_register_t rd_ptr, u_register_t vdev_ptr,
+u_register_t host_rmi_vdev_unmap(u_register_t rd_ptr,
 			       u_register_t ipa, u_register_t level,
 			       u_register_t *pa, u_register_t *top);
 u_register_t host_rmi_vdev_get_measurements(u_register_t rd_ptr, u_register_t pdev_ptr,

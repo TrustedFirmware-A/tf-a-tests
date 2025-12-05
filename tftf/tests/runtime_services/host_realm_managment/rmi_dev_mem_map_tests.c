@@ -308,8 +308,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		for (j = 0U; j < mem_info[i].num_regions; j++) {
 			u_register_t pa, pa_exp, top, top_exp;
 
-			res = host_rmi_vdev_unmap(realm.rd, (u_register_t)h_vdev->vdev_ptr,
-							map_addr[i][j],
+			res = host_rmi_vdev_unmap(realm.rd, map_addr[i][j],
 							mem_info[i].map_level,
 							&pa, &top);
 			if (res != RMI_SUCCESS) {

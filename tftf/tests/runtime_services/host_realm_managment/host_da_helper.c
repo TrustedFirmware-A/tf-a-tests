@@ -1013,14 +1013,25 @@ int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
 	return 0;
 }
 
-int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev)
+int host_unassign_vdev_from_realm(struct realm *realm,
+				  struct host_vdev *h_vdev)
 {
 	u_register_t ret;
+	u_register_t state;
 
-	ret = host_vdev_unlock(realm, h_vdev, RMI_VDEV_STATE_UNLOCKED);
+	ret = host_vdev_get_state(h_vdev, &state);
 	if (ret != RMI_SUCCESS) {
-		ERROR("VDEV unlock failed\n");
 		return -1;
+	}
+
+	if (state == RMI_VDEV_STATE_LOCKED ||
+	    state == RMI_VDEV_STATE_STARTED ||
+	    state == RMI_VDEV_STATE_ERROR) {
+		ret = host_vdev_unlock(realm, h_vdev, RMI_VDEV_STATE_UNLOCKED);
+		if (ret != RMI_SUCCESS) {
+			ERROR("VDEV unlock failed\n");
+			return -1;
+		}
 	}
 
 	ret = host_rmi_vdev_destroy(realm->rd,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -199,7 +199,8 @@ test_result_t test_amu_suspend_resume(void)
 
 		value = read_amevcntr0(i);
 		if (value < group0_ctrs[i]) {
-			tftf_testcase_printf("Invalid counter value: before: %llx, after: %llx\n",
+			tftf_testcase_printf("Invalid counter %u value: before: %llx, after: %llx\n",
+				i,
 				(unsigned long long)group0_ctrs[i],
 				(unsigned long long)value);
 			return TEST_RESULT_FAIL;

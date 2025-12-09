@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -48,10 +48,10 @@ static test_result_t test_rng_trap(bool use_rndrrs)
 					: "Q"(exclusive));
 		if (use_rndrrs) {
 			/* Attempt to read RNDRRS. */
-			__asm__ volatile ("mrs %0, rndrrs\n" : "=r" (rng));
+			rng = read_rndrrs();
 		} else {
 			/* Attempt to read RNDR. */
-			__asm__ volatile ("mrs %0, rndr\n" : "=r" (rng));
+			rng = read_rndr();
 		}
 		/*
 		 * After returning from the trap, the monitor variable should

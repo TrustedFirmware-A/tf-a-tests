@@ -14,6 +14,7 @@
 #include <plat_topology.h>
 #include <platform.h>
 #include <power_management.h>
+#include <test_helpers.h>
 #include <tftf_lib.h>
 #include <timer.h>
 
@@ -135,7 +136,31 @@ test_result_t test_amu_valid_ctr(void)
 
 		value = read_amevcntr0(i);
 		if (amu_group0_cnt_valid(i, value)) {
-			tftf_testcase_printf("Group0 counter %d has invalid value %lld\n", i, value);
+			tftf_testcase_printf("Group0 counter %u has invalid value %lld\n", i, value);
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+static void read_group0_cntrs(uint64_t group0_ctrs[AMU_GROUP0_NR_COUNTERS])
+{
+	for (int i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {
+		group0_ctrs[i] = read_amevcntr0(i);
+	}
+}
+
+/* Check if counter values are >= than the stored values. */
+static int check_group0_cntrs(uint64_t group0_ctrs[AMU_GROUP0_NR_COUNTERS])
+{
+	for (unsigned i = 0; i < AMU_GROUP0_NR_COUNTERS; i++) {
+		uint64_t value;
+
+		value = read_amevcntr0(i);
+		if (value < group0_ctrs[i]) {
+			tftf_testcase_printf("Invalid counter %u value: before: %llx, after: %llx\n",
+				i, group0_ctrs[i], value);
 			return TEST_RESULT_FAIL;
 		}
 	}
@@ -150,16 +175,13 @@ test_result_t test_amu_valid_ctr(void)
 test_result_t test_amu_suspend_resume(void)
 {
 	uint64_t group0_ctrs[AMU_GROUP0_NR_COUNTERS];
-	unsigned int i;
 
 	if (amu_get_version() == 0U) {
 		return TEST_RESULT_SKIPPED;
 	}
 
 	/* Save counters values before suspend */
-	for (i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {
-		group0_ctrs[i] = read_amevcntr0(i);
-	}
+	read_group0_cntrs(group0_ctrs);
 
 	/*
 	 * If FEAT_AMUv1p1 supported then make sure the save/restore works for
@@ -168,6 +190,8 @@ test_result_t test_amu_suspend_resume(void)
 	 * offset registers are only accessible in AARCH64 mode in EL2 or EL3.
 	 */
 #if __aarch64__
+	unsigned int i;
+
 	if (amu_get_version() >= ID_AA64PFR0_AMU_V1P1) {
 		/* Enabling voffsets in HCR_EL2. */
 		write_hcr_el2(read_hcr_el2() | HCR_AMVOFFEN_BIT);
@@ -190,21 +214,9 @@ test_result_t test_amu_suspend_resume(void)
 	/* Suspend/resume current core */
 	suspend_and_resume_this_cpu();
 
-	/*
-	 * Check if counter values are >= than the stored values.
-	 * If they are not, the AMU context save/restore in EL3 is buggy.
-	 */
-	for (i = 0; i < AMU_GROUP0_NR_COUNTERS; i++) {
-		uint64_t value;
-
-		value = read_amevcntr0(i);
-		if (value < group0_ctrs[i]) {
-			tftf_testcase_printf("Invalid counter %u value: before: %llx, after: %llx\n",
-				i,
-				(unsigned long long)group0_ctrs[i],
-				(unsigned long long)value);
-			return TEST_RESULT_FAIL;
-		}
+	/* If counters are not >=, the AMU context save/restore in EL3 is buggy. */
+	if (check_group0_cntrs(group0_ctrs) != TEST_RESULT_SUCCESS) {
+		return TEST_RESULT_FAIL;
 	}
 
 #if __aarch64__
@@ -233,6 +245,30 @@ test_result_t test_amu_suspend_resume(void)
 		}
 	}
 #endif
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/*
+ * Test that the counters are preserved on a world switch. There is no reliable
+ * way to make sure contexting did occur.
+ */
+test_result_t test_amu_world_switch(void)
+{
+	smc_args args = { TSP_FAST_FID(TSP_ADD), 4, 6 };
+	uint64_t group0_ctrs[AMU_GROUP0_NR_COUNTERS];
+
+	SKIP_TEST_IF_TSP_NOT_PRESENT();
+	if (amu_get_version() == 0U) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	read_group0_cntrs(group0_ctrs);
+	tftf_smc(&args);
+
+	if (check_group0_cntrs(group0_ctrs) != TEST_RESULT_SUCCESS) {
+		return TEST_RESULT_FAIL;
+	}
 
 	return TEST_RESULT_SUCCESS;
 }

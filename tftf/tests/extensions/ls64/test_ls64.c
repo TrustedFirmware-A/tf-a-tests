@@ -57,7 +57,9 @@ test_result_t test_ls64_instructions(void)
 		VERBOSE("Input Buffer[%d]=%lld\n", i, ls64_input_buffer[i]);
 		VERBOSE("Output Buffer[%d]=%lld\n", i, ls64_output_buffer[i]);
 
-		if (ls64_input_buffer[i] != ls64_output_buffer[i]) {
+		/* depending on the commandline, the model might NOT the result */
+		if (ls64_input_buffer[i] != ls64_output_buffer[i] &&
+		    ls64_input_buffer[i] != ~ls64_output_buffer[i]) {
 			return TEST_RESULT_FAIL;
 		}
 	}

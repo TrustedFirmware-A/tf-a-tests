@@ -463,7 +463,7 @@ static inline bool is_feat_csv2_present(void)
 static inline bool is_feat_csv2_2_present(void)
 {
 	return EXTRACT(ID_AA64PFR0_CSV2, read_id_aa64pfr0_el1())
-		== ID_AA64PFR0_CSV2_2_SUPPORTED;
+		>= ID_AA64PFR0_CSV2_2_SUPPORTED;
 }
 
 static inline bool is_feat_csv2_1p1_present(void)

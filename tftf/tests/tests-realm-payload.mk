@@ -25,6 +25,7 @@ TESTS_SOURCES	+=							\
 TESTS_SOURCES	+=							\
 	$(addprefix tftf/tests/runtime_services/host_realm_managment/,	\
 		host_crypto_utils.c					\
+		host_da_flow_helper.c					\
 		host_da_helper.c					\
 		host_pmuv3.c						\
 		host_realm_helper.c					\

@@ -479,11 +479,22 @@ int smcfree(void *faddptr,
  */
 
 	if (mmod->checkadd == 1) {
+		int ritem = 0;
 		for (unsigned int i = 0U; i < mmod->checknumentries; i++) {
 			if (fadd == mmod->checksa[i]) {
-				mmod->checksa[i] = 0U;
-				mmod->checkea[i] = 0U;
+				if (ritem == 1) {
+					printf("ERROR: multiple entries in check queue\n");
+					exit(1);
+				}
+				ritem = 1;
 			}
+			if ((ritem == 1) && (i != (mmod->checknumentries - 1))) {
+				mmod->checksa[i] = mmod->checksa[i+1];
+				mmod->checkea[i] = mmod->checkea[i+1];
+			}
+		}
+		if (ritem == 1) {
+			mmod->checknumentries--;
 		}
 		mmod->memptr = (void *)mmod->memory;
 		newblk = (void *)mmod->memory;

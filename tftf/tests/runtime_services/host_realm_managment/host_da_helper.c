@@ -614,25 +614,31 @@ static int host_dev_cache_dev_req_resp(struct host_pdev *h_pdev,
 		return -1;
 	}
 
-	rc = host_dev_cache_dev_object(h_pdev, h_vdev,
-				       (uint8_t *)dcomm_enter->req_addr,
-				       dcomm_exit->cache_obj_id,
-				       dcomm_exit->cache_req_offset,
-				       dcomm_exit->cache_req_len);
-
-	if (rc != 0) {
-		ERROR("host_dev_cache_device_object req failed\n");
-		return -1;
+	if (EXTRACT(RMI_DEV_COMM_EXIT_FLAGS_CACHE_REQ,
+			dcomm_exit->flags) != 0U) {
+		rc = host_dev_cache_dev_object(h_pdev, h_vdev,
+					       (uint8_t *)dcomm_enter->req_addr,
+					       dcomm_exit->cache_obj_id,
+					       dcomm_exit->cache_req_offset,
+					       dcomm_exit->cache_req_len);
+		if (rc != 0) {
+			ERROR("host_dev_cache_device_object req failed\n");
+			return -1;
+		}
 	}
 
-	rc = host_dev_cache_dev_object(h_pdev, h_vdev,
-				       (uint8_t *)dcomm_enter->resp_addr,
-				       dcomm_exit->cache_obj_id,
-				       dcomm_exit->cache_rsp_offset,
-				       dcomm_exit->cache_rsp_len);
 
-	if (rc != 0) {
-		ERROR("host_dev_cache_device_object rsp failed\n");
+	if (EXTRACT(RMI_DEV_COMM_EXIT_FLAGS_CACHE_RSP,
+			dcomm_exit->flags) != 0U) {
+		rc = host_dev_cache_dev_object(h_pdev, h_vdev,
+					       (uint8_t *)dcomm_enter->resp_addr,
+					       dcomm_exit->cache_obj_id,
+					       dcomm_exit->cache_rsp_offset,
+					       dcomm_exit->cache_rsp_len);
+
+		if (rc != 0) {
+			ERROR("host_dev_cache_device_object rsp failed\n");
+		}
 	}
 
 	return rc;
@@ -990,15 +996,8 @@ int host_vdev_get_measurements(struct realm *realm,
 	h_vdev->meas_len = 0;
 
 	/*
-	 * vdev_measure_params->flags is left as 0 as we don't want signed nor
-	 * raw output.
+	 * vdev_measure_params->flags is left as 0 as we don't want raw output.
 	 */
-	/*
-	 * Set indices value  to (1 << 254) to retrieve all measurements
-	 * supported by the device.
-	 */
-	vdev_measure_params->indices[31] = (unsigned char)1U << 6U;
-
 	rc = host_rmi_vdev_get_measurements(realm->rd, (u_register_t)h_pdev->pdev,
 					    (u_register_t)h_vdev->vdev_ptr,
 					    (u_register_t)vdev_measure_params);

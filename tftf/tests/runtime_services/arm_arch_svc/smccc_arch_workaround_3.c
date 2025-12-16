@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -20,10 +20,12 @@
 #define CORTEX_A72_MIDR	0x410FD080
 #define CORTEX_A73_MIDR	0x410FD090
 #define CORTEX_A75_MIDR	0x410FD0A0
+#define NEOVERSE_V2_MIDR 0x410FD4F0
 
 static int cortex_a57_test(void);
 static int cortex_a73_test(void);
 static int cortex_a75_test(void);
+static int neoverse_v2_test(void);
 static int csv2_test(void);
 
 static struct ent {
@@ -33,7 +35,8 @@ static struct ent {
 	{ .midr = CORTEX_A57_MIDR, .wa_required = cortex_a57_test },
 	{ .midr = CORTEX_A72_MIDR, .wa_required = csv2_test },
 	{ .midr = CORTEX_A73_MIDR, .wa_required = cortex_a73_test },
-	{ .midr = CORTEX_A75_MIDR, .wa_required = cortex_a75_test }
+	{ .midr = CORTEX_A75_MIDR, .wa_required = cortex_a75_test },
+	{ .midr = NEOVERSE_V2_MIDR, .wa_required = neoverse_v2_test }
 };
 
 static int cortex_a57_test(void)
@@ -47,6 +50,11 @@ static int cortex_a73_test(void)
 }
 
 static int cortex_a75_test(void)
+{
+	return 1;
+}
+
+static int neoverse_v2_test(void)
 {
 	return 1;
 }

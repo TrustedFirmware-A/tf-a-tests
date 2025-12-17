@@ -132,16 +132,16 @@ static void el2_save_tcr2_registers(el2_tcr2_regs_t *ctx)
 	}
 }
 
-static void el2_save_sxpoe_registers(el2_sxpoe_regs_t *ctx)
+static void el2_save_s1poe_registers(el2_s1poe_regs_t *ctx)
 {
-	if (is_feat_sxpoe_present()) {
+	if (is_feat_s1poe_present()) {
 		EL2_SAVE_CTX_REG(ctx, por_el2);
 	}
 }
 
-static void el2_save_sxpie_registers(el2_sxpie_regs_t *ctx)
+static void el2_save_s1pie_registers(el2_s1pie_regs_t *ctx)
 {
-	if (is_feat_sxpie_present()) {
+	if (is_feat_s1pie_present()) {
 		EL2_SAVE_CTX_REG(ctx, pire0_el2);
 		EL2_SAVE_CTX_REG(ctx, pir_el2);
 	}
@@ -303,16 +303,16 @@ static void el2_write_tcr2_registers_with_mask(const el2_tcr2_regs_t *ctx, uint6
 	}
 }
 
-static void el2_write_sxpoe_registers_with_mask(const el2_sxpoe_regs_t *ctx, uint64_t or_mask)
+static void el2_write_s1poe_registers_with_mask(const el2_s1poe_regs_t *ctx, uint64_t or_mask)
 {
-	if (is_feat_sxpoe_present()) {
+	if (is_feat_s1poe_present()) {
 		EL2_WRITE_MASK_CTX_REG(ctx, por_el2, or_mask);
 	}
 }
 
-static void el2_write_sxpie_registers_with_mask(const el2_sxpie_regs_t *ctx, uint64_t or_mask)
+static void el2_write_s1pie_registers_with_mask(const el2_s1pie_regs_t *ctx, uint64_t or_mask)
 {
-	if (is_feat_sxpie_present()) {
+	if (is_feat_s1pie_present()) {
 		EL2_WRITE_MASK_CTX_REG(ctx, pire0_el2, or_mask);
 		EL2_WRITE_MASK_CTX_REG(ctx, pir_el2, or_mask);
 	}
@@ -471,14 +471,14 @@ static void el2_dump_tcr2_register_context(const el2_tcr2_regs_t *ctx)
 	INFO("\n");
 }
 
-static void el2_dump_sxpoe_register_context(const el2_sxpoe_regs_t *ctx)
+static void el2_dump_s1poe_register_context(const el2_s1poe_regs_t *ctx)
 {
 	EL2_PRINT_CTX_HEADING("SxPOE registers");
 	EL2_PRINT_CTX_MEMBER(ctx, "POR_EL2", por_el2);
 	INFO("\n");
 }
 
-static void el2_dump_sxpie_register_context(const el2_sxpie_regs_t *ctx)
+static void el2_dump_s1pie_register_context(const el2_s1pie_regs_t *ctx)
 {
 	EL2_PRINT_CTX_HEADING("SxPIE registers");
 	EL2_PRINT_CTX_MEMBER(ctx, "PIRE0_EL2", pire0_el2);
@@ -531,8 +531,8 @@ void el2_save_registers(el2_sysregs_t *ctx)
 	el2_save_csv2_registers(&ctx->csv2);
 	el2_save_hcx_registers(&ctx->hcx);
 	el2_save_tcr2_registers(&ctx->tcr2);
-	el2_save_sxpoe_registers(&ctx->sxpoe);
-	el2_save_sxpie_registers(&ctx->sxpie);
+	el2_save_s1poe_registers(&ctx->s1poe);
+	el2_save_s1pie_registers(&ctx->s1pie);
 	el2_save_s2pie_registers(&ctx->s2pie);
 	el2_save_gcs_registers(&ctx->gcs);
 	el2_save_mpam_registers(&ctx->mpam);
@@ -557,8 +557,8 @@ void el2_modify_registers(const el2_sysregs_t *ctx, const el2_modify_operation_t
 	el2_write_csv2_registers_with_mask(&ctx->csv2, or_mask);
 	el2_write_hcx_registers_with_mask(&ctx->hcx, or_mask);
 	el2_write_tcr2_registers_with_mask(&ctx->tcr2, or_mask);
-	el2_write_sxpoe_registers_with_mask(&ctx->sxpoe, or_mask);
-	el2_write_sxpie_registers_with_mask(&ctx->sxpie, or_mask);
+	el2_write_s1poe_registers_with_mask(&ctx->s1poe, or_mask);
+	el2_write_s1pie_registers_with_mask(&ctx->s1pie, or_mask);
 	el2_write_s2pie_registers_with_mask(&ctx->s2pie, or_mask);
 	el2_write_gcs_registers_with_mask(&ctx->gcs, or_mask);
 	/* There is nothing to do in regards to MPAM registers. */
@@ -582,8 +582,8 @@ void el2_dump_register_context(const char *ctx_name, const el2_sysregs_t *ctx)
 	el2_dump_csv2_register_context(&ctx->csv2);
 	el2_dump_hcx_register_context(&ctx->hcx);
 	el2_dump_tcr2_register_context(&ctx->tcr2);
-	el2_dump_sxpoe_register_context(&ctx->sxpoe);
-	el2_dump_sxpie_register_context(&ctx->sxpie);
+	el2_dump_s1poe_register_context(&ctx->s1poe);
+	el2_dump_s1pie_register_context(&ctx->s1pie);
 	el2_dump_s2pie_register_context(&ctx->s2pie);
 	el2_dump_gcs_register_context(&ctx->gcs);
 	el2_dump_mpam_register_context(&ctx->mpam);

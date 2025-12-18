@@ -98,12 +98,13 @@
 #endif
 
 /*
- * USE 0x200000 DRAM offset to store TFTF data
- *
- * Please note that this won't be suitable for all test scenarios and
- * for this reason some tests will be disabled in this configuration.
+ * When USE_NVM = 0, TFTF_NVM_OFFSET marks the DRAM region
+ * used as NVM. This region must not overlap the memory where
+ * the TFTF image is loaded. The load address is given by
+ * the TFTF_BASE macro. Set TFTF_NVM_OFFSET to leave enough
+ * space for the TFTF image.
  */
-#define TFTF_NVM_OFFSET		0x40000
+#define TFTF_NVM_OFFSET		0x80000
 #define TFTF_NVM_SIZE		(128 * SZ_1M)	/* 128 MB */
 
 /*******************************************************************************

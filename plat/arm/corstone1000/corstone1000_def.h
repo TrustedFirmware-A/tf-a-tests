@@ -26,13 +26,23 @@
  * GIC-400 & interrupt handling related constants
  ******************************************************************************/
 /* GIC memory map */
+#ifdef CORSTONE1000_CORTEX_A320
+#define GICD_BASE	0x1C000000
+#define GICR_BASE	0x1C040000
+
+/* GIC re-distributor doesn't exits on gic-600, but we still need to
+ * provide GICC_BASE as the gic driver needs it
+ */
+#define GICC_BASE		0x0
+#else
+
 #define GICD_BASE		0x1C010000
 #define GICC_BASE		0x1C02F000
 /* GIC re-distributor doesn't exits on gic-400, but we still need to
  * provide GICR_BASE as the gic driver needs it
  */
 #define GICR_BASE		0x0
-
+#endif
 /*******************************************************************************
  * PL011 related constants
  ******************************************************************************/

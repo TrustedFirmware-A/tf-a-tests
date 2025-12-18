@@ -31,14 +31,14 @@ static bool undef_injection_handler(void)
 /*
  * Test to verify UNDEF injection support in TF-A
  *
- * This test tries to access FGT EL2 registers which traps to EL3 and then
+ * This test tries to access GCS EL2 registers which traps to EL3 and then
  * the error is injected back from EL3 to TFTF to ensure that injection
  * logic in TF-A is working, it also ensures that EL3 is still functional
  * after UNDEF injection.
  *
- * To trap FGT register access to EL3, we run this test on a model with
- * FEAT_FGT present but the traps from EL3 are not disabled by setting
- * ENABLE_FEAT_FGT = 0
+ * To trap GCS register access to EL3, we run this test on a model with
+ * FEAT_GCS present but the traps from EL3 are not disabled by setting
+ * ENABLE_FEAT_GCS = 0
  */
 test_result_t test_undef_injection(void)
 {
@@ -47,7 +47,7 @@ test_result_t test_undef_injection(void)
 	register_custom_sync_exception_handler(undef_injection_handler);
 
 	/* Try to access a register which traps to EL3 */
-	read_hfgitr_el2();
+	read_gcscr_el2();
 
 	unregister_custom_sync_exception_handler();
 

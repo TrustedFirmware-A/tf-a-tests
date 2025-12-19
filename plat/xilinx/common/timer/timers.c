@@ -136,10 +136,9 @@ static int handler_timer(void)
 	timer_write_32(TTC_IER_OFFSET, 0x00);
 
 	status = timer_read_32(TTC_ISR_OFFSET);
-	if (status & 0x1)
-		INFO("Timer Event! %x\n", status);
-	else
-		ERROR("Its not a Timer Event %d\n", status);
+	if (status & 0x1) {
+		/* Nothing to do from TF-A tests context */
+	}
 
 	return RET_SUCCESS;
 }

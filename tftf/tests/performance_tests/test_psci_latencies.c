@@ -171,7 +171,7 @@ test_result_t psci_trigger_peer_cluster_cache_coh(void)
 	/* Turn On the `keep_on CPU` and keep it ON for the baseline data */
 	ret = tftf_try_cpu_on(target_keep_on_mpid, (uintptr_t) test_target_keep_on_function, 0);
 	if (ret != PSCI_E_SUCCESS) {
-		tftf_testcase_printf("Failed to turn ON target CPU %x\n", target_mpid);
+		tftf_testcase_printf("Failed to turn ON target CPU %x\n", target_keep_on_mpid);
 		return TEST_RESULT_FAIL;
 	}
 

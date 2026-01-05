@@ -15,7 +15,7 @@
 
 #ifdef SDEI_INCLUDE
 
-int stbev = 0;
+int stbev;
 
 #define MIN_PPI_ID		U(16)
 #define MAX_PPI_ID		U(31)
@@ -83,23 +83,24 @@ void set_event_constraints(int sdei_arg_name, struct memmod *mmod)
 /*
  * SDEI function that has no arguments
  */
-int64_t tftf_test_sdei_noarg(int64_t (*sdei_func)(void), char *funcstr)
+test_result_t tftf_test_sdei_noarg(int64_t (*sdei_func)(void), char *funcstr)
 {
 		int64_t ret = (*sdei_func)();
 
 		if (ret < 0) {
 			tftf_testcase_printf("%s failed: 0x%llx\n", funcstr, ret);
+			return TEST_RESULT_FAIL;
 		}
 
 		printf("%s return: %llx\n", funcstr, ret);
 
-		return ret;
+		return TEST_RESULT_SUCCESS;
 }
 
 /*
  * SDEI function that has single argument
  */
-void tftf_test_sdei_singlearg(int64_t (*sdei_func)(uint64_t), char *funcstr)
+test_result_t tftf_test_sdei_singlearg(int64_t (*sdei_func)(uint64_t), char *funcstr)
 {
 		struct sdei_intr_ctx intr_ctx;
 		int bev;
@@ -109,7 +110,9 @@ void tftf_test_sdei_singlearg(int64_t (*sdei_func)(uint64_t), char *funcstr)
 
 		if (ret < 0) {
 			tftf_testcase_printf("%s failed: 0x%llx\n", funcstr, ret);
+			return TEST_RESULT_FAIL;
 		}
+		return TEST_RESULT_SUCCESS;
 }
 
 uint64_t *bound_shared_inums;
@@ -266,7 +269,7 @@ void release_full_slots(struct inputparameters inp, struct memmod *mmod)
 /*
  * SDEI function called from fuzzer
  */
-void run_sdei_fuzz(int funcid, struct memmod *mmod, bool inrange, int cntid)
+test_result_t run_sdei_fuzz(int funcid, struct memmod *mmod, bool inrange, int cntid)
 {
 	#ifdef SMC_FUZZER_DEBUG
 	if (inrange) {
@@ -300,11 +303,11 @@ void run_sdei_fuzz(int funcid, struct memmod *mmod, bool inrange, int cntid)
 		}
 	} else if (funcid == sdei_pe_unmask_funcid) {
 		if (inrange) {
-			tftf_test_sdei_noarg(sdei_pe_unmask, "sdei_pe_unmask");
+			return tftf_test_sdei_noarg(sdei_pe_unmask, "sdei_pe_unmask");
 		}
 	} else if (funcid == sdei_pe_mask_funcid) {
 		if (inrange) {
-			tftf_test_sdei_noarg(sdei_pe_mask, "sdei_pe_mask");
+			return tftf_test_sdei_noarg(sdei_pe_mask, "sdei_pe_mask");
 		}
 	} else if (funcid == sdei_interrupt_bind_funcid) {
 		struct sdei_intr_ctx intr_ctx;
@@ -394,7 +397,7 @@ void run_sdei_fuzz(int funcid, struct memmod *mmod, bool inrange, int cntid)
 		}
 	} else if (funcid == sdei_private_reset_funcid) {
 		if (inrange) {
-			tftf_test_sdei_noarg(sdei_private_reset, "sdei_private_reset");
+			return tftf_test_sdei_noarg(sdei_private_reset, "sdei_private_reset");
 		}
 	} else if (funcid == sdei_shared_reset_funcid) {
 		int64_t ret = -1;
@@ -652,7 +655,7 @@ void run_sdei_fuzz(int funcid, struct memmod *mmod, bool inrange, int cntid)
 
 		ret = sdei_interrupt_bind(inp.x1, &intr_ctx);
 		if (ret < 0) {
-			return;
+			return TEST_RESULT_SUCCESS;
 		}
 
 		// register shared event
@@ -717,7 +720,7 @@ void run_sdei_fuzz(int funcid, struct memmod *mmod, bool inrange, int cntid)
 		ret = sdei_interrupt_bind(inp.x1, &intr_ctx);
 
 		if (ret < 0) {
-			return;
+			return TEST_RESULT_SUCCESS;
 		}
 
 		uint64_t evnum[1] = {ret};
@@ -786,6 +789,7 @@ void run_sdei_fuzz(int funcid, struct memmod *mmod, bool inrange, int cntid)
 			release_private_slots(mmod, 1, false);
 		}
 	}
+	return TEST_RESULT_SUCCESS;
 }
 
 #endif

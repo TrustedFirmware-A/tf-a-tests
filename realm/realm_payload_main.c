@@ -119,15 +119,12 @@ static bool test_realm_enter_plane_n_reg_rw(void)
 				return false;
 			}
 
-			/*
-			 * write ttbr0_el1 register and verify it is same after
-			 * exiting plane n to validate access to 128-bit registers.
-			 */
-			ret = rsi_plane_sysreg_write(plane_index,
-						     SYSREG_ID_ttbr0_el1,
-						     0x12340000, 0xA0000);
-			if (ret != RSI_SUCCESS) {
-				realm_printf("ttbr0_el1 register write failed\n");
+			/* read sysreg not supported by rmm, expect error */
+			ret = rsi_plane_sysreg_read(plane_index,
+						    SYSREG_ID_INVALID,
+						    &reg3, NULL);
+			if (ret == RSI_SUCCESS) {
+				realm_printf("reg read should have failed\n");
 				return false;
 			}
 
@@ -142,38 +139,87 @@ static bool test_realm_enter_plane_n_reg_rw(void)
 					realm_printf("reg mismatch after write 0x%lx\n", reg3);
 					return false;
 				}
+			}
+
+			if (!is_feat_d128_supported()) {
+				/* try access to a 128-bit register with FEAT_D128 unsupported */
+				ret = rsi_plane_sysreg_read(plane_index,
+							    SYSREG_ID_ttbr0_el1_d128,
+							    &reg3, &reg4);
+				if (ret == RSI_SUCCESS) {
+					realm_printf("reg read should have failed\n");
+					return false;
+				}
+
+				/*
+				 * All 64-bit access tests are done now and
+				 * FEAT_D128 is not supported, so we can finish.
+				 */
+				return true;
+			}
+
+			/*
+			 * write ttbr0_el1 register and verify it is same after
+			 * exiting plane n to validate access to 128-bit registers.
+			 */
+			ret = rsi_plane_sysreg_write(plane_index,
+						     SYSREG_ID_ttbr0_el1_d128,
+						     0x12340000, 0xA0000);
+			if (ret != RSI_SUCCESS) {
+				realm_printf("ttbr0_el1 register write failed\n");
+				return false;
+			}
+
+			/* enter plane n */
+			ret = realm_plane_enter(plane_index, perm_index, flags, &run);
+			if (ret) {
+				u_register_t expected_hi = 0UL;
 
 				/*
 				 * read ttbr0_el1 register for plane1 to validate
 				 * access to 128-bit registers.
 				 */
-				ret = rsi_plane_sysreg_read(plane_index, SYSREG_ID_ttbr0_el1,
+				ret = rsi_plane_sysreg_read(plane_index, SYSREG_ID_ttbr0_el1_d128,
 						&reg3, &reg4);
 
-				if (!is_feat_d128_supported()) {
-					/*
-					 * As FEAT_D128 is not supported, manually write
-					 * the expected value into reg4.
-					 */
-					reg4 = 0xA0000;
+				if (is_feat_tcr2_supported()) {
+					expected_hi = 0xA0000;
 				}
 
 				if ((ret != RSI_SUCCESS) ||
 				    (reg3 != 0x12340000) ||
-				    (reg4 != 0xA0000)) {
+				    (reg4 != expected_hi)) {
 					realm_printf("reg mismatch after write 0x%lx - 0x%lx\n",
 						     reg3, reg4);
 					return false;
 				}
-			}
 
-			/* read sysreg not supported by rmm, expect error */
-			ret = rsi_plane_sysreg_read(plane_index,
-						    SYSREG_ID_mpamidr_el1,
-						    &reg3, NULL);
-			if (ret == RSI_SUCCESS) {
-				realm_printf("reg read should have failed\n");
-				return false;
+				if (is_feat_tcr2_supported()) {
+					/* Try 64-bit access to 128-bit registers */
+					ret = rsi_plane_sysreg_read(plane_index,
+							SYSREG_ID_ttbr0_el1, &reg3, &reg4);
+					if ((ret != RSI_SUCCESS) ||
+					    (reg3 != 0x12340000) ||
+					    (reg4 != 0UL)) {
+						realm_printf("reg mismatch after 64-Bit read 0x%lx - 0x%lx\n",
+						     reg3, reg4);
+						return false;
+					}
+
+					ret = rsi_plane_sysreg_write(plane_index,
+							SYSREG_ID_ttbr0_el1, 0xdead0000, 0x0);
+
+					ret = rsi_plane_sysreg_read(plane_index,
+							SYSREG_ID_ttbr0_el1_d128, &reg3, &reg4);
+					if ((ret != RSI_SUCCESS) ||
+					    (reg3 != 0xdead0000) ||
+					    (reg4 != 0xA0000)) {
+						realm_printf("reg mismatch after 64-Bit read 0x%lx - 0x%lx\n",
+						     reg3, reg4);
+						return false;
+					}
+
+				}
 			}
 			return true;
 		}
@@ -184,6 +230,16 @@ static bool test_realm_enter_plane_n_reg_rw(void)
 		/* return pauth and sctlr back to p0 */
 		realm_shared_data_set_my_realm_val(HOST_ARG1_INDEX, read_apiakeylo_el1());
 		realm_shared_data_set_my_realm_val(HOST_ARG2_INDEX, read_sctlr_el1());
+
+		if (is_feat_d128_supported() && is_feat_tcr2_supported()) {
+			/*
+			 * Set planeN TCR2_EL1.D128 bit so that TTBR0_EL1 can be
+			 * accessed as a 128 bit register.
+			 */
+			write_tcr2_el1(read_tcr2_el1() | TCR2_EL1_D128_BIT);
+			isb();
+		}
+
 		return true;
 	}
 }

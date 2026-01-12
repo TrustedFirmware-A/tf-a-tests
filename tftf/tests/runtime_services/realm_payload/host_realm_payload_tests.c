@@ -693,16 +693,21 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr,
 			return false;
 		}
 
+		write_ich_hcr_el2(ICH_HCR_EL2_EN_BIT |
+				ICH_HCR_EL2_VSGIEEOICOUNT_BIT |
+				ICH_HCR_EL2_DVIM_BIT);
+
 		/* Inject PMU virtual interrupt */
-		run->entry.gicv3_lrs[0] =
+		write_ich_lr0_el2(
 			ICH_LRn_EL2_STATE_Pending | ICH_LRn_EL2_Group_1 |
-			(tftf_get_pmu_virq() << ICH_LRn_EL2_vINTID_SHIFT);
+			(tftf_get_pmu_virq() << ICH_LRn_EL2_vINTID_SHIFT));
 
 		/* Re-enter Realm */
 		INFO("Re-entering Realm with vIRQ %u pending\n", tftf_get_pmu_virq());
 
 		retrmm = host_realm_rec_enter(realm_ptr, &exit_reason,
 						&host_call_result, rec_num);
+
 		if ((retrmm == REALM_SUCCESS) &&
 		    (exit_reason == RMI_EXIT_HOST_CALL) &&
 		    (host_call_result == TEST_RESULT_SUCCESS)) {

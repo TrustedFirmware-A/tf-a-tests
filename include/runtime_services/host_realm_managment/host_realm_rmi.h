@@ -714,8 +714,6 @@
 #define RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS_WIDTH	5UL
 #define RMI_FEATURE_REGISTER_0_HASH_SHA_256		BIT(32)
 #define RMI_FEATURE_REGISTER_0_HASH_SHA_512		BIT(33)
-#define RMI_FEATURE_REGISTER_0_GICV3_NUM_LRS_SHIFT	34UL
-#define RMI_FEATURE_REGISTER_0_GICV3_NUM_LRS_WIDTH	4UL
 #define RMI_FEATURE_REGISTER_0_MAX_RECS_ORDER_SHIFT	38UL
 #define RMI_FEATURE_REGISTER_0_MAX_RECS_ORDER_WIDTH	4UL
 #define RMI_FEATURE_REGISTER_0_DA_EN			BIT(42)
@@ -943,13 +941,7 @@ struct rmi_rec_entry {
 	/* Flags */
 	SET_MEMBER_RMI(u_register_t flags, 0, 0x200);		/* Offset 0 */
 	/* General-purpose registers */
-	SET_MEMBER_RMI(u_register_t gprs[REC_EXIT_NR_GPRS], 0x200, 0x300); /* 0x200 */
-	SET_MEMBER_RMI(struct {
-		/* GICv3 Hypervisor Control Register */
-		u_register_t gicv3_hcr;				/* 0x300 */
-		/* GICv3 List Registers */
-		u_register_t gicv3_lrs[REC_GIC_NUM_LRS];	/* 0x308 */
-	}, 0x300, 0x800);
+	SET_MEMBER(u_register_t gprs[REC_EXIT_NR_GPRS], 0x200, 0x300); /* 0x200 */
 };
 
 /*
@@ -979,17 +971,7 @@ struct rmi_rec_exit {
 			long rtt_level;			/* 0x120 */
 		   }, 0x100, 0x200);
 	/* General-purpose registers */
-	SET_MEMBER_RMI(unsigned long gprs[REC_EXIT_NR_GPRS], 0x200, 0x300); /* 0x200 */
-	SET_MEMBER_RMI(struct {
-			/* GICv3 Hypervisor Control Register */
-			unsigned long gicv3_hcr;	/* 0x300 */
-			/* GICv3 List Registers */
-			unsigned long gicv3_lrs[REC_GIC_NUM_LRS]; /* 0x308 */
-			/* GICv3 Maintenance Interrupt State Register */
-			unsigned long gicv3_misr;	/* 0x388 */
-			/* GICv3 Virtual Machine Control Register */
-			unsigned long gicv3_vmcr;	/* 0x390 */
-		   }, 0x300, 0x400);
+	SET_MEMBER_RMI(unsigned long gprs[REC_EXIT_NR_GPRS], 0x200, 0x400); /* 0x200 */
 	SET_MEMBER_RMI(struct {
 			/* Counter-timer Physical Timer Control Register */
 			unsigned long cntp_ctl;		/* 0x400 */

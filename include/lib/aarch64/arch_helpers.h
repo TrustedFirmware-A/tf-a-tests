@@ -26,6 +26,12 @@ static inline u_register_t read_ ## _name(void)			\
 	return v;						\
 }
 
+#define DEFINE_SYSREG_ACCESS_FUNC(_name, _reg_name)			\
+static inline void _name(u_register_t v)				\
+{									\
+	__asm__ volatile ("msr " #_reg_name ", %0" : : "r" (v));	\
+}
+
 #define _DEFINE_SYSREG_WRITE_FUNC(_name, _reg_name)			\
 static inline void write_ ## _name(u_register_t v)			\
 {									\
@@ -270,8 +276,8 @@ DEFINE_SYSOP_TYPE_FUNC(dmb, ishst)
 DEFINE_SYSOP_TYPE_FUNC(dmb, ish)
 DEFINE_SYSOP_FUNC(isb)
 
-DEFINE_SYSOP_PARAM_FUNC(wfit)
-DEFINE_SYSOP_PARAM_FUNC(wfet)
+DEFINE_SYSREG_ACCESS_FUNC(wfit, S0_3_C1_C0_1)
+DEFINE_SYSREG_ACCESS_FUNC(wfet, S0_3_C1_C0_0)
 
 DEFINE_SYSOP_PARAM_FUNC(xpaci)
 

@@ -7,6 +7,8 @@
 #include "./test_ls64.h"
 #include <test_helpers.h>
 
+#define LS64_ARRAYSIZE	(64 / sizeof(uint64_t))
+
 /*
  * @brief Test LS64 feature support when the extension is enabled.
  *
@@ -26,8 +28,18 @@ test_result_t test_ls64_instructions(void)
 	/* Make sure FEAT_LS64 is supported. */
 	SKIP_TEST_IF_LS64_NOT_SUPPORTED();
 
-	uint64_t ls64_input_buffer[LS64_ARRAYSIZE] = {1, 2, 3, 4, 5, 6, 7, 8};
+	uint64_t ls64_input_buffer[LS64_ARRAYSIZE] = {
+		0x5555555555555555,
+		0xaaaaaaaaaaaaaaaa,
+		0x0000000000000000,
+		0xffffffffffffffff,
+		0x0123456789012345,
+		0x6969696969696969,
+		0xcc33cc33cc33cc33,
+		0x1824428199996666
+	};
 	uint64_t ls64_output_buffer[LS64_ARRAYSIZE] = {0};
+
 	/*
 	 * Address where the data will be written to/read from with instructions
 	 * st64b and ld64b respectively.

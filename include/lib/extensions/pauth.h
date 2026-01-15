@@ -25,10 +25,6 @@ void pauth_init_enable(void);
 /* Disable ARMv8.3-PAuth */
 void pauth_disable(void);
 
-void paciasp(void);
-void autiasp(void);
-void xpaclri(void);
-
 /*
  * Fill Pauth Keys and template with random values if keys werenot initialized earlier,
  * Else Copy PAuth key registers to template.

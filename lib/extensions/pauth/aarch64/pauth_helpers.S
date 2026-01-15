@@ -56,21 +56,6 @@ enable_exit:
 	ret
 endfunc pauth_init_enable
 
-func paciasp
-	hint	#25
-	ret
-endfunc paciasp
-
-func autiasp
-	hint	#29
-	ret
-endfunc autiasp
-
-func xpaclri
-	hint	#7
-	ret
-endfunc xpaclri
-
 /* -----------------------------------------------------------
  * Disable pointer authentication in EL1/EL2
  * -----------------------------------------------------------

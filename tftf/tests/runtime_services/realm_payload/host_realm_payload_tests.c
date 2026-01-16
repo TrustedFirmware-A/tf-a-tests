@@ -40,6 +40,9 @@ static uint128_t pauth_keys_before[NUM_KEYS];
 static uint128_t pauth_keys_after[NUM_KEYS];
 #endif
 
+/* EL1 Virtual Timer IRQ */
+#define EL1_VIRT_TIMER_IRQ	27U
+
 static unsigned int tftf_get_pmu_irq(void)
 {
 	if (arm_gic_get_version() == 5)
@@ -54,6 +57,14 @@ static unsigned int tftf_get_pmu_virq(void)
 		return PMU_VIRQ | INPLACE(INT_TYPE, INT_PPI);
 	else
 		return PMU_VIRQ;
+}
+
+static unsigned int tftf_get_timer_virq(void)
+{
+	if (arm_gic_get_version() == 5)
+		return EL1_VIRT_TIMER_IRQ | INPLACE(INT_TYPE, INT_PPI);
+	else
+		return EL1_VIRT_TIMER_IRQ;
 }
 
 /*
@@ -781,6 +792,118 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr,
 		ERROR("%s() failed, ret=%lx host_call_result %u\n",
 			"host_realm_rec_enter", retrmm, host_call_result);
 	}
+	return false;
+}
+
+/* GIC Maintenance Interrupt ID (PPI 25) */
+#define GIC_MAINT_IRQ		25U
+
+/*
+ * IRQ handler for GIC Maintenance Interrupt.
+ */
+static int host_maint_interrupt(void *data)
+{
+	(void)data;
+
+	assert(false);
+	return -1;
+}
+
+/*
+ * IRQ handler for EL1 Virtual Timer IRQ.
+ */
+static int host_timer_interrupt(void *data)
+{
+	(void)data;
+
+	assert(false);
+	return -1;
+}
+
+/*
+ * Handle timer IRQ exit from realm.
+ */
+static bool host_realm_handle_timer_irq_exit(struct realm *realm_ptr,
+		unsigned int rec_num)
+{
+	u_register_t exit_reason, retrmm;
+	unsigned int host_call_result;
+	u_register_t intid0;
+	struct rmi_rec_run *run = (struct rmi_rec_run *)realm_ptr->run[rec_num];
+
+	INFO("=== First exit: LR[0]=0x%lx MISR=0x%lx ===\n",
+	     read_ich_lr0_el2(), read_ich_misr_el2());
+
+	/* Extract and check INTID */
+	intid0 = (read_ich_lr0_el2() >> ICH_LRn_EL2_vINTID_SHIFT) & 0xFFFFFF;
+
+	/* Check if virtual timer has expired */
+	if ((run->exit.cntv_ctl & (CNTV_CTL_ENABLE_MASK << CNTV_CTL_ENABLE_SHIFT)) &&
+	    (run->exit.cntv_ctl & (CNTV_CTL_ISTATUS_MASK << CNTV_CTL_ISTATUS_SHIFT))) {
+		INFO("Timer expired: CNTV_CTL=0x%lx CNTV_CVAL=0x%lx\n",
+		     run->exit.cntv_ctl, run->exit.cntv_cval);
+	} else {
+		ERROR("Timer IRQ exit but timer not expired: CNTV_CTL=0x%lx\n",
+		      run->exit.cntv_ctl);
+		return false;
+	}
+
+	tftf_irq_disable(tftf_get_timer_virq());
+
+	/* Inject Timer virtual interrupt */
+	write_ich_hcr_el2(ICH_HCR_EL2_EN_BIT |
+			ICH_HCR_EL2_VSGIEEOICOUNT_BIT |
+			ICH_HCR_EL2_DVIM_BIT);
+
+	/* Inject Timer virtual interrupt */
+	write_ich_lr0_el2(ICH_LRn_EL2_EOI |
+		ICH_LRn_EL2_STATE_Pending | ICH_LRn_EL2_Group_1 |
+		(tftf_get_timer_virq() << ICH_LRn_EL2_vINTID_SHIFT));
+
+	/* Re-enter Realm */
+	INFO("=== Re-entering with vIRQ %u, Entry LR[0]=0x%lx ===\n",
+		tftf_get_timer_virq(), read_ich_lr0_el2());
+
+	retrmm = host_realm_rec_enter(realm_ptr, &exit_reason,
+					&host_call_result, rec_num);
+
+	INFO("=== Second exit: reason=%lx LR[0]=0x%lx MISR=0x%lx ===\n",
+	     exit_reason, read_ich_lr0_el2(), read_ich_misr_el2());
+
+	/* Extract and check INTID */
+	intid0 = (read_ich_lr0_el2() >> ICH_LRn_EL2_vINTID_SHIFT) & 0xFFFFFF;
+
+	/* Check if MISR EOI bit is set, timer isr is disabled by realm */
+	while (((exit_reason == RMI_EXIT_IRQ) ||
+			(read_ich_misr_el2() & ICH_MISR_EL2_EOI) == 0U)) {
+		INFO("Timer ISR not disabled by Realm re-enter\n");
+
+		retrmm = host_realm_rec_enter(realm_ptr, &exit_reason,
+			&host_call_result, rec_num);
+	}
+
+	/* Check if timer ISR with EOI bit is set in LR[0] and free it */
+	if (intid0 == tftf_get_timer_virq() &&
+	    (read_ich_lr0_el2() & ICH_LRn_EL2_EOI)) {
+		INFO("Timer IRQ %u with EOI bit set found in LR[0], clearing LR\n",
+		     tftf_get_timer_virq());
+		write_ich_lr0_el2(0U);
+	}
+
+	/* If second exit is due to maintenance IRQ, re-enter realm */
+	if ((retrmm == REALM_SUCCESS) && (exit_reason == RMI_EXIT_IRQ)) {
+		retrmm = host_realm_rec_enter(realm_ptr, &exit_reason,
+						&host_call_result, rec_num);
+	}
+
+	if ((retrmm == REALM_SUCCESS) &&
+	    (exit_reason == RMI_EXIT_HOST_CALL) &&
+	    (host_call_result == TEST_RESULT_SUCCESS)) {
+		return true;
+	}
+
+	ERROR("%s() failed, ret=%lx exit_reason=%lx host_call_result %u\n",
+		"host_realm_rec_enter", retrmm, exit_reason, host_call_result);
 	return false;
 }
 
@@ -3990,6 +4113,120 @@ test_result_t host_realm_feat_tcr2(void)
 	if (!ret1 || !ret2) {
 		ERROR("%s(): enter=%d destroy=%d\n",
 		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/*
+ * @Test_Aim@ Test EL1 virtual timer in realm
+ */
+test_result_t host_test_realm_el1_timer(void)
+{
+	bool ret1, ret2;
+	int ret;
+	u_register_t rec_flag[] = {RMI_RUNNABLE};
+	struct realm realm;
+	struct test_realm_params params = {0};
+	u_register_t timer_irq_received = 0U, elapsed_ms = 0U;
+	u_register_t deadline_ms = 100U;  /* Timer deadline in ms */
+	u_register_t wait_time_ms = 150U; /* Wait time to ensure timer fires */
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	/* Register GIC Maintenance IRQ handler */
+	ret = tftf_irq_register_handler(GIC_MAINT_IRQ, host_maint_interrupt);
+
+	if (ret != 0) {
+		tftf_testcase_printf("Failed to register GIC Maintenance IRQ handler\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Enable GIC Maintenance IRQ in host GIC */
+	tftf_irq_enable(GIC_MAINT_IRQ, GIC_HIGHEST_NS_PRIORITY);
+
+	/* Register Timer IRQ handler */
+	ret = tftf_irq_register_handler(tftf_get_timer_virq(),
+			host_timer_interrupt);
+
+	if (ret != 0) {
+		tftf_testcase_printf("Failed to register Timer IRQ handler\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Enable Timer IRQ in host GIC */
+	tftf_irq_enable(tftf_get_timer_virq(), GIC_HIGHEST_NS_PRIORITY);
+
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Set timer parameters */
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U,
+			HOST_ARG1_INDEX, deadline_ms);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U,
+			HOST_ARG2_INDEX, wait_time_ms);
+
+	/* Run the timer test in realm */
+	ret1 = host_enter_realm_execute(&realm, REALM_EL1_TIMER_CMD,
+			RMI_EXIT_IRQ, 0U);
+
+	if (!ret1) {
+		ERROR("Timer test failed to enter realm\n");
+		goto destroy_realm;
+	}
+
+	/* Handle the timer IRQ exit and re-enter realm */
+	ret1 = host_realm_handle_timer_irq_exit(&realm, 0U);
+
+	if (!ret1) {
+		ERROR("Timer IRQ handling failed\n");
+		goto destroy_realm;
+	}
+
+	/* Get timer test results from realm */
+	timer_irq_received = host_shared_data_get_realm_val(&realm,
+			PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX);
+	elapsed_ms = host_shared_data_get_realm_val(&realm,
+			PRIMARY_PLANE_ID, 0U, HOST_ARG2_INDEX);
+
+	INFO("Timer test: irq_received=%lu, elapsed_ms=%lu\n",
+	     timer_irq_received, elapsed_ms);
+
+destroy_realm:
+	ret2 = host_destroy_realm(&realm);
+
+	tftf_irq_disable(tftf_get_timer_virq());
+	tftf_irq_disable(GIC_MAINT_IRQ);
+
+	/* Unregister GIC Maintenance IRQ handler */
+	tftf_irq_unregister_handler(GIC_MAINT_IRQ);
+
+	/* Unregister Timer IRQ handler */
+	tftf_irq_unregister_handler(tftf_get_timer_virq());
+
+	if (!ret1 || !ret2) {
+		ERROR("%s(): enter=%d destroy=%d\n",
+		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Verify timer interrupt was received */
+	if (timer_irq_received != 1U) {
+		ERROR("Timer interrupt was not received\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Verify elapsed time is reasonable (within range) */
+	if (elapsed_ms < deadline_ms ||
+			elapsed_ms > (wait_time_ms + 50U)) {
+		ERROR("Timer elapsed time out of range: %lu ms (expected %lu-%lu ms)\n",
+			elapsed_ms, deadline_ms, wait_time_ms + 50U);
 		return TEST_RESULT_FAIL;
 	}
 

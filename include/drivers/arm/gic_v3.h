@@ -91,6 +91,15 @@
 #define IGRPEN1_EL1_ENABLE_BIT		(1 << IGRPEN1_EL1_ENABLE_SHIFT)
 
 /* ICH_ICH_LR<n>_EL2 definitions */
+/*
+ * When ICH_LR<n>_EL2.HW is 0 (there is no corresponding physical
+ * interrupt), this field has the following meaning:
+ * Bits[44:42] : RES0.
+ * Bit[41] : EOI. If this bit is 1, then when the interrupt identified by
+ * vINTID is deactivated, a maintenance interrupt is asserted.
+ * Bits[40:32] : RES0.
+ */
+#define ICH_LRn_EL2_EOI				(1UL << 41)
 #define ICH_LRn_EL2_STATE_Invalid		(0UL << 62)
 #define ICH_LRn_EL2_STATE_Pending		(1UL << 62)
 #define ICH_LRn_EL2_STATE_Active		(2UL << 62)
@@ -169,6 +178,14 @@
 #define ICH_HCR_EL2_EOI_COUNT_SHIFT     UL(27)
 #define ICH_HCR_EL2_EOI_COUNT_WIDTH     UL(5)
 #define ICH_HCR_EL2_EOI_COUNT_MASK      MASK(ICH_HCR_EL2_EOI_COUNT)
+
+/* ICH_MISR_EL2 definitions */
+/*
+ * Bit[0] : EOI. End of Interrupt maintenance interrupt.
+ * Set to 1 when at least one bit in ICH_LR<n>_EL2.EOI is 1 and the
+ * corresponding interrupt has been deactivated.
+ */
+#define ICH_MISR_EL2_EOI			(1UL << 0)
 
 /* ICV_CTLR_EL1 definitions */
 #define ICV_CTLR_EL1_PRIbits_SHIFT		8

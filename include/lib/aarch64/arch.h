@@ -109,6 +109,7 @@
 #define ICV_IGRPEN1_EL1		S3_0_C12_C12_7
 #define ICV_EOIR1_EL1		S3_0_C12_C12_1
 #define ICV_PMR_EL1		S3_0_C4_C6_0
+#define ICV_DIR_EL1		S3_0_C12_C11_1
 
 /*******************************************************************************
  * Definitions for CPU system register interface to GICv5
@@ -1199,6 +1200,15 @@
 #define CNTP_CTL_ENABLE_MASK    U(1)
 #define CNTP_CTL_IMASK_MASK     U(1)
 #define CNTP_CTL_ISTATUS_MASK   U(1)
+
+/* Virtual timer control register bit fields shifts and masks */
+#define CNTV_CTL_ENABLE_SHIFT   U(0)
+#define CNTV_CTL_IMASK_SHIFT    U(1)
+#define CNTV_CTL_ISTATUS_SHIFT  U(2)
+
+#define CNTV_CTL_ENABLE_MASK    U(1)
+#define CNTV_CTL_IMASK_MASK     U(1)
+#define CNTV_CTL_ISTATUS_MASK   U(1)
 
 /* Exception Syndrome register bits and bobs */
 #define ESR_EC_SHIFT			U(26)

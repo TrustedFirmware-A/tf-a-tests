@@ -50,6 +50,7 @@ REALM_SOURCES:=								\
 	realm_simd.c							\
 	realm_smmuv3.c							\
 	smmuv3_test_engine.c						\
+	realm_timer.c							\
 	)
 
 REALM_SOURCES += lib/${ARCH}/cache_helpers.S				\

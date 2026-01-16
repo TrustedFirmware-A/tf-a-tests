@@ -193,6 +193,9 @@
 	  <!-- Test case related to SMMUv3 -->
 	  <testcase name="Check DMA command by SMMUv3TestEngine completes"
 	  function="host_test_realm_smmuv3" />
+	  <!-- Test case for EL1 timer in Realm -->
+	  <testcase name="Test EL1 physical timer in Realm"
+	  function="host_test_realm_el1_timer" />
 	  <!-- Test case for LFA with Realm Payload -->
 	  <testcase name="Test Live Firmware Activation of RMM with Realm Payload"
 	  function="host_test_realm_rsi_version_with_lfa" />

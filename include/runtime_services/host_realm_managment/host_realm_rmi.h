@@ -556,8 +556,108 @@
 #define SMC_RMI_RMM_ACTIVATE			SMC64_RMI_FID(U(0xB2))
 
 /*
- * FID: 0xC400018F is not used.
+ * FID: 0xC40001E1
+ *
+ * arg0 == PA of the tracking region.
+ *
+ * ret0 == Return code
+ * ret1 == Tracking region state
+ * ret2 == Memory category
+ * ret3 == Tracking granularity
  */
+#define SMC_RMI_GRANULE_TRACKING_GET		SMC64_RMI_FID(U(0x91))
+
+/*
+ * FID: 0xC40001EC
+ *
+ * ret0 == Return code
+ * ret1 == RMI Granule size
+ * ret2 == Tracking region size
+ */
+#define SMC_RMI_RMM_CONFIG_GET			SMC64_RMI_FID(U(0x9C))
+
+/*
+ * FID: 0xC4000202
+ */
+#define SMC_RMI_RMM_ACTIVATE			SMC64_RMI_FID(U(0xB2))
+
+/*
+ * FID: 0xC4000203
+ *
+ * arg0 == Flags
+ * arg1 == Handle which identifies the operation
+ *
+ * ret0 == Return code
+ * ret1 == Operation handle
+ * ret2 == Memory donation requirements
+ */
+#define SMC_RMI_OP_CONTINUE			SMC64_RMI_FID(U(0xB3))
+
+/*
+ * FID: 0xC4000208
+ *
+ * arg0 == Handle which identifies the operation
+ * arg1 == PA of RMI Address List
+ * arg2	== Number of entries in RMI Address List
+ *
+ * ret0 == Return code
+ * ret1 == Memory donation requirements
+ * ret2 == Number of granules consumed from RMI Address List
+ */
+#define SMC_RMI_OP_MEM_DONATE			SMC64_RMI_FID(U(0xB8))
+
+/*
+ * FID: 0xC4000209
+ *
+ * arg0 == Handle which identifies the operation
+ * arg1 == PA of RMI Address List
+ * arg2 == Number of entries in RMI Address List
+ *
+ * ret0 == Return code
+ * ret1 == Memory donation requirements
+ * ret2 == Number of entries written to RMI Address List
+ * ret3 == Flags which describe properties of the reclaimed memory
+ */
+#define SMC_RMI_OP_MEM_RECLAIM			SMC64_RMI_FID(U(0xB9))
+
+/*
+ * FID: 0xC400020A
+ *
+ * arg0 == Flags
+ * arg1 == Handle which identifies the operation
+ *
+ * ret0 == Return code
+ */
+#define SMC_RMI_OP_CANCEL			SMC64_RMI_FID(U(0xBA))
+
+/* RmiOpMemDonateReq type definitions */
+#define RMI_ADDR_BLK_SIZE_WIDTH		2U
+#define RMI_ADDR_BLK_SIZE_SHIFT		0UL
+
+#define RMI_COUNT_WIDTH			14U
+#define RMI_COUNT_SHIFT			2UL
+
+#define RMI_OP_DONATE_MEM_CONTIG	BIT(16)
+#define RMI_OP_DONATE_MEM_STATE		BIT(17)
+
+/* Values for RMI_ADDR_BLK_SIZE */
+#define RMI_PAGE_L3			0UL
+#define RMI_BLOCK_L2			1UL
+#define RMI_BLOCK_L1			2UL
+#define RMI_BLOCK_L0			3UL
+
+/* Values for RMI_OP MEM_DONATE CONTIG */
+#define RMI_OP_MEM_NON_CONTIG		0UL
+#define RMI_OP_MEM_CONTIG		1UL
+
+/* Values for RMI_OP_DONATE_MEM_STATE */
+#define RMI_OP_MEM_DELEGATE		0UL
+#define RMI_OP_MEM_UNDELEGATE		1UL
+
+/* RmiContinueFlags type definitionns */
+#define RMI_CONTINUE_BEYOND_FLAG	BIT(0)
+#define RMI_CONTINUE_KEEP_GOING		0UL
+#define RMI_CONTINUE_STOP		1UL
 
 /*
  * FID: 0xC40001D0
@@ -877,17 +977,37 @@ typedef enum {
 	 */
 	RMI_ERROR_RTT = 4,
 	/*
-	 * An attribute of a device does not match the expected value
-	 */
-	RMI_ERROR_DEVICE = 5,
-	/*
 	 * The command is not supported
 	 */
-	RMI_ERROR_NOT_SUPPORTED = 6,
+	RMI_ERROR_NOT_SUPPORTED = 5,
+	/*
+	 * An attribute of a device does not match the expected value
+	 */
+	RMI_ERROR_DEVICE = 6,
 	/*
 	 * RTTE in an auxiliary RTT contained an unexpected value
 	 */
 	RMI_ERROR_RTT_AUX = 7,
+	/*
+	 * The command failed to make progress, for an implementation
+	 * defined reason.
+	 */
+	RMI_BUSY = 10,
+	/*
+	 * An attribute of RMM global state does not match the expected value
+	 */
+	RMI_ERROR_GLOBAL = 11,
+	/*
+	 * The command initiated a state transition but did not complete,
+	 * leaving the object in an intermediate state.
+	 */
+	RMI_INCOMPLETE = 13,
+	/*
+	 * The command failed to make progress due to a target object
+	 * being in an intermediate state.
+	 */
+	RMI_BLOCKED = 14,
+
 	RMI_ERROR_COUNT
 } status_t;
 
@@ -952,6 +1072,34 @@ typedef struct {
 		u_register_t desc;
 	};
 } RmiAddrRangeDesc4KB;
+
+/* Bitfields for RmiResultDataIncomplete type */
+#define RMI_OP_MEM_REQ_SHIFT		(8UL)
+#define RMI_OP_MEM_REQ_WIDTH		(2)
+#define RMI_OP_CAN_CANCEL_BIT_SHIFT	(10UL)
+#define RMI_OP_CAN_CANCEL_BIT_WIDTH	(1)
+
+/* RmiOpMemReq type encoding */
+#define RMI_OP_MEM_REQ_NONE		(0UL)
+#define RMI_OP_MEM_REQ_DONATE		(1UL)
+#define RMI_OP_MEM_REQ_RECLAIM		(2UL)
+
+/* RmiOpCanCancel type encoding */
+#define RMI_OP_CANNOT_CANCEL		(0UL)
+#define RMI_OP_CAN_CANCEL		(1UL)
+
+/* RmiAddrRangeDesc4KB type encoding */
+#define RMI_ADDR_RDESC_4K_SZ_SHIFT	(0UL)
+#define RMI_ADDR_RDESC_4K_SZ_WIDTH	(2)
+#define RMI_ADDR_RDESC_4K_CNT_SHIFT	(2UL)
+#define RMI_ADDR_RDESC_4K_CNT_WIDTH	(10)
+#define RMI_ADDR_RDESC_4K_ADDR_SHIFT	(12UL)
+#define RMI_ADDR_RDESC_4K_ADDR_WIDTH	(40)
+#define RMI_ADDR_RDESC_4K_ST_SHIFT	(63UL)
+#define RMI_ADDR_RDESC_4K_ST_WIDTH	(1)
+
+#define RMI_ADDR_RDESC_4K_GET_ADDR(x)				\
+		(EXTRACT(RMI_ADDR_RDESC_4K_ADDR, (x)) << L3_XLAT_ADDRESS_SHIFT)
 
 #define RTT_MAX_LEVEL			(3L)
 #define RTT_MIN_DEV_BLOCK_LEVEL		(2L)
@@ -1614,10 +1762,8 @@ struct realm {
 	u_register_t     rec_flag[MAX_REC_COUNT];
 	u_register_t     mpidr[MAX_REC_COUNT];
 	u_register_t     host_mpidr[MAX_REC_COUNT];
-	u_register_t     num_aux;
 	u_register_t     ipa_ns_buffer;
 	u_register_t     ns_buffer_size;
-	u_register_t     aux_pages_all_rec[MAX_REC_COUNT][REC_PARAMS_AUX_GRANULES];
 	uint8_t          s2sz;
 	uint8_t          sve_vl;
 	uint8_t          num_bps;

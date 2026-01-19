@@ -47,6 +47,11 @@ static inline bool always_present(void)
 		reg &= ~bit;							\
 	} while (0)
 
+#define IGNORE_BIT(bit)			\
+	do {				\
+		reg &= ~bit;		\
+	} while (0)
+
 /* when support for a new feature is added, we want this test to be
  * updated. Fail the test so it's noticed. */
 #define CHECK_NO_BITS_SET(reg_name)						\
@@ -113,7 +118,16 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_NO_BITS_SET(CPTR_EL3);
 
 	reg = get_feature_for_reg(MDCR_EL3_OPCODE);
-	CHECK_BIT_SET(is_feat_debugv8p9_ebwe_supported,		MDCR_EBWE_BIT);
+
+	if (is_feat_debugv8p9_ebwe_supported()) {
+		/* EBWE bit can be RES0 or Implementation defined so
+		 * check only if we have more than 16 BRPs/WRPs.
+		 */
+		CHECK_BIT_SET(always_present, MDCR_EBWE_BIT);
+	} else {
+		IGNORE_BIT(MDCR_EBWE_BIT);
+	}
+
 	CHECK_BIT_SET(get_feat_brbe_support,			MDCR_SBRBE(1));
 	CHECK_BIT_SET(is_armv8_6_fgt_present,			MDCR_TDCC_BIT);
 	CHECK_BIT_SET(is_feat_trbe_present,			MDCR_NSTB(1));

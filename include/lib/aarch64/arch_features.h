@@ -331,7 +331,11 @@ static inline bool is_feat_sme2_supported(void)
 /* Check if extended breakpoints are available part of Debugv8p9 */
 static inline bool is_feat_debugv8p9_ebwe_supported(void)
 {
-	return EXTRACT(ID_AA64DFR1_BRP, read_id_aa64dfr1_el1()) != 0U;
+	/* EBWE bit can be RES0 or Implemetaion defined so check if we
+	 * have more than 16 BRPs/WRPs.
+	 */
+	return (EXTRACT(ID_AA64DFR1_BRP, read_id_aa64dfr1_el1()) != 0U ||
+		EXTRACT(ID_AA64DFR1_WRP, read_id_aa64dfr1_el1()) != 0U);
 }
 
 static inline u_register_t get_id_aa64mmfr0_el0_tgran4(void)

@@ -31,10 +31,10 @@ int program_systimer(unsigned long time_out_ms)
 	mmio_write_64(g_systimer_base + CNTP_CVAL_LO, count_val);
 
 	/* Enable the timer */
-	cntp_ctl = mmio_read_32(g_systimer_base + CNTP_CTL);
+	cntp_ctl = mmio_read_32(g_systimer_base + CNTP_CTL_LO);
 	set_cntp_ctl_enable(cntp_ctl);
 	clr_cntp_ctl_imask(cntp_ctl);
-	mmio_write_32(g_systimer_base + CNTP_CTL, cntp_ctl);
+	mmio_write_32(g_systimer_base + CNTP_CTL_LO, cntp_ctl);
 
 	/*
 	 * Ensure that we have programmed a timer interrupt for a time in
@@ -60,7 +60,7 @@ static void disable_systimer(void)
 	/* Deassert and disable the timer interrupt */
 	val = 0;
 	set_cntp_ctl_imask(val);
-	mmio_write_32(g_systimer_base + CNTP_CTL, val);
+	mmio_write_32(g_systimer_base + CNTP_CTL_LO, val);
 }
 
 int cancel_systimer(void)

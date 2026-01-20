@@ -507,7 +507,7 @@
 /* Physical Timer CompareValue register. */
 #define CNTP_CVAL_LO		U(0x20)
 /* Physical Timer Control register. */
-#define CNTP_CTL		U(0x2c)
+#define CNTP_CTL_LO		U(0x2c)
 
 /* Physical timer control register bit fields shifts and masks */
 #define CNTP_CTL_ENABLE_SHIFT   0
@@ -635,6 +635,8 @@
 #define DBGDIDR		p14, 0, c0, c0, 0
 #define CNTHP_TVAL	p15, 4, c14, c2, 0
 #define CNTHP_CTL	p15, 4, c14, c2, 1
+#define CNTP_TVAL	p15, 0, c14, c2, 0
+#define CNTP_CTL	p15, 0, c14, c2, 1
 
 /* AArch32 coproc registers for 32bit MMU descriptor support */
 #define PRRR		p15, 0, c10, c2, 0
@@ -671,6 +673,7 @@
 #define HTTBR_64	p15, 4, c2
 #define CNTHP_CVAL_64	p15, 6, c14
 #define PAR_64		p15, 0, c7
+#define CNTP_CVAL_64	p15, 2, c14
 
 /* 64 bit GICv3 CPU Interface system register defines. The format is: coproc, opt1, CRm */
 #define ICC_SGI1R_EL1_64	p15, 0, c12

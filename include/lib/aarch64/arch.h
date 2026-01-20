@@ -1260,7 +1260,7 @@
 /* Physical Timer CompareValue register. */
 #define CNTP_CVAL_LO		U(0x20)
 /* Physical Timer Control register. */
-#define CNTP_CTL		U(0x2c)
+#define CNTP_CTL_LO		U(0x2c)
 
 /* PMCR_EL0 definitions */
 #define PMCR_EL0_RESET_VAL	U(0x0)

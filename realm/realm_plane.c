@@ -203,8 +203,9 @@ bool realm_plane_enter(u_register_t plane_index,
 	while (true) {
 		ret = rsi_plane_enter(plane_index, (u_register_t)run);
 
-		/* Restore PSTATE with the value on run->exit for the next entry */
+		/* Restore PSTATE and ELR_EL1 with the value on run->exit for the next entry */
 		run->enter.pstate = run->exit.pstate;
+		run->enter.elr_el1 = run->exit.elr_el1;
 
 		if (ret != RSI_SUCCESS) {
 			ERROR("Plane %u enter failed ret= 0x%lx\n", plane_index, ret);
@@ -230,8 +231,9 @@ bool realm_resume_plane_n(rsi_plane_run *run, u_register_t plane_index,
 {
 	u_register_t perm_index = plane_index + 1U;
 
-	/* Restore PSTATE on the plane */
+	/* Restore PSTATE and ELR_EL1 on the plane */
 	run->enter.pstate = run->exit.pstate;
+	run->enter.elr_el1 = run->exit.elr_el1;
 
 	restore_plane_context(run);
 

@@ -477,10 +477,16 @@ typedef enum {
  * Contains flags which describe properties of a device.
  * Width: 8 bytes
  */
-#define RSI_VDEV_FLAGS_P2P_ENABLED_SHIFT	U(0)
-#define RSI_VDEV_FLAGS_P2P_ENABLED_WIDTH	U(1)
-#define RSI_VDEV_FLAGS_P2P_BOUND_SHIFT		U(1)
-#define RSI_VDEV_FLAGS_P2P_BOUND_WIDTH		U(1)
+#define RSI_VDEV_FLAGS_VSMMU_SHIFT		U(0)
+#define RSI_VDEV_FLAGS_VSMMU_WIDTH		U(1)
+
+/*
+ * RsiVdevReportFormatType
+ * Represents device report format type.
+ * Width: 1 byte
+ */
+#define RSI_VDEV_REPORT_FORMAT_IMPDEF		U(0)
+#define RSI_VDEV_REPORT_FORMAT_TDISP		U(1)
 
 /*
  * RsiVdevInfo
@@ -500,20 +506,37 @@ struct rsi_vdev_info {
 	SET_MEMBER_RSI(unsigned long meas_nonce, 0x20, 0x28);
 	/* UInt64: Nonce generated on most recent GET_INTERFACE_REPORT request */
 	SET_MEMBER_RSI(unsigned long report_nonce, 0x28, 0x30);
-	/* UInt64: TDISP version of the device */
-	SET_MEMBER_RSI(unsigned long tdisp_version, 0x30, 0x38);
+	/* RsiVdevReportFormatType: Report format type */
+	SET_MEMBER_RSI(unsigned char format_type, 0x30, 0x38);
+	/*
+	 * UInt64: Report format version.
+	 * If format_type is RSI_VDEV_REPORT_FORMAT_TDISP then this field
+	 * specifies the TDISP version, encoded as follows: bits[31:16]: major
+	 * version bits[15:0]: minor version
+	 */
+	SET_MEMBER_RSI(unsigned long format_version, 0x38, 0x40);
 	/* RsiVdevState: State of the device */
-	SET_MEMBER_RSI(unsigned char state, 0x38, 0x40);
+	SET_MEMBER_RSI(unsigned char state, 0x40, 0x80);
 	/* Bits512: VCA digest */
-	SET_MEMBER_RSI(unsigned char vca_digest[RSI_VDEV_VCA_DIGEST_LEN], 0x40, 0x80);
+	SET_MEMBER_RSI(unsigned char vca_digest[RSI_VDEV_VCA_DIGEST_LEN], 0x80, 0xc0);
 	/* Bits512: Certificate digest */
-	SET_MEMBER_RSI(unsigned char cert_digest[RSI_VDEV_CERT_DIGEST_LEN], 0x80, 0xc0);
+	SET_MEMBER_RSI(unsigned char cert_digest[RSI_VDEV_CERT_DIGEST_LEN], 0xc0, 0x100);
 	/* Bits512: Public key digest */
-	SET_MEMBER_RSI(unsigned char pubkey_digest[RSI_VDEV_PUBKEY_DIGEST_LEN], 0xc0, 0x100);
+	SET_MEMBER_RSI(unsigned char pubkey_digest[RSI_VDEV_PUBKEY_DIGEST_LEN], 0x100, 0x140);
 	/* Bits512: Measurement digest */
-	SET_MEMBER_RSI(unsigned char meas_digest[RSI_VDEV_MEAS_DIGEST_LEN], 0x100, 0x140);
+	SET_MEMBER_RSI(unsigned char meas_digest[RSI_VDEV_MEAS_DIGEST_LEN], 0x140, 0x180);
 	/* Bits512: Interface report digest */
-	SET_MEMBER_RSI(unsigned char report_digest[RSI_VDEV_REPORT_DIGEST_LEN], 0x140, 0x200);
+	SET_MEMBER_RSI(unsigned char report_digest[RSI_VDEV_REPORT_DIGEST_LEN], 0x180, 0x1c0);
+	/*
+	 * Address: Base IPA of the VSMMU which is associated with this device.
+	 * This field is valid only if flags.vsmmu == RSI_FEATURE_TRUE.
+	 */
+	SET_MEMBER_RSI(unsigned long vsmmu_addr, 0x1c0, 0x1c8);
+	/*
+	 * UInt64: Virtual Stream ID.
+	 * This field is valid only if flags.vsmmu == RSI_FEATURE_TRUE.
+	 */
+	SET_MEMBER_RSI(unsigned long vsmmu_vsid, 0x1c8, 0x200);
 };
 
 /*
@@ -557,40 +580,46 @@ struct rsi_vdev_info {
 /* Data structure used to pass values from P0 to the RMM on Plane entry */
 struct rsi_plane_entry {
 	/* Flags */
-	SET_MEMBER(u_register_t flags, 0, 0x8);		/* Offset 0 */
+	SET_MEMBER(u_register_t flags, 0x0, 0x8);		/* Offset 0 */
 	/* PC */
 	SET_MEMBER(u_register_t pc, 0x8, 0x10);		/* Offset 0x8 */
-	/* PSTATE */
-	SET_MEMBER(u_register_t pstate, 0x10, 0x100);	/* Offset 0x10 */
+	/* SPSR_EL2 value - Offset 0x10 */
+	SET_MEMBER(u_register_t pstate, 0x10, 0x100);
 	/* General-purpose registers */
 	SET_MEMBER(u_register_t gprs[RSI_PLANE_NR_GPRS], 0x100, 0x200);	/* 0x100 */
-	/* EL1 system registers */
+	/* GICv3 registers */
 	SET_MEMBER(struct {
 		/* GICv3 Hypervisor Control Register */
 		u_register_t gicv3_hcr;                         /* 0x200 */
 		/* GICv3 List Registers */
 		u_register_t gicv3_lrs[RSI_PLANE_GIC_NUM_LRS];        /* 0x208 */
-	}, 0x200, 0x800);
+	}, 0x200, 0x400);
+	/* EL1 system registers */
+	SET_MEMBER(struct {
+		/* ELR_EL1 value - Offset 0x400 */
+		unsigned long elr_el1;
+	}, 0x400, 0x800);
 };
 
 /* Data structure used to pass values from the RMM to P0 on Plane exit */
 struct rsi_plane_exit {
 	/* Exit reason */
-	SET_MEMBER(u_register_t exit_reason, 0, 0x100);/* Offset 0 */
+	SET_MEMBER(u_register_t exit_reason, 0, 0x8);/* Offset 0 */
+	/* Exception Link Register */
+	SET_MEMBER(u_register_t elr, 0x8, 0x10); /* Offset 0x8 */
+	/* SPSR_EL2 value */
+	SET_MEMBER(u_register_t pstate, 0x10, 0x100); /* Offset 0x10 */
+	/* General purpose registers - Offset 0x100 */
+	SET_MEMBER(u_register_t gprs[RSI_PLANE_NR_GPRS], 0x100, 0x200); /* 0x200 */
+	/* EL2 system registers */
 	SET_MEMBER(struct {
-		/* Exception Link Register */
-		u_register_t elr;				/* 0x100 */
 		/* Exception Syndrome Register */
-		u_register_t esr;				/* 0x108 */
+		u_register_t esr;				/* 0x208 */
 		/* Fault Address Register */
-		u_register_t far;				/* 0x110 */
+		u_register_t far;				/* 0x210 */
 		/* Hypervisor IPA Fault Address register */
-		u_register_t hpfar;				/* 0x118 */
-		/* Hypervisor PSTATE */
-		u_register_t pstate;				/* 0x120 */
-	}, 0x100, 0x200);
-	/* General-purpose registers */
-	SET_MEMBER(u_register_t gprs[RSI_PLANE_NR_GPRS], 0x200, 0x300); /* 0x200 */
+		u_register_t hpfar;				/* 0x218 */
+		}, 0x200, 0x300);
 	SET_MEMBER(struct {
 		/* GICv3 Hypervisor Control Register */
 		u_register_t gicv3_hcr;				/* 0x300 */
@@ -600,7 +629,32 @@ struct rsi_plane_exit {
 		u_register_t gicv3_misr;			/* 0x388 */
 		/* GICv3 Virtual Machine Control Register */
 		u_register_t gicv3_vmcr;			/* 0x390 */
-	}, 0x300, 0x600);
+	}, 0x300, 0x400);
+	/* Timer registers */
+	SET_MEMBER(struct {
+		/* Physical Timer Control Register Value - Offset 0x400 */
+		unsigned long cntp_ctl;
+		/* Physical Timer Compare Value Register - Offset 0x408 */
+		unsigned long cntp_cval;
+		/* Virtual Timer Control Register Value - Offset 0x410 */
+		unsigned long cntv_ctl;
+		/* Virtual Timer Compare Value Register - Offset 0x418 */
+		unsigned long cntv_cval;
+	}, 0x400, 0x500);
+	/* EL1 system registers */
+	SET_MEMBER(struct {
+		/* SCTLR_EL1 value - Offset 0x500 */
+		unsigned long sctlr_el1;
+		/* VBAR_EL1 value - Offset 0x508 */
+		unsigned long vbar_el1;
+		/* ELR_EL1 value - Offset 0x510 */
+		unsigned long elr_el1;
+	}, 0x500, 0x600);
+	/* PMU */
+	SET_MEMBER(struct {
+		/* PMU overflow status - Offset 0x600 */
+		unsigned char pmu_ovf_status;
+	}, 0x600, 0x800);
 };
 
 typedef struct {

@@ -50,6 +50,7 @@
     <testcase name="AIE support" function="test_aie_support" />
     <testcase name="STEP2 support" function="test_step2_support" />
     <testcase name="HDBSS support" function="test_hdbss_support" />
+    <testcase name="HACDBS support" function="test_hacdbs_support" />
   </testsuite>
 
   <testsuite name="ARM_ARCH_SVC" description="Arm Architecture Service tests">

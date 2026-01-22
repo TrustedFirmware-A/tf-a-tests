@@ -567,6 +567,12 @@
 #define ID_AA64MMFR3_EL1_MEC_WIDTH		U(4)
 #define ID_AA64MMFR3_EL1_MEC_SUPPORTED		ULL(0x1)
 
+/* ID_AA64MMFR4_EL1 definitions */
+#define ID_AA64MMFR4_EL1_HACDBS_SHIFT           U(12)
+#define ID_AA64MMFR4_EL1_HACDBS_WIDTH           U(4)
+#define ID_AA64MMFR4_EL1_HACDBS_MASK            ULL(0xf)
+#define ID_AA64MMFR4_EL1_HACDBS_SUPPORTED       ULL(0x1)
+
 /* ID_AA64PFR1_EL1 definitions */
 #define ID_AA64PFR1_EL1_PFAR_SHIFT		U(60)
 #define ID_AA64PFR1_EL1_PFAR_MASK		ULL(0xf)
@@ -727,6 +733,7 @@
 /* SCR definitions */
 #define SCR_RES1_BITS		((U(1) << 4) | (U(1) << 5))
 #define SCR_NSE_SHIFT		U(62)
+#define SCR_HACDBSEn_BIT	(UL(1) << 61)
 #define SCR_HDBSSEn_BIT		(UL(1) << 60)
 #define SCR_FGTEN2_BIT		(UL(1) << 59)
 #define SCR_NSE_BIT		(ULL(1) << SCR_NSE_SHIFT)
@@ -1774,6 +1781,11 @@
  * FEAT_HDBSS - Hardware Dirty state tracking structure
  ******************************************************************************/
 #define HDBSSBR_EL2		S3_4_C2_C3_2
+
+/*******************************************************************************
+ * FEAT_HACDBS - Hardware accelerator for cleaning Dirty state
+ ******************************************************************************/
+#define HACDBSBR_EL2		S3_4_C2_C3_4
 
 /*******************************************************************************
  * Trace System Registers

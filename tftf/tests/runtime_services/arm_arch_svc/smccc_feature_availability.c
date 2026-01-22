@@ -105,6 +105,7 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(is_feat_aie_supported,			SCR_AIEn_BIT);
 	CHECK_BIT_SET(is_feat_pfar_supported,			SCR_PFAREn_BIT);
 	CHECK_BIT_SET(is_feat_hdbss_supported,			SCR_HDBSSEn_BIT);
+	CHECK_BIT_SET(is_feat_hacdbs_supported,			SCR_HACDBSEn_BIT);
 	CHECK_NO_BITS_SET(SCR_EL3);
 
 	reg = get_feature_for_reg(CPTR_EL3_OPCODE);

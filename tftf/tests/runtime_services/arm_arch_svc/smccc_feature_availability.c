@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -80,9 +80,7 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(is_armv8_9_fgt2_present,			SCR_FGTEN2_BIT);
 	CHECK_BIT_SET(is_feat_fpmr_present,			SCR_EnFPM_BIT);
 
-	if (get_armv9_2_feat_rme_support()) {
-		CHECK_BIT_SET(is_feat_mec_supported,		SCR_MECEn_BIT);
-	}
+	CHECK_BIT_SET(is_feat_mec_supported,			SCR_MECEn_BIT);
 
 	CHECK_BIT_SET(is_feat_d128_supported,			SCR_D128En_BIT);
 	CHECK_BIT_SET(is_feat_s1pie_present,			SCR_PIEN_BIT);

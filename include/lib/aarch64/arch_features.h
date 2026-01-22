@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -640,5 +640,11 @@ static inline bool is_feat_ebep_supported(void)
 {
 	return EXTRACT(ID_AA64DFR1_EBEP, read_id_aa64dfr1_el1())
 			>= ID_AA64DFR1_EBEP_SUPPORTED;
+}
+
+static inline bool is_feat_step2_supported(void)
+{
+	return (((read_id_aa64dfr2_el1() >> ID_AA64DFR2_STEP_SHIFT) &
+		ID_AA64DFR2_STEP_MASK) >= ID_AA64DFR2_STEP_SUPPORTED);
 }
 #endif /* ARCH_FEATURES_H */

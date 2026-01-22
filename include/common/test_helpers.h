@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -470,6 +470,14 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 			return TEST_RESULT_SKIPPED;				\
 		}								\
 	} while (false)
+
+#define SKIP_TEST_IF_STEP2_NOT_SUPPORTED()					\
+	do {									\
+		if (!is_feat_step2_supported()) {				\
+			tftf_testcase_printf("STEP2 not supported\n");		\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (0)
 
 /* Helper macro to verify if system suspend API is supported */
 #define is_psci_sys_susp_supported()	\

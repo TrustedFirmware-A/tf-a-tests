@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2025, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2026, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -343,6 +343,12 @@
 #define ID_AA64DFR1_EBEP_SHIFT			U(48)
 #define ID_AA64DFR1_EBEP_WIDTH			U(4)
 #define ID_AA64DFR1_EBEP_SUPPORTED		U(1)
+
+/* ID_AA64DFR2_EL1 definitions */
+#define ID_AA64DFR2_EL1				S3_0_C0_C5_2
+#define ID_AA64DFR2_STEP_SHIFT			U(0)
+#define ID_AA64DFR2_STEP_MASK			ULL(0xf)
+#define ID_AA64DFR2_STEP_SUPPORTED		ULL(1)
 
 /* ID_AA64ISAR0_EL1 definitions */
 #define ID_AA64ISAR0_EL1			S3_0_C0_C6_0
@@ -1753,6 +1759,11 @@
  ******************************************************************************/
 #define TRFCR_EL1	S3_0_C1_C2_1
 #define TRFCR_EL2	S3_4_C1_C2_1
+
+/*******************************************************************************
+ * FEAT_STEP2 - Step2 registers
+ ******************************************************************************/
+#define MDSTEPOP_EL1		S2_0_C0_C5_2
 
 /*******************************************************************************
  * Trace System Registers

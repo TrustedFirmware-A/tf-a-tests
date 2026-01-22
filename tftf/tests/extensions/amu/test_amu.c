@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -14,11 +14,11 @@
 #include <plat_topology.h>
 #include <platform.h>
 #include <power_management.h>
+#include <test_helpers.h>
 #include <tftf_lib.h>
 #include <timer.h>
 
 #define SUSPEND_TIME_1_SEC		1000
-#define MAX_MPMM_TEST_ITERATIONS 	100000U
 
 static volatile int wakeup_irq_received[PLATFORM_CORE_COUNT];
 
@@ -126,17 +126,41 @@ test_result_t test_amu_valid_ctr(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	/* If counters are not enabled, then skip the test */
-	if (read_amcntenset0_el0() != AMU_GROUP0_COUNTERS_MASK) {
-		return TEST_RESULT_SKIPPED;
+	/* Counters must be enabled for system performance management. */
+	if (read_amcntenset0_el0() == 0) {
+		return TEST_RESULT_FAIL;
 	}
 
 	for (i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {
 		uint64_t value;
 
-		value = amu_group0_cnt_read(i);
+		value = read_amevcntr0(i);
 		if (amu_group0_cnt_valid(i, value)) {
-			tftf_testcase_printf("Group0 counter %d has invalid value %lld\n", i, value);
+			tftf_testcase_printf("Group0 counter %u has invalid value %lld\n", i, value);
+			return TEST_RESULT_FAIL;
+		}
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+static void read_group0_cntrs(uint64_t group0_ctrs[AMU_GROUP0_NR_COUNTERS])
+{
+	for (int i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {
+		group0_ctrs[i] = read_amevcntr0(i);
+	}
+}
+
+/* Check if counter values are >= than the stored values. */
+static int check_group0_cntrs(uint64_t group0_ctrs[AMU_GROUP0_NR_COUNTERS])
+{
+	for (unsigned i = 0; i < AMU_GROUP0_NR_COUNTERS; i++) {
+		uint64_t value;
+
+		value = read_amevcntr0(i);
+		if (value < group0_ctrs[i]) {
+			tftf_testcase_printf("Invalid counter %u value: before: %llx, after: %llx\n",
+				i, group0_ctrs[i], value);
 			return TEST_RESULT_FAIL;
 		}
 	}
@@ -151,20 +175,13 @@ test_result_t test_amu_valid_ctr(void)
 test_result_t test_amu_suspend_resume(void)
 {
 	uint64_t group0_ctrs[AMU_GROUP0_NR_COUNTERS];
-	unsigned int i;
 
 	if (amu_get_version() == 0U) {
 		return TEST_RESULT_SKIPPED;
 	}
 
-	/* If counters are not enabled, then skip the test */
-	if (read_amcntenset0_el0() != AMU_GROUP0_COUNTERS_MASK)
-		return TEST_RESULT_SKIPPED;
-
 	/* Save counters values before suspend */
-	for (i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {
-		group0_ctrs[i] = amu_group0_cnt_read(i);
-	}
+	read_group0_cntrs(group0_ctrs);
 
 	/*
 	 * If FEAT_AMUv1p1 supported then make sure the save/restore works for
@@ -173,72 +190,59 @@ test_result_t test_amu_suspend_resume(void)
 	 * offset registers are only accessible in AARCH64 mode in EL2 or EL3.
 	 */
 #if __aarch64__
+	unsigned int i;
+
 	if (amu_get_version() >= ID_AA64PFR0_AMU_V1P1) {
 		/* Enabling voffsets in HCR_EL2. */
 		write_hcr_el2(read_hcr_el2() | HCR_AMVOFFEN_BIT);
 
 		/* Writing known values into voffset registers. */
-		amu_group0_voffset_write(0U, 0xDEADBEEF);
-		amu_group0_voffset_write(2U, 0xDEADBEEF);
-		amu_group0_voffset_write(3U, 0xDEADBEEF);
+		write_amevcntvoff0(0U, 0xDEADBEEF);
+		write_amevcntvoff0(2U, 0xDEADBEEF);
+		write_amevcntvoff0(3U, 0xDEADBEEF);
 
-#if AMU_GROUP1_NR_COUNTERS
 		u_register_t amcg1idr = read_amcg1idr_el0() >> 16;
 
-		for (i = 0U; i < AMU_GROUP1_NR_COUNTERS; i++) {
+		for (i = 0U; i < amu_group1_num_counters(); i++) {
 			if (((amcg1idr >> i) & 1U) != 0U) {
-				amu_group1_voffset_write(i, 0xDEADBEEF);
+				write_amevcntvoff1(i, 0xDEADBEEF);
 			}
 		}
-#endif
 	}
 #endif
 
 	/* Suspend/resume current core */
 	suspend_and_resume_this_cpu();
 
-	/*
-	 * Check if counter values are >= than the stored values.
-	 * If they are not, the AMU context save/restore in EL3 is buggy.
-	 */
-	for (i = 0; i < AMU_GROUP0_NR_COUNTERS; i++) {
-		uint64_t value;
-
-		value = amu_group0_cnt_read(i);
-		if (value < group0_ctrs[i]) {
-			tftf_testcase_printf("Invalid counter value: before: %llx, after: %llx\n",
-				(unsigned long long)group0_ctrs[i],
-				(unsigned long long)value);
-			return TEST_RESULT_FAIL;
-		}
+	/* If counters are not >=, the AMU context save/restore in EL3 is buggy. */
+	if (check_group0_cntrs(group0_ctrs) != TEST_RESULT_SUCCESS) {
+		return TEST_RESULT_FAIL;
 	}
 
 #if __aarch64__
 	if (amu_get_version() >= ID_AA64PFR0_AMU_V1P1) {
 		for (i = 0U; i < AMU_GROUP0_NR_COUNTERS; i++) {
 			if ((i != 1U) &&
-				(amu_group0_voffset_read(i) != 0xDEADBEEF)) {
+				(read_amevcntvoff0(i) != 0xDEADBEEF)) {
 				tftf_testcase_printf(
 					"Invalid G0 voffset %u: 0x%llx\n", i,
-					amu_group0_voffset_read(i));
+					read_amevcntvoff0(i));
 				return TEST_RESULT_FAIL;
 			}
 		}
 
-#if AMU_GROUP1_NR_COUNTERS
 		u_register_t amcg1idr = read_amcg1idr_el0() >> 16;
 
-		for (i = 0U; i < AMU_GROUP1_NR_COUNTERS; i++) {
+		for (i = 0U; i < read_amcg1idr_el0(); i++) {
 			if (((amcg1idr >> i) & 1U) != 0U) {
-				if (amu_group1_voffset_read(i) != 0xDEADBEEF) {
+				if (read_amevcntvoff0(i) != 0xDEADBEEF) {
 					tftf_testcase_printf("Invalid G1 " \
 						"voffset %u: 0x%llx\n", i,
-						amu_group1_voffset_read(i));
+						read_amevcntvoff1(i));
 					return TEST_RESULT_FAIL;
 				}
 			}
 		}
-#endif
 	}
 #endif
 
@@ -246,51 +250,43 @@ test_result_t test_amu_suspend_resume(void)
 }
 
 /*
- * Check that group 1 counters read as 0 at ELs lower than EL3 when
- * AMCR.CG1RZ is set.
+ * Test that the counters are preserved on a world switch. There is no reliable
+ * way to make sure contexting did occur.
  */
-test_result_t test_amu_group1_raz(void)
+test_result_t test_amu_world_switch(void)
 {
-/* Test on TC2 only, as MPMM not implemented in other platforms yet */
-#if PLAT_tc && (TARGET_PLATFORM == 2)
-	uint64_t counters_initial[AMU_GROUP1_NR_COUNTERS] = {0};
-	uint64_t counters_final[AMU_GROUP1_NR_COUNTERS] = {0};
+	smc_args args = { TSP_FAST_FID(TSP_ADD), 4, 6 };
+	uint64_t group0_ctrs[AMU_GROUP0_NR_COUNTERS];
 
-	for (unsigned int i = 0; i < amu_group1_num_counters(); i++) {
-		INFO("AMUEVTYPER1%x: 0x%llx\n", i, amu_group1_evtype_read(i));
-		counters_initial[i] = amu_group1_cnt_read(i);
+	SKIP_TEST_IF_TSP_NOT_PRESENT();
+	if (amu_get_version() == 0U) {
+		return TEST_RESULT_SKIPPED;
 	}
 
-	for (int i = 0; i < MAX_MPMM_TEST_ITERATIONS; i++) {
-		// Instruction with activity count 1
-		__asm__ volatile("fmov	d0,xzr");
-		__asm__ volatile("fmov	d1,xzr");
-		__asm__ volatile("fmul	d2,d0,d1");
-		__asm__ volatile("fmov	d2,xzr");
+	read_group0_cntrs(group0_ctrs);
+	tftf_smc(&args);
 
-		__asm__ volatile("fmov	d0,xzr");
-		__asm__ volatile("fmov	d1,xzr");
-		__asm__ volatile("fmov	d2,xzr");
-		__asm__ volatile("fmadd	d3,d2,d1,d0");
-
-		// Instruction with activity count 2
-		__asm__ volatile("ptrue	p0.s, ALL");
-		__asm__ volatile("index	z10.s, #10,13");
-		__asm__ volatile("index	z11.s, #12,7");
-		__asm__ volatile("ucvtf	v10.4s, v10.4s");
-		__asm__ volatile("ucvtf	v11.4s, v11.4s");
-		__asm__ volatile("fadd	v0.4s, v10.4s, v11.4s");
-	}
-
-	for (unsigned int i = 0; i < amu_group1_num_counters(); i++) {
-		counters_final[i] = amu_group1_cnt_read(i);
-		if (counters_final[i] == counters_initial[i]) {
-			return TEST_RESULT_FAIL;
-		}
+	if (check_group0_cntrs(group0_ctrs) != TEST_RESULT_SUCCESS) {
+		return TEST_RESULT_FAIL;
 	}
 
 	return TEST_RESULT_SUCCESS;
-#else
-	return TEST_RESULT_SKIPPED;
-#endif /* PLAT_tc && (TARGET_PLATFORM == 2) */
+}
+
+/*
+ * Check that group 1 counters read as 0 at ELs lower than EL3.
+ */
+test_result_t test_amu_group1_raz(void)
+{
+	if (amu_get_version() < ID_AA64PFR0_AMU_V1P1) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/* Architectured so that group 1 counters will be RAZ when this bit
+	 * is set. No need to check counters as SW has no control */
+	if ((read_amcr_el0() & AMCR_CG1RZ_BIT) == 0) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }

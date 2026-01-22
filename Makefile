@@ -201,7 +201,6 @@ $(eval $(call add_define,TFTF_DEFINES,PLAT_${PLAT}))
 $(eval $(call add_define,TFTF_DEFINES,USE_NVM))
 $(eval $(call add_define,TFTF_DEFINES,ENABLE_REALM_PAYLOAD_TESTS))
 $(eval $(call add_define,TFTF_DEFINES,TRANSFER_LIST))
-$(eval $(call add_define,TFTF_DEFINES,PLAT_AMU_GROUP1_COUNTERS_MASK))
 $(eval $(call add_define,TFTF_DEFINES,SPMC_AT_EL3))
 $(eval $(call add_define,TFTF_DEFINES,CACTUS_PWR_MGMT_SUPPORT))
 

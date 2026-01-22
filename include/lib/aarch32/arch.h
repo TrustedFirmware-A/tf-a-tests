@@ -128,6 +128,7 @@
 #define ID_PFR0_AMU_NOT_SUPPORTED	U(0x0)
 #define ID_PFR0_AMU_V1		U(0x1)
 #define ID_PFR0_AMU_V1P1	U(0x2)
+#define ID_AA64PFR0_AMU_V1P1	ID_PFR0_AMU_V1P1
 
 #define ID_PFR0_DIT_SHIFT	U(24)
 #define ID_PFR0_DIT_LENGTH	U(4)
@@ -795,6 +796,39 @@
 #define AMEVTYPER1D	p15, 0, c13, c15, 5
 #define AMEVTYPER1E	p15, 0, c13, c15, 6
 #define AMEVTYPER1F	p15, 0, c13, c15, 7
+
+/* AMCNTENSET0 definitions */
+#define AMCNTENSET0_Pn_SHIFT	U(0)
+#define AMCNTENSET0_Pn_MASK	U(0xf)
+
+/* AMCNTENSET1 definitions */
+#define AMCNTENSET1_Pn_SHIFT	U(0)
+#define AMCNTENSET1_Pn_MASK	U(0xffff)
+
+/* AMCNTENCLR0 definitions */
+#define AMCNTENCLR0_Pn_SHIFT	U(0)
+#define AMCNTENCLR0_Pn_MASK	U(0xf)
+
+/* AMCNTENCLR1 definitions */
+#define AMCNTENCLR1_Pn_SHIFT	U(0)
+#define AMCNTENCLR1_Pn_MASK	U(0xffff)
+
+/* AMCR definitions */
+#define AMCR_CG1RZ_SHIFT	U(17)
+#define AMCR_CG1RZ_BIT		(ULL(1) << AMCR_CG1RZ_SHIFT)
+
+/* AMCFGR definitions */
+#define AMCFGR_NCG_SHIFT	U(28)
+#define AMCFGR_NCG_MASK		U(0xf)
+#define AMCFGR_N_SHIFT		U(0)
+#define AMCFGR_N_MASK		U(0xff)
+
+/* AMCGCR definitions */
+#define AMCGCR_CG0NC_SHIFT	U(0)
+#define AMCGCR_CG0NC_MASK	U(0xff)
+#define AMCGCR_CG1NC_SHIFT	U(8)
+#define AMCGCR_CG1NC_WIDTH	U(8)
+#define AMCGCR_CG1NC_MASK	U(0xff)
 
 /*******************************************************************************
  * Armv8.4 - Trace Filter System Registers

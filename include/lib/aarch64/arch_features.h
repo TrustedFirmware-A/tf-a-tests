@@ -647,4 +647,10 @@ static inline bool is_feat_step2_supported(void)
 	return (((read_id_aa64dfr2_el1() >> ID_AA64DFR2_STEP_SHIFT) &
 		ID_AA64DFR2_STEP_MASK) >= ID_AA64DFR2_STEP_SUPPORTED);
 }
+
+static inline bool is_feat_hdbss_supported(void)
+{
+	return EXTRACT(ID_AA64MMFR1_EL1_HAFDBS, read_id_aa64mmfr1_el1())
+			>= ID_AA64MMFR1_EL1_HAFDBS_HDBSS_SUPPORTED;
+}
 #endif /* ARCH_FEATURES_H */

@@ -49,6 +49,7 @@
     <testcase name="PFAR support" function="test_pfar_support" />
     <testcase name="AIE support" function="test_aie_support" />
     <testcase name="STEP2 support" function="test_step2_support" />
+    <testcase name="HDBSS support" function="test_hdbss_support" />
   </testsuite>
 
   <testsuite name="ARM_ARCH_SVC" description="Arm Architecture Service tests">

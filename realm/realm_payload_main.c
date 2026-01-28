@@ -754,6 +754,9 @@ void realm_payload_main(void)
 		case REALM_EL1_TIMER_CMD:
 			test_succeed = test_realm_el1_timer();
 			break;
+		case REALM_GIC_TRAP_CMD:
+			test_succeed = test_realm_gic_trap();
+			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);
 			break;

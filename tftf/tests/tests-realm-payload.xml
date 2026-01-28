@@ -199,5 +199,8 @@
 	  <!-- Test case for LFA with Realm Payload -->
 	  <testcase name="Test Live Firmware Activation of RMM with Realm Payload"
 	  function="host_test_realm_rsi_version_with_lfa" />
+	  <!-- Test case for GIC trap in Realm -->
+	  <testcase name="Test GIC trap handling in Realm"
+	  function="host_test_realm_gic_trap" />
   </testsuite>
 </testsuites>

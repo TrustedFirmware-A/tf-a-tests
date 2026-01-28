@@ -8,6 +8,8 @@
 #ifndef REALM_TESTS_H
 #define REALM_TESTS_H
 
+#include <stdbool.h>
+
 bool test_pmuv3_cycle_works_realm(void);
 bool test_pmuv3_counter(void);
 bool test_pmuv3_event_works_realm(void);
@@ -39,5 +41,6 @@ bool test_realm_da_rsi_calls(void);
 bool test_realm_smmuv3(void);
 bool test_realm_feat_mops(void);
 bool test_realm_el1_timer(void);
+bool test_realm_gic_trap(void);
 
 #endif /* REALM_TESTS_H */

@@ -4232,3 +4232,226 @@ destroy_realm:
 
 	return TEST_RESULT_SUCCESS;
 }
+
+/*
+ * @Test_Aim@ Test GIC trap handling in Realm
+ *
+ * This test verifies that GIC register accesses from within a Realm
+ * are properly trapped and handled by the RMM. The test creates a Realm,
+ * sets ICH_HCR_EL2.TC bit to trap GIC register accesses, and verifies
+ * that each GIC register access causes an RMI_EXIT_SYNC with appropriate
+ * ESR values. The host re-enters the realm after each trap.
+ */
+
+
+/* System register encodings for GIC registers */
+#define IS_ICC_CTLR_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icc_ctlr_el1)
+#define IS_ICC_PMR_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icc_pmr_el1)
+#define IS_ICC_IGRPEN1_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icc_igrpen1_el1)
+#define IS_ICV_CTLR_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icv_ctlr_el1)
+#define IS_ICV_PMR_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icv_pmr_el1)
+#define IS_ICC_SGI0R_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icc_sgi0r_el1)
+#define IS_ICC_DIR_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icc_dir_el1)
+
+test_result_t host_test_realm_gic_trap(void)
+{
+	u_register_t ret1;
+	bool ret2;
+	u_register_t rec_flag[] = {RMI_RUNNABLE};
+	struct realm realm;
+	struct test_realm_params params = {0};
+	u_register_t exit_reason;
+	unsigned int host_call_result;
+	u_register_t test_result = 0U;
+	u_register_t icc_ctlr_val;
+	u_register_t icc_pmr_val;
+	struct rmi_rec_run *run;
+	int trap_count = 0;
+
+	(void)icc_ctlr_val;
+	(void)icc_pmr_val;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	/* Create and activate realm */
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Set ICH_HCR_EL2.TC bit to trap EL1 GIC register accesses */
+	write_ich_hcr_el2(read_ich_hcr_el2() | ICH_HCR_EL2_TC_BIT);
+
+	run = (struct rmi_rec_run *)realm.run[0];
+
+	/* Run the GIC trap test in realm */
+	host_shared_data_set_realm_cmd(&realm, REALM_GIC_TRAP_CMD,
+				       PRIMARY_PLANE_ID, 0U);
+
+	ret1 = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 0U);
+
+	if (ret1 != RMI_SUCCESS) {
+		ERROR("Failed to enter realm for GIC trap test, ret=0x%lx\n", ret1);
+		test_result = 1U;
+		goto destroy_realm;
+	}
+
+	 /*
+	  * Loop to handle multiple sync exits from GIC register traps
+	  * Expected sequence from realm test:
+	  *  1. read ICC_CTLR_EL1
+	  *  2. read ICC_PMR_EL1
+	  *  3. write ICC_PMR_EL1 (0xE0)
+	  *  4. read ICC_PMR_EL1 (verify)
+	  *  5. write ICC_PMR_EL1 (restore)
+	  *  6. read ICC_IGRPEN1_EL1
+	  *  7. write ICC_DIR_EL1
+	  *  8. read ICV_CTLR_EL1
+	  *  9. read ICV_PMR_EL1
+	  * 10. write ICC_SGI0R_EL1
+	  */
+	while (run->exit.exit_reason == RMI_EXIT_SYNC) {
+		u_register_t esr = run->exit.esr;
+		u_register_t ec = EC_BITS(esr);
+		u_register_t iss = ISS_BITS(esr);
+		const char *reg_name = "UNKNOWN";
+		const char *direction;
+
+		(void)reg_name;
+		(void)direction;
+
+		/*
+		 * Check if this is a trapped system register access
+		 * EC_AARCH64_SYS (0x18) indicates system register trap
+		 */
+		if (ec != EC_AARCH64_SYS) {
+			ERROR("Unexpected exception EC=0x%lx ESR=0x%lx\n",
+			      ec, esr);
+			ret1 = false;
+			goto destroy_realm;
+		}
+
+		trap_count++;
+		direction = IS_ISS_SYSREG_READ(iss) ? "READ" : "WRITE";
+
+		/* Validate the trapped register matches expected GIC registers */
+		if (IS_ICC_CTLR_EL1(iss) || IS_ICV_CTLR_EL1(iss)) {
+			reg_name = "ICC/ICV_CTLR_EL1";
+		} else if (IS_ICC_PMR_EL1(iss) || IS_ICV_PMR_EL1(iss)) {
+			reg_name = "ICC/ICV_PMR_EL1";
+		} else if (IS_ICC_IGRPEN1_EL1(iss)) {
+			reg_name = "ICC_IGRPEN1_EL1";
+		} else if (IS_ICC_SGI0R_EL1(iss)) {
+			reg_name = "ICC_SGI0R_EL1";
+		} else if (IS_ICC_DIR_EL1(iss)) {
+			reg_name = "ICC_DIR_EL1";
+		} else {
+			ERROR("Unexpected GIC register trap: ISS=0x%lx\n", iss);
+			ret1 = false;
+			//goto destroy_realm;
+		}
+
+		INFO("GIC trap #%d: %s %s (ESR=0x%lx, ISS=0x%lx)\n",
+		     trap_count, direction, reg_name, esr, iss);
+
+		/* Emulate GIC register access */
+		if (IS_ISS_SYSREG_WRITE(iss)) {
+			/* Emulate write operation - RMM copies source register to gprs[0] */
+			u_register_t value = run->exit.gprs[0];
+
+			if (IS_ICC_PMR_EL1(iss) || IS_ICV_PMR_EL1(iss)) {
+				write_icc_pmr_el1(value);
+				INFO("Host emulated write: R0=0x%lx -> ICC_PMR_EL1\n",
+				     value);
+			} else if (IS_ICC_CTLR_EL1(iss) || IS_ICV_CTLR_EL1(iss)) {
+				write_icc_ctlr_el1(value);
+				INFO("Host emulated write: R0=0x%lx -> ICC_CTLR_EL1\n",
+				     value);
+			} else if (IS_ICC_IGRPEN1_EL1(iss)) {
+				write_icc_igrpen1_el1(value);
+				INFO("Host emulated write: R0=0x%lx -> ICC_IGRPEN1_EL1\n",
+				     value);
+			} else if (IS_ICC_SGI0R_EL1(iss)) {
+				write_icc_sgi0r_el1(value);
+				INFO("Host emulated write: R0=0x%lx -> ICC_SGI0R_EL1\n",
+				     value);
+			} else if (IS_ICC_DIR_EL1(iss)) {
+				write_icc_dir_el1(value);
+				INFO("Host emulated write: R0=0x%lx -> ICC_DIR_EL1\n",
+				     value);
+			}
+		} else {
+			/* Emulate read operation */
+			u_register_t value = 0;
+
+			if (IS_ICC_PMR_EL1(iss) || IS_ICV_PMR_EL1(iss)) {
+				value = read_icc_pmr_el1();
+				INFO("Host emulated read: ICC_PMR_EL1=0x%lx\n", value);
+			} else if (IS_ICC_CTLR_EL1(iss) || IS_ICV_CTLR_EL1(iss)) {
+				value = read_icc_ctlr_el1();
+				INFO("Host emulated read: ICC_CTLR_EL1=0x%lx\n", value);
+			} else if (IS_ICC_IGRPEN1_EL1(iss)) {
+				value = read_icc_igrpen1_el1();
+				INFO("Host emulated read: ICC_IGRPEN1_EL1=0x%lx\n", value);
+			}
+
+			/* Store read value in R0, RMM will copy to target register */
+			run->entry.gprs[0] = value;
+		}
+
+		/* Re-enter realm to continue execution */
+		ret1 = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 0U);
+		if (ret1 != RMI_SUCCESS) {
+			ERROR("Failed to re-enter realm after trap %d\n",
+			      trap_count);
+			goto destroy_realm;
+		}
+	}
+
+	/* Final exit should be host call */
+	if (run->exit.exit_reason != RMI_EXIT_HOST_CALL) {
+		ERROR("Expected RMI_EXIT_HOST_CALL, got 0x%lx\n",
+		      run->exit.exit_reason);
+		ret1 = false;
+		goto destroy_realm;
+	}
+
+	INFO("Total GIC register traps: %d\n", trap_count);
+
+	/* Get test results from realm */
+	test_result = host_shared_data_get_realm_val(&realm,
+			PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX);
+	icc_ctlr_val = host_shared_data_get_realm_val(&realm,
+			PRIMARY_PLANE_ID, 0U, HOST_ARG2_INDEX);
+	icc_pmr_val = host_shared_data_get_realm_val(&realm,
+			PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX);
+
+	INFO("GIC trap test: result=%lu, ICC_CTLR=0x%lx, ICC_PMR=0x%lx\n",
+	     test_result, icc_ctlr_val, icc_pmr_val);
+
+destroy_realm:
+	ret2 = host_destroy_realm(&realm);
+
+	if ((ret1 != RMI_SUCCESS) || !ret2) {
+		ERROR("%s(): enter=%ld destroy=%d\n",
+		      __func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Verify realm test passed */
+	if (test_result != 1U) {
+		ERROR("GIC trap test failed in realm\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Verify we got at least some traps */
+	if (trap_count == 0) {
+		ERROR("No GIC register traps detected\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}

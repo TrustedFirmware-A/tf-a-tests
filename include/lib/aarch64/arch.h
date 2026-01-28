@@ -104,7 +104,8 @@
 #define ICC_EOIR0_EL1		S3_0_C12_C8_1
 #define ICC_EOIR1_EL1		S3_0_C12_C12_1
 #define ICC_SGI0R_EL1		S3_0_C12_C11_7
-#define ICV_CTRL_EL1		S3_0_C12_C12_4
+#define ICC_DIR_EL1		S3_0_C12_C11_1
+#define ICV_CTLR_EL1		S3_0_C12_C12_4
 #define ICV_IAR1_EL1		S3_0_C12_C12_0
 #define ICV_IGRPEN1_EL1		S3_0_C12_C12_7
 #define ICV_EOIR1_EL1		S3_0_C12_C12_1
@@ -1244,6 +1245,33 @@
 #define EC_AARCH64_FP			U(0x2c)
 #define EC_SERROR			U(0x2f)
 
+/* ESR ISS encoding for system register traps (EC_AARCH64_SYS) */
+#define ISS_SYSREG_DIRECTION_SHIFT	U(0)
+#define ISS_SYSREG_DIRECTION_MASK	U(0x1)
+#define ISS_SYSREG_CRM_SHIFT		U(1)
+#define ISS_SYSREG_CRM_MASK		U(0xF)
+#define ISS_SYSREG_RT_SHIFT		U(5)
+#define ISS_SYSREG_RT_MASK		U(0x1F)
+#define ISS_SYSREG_CRN_SHIFT		U(10)
+#define ISS_SYSREG_CRN_MASK		U(0xF)
+#define ISS_SYSREG_OP1_SHIFT		U(14)
+#define ISS_SYSREG_OP1_MASK		U(0x7)
+#define ISS_SYSREG_OP2_SHIFT		U(17)
+#define ISS_SYSREG_OP2_MASK		U(0x7)
+#define ISS_SYSREG_OP0_SHIFT		U(20)
+#define ISS_SYSREG_OP0_MASK		U(0x3)
+
+#define ISS_SYSREG_DIRECTION_READ	U(0x1)
+#define ISS_SYSREG_DIRECTION_WRITE	U(0x0)
+
+/* Extract SYSREG_ID from ISS by reconstructing from individual fields */
+#define ISS_SYSREG_ID(iss)		\
+	(((((iss) >> ISS_SYSREG_OP0_SHIFT) & ISS_SYSREG_OP0_MASK) << SYSREG_ID_OP0_SHIFT) | \
+	 ((((iss) >> ISS_SYSREG_OP1_SHIFT) & ISS_SYSREG_OP1_MASK) << SYSREG_ID_OP1_SHIFT) | \
+	 ((((iss) >> ISS_SYSREG_CRN_SHIFT) & ISS_SYSREG_CRN_MASK) << SYSREG_ID_CRN_SHIFT) | \
+	 ((((iss) >> ISS_SYSREG_CRM_SHIFT) & ISS_SYSREG_CRM_MASK) << SYSREG_ID_CRM_SHIFT) | \
+	 ((((iss) >> ISS_SYSREG_OP2_SHIFT) & ISS_SYSREG_OP2_MASK) << SYSREG_ID_OP2_SHIFT))
+
 /* Common DFSC/IFSC code */
 #define ISS_FSC_MASK			U(0x3f)
 #define FSC_L0_ADR_SIZE_FAULT		U(0)
@@ -2052,6 +2080,15 @@
 #define SYSREG_ID_apgakeyhi_el1			SYSREG_ID(0, 3, 0, 2,  3, 1)
 #define SYSREG_ID_mpamidr_el1			SYSREG_ID(0, 3, 0, 10, 4, 4)
 #define SYSREG_ID_INVALID			SYSREG_ID(0, 4, 3, 15, 15, 7)
+
+/* GICv3 CPU Interface registers */
+#define SYSREG_ID_icc_ctlr_el1			SYSREG_ID(0, 3, 0, 12, 12, 4)
+#define SYSREG_ID_icc_pmr_el1			SYSREG_ID(0, 3, 0, 4, 6, 0)
+#define SYSREG_ID_icc_igrpen1_el1		SYSREG_ID(0, 3, 0, 12, 12, 7)
+#define SYSREG_ID_icc_sgi0r_el1			SYSREG_ID(0, 3, 0, 12, 11, 7)
+#define SYSREG_ID_icc_dir_el1			SYSREG_ID(0, 3, 0, 12, 11, 1)
+#define SYSREG_ID_icv_ctlr_el1			SYSREG_ID(0, 3, 0, 12, 12, 4)
+#define SYSREG_ID_icv_pmr_el1			SYSREG_ID(0, 3, 0, 4, 6, 0)
 
 /* RNDR definition */
 #define RNDR			S3_3_C2_C4_0

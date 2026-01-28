@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2025-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -42,7 +42,7 @@ bool test_realm_el1_timer(void)
 	timer_irq_received = false;
 
 	/* Get the number of priority bits implemented */
-	priority_bits = ((read_icv_ctrl_el1() >> ICV_CTLR_EL1_PRIbits_SHIFT) &
+	priority_bits = ((read_icv_ctlr_el1() >> ICV_CTLR_EL1_PRIbits_SHIFT) &
 				ICV_CTLR_EL1_PRIbits_MASK) + 1UL;
 
 	/* Unimplemented bits are RES0 and start from LSB */

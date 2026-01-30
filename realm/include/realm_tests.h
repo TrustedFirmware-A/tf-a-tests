@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2023-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -36,5 +36,6 @@ bool test_realm_attestation_fault(void);
 bool test_realm_mpam_undef_abort(void);
 bool test_realm_write_brbcr_el1_reg(void);
 bool test_realm_da_rsi_calls(void);
+bool test_realm_smmuv3(void);
 
 #endif /* REALM_TESTS_H */

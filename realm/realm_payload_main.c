@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -688,6 +688,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_TEST_FEAT_TCR2:
 			test_succeed = test_realm_feat_tcr2();
+			break;
+		case REALM_SMMU:
+			test_succeed = test_realm_smmuv3();
 			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);

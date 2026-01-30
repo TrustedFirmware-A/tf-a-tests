@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited or its affiliates. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -55,7 +55,15 @@
 #define BAR_P_TYPE		0x1
 #define BAR_64_BIT		0x1
 #define BAR_32_BIT		0x0
-#define BAR_REG(bar_reg_value)	((bar_reg_value >> 2) & 0x1)
+
+/* Get base register type, bit[0] */
+#define BAR_TYPE(bar_reg_value)		(bar_reg_value  & 0x1)
+
+/* Get base register width, bits[2:1] */
+#define BAR_REG(bar_reg_value)		((bar_reg_value >> 2) & 0x1)
+
+/* Get base register prefetchable property, bit[3] */
+#define BAR_MEM(bar_reg_value)		((bar_reg_value & 0xF) >> 3)
 
 /* Type 1 Cfg reg offsets */
 #define TYPE1_PBN		0x18

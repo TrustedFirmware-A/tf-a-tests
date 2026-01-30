@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -405,14 +405,6 @@ typedef enum {
 #define RSI_FEATURE_REGISTER_0_ATS_WIDTH	UL(1)
 
 /*
- * RsiDevMemShared
- * Represents whether an device memory mapping is shared.
- * Width: 1 bit
- */
-#define RSI_DEV_MEM_MAPPING_PRIVATE		U(0)
-#define RSI_DEV_MEM_MAPPING_SHARED		U(1)
-
-/*
  * RsiDevMemCoherent
  * Represents whether a device memory location is within the system coherent
  * memory space.
@@ -422,16 +414,30 @@ typedef enum {
 #define RSI_DEV_MEM_COHERENT			U(1)
 
 /*
- * RsiRdevValidateIoFlags
- * Fieldset contains flags provided when requesting validation of an IO mapping.
+ * RsiDevMemOrdering
+ * Represents ordering properties of a device memory location.
+ * Width: 1 bit
+ */
+#define RSI_DEV_MEM_NOT_LIMITED_ORDER		U(0)
+#define RSI_DEV_MEM_LIMITED_ORDER		U(1)
+
+/*
+ * RsiDevMemFlags
+ * Fieldset contains flags which describe properties of a device memory mapping.
  * Width: 64 bits
  */
-/* RsiDevMemShared: Bits 0 to 1 */
-#define RSI_RDEV_VALIDATE_IO_FLAGS_SHARE_SHIFT	UL(0)
-#define RSI_RDEV_VALIDATE_IO_FLAGS_SHARE_WIDTH	UL(1)
-/* RsiDevMemCoherent: Bits 1 to 2 */
-#define RSI_RDEV_VALIDATE_IO_FLAGS_COH_SHIFT	UL(1)
-#define RSI_RDEV_VALIDATE_IO_FLAGS_COH_WIDTH	UL(1)
+#define RSI_DEV_MEM_FLAGS_COH_SHIFT		UL(0)
+#define RSI_DEV_MEM_FLAGS_COH_WIDTH		UL(1)
+#define RSI_DEV_MEM_FLAGS_LOR_SHIFT		UL(1)
+#define RSI_DEV_MEM_FLAGS_LOR_WIDTH		UL(1)
+
+/*
+ * RsiVdevDmaFlags
+ * Fieldset contains flags which control device DMA.
+ * Width: 64 bits
+ */
+#define RSI_VDEV_DMA_FLAGS_ATS_SHIFT		UL(0)
+#define RSI_VDEV_DMA_FLAGS_ATS_WIDTH		UL(1)
 
 /*
  * RsiVdevState
@@ -683,5 +689,18 @@ u_register_t rsi_realm_config(struct rsi_realm_config *s);
 u_register_t rsi_plane_enter(u_register_t plane_index, u_register_t run);
 
 u_register_t rsi_vdev_get_info(u_register_t rdev_id, u_register_t rdev_info_ptr);
+
+/* Function to validate Realm device memory mappings */
+u_register_t rsi_vdev_vaildate_mapping(u_register_t rdev_id, u_register_t ipa_base,
+					u_register_t ipa_top, u_register_t pa_base,
+					u_register_t flags, u_register_t lock_nonce,
+					u_register_t meas_nonce, u_register_t report_nonce,
+					u_register_t *new_ipa_base, rsi_response_type *response);
+/* Function to enable DMA */
+u_register_t rsi_vdev_dma_enable(u_register_t rdev_id, u_register_t flags,
+				 u_register_t non_ats_plane, u_register_t lock_nonce,
+				 u_register_t meas_nonce, u_register_t report_nonce);
+/* Function to disable DMA */
+u_register_t rsi_vdev_dma_disable(u_register_t rdev_id);
 
 #endif /* REALM_RSI_H */

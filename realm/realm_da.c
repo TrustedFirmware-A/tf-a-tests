@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2025-2026, Arm Limited. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -18,20 +18,19 @@
 
 static struct rdev gbl_rdev;
 
-/* RDEV info. decice type and attestation evidence digest */
+/* RDEV info. Device type and attestation evidence digest */
 static struct rsi_vdev_info gbl_vdev_info[2] __aligned(GRANULE_SIZE);
 
 /*
  * If the Realm supports DA feature, this function calls series of RSI RDEV
  * on the assigned device.
  *
- * Returns 'false' on success.
+ * Returns 'false' on error.
  */
 bool test_realm_da_rsi_calls(void)
 {
 	struct rdev *rdev;
-	unsigned long rsi_rc;
-	u_register_t rsi_feature_reg0;
+	u_register_t rsi_feature_reg0, rsi_rc;
 	struct rsi_vdev_info *vdev_info;
 
 	/* Check if RSI_FEATURES support DA */
@@ -48,12 +47,9 @@ bool test_realm_da_rsi_calls(void)
 
 	/* Get the global RDEV. Currently only one RDEV is supported */
 	rdev = &gbl_rdev;
+
 	/* Use idx 1 to have struct size alignment */
 	vdev_info = &gbl_vdev_info[1];
-	if (rdev == NULL) {
-		realm_printf("realm_rdev_init failed\n");
-		return false;
-	}
 
 	/* After meas and ifc_report, get device info */
 	rsi_rc = realm_rsi_vdev_get_info(rdev, vdev_info);

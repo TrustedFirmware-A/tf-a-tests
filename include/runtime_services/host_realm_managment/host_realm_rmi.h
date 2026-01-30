@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -642,9 +642,9 @@
 #define RMI_EXIT_SERROR			U(6)
 #define RMI_EXIT_S2AP_CHANGE		U(7)
 #define RMI_EXIT_VDEV_REQUEST		U(8)
-#define RMI_EXIT_VDEV_COMM		U(9)
-#define RMI_EXIT_DEV_MEM_MAP		U(10)
-#define RMI_EXIT_INVALID		(RMI_EXIT_DEV_MEM_MAP + 1U)
+#define RMI_EXIT_VDEV_MAP		U(9)
+#define RMI_EXIT_VDEV_P2P_BINDING	U(10)
+#define RMI_EXIT_INVALID		(RMI_EXIT_VDEV_P2P_BINDING + 1U)
 
 /* RmiRecRunnable types */
 #define RMI_NOT_RUNNABLE		0U
@@ -823,7 +823,7 @@ typedef enum {
  * either by the Host or by the Realm.
  */
 struct rmi_realm_params {
-	/* Flags */
+	/* RmiRealmFlags0 */
 	SET_MEMBER(unsigned long flags0, 0, 0x8);			/* Offset 0 */
 	/* Requested IPA width */
 	SET_MEMBER(unsigned int s2sz, 0x8, 0x10);			/* 0x8 */
@@ -840,7 +840,12 @@ struct rmi_realm_params {
 	/* Number of auxiliary Planes */
 	SET_MEMBER(unsigned int num_aux_planes, 0x38, 0x400);		/* 0x38 */
 	/* Realm Personalization Value */
-	SET_MEMBER(unsigned char rpv[RPV_SIZE], 0x400, 0x800);		/* 0x400 */
+	SET_MEMBER(unsigned char rpv[RPV_SIZE], 0x400, 0x440);		/* 0x400 */
+	/*
+	 * Index of Plane whose stage 2 permissions are observed
+	 * by ATS requests from devices assigned to the Realm.
+	 */
+	SET_MEMBER_RMI(unsigned long ats_plane, 0x440, 0x800);		/* 0x440 */
 	SET_MEMBER(struct {
 			/* Virtual Machine Identifier */
 			unsigned short vmid;				/* 0x800 */
@@ -851,7 +856,7 @@ struct rmi_realm_params {
 			/* Number of starting level RTTs */
 			unsigned int rtt_num_start;			/* 0x818 */
 		   }, 0x800, 0x820);
-	/* Flags */
+	/* RmiRealmFlags1 */
 	SET_MEMBER(unsigned long flags1, 0x820, 0x828);			/* 0x820 */
 	/* MECID */
 	SET_MEMBER(long mecid, 0x828, 0xF00);				/* 0x828 */
@@ -895,6 +900,9 @@ struct rmi_rec_params {
 
 /* Host response to RIPAS change request */
 #define REC_ENTRY_FLAG_RIPAS_RESPONSE_REJECT	(UL(1) << 4)
+
+/* Host response to VDEV mapping validation request */
+#define REC_ENTRY_FLAG_DEV_MEM_RESPONSE		(UL(1) << 6)
 
 /*
  * Structure contains data passed from the Host to the RMM on REC entry
@@ -1104,24 +1112,6 @@ struct rmi_rec_run {
 #define RMI_SIGNATURE_ALGORITHM_RSASSA_3072	U(0)
 #define RMI_SIGNATURE_ALGORITHM_ECDSA_P256	U(1)
 #define RMI_SIGNATURE_ALGORITHM_ECDSA_P384	U(2)
-
-/*
- * RmiDevMemShared
- * Represents whether device memory Granule should be shared
- * Width: 1 bit
- */
-#define RMI_DEV_MEM_PRIVATE			U(0)
-#define RMI_DEV_MEM_SHARED			U(1)
-
-/*
- * RmiDevDelegateFlags
- * Fieldset contains flags provided by the Host during device memory granule
- * delegation.
- * Width: 64 bits
- */
-/* RmiDevMemShared: Bit 0 */
-#define RMI_DEV_DELEGATE_FLAGS_SHARE_SHIFT	U(0)
-#define RMI_DEV_DELEGATE_FLAGS_SHARE_WIDTH	U(1)
 
 /*
  * RmiDevCommEnterStatus (Name in Spec RmiDevCommStatus)
@@ -1449,6 +1439,7 @@ struct realm {
 	u_register_t     host_shared_data;
 	unsigned int     rec_count;
 	unsigned int     num_aux_planes;
+	unsigned int	 ats_plane;
 	u_register_t     par_base;
 	u_register_t     par_size;
 	u_register_t     rd;
@@ -1592,4 +1583,8 @@ u_register_t host_rmi_vdev_get_state(u_register_t vdev_ptr, u_register_t *state)
 u_register_t host_rmi_vdev_abort(u_register_t vdev_ptr);
 u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,
 				   u_register_t vdev_ptr);
+u_register_t host_rmi_vdev_validate_mapping(u_register_t rd, u_register_t rec_ptr,
+					    u_register_t pdev_ptr, u_register_t vdev_ptr,
+					    u_register_t base, u_register_t top,
+					    u_register_t *out_top);
 #endif /* HOST_REALM_RMI_H */

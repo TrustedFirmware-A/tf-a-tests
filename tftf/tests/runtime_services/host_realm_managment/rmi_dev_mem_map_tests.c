@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2025-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -53,14 +53,10 @@ extern struct host_vdev gbl_host_vdev;
  */
 test_result_t host_realm_dev_mem_map_unmap(void)
 {
-	u_register_t rec_flag[] = {RMI_RUNNABLE};
 	u_register_t map_addr[NUM_INFO_TESTS][MAX_DEV_REGIONS];
-	u_register_t feature_flag = 0UL;
-	u_register_t res, rmi_features;
+	u_register_t rmi_feat_reg0, res;
 	__unused size_t dev_size;
 	test_result_t ret = TEST_RESULT_FAIL;
-	int rc;
-	long sl = RTT_MIN_LEVEL;
 	struct realm realm;
 	struct rtt_entry rtt;
 	struct dev_mem_region mem_region[2];
@@ -79,10 +75,11 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	};
 	unsigned int num[NUM_INFO_TESTS];
 	unsigned int num_reg, offset, i, j;
-	struct host_vdev *h_vdev = &gbl_host_vdev;
+	struct host_vdev *h_vdev;
 	struct host_pdev *h_pdev;
+	int rc;
 
-	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_features);
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
 	/* Initialise memory test structures */
 
@@ -159,16 +156,9 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 
 	host_rmi_init_cmp_result();
 
-	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
-		sl = RTT_MIN_LEVEL_LPA2;
-	}
-
-	if (!host_create_activate_realm_payload(&realm,
-						(u_register_t)REALM_IMAGE_BASE,
-						feature_flag, 0U, sl, rec_flag,
-						1U, 0U, get_test_mecid())) {
-		ERROR("Realm creation failed\n");
+	rc = host_create_realm_with_feat_da(&realm);
+	if (rc != 0) {
+		ERROR("Realm create with feat_da failed\n");
 		return TEST_RESULT_FAIL;
 	}
 
@@ -227,20 +217,26 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		}
 	}
 
-	host_pdevs_init();
-
-	/* Create PDEV and ready*/
-	if (tsm_connect_first_device(&h_pdev) != 0) {
-		ERROR("Connecting to device failed\n");
-		ret = TEST_RESULT_FAIL;
+	/* Find device with TSM */
+	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
+	if (h_pdev == NULL) {
+		/* If no device is connected to TSM, then skip the test */
+		ret = TEST_RESULT_SKIPPED;
 		goto undelegate_granules;
 	}
 
-	/* Create VDEV */
-	rc = host_assign_vdev_to_realm(&realm, h_vdev,
-			      h_pdev->dev->bdf, h_pdev->pdev);
+	/* Connect device with TSM */
+	rc = tsm_connect_device(h_pdev);
 	if (rc != 0) {
-		ERROR("Creating VDEV failed\n");
+		ERROR("TSM connect failed for device 0x%x\n", h_pdev->dev->bdf);
+		goto undelegate_granules;
+	}
+
+	h_vdev = &gbl_host_vdev;
+
+	/* Assign TSM connected device to a Realm */
+	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->pdev);
+	if (rc != 0) {
 		goto undelegate_granules;
 	}
 
@@ -298,6 +294,19 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		}
 	}
 
+	rc = host_unassign_vdev_from_realm(&realm, h_vdev);
+	if (rc != 0) {
+		ERROR("Destroying VDEV failed\n");
+		goto unmap_memory;
+	}
+
+	/* Destroy PDEV */
+	rc = tsm_disconnect_device(h_pdev);
+	if (rc != 0) {
+		ERROR("Destroying PDEV failed\n");
+	}
+
+unmap_memory:
 	/* Unmap device memory */
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
 		/* Skip non-initialised test region */
@@ -385,19 +394,6 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		}
 	}
 
-	rc = host_unassign_vdev_from_realm(&realm, h_vdev);
-	if (rc != 0) {
-		ERROR("Destroying VDEV failed\n");
-		goto undelegate_granules;
-	}
-
-	/* Destroy PDEV */
-	if (tsm_disconnect_device(h_pdev) != 0) {
-		ERROR("Destroying PDEV failed\n");
-		ret = TEST_RESULT_FAIL;
-		goto undelegate_granules;
-	}
-
 	ret = TEST_RESULT_SUCCESS;
 
 undelegate_granules:
@@ -417,13 +413,6 @@ undelegate_granules:
 				ret = TEST_RESULT_FAIL;
 				break;
 			}
-		}
-	}
-
-	/* Disconnect device if we managed to connect it but exited early */
-	if ((h_pdev != NULL) && h_pdev->is_connected_to_tsm) {
-		if (tsm_disconnect_device(h_pdev) != 0) {
-			ret = TEST_RESULT_FAIL;
 		}
 	}
 

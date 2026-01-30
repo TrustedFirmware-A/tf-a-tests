@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2021-2025, Arm Limited. All rights reserved.
+  Copyright (c) 2021-2026, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -146,7 +146,8 @@
 	  <testcase name="Test Realm creation with LPA2 enabled but FEAT_LPA2 absent on platform"
 	  function="host_test_lpa2_realm_on_non_lpa2plat" />
 	  <!-- Test cases related to Attestation -->
-	  <testcase name="Test realm attestation" function="host_realm_test_attestation" />
+	  <testcase name="Test realm attestation"
+	  function="host_realm_test_attestation" />
 	  <testcase name="Test realm attestation fault"
 	  function="host_realm_test_attestation_fault" />
 	  <!-- Test case related to PCIE-DOE -->
@@ -163,11 +164,16 @@
 	  <testcase name="Test if BRBE realted registers are preserved "
 	  function="host_realm_test_brbe_save_restore" />
 	  <!-- Test cases related to FEAT_MEC -->
-	  <testcase name="Test Realms with different MECIDs" function="host_realm_test_mecid" />
-	  <testcase name="Test Realms with the same MECID" function="host_realm_test_mecid_fault" />
-	  <testcase name="Test Realm with minimum MECID" function="host_realm_test_min_mecid" />
-	  <testcase name="Test Realms with maximum MECID" function="host_realm_test_max_mecid" />
-	  <testcase name="Test Realms with shared default MECID" function="host_realm_test_default_mecid" />
+	  <testcase name="Test Realms with different MECIDs"
+	  function="host_realm_test_mecid" />
+	  <testcase name="Test Realms with the same MECID"
+	  function="host_realm_test_mecid_fault" />
+	  <testcase name="Test Realm with minimum MECID"
+	  function="host_realm_test_min_mecid" />
+	  <testcase name="Test Realms with maximum MECID"
+	  function="host_realm_test_max_mecid" />
+	  <testcase name="Test Realms with shared default MECID"
+	  function="host_realm_test_default_mecid" />
 	  <!-- Test case for EL3-RMM IDE KM Interface -->
 	  <testcase name="Test for Root Port Key management interface"
 	  function="host_realm_test_root_port_key_management" />
@@ -190,6 +196,9 @@
 	  <!-- Invoke IDE refresh and reset on PDEV -->
 	  <testcase name="Invoke IDE refresh and reset on PDEV"
 	  function="host_pdev_invoke_ide_refresh_reset" />
+	  <!-- Test case related to SMMUv3 -->
+	  <testcase name="Check DMA command by SMMUv3TestEngine completes"
+	  function="host_test_realm_smmuv3" />
 	  <!-- Test case for LFA with Realm Payload -->
 	  <testcase name="Test Live Firmware Activation of RMM with Realm Payload"
 	  function="host_test_realm_rsi_version_with_lfa" />

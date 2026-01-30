@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -99,4 +99,16 @@ void realm_shared_data_set_plane_n_cmd(uint8_t cmd, unsigned int plane_num, unsi
 	assert(is_plane0);
 
 	(*guest_shared_data)[plane_num][rec_num].realm_cmd = cmd;
+}
+
+u_register_t realm_shared_data_get_mmio_range(struct rmi_address_range *addr_range)
+{
+	unsigned int plane_num = realm_get_my_plane_num();
+	unsigned int rec_num = REC_IDX(read_mpidr_el1());
+	u_register_t range_count = (u_register_t)(*guest_shared_data)
+				[plane_num][rec_num].mmio_range_count;
+
+	(void)memcpy(addr_range, &(*guest_shared_data)[plane_num][rec_num].mmio_range,
+			range_count * sizeof(struct rmi_address_range));
+	return range_count;
 }

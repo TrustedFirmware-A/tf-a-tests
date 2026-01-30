@@ -39,8 +39,7 @@ test_result_t host_realm_feat_mops(void)
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
 						feature_flag, feature_flag1, sl,
-						rec_flag, 1U, 0U,
-						get_test_mecid())) {
+						rec_flag, 1U, 0U)) {
 		return TEST_RESULT_FAIL;
 	}
 

@@ -38,7 +38,7 @@ test_result_t host_test_realm_rsi_version_with_lfa(void)
 	}
 
 	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+				feature_flag0, 0U, sl, rec_flag, 1U, 0U)) {
 		return TEST_RESULT_FAIL;
 	}
 

@@ -875,25 +875,19 @@ struct rmi_realm_params {
 	 * Index of Plane whose stage 2 permissions are observed
 	 * by ATS requests from devices assigned to the Realm.
 	 */
-	SET_MEMBER_RMI(unsigned long ats_plane, 0x440, 0x800);		/* 0x440 */
-	SET_MEMBER_RMI(struct {
-			/* Virtual Machine Identifier */
-			unsigned short vmid;				/* 0x800 */
+	SET_MEMBER_RMI(unsigned long ats_plane, 0x440, 0x808);		/* 0x440 */
+	SET_MEMBER(struct {
 			/* Realm Translation Table base */
 			unsigned long rtt_base;				/* 0x808 */
 			/* RTT starting level */
 			long rtt_level_start;				/* 0x810 */
 			/* Number of starting level RTTs */
 			unsigned int rtt_num_start;			/* 0x818 */
-		   }, 0x800, 0x820);
-	/* RmiRealmFlags1 */
-	SET_MEMBER_RMI(unsigned long flags1, 0x820, 0x828);		/* 0x820 */
-	/* MECID */
-	SET_MEMBER_RMI(long mecid, 0x828, 0xF00);			/* 0x828 */
-	/* Auxiliary Virtual Machine Identifiers */
-	SET_MEMBER_RMI(unsigned short aux_vmid[3], 0xF00, 0xF80);	/* 0xF00 */
+		   }, 0x808, 0x820);
+	/* Flags */
+	SET_MEMBER(unsigned long flags1, 0x820, 0xf80);			/* 0x820 */
 	/* Base address of auxiliary RTTs */
-	SET_MEMBER_RMI(unsigned long aux_rtt_base[3], 0xF80, 0x1000);	/* 0xF80 */
+	SET_MEMBER(unsigned long aux_rtt_base[3], 0xf80, 0x1000);	/* 0xf80 */
 };
 
 /*
@@ -1458,6 +1452,7 @@ struct realm {
 	u_register_t     par_base;
 	u_register_t     par_size;
 	u_register_t     rd;
+	unsigned int     realm_id;
 	u_register_t     rtt_addr;
 	u_register_t     rec[MAX_REC_COUNT];
 	u_register_t     run[MAX_REC_COUNT];
@@ -1478,12 +1473,9 @@ struct realm {
 	bool             shared_mem_created;
 	bool             rtt_tree_single;
 	bool		 rtt_s2ap_enc_indirect;
-	unsigned short   vmid;
-	unsigned short   mecid;
 	enum realm_state state;
 	long start_level;
 	u_register_t     aux_rtt_addr[MAX_AUX_PLANE_COUNT];
-	unsigned short   aux_vmid[MAX_AUX_PLANE_COUNT];
 };
 
 /*

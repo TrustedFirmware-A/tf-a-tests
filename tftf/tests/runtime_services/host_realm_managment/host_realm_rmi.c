@@ -1141,7 +1141,7 @@ u_register_t host_realm_create(struct realm *realm)
 		goto pool_reset;
 	}
 
-	INFO("Realm start adr=0x%lx mecid=%d\n", realm->par_base, realm->mecid);
+	INFO("Realm start adr=0x%lx\n", realm->par_base);
 
 	/* Allocate memory for params */
 	params = (struct rmi_realm_params *)page_alloc(PAGE_SIZE);
@@ -1237,8 +1237,6 @@ u_register_t host_realm_create(struct realm *realm)
 
 	params->rtt_level_start = realm->start_level;
 	params->algorithm = RMI_HASH_SHA_256;
-	params->vmid = vmid++;
-	params->mecid = realm->mecid;
 	params->rtt_base = realm->rtt_addr;
 	params->rtt_num_start = 1U;
 
@@ -1253,12 +1251,6 @@ u_register_t host_realm_create(struct realm *realm)
 	params->num_aux_planes = realm->num_aux_planes;
 	params->ats_plane = realm->ats_plane;
 
-	/* Allocate VMID for all planes */
-	for (unsigned int i = 0U; i < realm->num_aux_planes; i++) {
-		params->aux_vmid[i] = (unsigned short)(vmid++);
-		realm->aux_vmid[i] = params->aux_vmid[i];
-	}
-
 	/* Create Realm */
 	ret = host_rmi_realm_create(realm->rd, (u_register_t)params);
 	if (ret != RMI_SUCCESS) {
@@ -1267,7 +1259,6 @@ u_register_t host_realm_create(struct realm *realm)
 		goto err_free_vmid;
 	}
 
-	realm->vmid = params->vmid;
 	ret = host_rmi_rec_aux_count(realm->rd, &realm->num_aux);
 	if (ret != RMI_SUCCESS) {
 		ERROR("%s() failed, rd=0x%lx ret=0x%lx\n",

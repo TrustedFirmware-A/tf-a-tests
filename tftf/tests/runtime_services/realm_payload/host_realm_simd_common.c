@@ -49,8 +49,7 @@ test_result_t host_create_sve_realm_payload(struct realm *realm, bool sve_en,
 	if (!host_create_activate_realm_payload(realm,
 				       (u_register_t)REALM_IMAGE_BASE,
 				       feature_flag0, feature_flag1,
-				       sl, rec_flag, max_recs, max_aux_planes,
-				       get_test_mecid())) {
+				       sl, rec_flag, max_recs, max_aux_planes)) {
 		return TEST_RESULT_FAIL;
 	}
 

@@ -39,6 +39,9 @@ const char *rmi_exit[] = {
 	RMI_EXIT(VDEV_P2P_BINDING)
 };
 
+/* Bitmap to track allocated realm IDs */
+static unsigned int realm_id_bitmap;
+
 /*
  * The function handler to print the Realm logged buffer,
  * executed by the secondary core
@@ -61,8 +64,8 @@ void realm_print_handler(struct realm *realm_ptr, unsigned int plane_num, unsign
 	if (str_len != 0UL) {
 		/* Avoid memory overflow */
 		log_buffer[MAX_BUF_SIZE - 1] = 0U;
-		mp_printf("[VMID %u][Rec %u]: %s", plane_num == 0U ? realm_ptr->vmid :
-				realm_ptr->aux_vmid[plane_num - 1U], rec_num, log_buffer);
+		mp_printf("[Realm %u][Plane %u][Rec %u]: %s", realm_ptr->realm_id,
+				plane_num, rec_num, log_buffer);
 		(void)memset((char *)log_buffer, 0, MAX_BUF_SIZE);
 	}
 }
@@ -124,8 +127,7 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 			       long sl,
 			       const u_register_t *rec_flag,
 			       unsigned int rec_count,
-			       unsigned int num_aux_planes,
-			       unsigned short mecid)
+			       unsigned int num_aux_planes)
 {
 	int8_t value;
 
@@ -232,26 +234,6 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 						feature_flag));
 	}
 
-	/* Assign a MECID to the realm */
-	/*
-	 * Check if FEAT_MEC is supported and RMM supports MECIDs other than the
-	 * default MECID (0) first. Otherwise, assign the default MECID.
-	 */
-	if (is_feat_mec_supported() &&
-			(host_rmi_features(1UL, &realm_ptr->rmm_feat_reg1)
-				== REALM_SUCCESS) &&
-			((unsigned short)realm_ptr->rmm_feat_reg1 != DEFAULT_MECID)) {
-		if (mecid > (unsigned short)realm_ptr->rmm_feat_reg1) {
-			ERROR("Invalid MECID: %hu\n. Max MECID is %hu.",
-				mecid, (unsigned short)realm_ptr->rmm_feat_reg1);
-			return false;
-		}
-
-		realm_ptr->mecid = mecid;
-	} else {
-		realm_ptr->mecid = DEFAULT_MECID;
-	}
-
 	if (realm_ptr->rec_count > MAX_REC_COUNT) {
 		ERROR("Invalid Rec Count\n");
 		return false;
@@ -305,6 +287,16 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 
 	realm_ptr->payload_created = true;
 
+	/* Allocate unique realm ID after successful creation */
+	for (unsigned int i = 0U; i < MAX_REALM_COUNT; i++) {
+		if ((realm_id_bitmap & (1U << i)) == 0U) {
+			realm_ptr->realm_id = i;
+			/* @TODO make thread-safe */
+			realm_id_bitmap |= (1U << i);
+			break;
+		}
+	}
+
 	return true;
 
 	/* Free test resources */
@@ -324,8 +316,7 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 			       long sl,
 			       const u_register_t *rec_flag,
 			       unsigned int rec_count,
-			       unsigned int num_aux_planes,
-			       unsigned short mecid)
+			       unsigned int num_aux_planes)
 {
 	bool ret;
 
@@ -336,8 +327,7 @@ bool host_create_realm_payload(struct realm *realm_ptr,
 			sl,
 			rec_flag,
 			rec_count,
-			num_aux_planes,
-			mecid);
+			num_aux_planes);
 	if (!ret) {
 		goto destroy_realm;
 	} else {
@@ -374,8 +364,7 @@ bool host_create_activate_realm_payload(struct realm *realm_ptr,
 			long sl,
 			const u_register_t *rec_flag,
 			unsigned int rec_count,
-			unsigned int num_aux_planes,
-			unsigned short mecid)
+			unsigned int num_aux_planes)
 
 {
 	bool ret;
@@ -387,8 +376,7 @@ bool host_create_activate_realm_payload(struct realm *realm_ptr,
 			sl,
 			rec_flag,
 			rec_count,
-			num_aux_planes,
-			mecid);
+			num_aux_planes);
 	if (!ret) {
 		goto destroy_realm;
 	} else {
@@ -421,6 +409,10 @@ bool host_destroy_realm(struct realm *realm_ptr)
 		ERROR("%s() failed\n", "host_realm_destroy");
 		return false;
 	}
+
+	/* Free realm ID */
+	/* @TODO make thread-safe */
+	realm_id_bitmap &= ~(1U << realm_ptr->realm_id);
 
 	memset((char *)realm_ptr, 0U, sizeof(struct realm));
 

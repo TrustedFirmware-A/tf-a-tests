@@ -1,21 +1,35 @@
 /*
- * Copyright (c) 2024, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited or its affiliates. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
  */
 
-#include <assert.h>
 #include <errno.h>
-#include <stdbool.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <debug.h>
-#include <pcie.h>
-#include <pcie_spec.h>
 #include <pcie_doe.h>
-#include <tftf_lib.h>
+#include <pcie_spec.h>
+
+/*
+ * This macro prints a debug message with the "VERBOSE" prefix,
+ * e.g. when logging the first value in print_doe_data().
+ */
+#define DOE_DEBUG	VERBOSE
+
+/*
+ * This macro prints a debug message without a prefix,
+ * used when logging subsequent values in print_doe_data().
+ *
+ * For LOG_LEVEL < LOG_LEVEL_VERBOSE, both macros produce
+ * no output.
+ */
+#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+#define DOE_PRINT(...)	mp_printf(__VA_ARGS__)
+#else
+#define DOE_PRINT(...)
+#endif
 
 static int pcie_doe_wait_ready(uint32_t bdf, uint32_t doe_cap_base)
 {
@@ -74,16 +88,16 @@ static void print_doe_data(uint32_t idx, uint32_t data, bool last)
 
 	if (last) {
 		if ((j & 7) == 0) {
-			VERBOSE(" %08x\n", data);
+			DOE_DEBUG(" %08x\n", data);
 		} else {
-			VERBOSE(" %08x\n", data);
+			DOE_PRINT(" %08x\n", data);
 		}
 	} else if ((j & 7) == 0) {
-		VERBOSE(" %08x", data);
+		DOE_DEBUG(" %08x", data);
 	} else if ((j & 7) == 7) {
-		VERBOSE(" %08x\n", data);
+		DOE_PRINT(" %08x\n", data);
 	} else {
-		VERBOSE(" %08x", data);
+		DOE_PRINT(" %08x", data);
 	}
 }
 
@@ -100,6 +114,9 @@ int pcie_doe_send_req(uint32_t header, uint32_t bdf, uint32_t doe_cap_base,
 			uint32_t *req_addr, uint32_t req_len)
 {
 	uint32_t value, i, send_length, rem_length, doe_length;
+
+	DOE_DEBUG("%s(header 0x%x, bdf 0x%x, doe_cap_base 0x%x)\n",
+			__func__, header, bdf, doe_cap_base);
 
 	value = pcie_read_cfg(bdf, doe_cap_base + DOE_STATUS_REG);
 	if ((value & DOE_STATUS_BUSY_BIT) != 0) {
@@ -118,11 +135,11 @@ int pcie_doe_send_req(uint32_t header, uint32_t bdf, uint32_t doe_cap_base,
 	/* Calculated adjusted data length in DW */
 	doe_length = (rem_length == 0) ? send_length : (send_length + 1);
 
-	VERBOSE(">%08x", header);
+	DOE_DEBUG(">%08x", header);
 
 	pcie_write_cfg(bdf, doe_cap_base + DOE_WRITE_DATA_MAILBOX_REG,
 								header);
-	VERBOSE(" %08x", doe_length + DOE_HEADER_LENGTH);
+	DOE_PRINT(" %08x", doe_length + DOE_HEADER_LENGTH);
 
 	pcie_write_cfg(bdf, doe_cap_base + DOE_WRITE_DATA_MAILBOX_REG,
 				doe_length + DOE_HEADER_LENGTH);
@@ -141,7 +158,7 @@ int pcie_doe_send_req(uint32_t header, uint32_t bdf, uint32_t doe_cap_base,
 		pcie_write_cfg(bdf, doe_cap_base + DOE_WRITE_DATA_MAILBOX_REG, value);
 
 	} else if (((i + DOE_HEADER_LENGTH) & 7) != 0) {
-		VERBOSE("\n");
+		DOE_PRINT("\n");
 	}
 
 	/* Set Go bit */
@@ -164,6 +181,9 @@ int pcie_doe_recv_resp(uint32_t bdf, uint32_t doe_cap_base,
 	uint32_t i, value, length;
 	int ret;
 
+	DOE_DEBUG("%s(bdf 0x%x, doe_cap_base 0x%x)\n",
+			__func__, bdf, doe_cap_base);
+
 	/* Wait for Ready bit */
 	ret = pcie_doe_wait_ready(bdf, doe_cap_base);
 	if (ret != 0) {
@@ -175,7 +195,7 @@ int pcie_doe_recv_resp(uint32_t bdf, uint32_t doe_cap_base,
 	 * Vendor ID and Data Object Type
 	 */
 	value = pcie_read_cfg(bdf, doe_cap_base + DOE_READ_DATA_MAILBOX_REG);
-	VERBOSE("<%08x", value);
+	DOE_DEBUG("<%08x", value);
 
 	/* Indicate a successful transfer of the current data object DW */
 	pcie_write_cfg(bdf, doe_cap_base + DOE_READ_DATA_MAILBOX_REG, 0);
@@ -185,13 +205,13 @@ int pcie_doe_recv_resp(uint32_t bdf, uint32_t doe_cap_base,
 	 * Length in DW
 	 */
 	value = pcie_read_cfg(bdf, doe_cap_base + DOE_READ_DATA_MAILBOX_REG);
-	VERBOSE(" %08x", value);
+	DOE_PRINT(" %08x", value);
 
 	pcie_write_cfg(bdf, doe_cap_base + DOE_READ_DATA_MAILBOX_REG, 0);
 
 	/* Check value */
 	if ((value & PCI_DOE_RESERVED_MASK) != 0) {
-		VERBOSE("\n");
+		DOE_PRINT("\n");
 		ERROR("DOE Data Object Header 2 error\n");
 		return -EIO;
 	}
@@ -211,7 +231,7 @@ int pcie_doe_recv_resp(uint32_t bdf, uint32_t doe_cap_base,
 	}
 
 	if (((i + DOE_HEADER_LENGTH) & 7) != 0) {
-		VERBOSE("\n");
+		DOE_PRINT("\n");
 	}
 
 	value = pcie_read_cfg(bdf, doe_cap_base + DOE_STATUS_REG);

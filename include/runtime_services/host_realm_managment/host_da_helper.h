@@ -68,7 +68,6 @@ struct host_pdev {
 	void *pdev;
 	unsigned long pdev_flags;
 	void *pdev_aux[PDEV_PARAM_AUX_GRANULES_MAX];
-	uint32_t pdev_aux_num;
 	struct rmi_dev_comm_data *dev_comm_data;
 
 	/* Algorithm used to generate device digests */

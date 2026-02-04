@@ -145,8 +145,7 @@ static bool is_host_vdev_state(struct host_vdev *h_vdev, u_register_t exp_state)
  */
 int host_pdev_setup(struct host_pdev *h_pdev)
 {
-	u_register_t ret, count;
-	int i;
+	u_register_t ret;
 
 	/* RCiEP devices not supported by RMM */
 	if (h_pdev->dev->dp_type == RCiEP) {
@@ -181,37 +180,10 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 	/* Supports SPDM */
 	h_pdev->pdev_flags |= INPLACE(RMI_PDEV_FLAGS_SPDM, RMI_PDEV_SPDM_TRUE);
 
-	/* Get num of aux granules required for this PDEV */
-	ret = host_rmi_pdev_aux_count(h_pdev->pdev_flags, &count);
-	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_pdev_aux_count() failed 0x%lx\n", ret);
-		goto err_undelegate_pdev;
-	}
-	h_pdev->pdev_aux_num = count;
-
-	/* Allocate aux granules for PDEV and delegate */
-	INFO("PDEV create requires %u aux pages\n", h_pdev->pdev_aux_num);
-	for (i = 0; i < h_pdev->pdev_aux_num; i++) {
-		void *pdev_aux = page_alloc(PAGE_SIZE);
-
-		if (pdev_aux == NULL) {
-			ERROR("page_alloc for PDEV aux granule failed");
-			goto err_undelegate_pdev_aux;
-		}
-
-		ret = host_rmi_granule_delegate((u_register_t)pdev_aux);
-		if (ret != RMI_SUCCESS) {
-			ERROR("PDEV aux granule delegate failed 0x%lx\n", ret);
-			goto err_undelegate_pdev_aux;
-		}
-
-		h_pdev->pdev_aux[i] = pdev_aux;
-	}
-
 	/* Allocate dev_comm_data and send/recv buffer for Dev communication */
 	h_pdev->dev_comm_data = (struct rmi_dev_comm_data *)page_alloc(PAGE_SIZE);
 	if (h_pdev->dev_comm_data == NULL) {
-		goto err_undelegate_pdev_aux;
+		goto err_undelegate_pdev;
 	}
 
 	memset(h_pdev->dev_comm_data, 0, sizeof(struct rmi_dev_comm_data));
@@ -219,13 +191,13 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 	h_pdev->dev_comm_data->enter.req_addr = (unsigned long)
 		page_alloc(PAGE_SIZE);
 	if (h_pdev->dev_comm_data->enter.req_addr == 0UL) {
-		goto err_undelegate_pdev_aux;
+		goto err_undelegate_pdev;
 	}
 
 	h_pdev->dev_comm_data->enter.resp_addr = (unsigned long)
 		page_alloc(PAGE_SIZE);
 	if (h_pdev->dev_comm_data->enter.resp_addr == 0UL) {
-		goto err_undelegate_pdev_aux;
+		goto err_undelegate_pdev;
 	}
 
 	/* Allocate buffer to cache device certificate */
@@ -233,20 +205,20 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 	h_pdev->cert_chain = (uint8_t *)page_alloc(HOST_PDEV_CERT_LEN_MAX);
 	h_pdev->cert_chain_len = 0;
 	if (h_pdev->cert_chain == NULL) {
-		goto err_undelegate_pdev_aux;
+		goto err_undelegate_pdev;
 	}
 
 	/* Allocate buffer to store extracted public key */
 	h_pdev->public_key = (void *)page_alloc(PAGE_SIZE);
 	if (h_pdev->public_key == NULL) {
-		goto err_undelegate_pdev_aux;
+		goto err_undelegate_pdev;
 	}
 	h_pdev->public_key_len = PAGE_SIZE;
 
 	/* Allocate buffer to store public key metadata */
 	h_pdev->public_key_metadata = (void *)page_alloc(PAGE_SIZE);
 	if (h_pdev->public_key_metadata == NULL) {
-		goto err_undelegate_pdev_aux;
+		goto err_undelegate_pdev;
 	}
 
 	h_pdev->public_key_metadata_len = PAGE_SIZE;
@@ -255,22 +227,13 @@ int host_pdev_setup(struct host_pdev *h_pdev)
 	h_pdev->vca = (uint8_t *)page_alloc(HOST_PDEV_VCA_LEN_MAX);
 	h_pdev->vca_len = 0;
 	if (h_pdev->vca == NULL) {
-		goto err_undelegate_pdev_aux;
+		goto err_undelegate_pdev;
 	}
 
 	/* Set algorithm to use for device digests */
 	h_pdev->pdev_hash_algo = RMI_HASH_SHA_512;
 
 	return 0;
-
-err_undelegate_pdev_aux:
-	/* Undelegate all the delegated pages */
-	for (int i = 0; i < h_pdev->pdev_aux_num; i++) {
-		if (h_pdev->pdev_aux[i]) {
-			host_rmi_granule_undelegate((u_register_t)
-						    h_pdev->pdev_aux[i]);
-		}
-	}
 
 err_undelegate_pdev:
 	host_rmi_granule_undelegate((u_register_t)h_pdev->pdev);
@@ -297,7 +260,6 @@ int host_pdev_create(struct host_pdev *h_pdev)
 	pdev_params->flags = h_pdev->pdev_flags;
 	pdev_params->cert_id = h_pdev->cert_slot_id;
 	pdev_params->pdev_id = h_pdev->dev->bdf;
-	pdev_params->num_aux = h_pdev->pdev_aux_num;
 	pdev_params->hash_algo = h_pdev->pdev_hash_algo;
 	pdev_params->root_id = h_pdev->dev->rp_dev->bdf;
 	pdev_params->ecam_addr = h_pdev->dev->ecam_base;
@@ -306,10 +268,6 @@ int host_pdev_create(struct host_pdev *h_pdev)
 
 	for (unsigned long j = 0UL; j < h_pdev->ncoh_num_addr_range; j++) {
 		pdev_params->ncoh_addr_range[j] = h_pdev->ncoh_addr_range[j];
-	}
-
-	for (unsigned int i = 0U; i < h_pdev->pdev_aux_num; i++) {
-		pdev_params->aux[i] = (uintptr_t)h_pdev->pdev_aux[i];
 	}
 
 	ret = host_rmi_pdev_create((u_register_t)h_pdev->pdev,
@@ -418,17 +376,6 @@ static int host_pdev_destroy(struct host_pdev *h_pdev)
 	ret = host_rmi_pdev_destroy((u_register_t)h_pdev->pdev);
 	if (ret != RMI_SUCCESS) {
 		return -1;
-	}
-
-	/* Undelegate all aux granules */
-	for (int i = 0; i < h_pdev->pdev_aux_num; i++) {
-		ret = host_rmi_granule_undelegate((u_register_t)h_pdev->pdev_aux[i]);
-		if (ret != RMI_SUCCESS) {
-			ERROR("Aux granule undelegate failed 0x%lx\n", ret);
-			rc = -1;
-		}
-
-		h_pdev->pdev_aux[i] = NULL;
 	}
 
 	/* Undelegate PDEV granule */
@@ -1388,12 +1335,6 @@ static bool is_host_pdevs_state_clean(void)
 		    (h_pdev->public_key_metadata != NULL) ||
 		    (h_pdev->dev == NULL)) {
 			return false;
-		}
-
-		for (unsigned int cnt = 0U; cnt < PDEV_PARAM_AUX_GRANULES_MAX; cnt++) {
-			if (h_pdev->pdev_aux[cnt] != NULL) {
-				return false;
-			}
 		}
 	}
 

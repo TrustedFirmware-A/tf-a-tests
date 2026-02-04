@@ -2251,16 +2251,6 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 	return ret;
 }
 
-u_register_t host_rmi_pdev_aux_count(u_register_t pdev_ptr, u_register_t *count)
-{
-	smc_ret_values rets;
-
-	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_AUX_COUNT, pdev_ptr},
-				2U);
-	*count = rets.ret1;
-	return rets.ret0;
-}
-
 u_register_t host_rmi_pdev_create(u_register_t pdev_ptr, u_register_t params_ptr)
 {
 	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_CREATE, pdev_ptr,

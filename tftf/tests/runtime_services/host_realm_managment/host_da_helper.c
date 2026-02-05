@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2025-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -53,10 +53,9 @@ static struct host_vdev *find_host_vdev_from_id(unsigned long vdev_id)
 
 static struct host_pdev *find_host_pdev_from_pdev_ptr(unsigned long pdev_ptr)
 {
-	unsigned int i;
 	struct host_pdev *h_pdev;
 
-	for (i = 0U; i < gbl_host_pdev_count; i++) {
+	for (unsigned int i = 0U; i < gbl_host_pdev_count; i++) {
 		h_pdev = &gbl_host_pdevs[i];
 
 		if (h_pdev->pdev == (void *)pdev_ptr) {
@@ -282,7 +281,6 @@ int host_pdev_create(struct host_pdev *h_pdev)
 {
 	struct rmi_pdev_params *pdev_params;
 	u_register_t ret;
-	unsigned int i;
 	int rc;
 
 	/* Allocate granules and memory for PDEV objects like certificate, key */
@@ -302,7 +300,14 @@ int host_pdev_create(struct host_pdev *h_pdev)
 	pdev_params->hash_algo = h_pdev->pdev_hash_algo;
 	pdev_params->root_id = h_pdev->dev->rp_dev->bdf;
 	pdev_params->ecam_addr = h_pdev->dev->ecam_base;
-	for (i = 0U; i < h_pdev->pdev_aux_num; i++) {
+
+	pdev_params->ncoh_num_addr_range = h_pdev->ncoh_num_addr_range;
+
+	for (unsigned long j = 0UL; j < h_pdev->ncoh_num_addr_range; j++) {
+		pdev_params->ncoh_addr_range[j] = h_pdev->ncoh_addr_range[j];
+	}
+
+	for (unsigned int i = 0U; i < h_pdev->pdev_aux_num; i++) {
 		pdev_params->aux[i] = (uintptr_t)h_pdev->pdev_aux[i];
 	}
 
@@ -1335,14 +1340,12 @@ bool is_host_pdev_independently_attested(struct host_pdev *h_pdev)
 
 struct host_pdev *get_host_pdev_by_type(uint8_t type)
 {
-	unsigned int i;
-
 	if (type != DEV_TYPE_INDEPENDENTLY_ATTESTED) {
 		return NULL;
 	}
 
-	/* return the first host_pdev of 'type' */
-	for (i = 0U; i < gbl_host_pdev_count; i++) {
+	/* Return the first host_pdev of 'type' */
+	for (unsigned int i = 0U; i < gbl_host_pdev_count; i++) {
 		if (is_host_pdev_independently_attested(&gbl_host_pdevs[i])) {
 			return &gbl_host_pdevs[i];
 		}
@@ -1357,9 +1360,7 @@ struct host_pdev *get_host_pdev_by_type(uint8_t type)
  */
 static bool is_host_pdevs_state_clean(void)
 {
-	unsigned int i, cnt;
-
-	for (i = 0U; i < gbl_host_pdev_count; i++) {
+	for (unsigned int i = 0U; i < gbl_host_pdev_count; i++) {
 		struct host_pdev *h_pdev = &gbl_host_pdevs[i];
 
 		if ((h_pdev->is_connected_to_tsm) ||
@@ -1373,7 +1374,7 @@ static bool is_host_pdevs_state_clean(void)
 			return false;
 		}
 
-		for (cnt = 0U; cnt < PDEV_PARAM_AUX_GRANULES_MAX; cnt++) {
+		for (unsigned int cnt = 0U; cnt < PDEV_PARAM_AUX_GRANULES_MAX; cnt++) {
 			if (h_pdev->pdev_aux[cnt] != NULL) {
 				return false;
 			}
@@ -1454,4 +1455,82 @@ void host_pdevs_init(void)
 out_init:
 	gbl_host_pdevs_init_done = true;
 	gbl_host_pdev_count = cnt;
+}
+
+void host_get_addr_range(struct host_pdev *h_pdev)
+{
+	uint32_t offset = BAR0_OFFSET;
+
+	h_pdev->ncoh_num_addr_range = 0UL;
+	(void)memset(h_pdev->ncoh_addr_range, 0, sizeof(h_pdev->ncoh_addr_range));
+
+	for (unsigned int i = 0U; i < NCOH_ADDR_RANGE_NUM; i++) {
+		uint64_t addr, size;
+
+		offset = pcie_get_bar(h_pdev->dev->bdf, offset, &addr, &size);
+		if (size == 0ULL) {
+			break;
+		}
+
+		h_pdev->ncoh_addr_range[i].base = addr;
+		h_pdev->ncoh_addr_range[i].top = addr + size;
+		h_pdev->ncoh_num_addr_range++;
+
+		if (offset > BAR_TYPE_0_MAX_OFFSET) {
+			break;
+		}
+	}
+}
+
+void host_dump_interface_report(
+			pci_tdisp_device_interface_report_struct_t *ifc_report,
+			size_t ifc_report_len)
+{
+	pci_tdisp_mmio_range_t *mmio_range;
+	uint32_t index;
+
+	assert(ifc_report_len >= sizeof(pci_tdisp_device_interface_report_struct_t));
+
+	INFO("Interface report:\n");
+	INFO("  interface_info        - 0x%04x\n",
+		ifc_report->interface_info);
+	INFO("  msi_x_message_control - 0x%04x\n",
+		ifc_report->msi_x_message_control);
+	INFO("  lnr_control           - 0x%04x\n",
+		ifc_report->lnr_control);
+	INFO("  tph_control           - 0x%08x\n",
+		ifc_report->tph_control);
+	INFO("  mmio_range_count      - 0x%08x\n",
+		ifc_report->mmio_range_count);
+
+	mmio_range = (pci_tdisp_mmio_range_t *)(ifc_report + 1UL);
+
+	for (index = 0U; index < ifc_report->mmio_range_count; index++) {
+		INFO("  mmio_range[%u]:\n", index);
+		INFO("    first_page          - 0x%016llx\n",
+			mmio_range[index].first_page);
+		INFO("    number_of_pages     - 0x%08x\n",
+			mmio_range[index].number_of_pages);
+		INFO("    range_attributes    - 0x%04x\n",
+			mmio_range[index].range_attributes);
+		INFO("    range_id            - 0x%04x\n",
+			mmio_range[index].range_id);
+	}
+
+	if (ifc_report_len > sizeof(pci_tdisp_device_interface_report_struct_t) +
+		ifc_report->mmio_range_count * sizeof(pci_tdisp_mmio_range_t)) {
+
+		uint32_t *device_specific_info_len  = (uint32_t *)&mmio_range[index];
+		uint8_t *device_specific_info =
+			(uint8_t *)((uintptr_t)device_specific_info_len + 1UL);
+
+		INFO("  device_info_len       - 0x%08x\n",
+			*device_specific_info_len);
+		INFO("  device_info           - ");
+
+		for (index = 0U; index < *device_specific_info_len; index++) {
+			mp_printf("%02x ", device_specific_info[index]);
+		}
+		mp_printf("\n");
+	}
 }

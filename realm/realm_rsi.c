@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -268,5 +268,60 @@ u_register_t rsi_vdev_get_info(u_register_t rdev_id, u_register_t rdev_info_ptr)
 		       {SMC_RSI_VDEV_GET_INFO, rdev_id,
 			rdev_info_ptr, 0UL, 0UL, 0UL, 0UL, 0UL});
 
+	return res.ret0;
+}
+
+u_register_t rsi_vdev_vaildate_mapping(u_register_t rdev_id,
+					u_register_t ipa_base,
+					u_register_t ipa_top,
+					u_register_t pa_base,
+					u_register_t flags,
+					u_register_t lock_nonce,
+					u_register_t meas_nonce,
+					u_register_t report_nonce,
+					u_register_t *new_ipa_base,
+					rsi_response_type *response)
+{
+	smc_ret_values_ext res = {};
+
+	tftf_smc_no_retval_x8(&(smc_args_ext) {
+			SMC_RSI_VDEV_VALIDATE_MAPPING,
+			rdev_id, ipa_base, ipa_top, pa_base, flags,
+			lock_nonce, meas_nonce, report_nonce
+			},
+			&res);
+
+	if (res.ret0 == RSI_SUCCESS) {
+		*new_ipa_base = res.ret1;
+		*response = res.ret2;
+	}
+
+	return res.ret0;
+}
+
+u_register_t rsi_vdev_dma_enable(u_register_t rdev_id,
+				 u_register_t flags,
+				 u_register_t non_ats_plane,
+				 u_register_t lock_nonce,
+				 u_register_t meas_nonce,
+				 u_register_t report_nonce)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args) {
+			SMC_RSI_VDEV_DMA_ENABLE, rdev_id,
+			flags, non_ats_plane, lock_nonce,
+			meas_nonce, report_nonce
+			});
+	return res.ret0;
+}
+
+u_register_t rsi_vdev_dma_disable(u_register_t rdev_id)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args) {
+			SMC_RSI_VDEV_DMA_DISABLE, rdev_id
+			});
 	return res.ret0;
 }

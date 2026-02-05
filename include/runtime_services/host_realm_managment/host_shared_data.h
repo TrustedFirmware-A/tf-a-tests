@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -17,6 +17,9 @@
 
 #define REALM_CMD_BUFFER_SIZE	1024U
 
+/* Up to 6 PCIe memory BARs */
+#define	MAX_ADDR_RANGE_NUM	6U
+
 /*
  * This structure maps the shared memory to be used between the Host and Realm
  * payload
@@ -28,15 +31,22 @@ typedef struct host_shared_data {
 	/* Command set from Host and used by Realm */
 	uint8_t realm_cmd;
 
-	/* array of params passed from Host to Realm */
+	/* Array of params passed from Host to Realm */
 	u_register_t host_param_val[MAX_DATA_SIZE];
 
-	/* array of output results passed from Realm to Host */
+	/* Array of output results passed from Realm to Host */
 	u_register_t realm_out_val[MAX_DATA_SIZE];
 
 	/* Buffer to save Realm command results */
 	uint8_t realm_cmd_output_buffer[REALM_CMD_BUFFER_SIZE];
-}host_shared_data_t;
+	
+	/* Number MMIO regions */
+	uint32_t mmio_range_count;
+
+	/* Array of MMIO address ranges */
+	struct rmi_address_range mmio_range[MAX_ADDR_RANGE_NUM];
+	
+} host_shared_data_t;
 
 typedef host_shared_data_t (*host_shared_data_arr_t)[MAX_PLANE_COUNT][MAX_REC_COUNT];
 /*
@@ -88,7 +98,8 @@ enum realm_cmd {
 	REALM_WRITE_BRBCR_EL1,
 	REALM_PLANE_N_INST_FETCH_ABORT,
 	REALM_TEST_FEAT_TCR2,
-	REALM_DA_RSI_CALLS
+	REALM_DA_RSI_CALLS,
+	REALM_SMMU
 };
 
 /*
@@ -145,6 +156,12 @@ void host_shared_data_set_realm_cmd(struct realm *realm_ptr,
 				    unsigned int plane_num,
 				    unsigned int rec_num);
 
+/*
+ * Set MMIO range data for Realm
+ */
+void host_shared_data_set_mmio_range(struct realm *realm_ptr,
+				     unsigned int plane_num, unsigned int rec_num,
+				     uint32_t range_count, struct rmi_address_range *addr_range);
 
 /****************************************
  *  APIs to be invoked from Realm side  *
@@ -196,7 +213,12 @@ u_register_t realm_shared_data_get_plane_n_cmd(unsigned int plane_num,
  * Set command to be send from Host/Plane0 to Plane N
  */
 void realm_shared_data_set_plane_n_cmd(uint8_t cmd,
-		 unsigned int plane_num,
-		unsigned int rec_num);
+					unsigned int plane_num,
+					unsigned int rec_num);
+
+/*
+ * Get MMIO range data from Host
+ */
+u_register_t realm_shared_data_get_mmio_range(struct rmi_address_range *addr_range);
 
 #endif /* HOST_SHARED_DATA_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2025-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,6 +8,7 @@
 #define HOST_DA_HELPER_H
 
 #include <host_realm_rmi.h>
+#include <pci_tdisp.h>
 #include <pcie.h>
 
 #define DEV_TYPE_INDEPENDENTLY_ATTESTED		(0)
@@ -23,7 +24,6 @@
  */
 #define INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(_reg0)				\
 	do {									\
-										\
 		SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();			\
 										\
 		/* Get feature register0 */					\
@@ -90,6 +90,9 @@ struct host_pdev {
 
 	/* The PCIe device for this host_pdev */
 	pcie_dev_t *dev;
+
+	unsigned long ncoh_num_addr_range;
+	struct rmi_address_range ncoh_addr_range[NCOH_ADDR_RANGE_NUM];
 };
 
 struct host_vdev {
@@ -123,6 +126,10 @@ struct host_vdev {
 	uint8_t *ifc_report;
 	size_t ifc_report_len;
 };
+
+extern unsigned int gbl_host_pdev_count;
+extern struct host_pdev gbl_host_pdevs[HOST_PDEV_MAX];
+extern struct host_vdev gbl_host_vdev;
 
 void host_pdevs_init(void);
 bool is_host_pdev_independently_attested(struct host_pdev *h_pdev);
@@ -162,5 +169,11 @@ int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev)
 u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev,
 			      u_register_t dev_pa, long map_level,
 			      u_register_t *dev_ipa);
+
+struct host_pdev *get_host_pdev_by_type(uint8_t type);
+void host_get_addr_range(struct host_pdev *h_pdev);
+void host_dump_interface_report(
+			pci_tdisp_device_interface_report_struct_t *ifc_report,
+			size_t ifc_report_len);
 
 #endif /* HOST_DA_HELPER_H */

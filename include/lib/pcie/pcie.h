@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,6 +16,9 @@
 #define MAX_PCIE_INFO_ENTRIES 5
 
 #define PCIE_DEVICES_MAX	128
+
+/* Up to 6 PCIe memory BARs */
+#define NCOH_ADDR_RANGE_NUM	6U
 
 typedef struct {
 	unsigned long ecam_base;	/* ECAM base address */
@@ -131,5 +134,9 @@ uint32_t pcie_find_capability(uint32_t bdf, uint32_t cid_type, uint32_t cid,
 				uint32_t *cid_offset);
 uint32_t pcie_read_cfg(uint32_t bdf, uint32_t offset);
 void pcie_write_cfg(uint32_t bdf, uint32_t offset, uint32_t data);
+uint32_t pcie_get_bar(uint32_t bdf, uint32_t offset, uint64_t *addr,
+			uint64_t *size);
+void pcie_mem_enable(uint32_t bdf);
+void pcie_mem_disable(uint32_t bdf);
 
 #endif /* PCIE_H */

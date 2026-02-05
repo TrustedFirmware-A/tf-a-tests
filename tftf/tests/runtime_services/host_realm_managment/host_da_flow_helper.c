@@ -1,23 +1,16 @@
 /*
- * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <assert.h>
+#include <string.h>
 
-#include <host_crypto_utils.h>
 #include <host_da_helper.h>
 #include <host_realm_helper.h>
-#include <host_realm_mem_layout.h>
 #include <host_shared_data.h>
 #include <pcie.h>
-#include <pcie_doe.h>
-#include <platform.h>
-#include <test_helpers.h>
-
-extern unsigned int gbl_host_pdev_count;
-extern struct host_pdev gbl_host_pdevs[HOST_PDEV_MAX];
-extern struct host_vdev gbl_host_vdev;
 
 int tsm_disconnect_device(struct host_pdev *h_pdev)
 {
@@ -43,7 +36,7 @@ int tsm_disconnect_device(struct host_pdev *h_pdev)
 					sizeof(tsm_disconnect_flow));
 	if (rc != 0) {
 		ERROR("PDEV TSM disconnect state transitions: failed\n");
-		return -1;
+		return rc;
 	}
 
 	h_pdev->is_connected_to_tsm = false;
@@ -74,19 +67,29 @@ int tsm_connect_device(struct host_pdev *h_pdev)
 	assert(h_pdev->dev);
 	assert(!h_pdev->is_connected_to_tsm);
 
+	/* Get device memory regions */
+	host_get_addr_range(h_pdev);
+
 	INFO("======================================\n");
 	INFO("Host: TSM connect device: (0x%x) %x:%x.%x\n",
 	     h_pdev->dev->bdf,
 	     PCIE_EXTRACT_BDF_BUS(h_pdev->dev->bdf),
 	     PCIE_EXTRACT_BDF_DEV(h_pdev->dev->bdf),
 	     PCIE_EXTRACT_BDF_FUNC(h_pdev->dev->bdf));
+
+	for (unsigned int i = 0U; i < h_pdev->ncoh_num_addr_range; i++) {
+		INFO("BAR[%u]: 0x%lx-0x%lx\n", i,
+			h_pdev->ncoh_addr_range[i].base,
+			h_pdev->ncoh_addr_range[i].top - 1UL);
+	}
+
 	INFO("======================================\n");
 
 	rc = host_pdev_state_transition(h_pdev, tsm_connect_flow,
 					sizeof(tsm_connect_flow));
 	if (rc != 0) {
 		ERROR("PDEV TSM connect state transitions: failed\n");
-		return -1;
+		return rc;
 	}
 
 	h_pdev->is_connected_to_tsm = true;
@@ -97,7 +100,7 @@ int tsm_connect_device(struct host_pdev *h_pdev)
 /* Get the first pdev from host_pdevs and try to connect to TSM */
 int tsm_connect_first_device(struct host_pdev **h_pdev)
 {
-	int result = -1;
+	int rc;
 
 	*h_pdev = &gbl_host_pdevs[0];
 
@@ -105,24 +108,22 @@ int tsm_connect_first_device(struct host_pdev **h_pdev)
 		ERROR("%s: 1st dev is not independently attested\n", __func__);
 	}
 
-	result = tsm_connect_device(*h_pdev);
-	if (result != 0) {
+	rc = tsm_connect_device(*h_pdev);
+	if (rc != 0) {
 		ERROR("tsm_connect_device: 0x%x failed\n", (*h_pdev)->dev->bdf);
 	}
 
-	return result;
+	return rc;
 }
 
 /* Iterate thorough all host_pdevs and try to connect to TSM */
 int tsm_connect_devices(unsigned int *count)
 {
 	int rc = 0;
-	unsigned int i;
 	unsigned int count_ret = 0U;
-	struct host_pdev *h_pdev;
 
-	for (i = 0U; i < gbl_host_pdev_count; i++) {
-		h_pdev = &gbl_host_pdevs[i];
+	for (unsigned int i = 0U; i < gbl_host_pdev_count; i++) {
+		struct host_pdev *h_pdev = &gbl_host_pdevs[i];
 
 		if (!is_host_pdev_independently_attested(h_pdev)) {
 			continue;
@@ -132,7 +133,6 @@ int tsm_connect_devices(unsigned int *count)
 		if (rc != 0) {
 			ERROR("tsm_connect_device: 0x%x failed\n",
 			      h_pdev->dev->bdf);
-			rc = -1;
 			break;
 		}
 
@@ -145,21 +145,16 @@ int tsm_connect_devices(unsigned int *count)
 	return rc;
 }
 
-
 /* Iterate thorough all connected host_pdevs and disconnect from TSM */
 int tsm_disconnect_devices(void)
 {
-	uint32_t i;
-	struct host_pdev *h_pdev;
-	int rc;
 	bool return_error = false;
 
-	for (i = 0; i < gbl_host_pdev_count; i++) {
-		h_pdev = &gbl_host_pdevs[i];
+	for (unsigned int i = 0U; i < gbl_host_pdev_count; i++) {
+		struct host_pdev *h_pdev = &gbl_host_pdevs[i];
 
 		if (h_pdev->is_connected_to_tsm) {
-			rc = tsm_disconnect_device(h_pdev);
-			if (rc != 0) {
+			if (tsm_disconnect_device(h_pdev) != 0) {
 				/* Set error, continue with other devices */
 				return_error = true;
 			}
@@ -173,13 +168,12 @@ int tsm_disconnect_devices(void)
 	return 0;
 }
 
-static int realm_assign_unassign_device(struct realm *realm_ptr,
-						struct host_vdev *h_vdev,
-						unsigned long tdi_id,
-						void *pdev_ptr)
+int realm_assign_device(struct realm *realm_ptr,
+			struct host_vdev *h_vdev,
+			unsigned long tdi_id,
+			void *pdev_ptr)
 {
 	int rc;
-	bool realm_rc;
 
 	/* Assign VDEV */
 	INFO("======================================\n");
@@ -193,45 +187,60 @@ static int realm_assign_unassign_device(struct realm *realm_ptr,
 	rc = host_assign_vdev_to_realm(realm_ptr, h_vdev, tdi_id, pdev_ptr);
 	if (rc != 0) {
 		ERROR("VDEV assign to realm failed\n");
-		return -1;
+		return rc;
 	}
 
-	/* execute communicate until vdev reaches VDEV_UNLOCKED state */
+	/* Execute communicate until vdev reaches VDEV_UNLOCKED state */
 	rc = host_vdev_transition(realm_ptr, h_vdev, RMI_VDEV_STATE_UNLOCKED);
 	if (rc != 0) {
 		ERROR("Transitioning to RMI_VDEV_STATE_UNLOCKED state failed\n");
-		return -1;
+		return rc;
 	}
 
 	rc = host_vdev_get_measurements(realm_ptr, h_vdev, RMI_VDEV_STATE_UNLOCKED);
 	if (rc != 0) {
 		ERROR("Getting measurements failed\n");
-		return -1;
+		return rc;
 	}
-	/* execute communicate until vdev reaches VDEV_LOCKED state */
+	/* Execute communicate until vdev reaches VDEV_LOCKED state */
 	rc = host_vdev_transition(realm_ptr, h_vdev, RMI_VDEV_STATE_LOCKED);
 	if (rc != 0) {
 		ERROR("Transitioning to RMI_VDEV_STATE_LOCKED state failed\n");
-		return -1;
+		return rc;
 	}
 
 	rc = host_vdev_get_measurements(realm_ptr, h_vdev, RMI_VDEV_STATE_LOCKED);
 	if (rc != 0) {
 		ERROR("Getting measurements failed\n");
-		return -1;
+		return rc;
 	}
 
 	rc = host_vdev_get_interface_report(realm_ptr, h_vdev, RMI_VDEV_STATE_LOCKED);
 	if (rc != 0) {
-		ERROR("Getting if report failed\n");
-		return -1;
+		ERROR("Getting interface report failed\n");
+		return rc;
 	}
-	/* execute communicate until vdev reaches VDEV_LOCKED state */
+	/* Execute communicate until vdev reaches VDEV_LOCKED state */
 	INFO("Start transitioning to RMI_VDEV_STATE_STARTED state\n");
 	rc = host_vdev_transition(realm_ptr, h_vdev, RMI_VDEV_STATE_STARTED);
 	if (rc != 0) {
 		ERROR("Transitioning to RMI_VDEV_STATE_STARTED state failed\n");
-		return -1;
+	}
+
+	return rc;
+}
+
+static int realm_assign_unassign_device(struct realm *realm_ptr,
+						struct host_vdev *h_vdev,
+						unsigned long tdi_id,
+						void *pdev_ptr)
+{
+	bool realm_rc;
+	int rc;
+
+	rc = realm_assign_device(realm_ptr, h_vdev, tdi_id, pdev_ptr);
+	if (rc != 0) {
+		return rc;
 	}
 
 	/* Enter Realm. Execute realm DA commands */
@@ -250,7 +259,7 @@ static int realm_assign_unassign_device(struct realm *realm_ptr,
 	rc = host_unassign_vdev_from_realm(realm_ptr, h_vdev);
 	if (rc != 0) {
 		ERROR("VDEV unassign to realm failed\n");
-		return -1;
+		return rc;
 	}
 
 	if (!realm_rc) {
@@ -263,25 +272,20 @@ static int realm_assign_unassign_device(struct realm *realm_ptr,
 
 int realm_assign_unassign_devices(struct realm *realm_ptr)
 {
-	uint32_t i;
-	int rc = 0;
-	struct host_pdev *h_pdev;
-	struct host_vdev *h_vdev;
-
-	for (i = 0; i < gbl_host_pdev_count; i++) {
-		h_pdev = &gbl_host_pdevs[i];
+	for (unsigned int i = 0U; i < gbl_host_pdev_count; i++) {
+		struct host_pdev *h_pdev = &gbl_host_pdevs[i];
 
 		if (h_pdev->is_connected_to_tsm) {
-			h_vdev = &gbl_host_vdev;
+			struct host_vdev *h_vdev = &gbl_host_vdev;
 
-			rc = realm_assign_unassign_device(realm_ptr, h_vdev,
-							  h_pdev->dev->bdf,
-							  h_pdev->pdev);
+			int rc = realm_assign_unassign_device(realm_ptr, h_vdev,
+							      h_pdev->dev->bdf,
+							      h_pdev->pdev);
 			if (rc != 0) {
-				break;
+				return rc;
 			}
 		}
 	}
 
-	return rc;
+	return 0;
 }

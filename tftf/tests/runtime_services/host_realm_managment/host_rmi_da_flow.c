@@ -10,8 +10,13 @@
 #include <host_da_helper.h>
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
+#include <host_shared_data.h>
+#include <mmio.h>
+#include <pcie.h>
 #include <pcie_doe.h>
+#include <pcie_spec.h>
 #include <platform.h>
+#include <spdm.h>
 #include <test_helpers.h>
 
 /*

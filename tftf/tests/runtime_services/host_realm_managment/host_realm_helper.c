@@ -35,8 +35,8 @@ const char *rmi_exit[] = {
 	RMI_EXIT(SERROR),
 	RMI_EXIT(S2AP_CHANGE),
 	RMI_EXIT(VDEV_REQUEST),
-	RMI_EXIT(VDEV_COMM),
-	RMI_EXIT(DEV_MEM_MAP)
+	RMI_EXIT(VDEV_MAP),
+	RMI_EXIT(VDEV_P2P_BINDING)
 };
 
 /*
@@ -134,7 +134,7 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 		return false;
 	}
 
-	memset((char *)realm_ptr, 0U, sizeof(struct realm));
+	(void)memset((char *)realm_ptr, 0U, sizeof(struct realm));
 
 	/* Read Realm Feature Reg 0 */
 	if (host_rmi_features(0UL, &realm_ptr->rmm_feat_reg0) != REALM_SUCCESS) {
@@ -283,6 +283,7 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 		return false;
 	}
 	realm_ptr->num_aux_planes = num_aux_planes;
+	realm_ptr->ats_plane = 0U;
 
 	/* Create Realm */
 	if (host_realm_create(realm_ptr) != REALM_SUCCESS) {

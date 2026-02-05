@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2021-2025, Arm Limited. All rights reserved.
+# Copyright (c) 2021-2026, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -20,6 +20,7 @@ TESTS_SOURCES	+=							\
 		host_realm_brbe_tests.c					\
 		host_realm_mec_tests.c					\
 		host_realm_lfa.c					\
+		host_realm_smmuv3_tests.c				\
 	)
 
 TESTS_SOURCES	+=							\

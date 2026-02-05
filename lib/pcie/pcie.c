@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -119,6 +119,7 @@ void pcie_write_cfg(uint32_t bdf, uint32_t offset, uint32_t data)
  * @brief   Check if BDF is PCIe Host Bridge.
  *
  * @param   bdf - Function's Segment/Bus/Dev/Func in PCIE_CREATE_BDF format
+ *
  * @return  false If not a Host Bridge, true If it's a Host Bridge.
  */
 static bool pcie_is_host_bridge(uint32_t bdf)
@@ -140,6 +141,7 @@ static bool pcie_is_host_bridge(uint32_t bdf)
  * @param  bdf        - Segment/Bus/Dev/Func in the format of PCIE_CREATE_BDF
  * @param  cid        - Capability ID
  * @param  cid_offset - On return, points to cid offset in Function config space
+ *
  * @return PCIE_CAP_NOT_FOUND, if there was a failure in finding required capability.
  *	   PCIE_SUCCESS, if the search was successful.
  */
@@ -460,7 +462,6 @@ pcie_device_bdf_table_t *pcie_get_bdf_table(void)
  * @brief   This API creates the device bdf table from enumeration
  *
  * @param   None
- *
  * @return  None
  */
 static void pcie_create_device_bdf_table(void)
@@ -539,6 +540,7 @@ static void pcie_create_device_bdf_table(void)
  * @brief   This API prints all the PCIe Devices info
  * 1. Caller	   -  Validation layer.
  * 2. Prerequisite -  val_pcie_create_info_table()
+ *
  * @param   None
  * @return  None
  */
@@ -689,12 +691,28 @@ static void pcie_create_info_table(void)
 	pcie_print_device_info();
 }
 
+/*
+ * @brief   This API writes 32-bit data to PCIe config space pointed by Bus,
+ *	    Device, Function and register offset.
+ * @param   bus,dev,func - Bus(8-bits), device(8-bits) & function(8-bits)
+ * @param   offset - Register offset within a device PCIe config space
+ * @param   data   - data to be written to the config space
+ * @return  None
+ */
 static void pal_pci_cfg_write(uint32_t bus, uint32_t dev, uint32_t func,
 			      uint32_t offset, uint32_t data)
 {
 	pcie_write_cfg(PCIE_CREATE_BDF(0, bus, dev, func), offset, data);
 }
 
+/*
+ * @brief   This API reads 32-bit data from PCIe config space pointed by Bus,
+ *	    Device, Function and register offset.
+ * @param   bus,dev,func -  Bus(8-bits), device(8-bits) & function(8-bits)
+ * @param   offset - Register offset within a device PCIe config space
+ * @param   *data  - 32-bit data read from the config space
+ * @return  success/failure
+ */
 static void pal_pci_cfg_read(uint32_t bus, uint32_t dev, uint32_t func,
 			     uint32_t offset, uint32_t *value)
 {
@@ -702,8 +720,14 @@ static void pal_pci_cfg_read(uint32_t bus, uint32_t dev, uint32_t func,
 }
 
 /*
- * This API programs the Memory Base and Memeory limit register of the Bus,
- * Device and Function of Type1 Header
+ * @brief   This API programs the Memory Base and Memory limit register of the Bus,
+ *	    Device and Function of Type1 Header
+ * @param   bus,dev,func   - Bus(8-bits), device(8-bits), function(8-bits)
+ *	    bar32_p_base   - 32 bit prefetchable memory base address
+ *	    bar32_np_base  - 32 bit non-prefetchable memory base address
+ *	    bar32_p_limit  - 32 bit prefetchable memory base limit
+ *	    bar32_np_limit - 32 bit non-prefetchable memory base limit
+ * @return  None
  */
 static void get_resource_base_32(uint32_t bus, uint32_t dev, uint32_t func,
 				 uint32_t bar32_p_base, uint32_t bar32_np_base,
@@ -749,8 +773,12 @@ static void get_resource_base_32(uint32_t bus, uint32_t dev, uint32_t func,
 }
 
 /*
- * This API programs the Memory Base and Memeory limit register of the Bus,
- * Device and Function of Type1 Header
+ * @brief   This API programs the Memory Base and Memory limit register of the Bus,
+ *	    Device and Function of Type1 Header
+ * @param   bus,dev,func   - Bus(8-bits), device(8-bits), function(8-bits)
+ *	    bar64_p_base   - 64 bit prefetchable memory base address
+ *	    g_bar64_p_max  - 64 bit prefetchable memory base limit
+ * @return  None
  */
 static void get_resource_base_64(uint32_t bus, uint32_t dev, uint32_t func,
 				 uint64_t bar64_p_base, uint64_t g_bar64_p_max)
@@ -861,8 +889,10 @@ static void pcie_rp_program_bar(uint32_t bus, uint32_t dev, uint32_t func)
 }
 
 /*
- * This API programs all the BAR register in PCIe config space pointed by Bus,
- *  Device and Function for an End Point PCIe device
+ * @brief   This API programs all the BAR register in PCIe config space pointed by Bus,
+ *	    Device and Function for an End Point PCIe device
+ * @param   bus,dev,func - Bus(8-bits), device(8-bits) & function(8-bits)
+ * @return  None
  */
 static void pcie_program_bar_reg(uint32_t bus, uint32_t dev, uint32_t func)
 {
@@ -875,7 +905,7 @@ static void pcie_program_bar_reg(uint32_t bus, uint32_t dev, uint32_t func)
 	while (offset <= TYPE0_BAR_MAX_OFF) {
 		pal_pci_cfg_read(bus, dev, func, offset, &bar_reg_value);
 
-		if (BAR_MEM(bar_reg_value) == BAR_PRE_MEM) {
+		if (BAR_TYPE(bar_reg_value) == BAR_MEM_SPACE) {
 			if (BAR_REG(bar_reg_value) == BAR_64_BIT) {
 				/*
 				 * BAR supports 64-bit address therefore,
@@ -1079,10 +1109,9 @@ static void pcie_program_bar_reg(uint32_t bus, uint32_t dev, uint32_t func)
 }
 
 /*
- * This API performs the PCIe bus enumeration
- *
- * bus,sec_bus - Bus(8-bits), secondary bus (8-bits)
- * sub_bus - Subordinate bus
+ * @brief   This API performs the PCIe bus enumeration
+ * @param   bus,sec_bus - Bus(8-bits), secondary bus (8-bits)
+ * @return  sub_bus - Subordinate bus
  */
 static uint32_t pcie_enumerate_device(uint32_t bus, uint32_t sec_bus)
 {
@@ -1297,4 +1326,67 @@ void pcie_init(void)
 		pcie_create_info_table();
 		is_init = true;
 	}
+}
+
+static uint32_t pci_bar_size_helper(uint32_t bdf, uint32_t offset)
+{
+	uint32_t bar, val;
+
+	bar = pcie_read_cfg(bdf, offset);
+	pcie_write_cfg(bdf, offset, 0xFFFFFFFF);
+	val = pcie_read_cfg(bdf, offset);
+	pcie_write_cfg(bdf, offset, bar);
+
+	return val;
+}
+
+uint32_t pcie_get_bar(uint32_t bdf, uint32_t offset, uint64_t *addr, uint64_t *size)
+{
+	uint32_t size_0, bar_0;
+
+	size_0 = pci_bar_size_helper(bdf, offset);
+	if (size_0 == 0) {
+		*addr = 0;
+		*size = 0;
+		return offset;
+	}
+
+	bar_0 = pcie_read_cfg(bdf, offset);
+
+	size_0 &= BAR_MASK;
+	offset += 4;
+
+	if (BAR_REG(bar_0) == BAR_64_BIT) {
+		uint32_t bar_4 = pcie_read_cfg(bdf, offset);
+		uint32_t size_4 = pci_bar_size_helper(bdf, offset);
+
+		bar_0 &= BAR_MASK;
+
+		*size = ~(((uint64_t)size_4 << 32) | size_0) + 1;
+		*addr = ((uint64_t)bar_4 << 32) | bar_0;
+		offset += 4;
+	} else {
+		*size = (uint64_t)(~size_0 + 1);
+		*addr = (uint64_t)(bar_0 & BAR_MASK);
+	}
+
+	return offset;
+}
+
+void pcie_mem_enable(uint32_t bdf)
+{
+	uint32_t com_reg_value;
+
+	/* Enable memory access, Bus master enable, I/O access and SERR# Enable */
+	com_reg_value = pcie_read_cfg(bdf, COMMAND_REG_OFFSET);
+	pcie_write_cfg(bdf, COMMAND_REG_OFFSET, (com_reg_value | REG_ACC_DATA | SERR_ENABLE));
+}
+
+void pcie_mem_disable(uint32_t bdf)
+{
+	uint32_t com_reg_value;
+
+	/* Disable memory access, Bus master enable, I/O access and SERR# Enable*/
+	com_reg_value = pcie_read_cfg(bdf, COMMAND_REG_OFFSET);
+	pcie_write_cfg(bdf, COMMAND_REG_OFFSET, (com_reg_value & ~(REG_ACC_DATA | SERR_ENABLE)));
 }

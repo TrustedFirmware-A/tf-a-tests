@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -67,9 +67,10 @@ static smc_ret_values host_rmi_handler(smc_args *args, unsigned int in_reg)
 	/* Function identifier */
 	regs[0] = (u_register_t)args->fid;
 
-	/* X4 and X5 can be passed as parameters */
+	/* X4-X6 can be passed as parameters */
 	regs[4] = args->arg4;
 	regs[5] = args->arg5;
+	regs[6] = args->arg6;
 
 	/* SMC calls arguments in X1-X7 */
 	switch (in_reg) {
@@ -80,7 +81,7 @@ static smc_ret_values host_rmi_handler(smc_args *args, unsigned int in_reg)
 		SET_ARG(5);
 		SET_ARG(6);
 	default:
-		regs[7] = rand();
+		regs[7] = rand64();
 		args->arg7 = regs[7];
 	}
 
@@ -1149,7 +1150,7 @@ u_register_t host_realm_create(struct realm *realm)
 		goto pool_reset;
 	}
 
-	memset(params, 0, PAGE_SIZE);
+	(void)memset(params, 0, PAGE_SIZE);
 
 	/* Allocate and delegate RD */
 	realm->rd = (u_register_t)page_alloc(PAGE_SIZE);
@@ -1250,6 +1251,7 @@ u_register_t host_realm_create(struct realm *realm)
 	}
 
 	params->num_aux_planes = realm->num_aux_planes;
+	params->ats_plane = realm->ats_plane;
 
 	/* Allocate VMID for all planes */
 	for (unsigned int i = 0U; i < realm->num_aux_planes; i++) {
@@ -1951,10 +1953,6 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 			re_enter_rec = true;
 		}
 
-		if (run->exit.exit_reason == RMI_EXIT_VDEV_COMM) {
-			host_do_vdev_communicate(realm, run->exit.vdev_id_1);
-			re_enter_rec = true;
-		}
 	} while (re_enter_rec);
 
 	*exit_reason = run->exit.exit_reason;
@@ -2124,4 +2122,20 @@ u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,
 {
 	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_DESTROY, rd_ptr,
 			pdev_ptr, vdev_ptr}, 4U).ret0;
+}
+
+u_register_t host_rmi_vdev_validate_mapping(u_register_t rd,
+					    u_register_t rec_ptr,
+					    u_register_t pdev_ptr,
+					    u_register_t vdev_ptr,
+					    u_register_t base,
+					    u_register_t top,
+					    u_register_t *out_top)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_VALIDATE_MAPPING,
+				rd, rec_ptr, pdev_ptr, vdev_ptr, base, top}, 7U);
+	*out_top = rets.ret1;
+	return rets.ret0;
 }

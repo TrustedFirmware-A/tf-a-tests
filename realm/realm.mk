@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022-2025, Arm Limited. All rights reserved.
+# Copyright (c) 2022-2026, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -16,6 +16,7 @@ REALM_INCLUDES :=							\
 	-Iinclude/lib/${ARCH}						\
 	-Iinclude/lib/utils						\
 	-Iinclude/lib/xlat_tables					\
+	-Iinclude/plat/common						\
 	-Iinclude/runtime_services					\
 	-Iinclude/runtime_services/host_realm_managment			\
 	-Irealm								\
@@ -45,6 +46,8 @@ REALM_SOURCES:=								\
 	realm_rsi.c							\
 	realm_shared_data.c						\
 	realm_simd.c							\
+	realm_smmuv3.c							\
+	smmuv3_test_engine.c						\
 	)
 
 REALM_SOURCES += lib/${ARCH}/cache_helpers.S				\

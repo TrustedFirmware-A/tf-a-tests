@@ -1,0 +1,20 @@
+Boot requirement tests
+PSCI CPU Suspend/CPU suspend to powerdown at level 0
+PSCI CPU Suspend/CPU suspend to powerdown at level 1
+PSCI CPU Suspend/CPU suspend to powerdown at level 2
+PSCI CPU Suspend/CPU suspend to standby at level 0
+PSCI CPU Suspend/CPU suspend to standby at level 1
+PSCI CPU Suspend/CPU suspend to standby at level 2
+PSCI CPU Suspend in OSI mode
+CPU extensions/SVE support
+CPU extensions/Use FGT Registers
+CPU extensions/SME support
+CPU extensions/PMUv3 event counter functional in NS
+EL3 power state parser validation/Create all power states and validate EL3 power state parsing
+Timer framework Validation/Target timer to a power down cpu
+Timer framework Validation/Test scenario where multiple CPUs call same timeout
+PSCI Affinity Info/Affinity info level0 powerdown
+PMU Leakage/Leak PMU CYCLE counter values from EL3 on PSCI suspend SMC
+CPU Hotplug/Invalid entry point
+Query runtime services/Query Vendor-Specific Service
+Query runtime services/Probe PMF Version

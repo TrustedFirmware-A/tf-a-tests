@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -80,9 +80,7 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(is_armv8_9_fgt2_present,			SCR_FGTEN2_BIT);
 	CHECK_BIT_SET(is_feat_fpmr_present,			SCR_EnFPM_BIT);
 
-	if (get_armv9_2_feat_rme_support()) {
-		CHECK_BIT_SET(is_feat_mec_supported,		SCR_MECEn_BIT);
-	}
+	CHECK_BIT_SET(is_feat_mec_supported,			SCR_MECEn_BIT);
 
 	CHECK_BIT_SET(is_feat_d128_supported,			SCR_D128En_BIT);
 	CHECK_BIT_SET(is_feat_s1pie_present,			SCR_PIEN_BIT);
@@ -106,6 +104,8 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(is_feat_ras_present,			SCR_TERR_BIT);
 	CHECK_BIT_SET(is_feat_aie_supported,			SCR_AIEn_BIT);
 	CHECK_BIT_SET(is_feat_pfar_supported,			SCR_PFAREn_BIT);
+	CHECK_BIT_SET(is_feat_hdbss_supported,			SCR_HDBSSEn_BIT);
+	CHECK_BIT_SET(is_feat_hacdbs_supported,			SCR_HACDBSEn_BIT);
 	CHECK_NO_BITS_SET(SCR_EL3);
 
 	reg = get_feature_for_reg(CPTR_EL3_OPCODE);
@@ -138,6 +138,7 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(always_present,				MDCR_TDA_BIT);
 	CHECK_BIT_SET(get_feat_pmuv3_supported,			MDCR_TPM_BIT);
 	CHECK_BIT_SET(is_feat_ebep_supported,			MDCR_PMEE(1));
+	CHECK_BIT_SET(is_feat_step2_supported,			MDCR_EnSTEPOP_BIT);
 	CHECK_NO_BITS_SET(MDCR_EL3);
 
 	reg = get_feature_for_reg(MPAM3_EL3_OPCODE);

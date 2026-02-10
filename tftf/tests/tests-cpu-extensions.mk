@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2026, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -32,6 +32,9 @@ TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	extensions/trbe/test_trbe.c					\
 	extensions/trf/test_trf.c					\
 	extensions/wfxt/test_wfxt.c					\
+	extensions/step2/test_step2.c					\
+	extensions/hdbss/test_hdbss.c					\
+	extensions/hacdbs/test_hacdbs.c					\
 	runtime_services/arm_arch_svc/smccc_arch_soc_id.c		\
 	runtime_services/arm_arch_svc/smccc_arch_workaround_1.c		\
 	runtime_services/arm_arch_svc/smccc_arch_workaround_2.c		\

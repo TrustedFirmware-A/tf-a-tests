@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2025, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2026, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -240,6 +240,7 @@ DEFINE_SYSREG_READ_FUNC(id_aa64pfr1_el1)
 DEFINE_RENAME_SYSREG_RW_FUNCS(id_aa64pfr2_el1, ID_AA64PFR2_EL1)
 DEFINE_SYSREG_READ_FUNC(id_aa64dfr0_el1)
 DEFINE_SYSREG_READ_FUNC(id_aa64dfr1_el1)
+DEFINE_SYSREG_READ_FUNC(id_aa64dfr2_el1)
 DEFINE_SYSREG_READ_FUNC(id_afr0_el1)
 DEFINE_SYSREG_READ_FUNC(id_pfr0_el1)
 DEFINE_SYSREG_READ_FUNC(CurrentEl)
@@ -361,6 +362,7 @@ DEFINE_SYSREG_READ_FUNC(midr_el1)
 DEFINE_SYSREG_READ_FUNC(mpidr_el1)
 DEFINE_SYSREG_READ_FUNC(id_aa64mmfr0_el1)
 DEFINE_SYSREG_READ_FUNC(id_aa64mmfr1_el1)
+DEFINE_SYSREG_READ_FUNC(id_aa64mmfr4_el1)
 
 DEFINE_SYSREG_RW_FUNCS(scr_el3)
 DEFINE_SYSREG_RW_FUNCS(hcr_el2)
@@ -855,6 +857,15 @@ DEFINE_RENAME_SYSREG_RW_FUNCS(fpsr, FPSR)
 
 /* Floating point Mode Register */
 DEFINE_RENAME_SYSREG_RW_FUNCS(fpmr, FPMR)
+
+/* FEAT_STEP2 Registers */
+DEFINE_RENAME_SYSREG_RW_FUNCS(mdstepop_el1, MDSTEPOP_EL1)
+
+/* FEAT_HDBSS Registers */
+DEFINE_RENAME_SYSREG_RW_FUNCS(hdbssbr_el2, HDBSSBR_EL2)
+
+/* FEAT_HACDBS Registers */
+DEFINE_RENAME_SYSREG_RW_FUNCS(hacdbsbr_el2, HACDBSBR_EL2)
 
 /* ID_AA64ISAR2_EL1 */
 DEFINE_RENAME_SYSREG_READ_FUNC(id_aa64isar2_el1, ID_AA64ISAR2_EL1)

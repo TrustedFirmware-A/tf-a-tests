@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+  Copyright (c) 2018-2026, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -48,6 +48,9 @@
     <testcase name="D128 support" function="test_d128_support" />
     <testcase name="PFAR support" function="test_pfar_support" />
     <testcase name="AIE support" function="test_aie_support" />
+    <testcase name="STEP2 support" function="test_step2_support" />
+    <testcase name="HDBSS support" function="test_hdbss_support" />
+    <testcase name="HACDBS support" function="test_hacdbs_support" />
   </testsuite>
 
   <testsuite name="ARM_ARCH_SVC" description="Arm Architecture Service tests">

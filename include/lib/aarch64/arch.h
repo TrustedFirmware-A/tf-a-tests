@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2025, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2026, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -344,6 +344,12 @@
 #define ID_AA64DFR1_EBEP_WIDTH			U(4)
 #define ID_AA64DFR1_EBEP_SUPPORTED		U(1)
 
+/* ID_AA64DFR2_EL1 definitions */
+#define ID_AA64DFR2_EL1				S3_0_C0_C5_2
+#define ID_AA64DFR2_STEP_SHIFT			U(0)
+#define ID_AA64DFR2_STEP_MASK			ULL(0xf)
+#define ID_AA64DFR2_STEP_SUPPORTED		ULL(1)
+
 /* ID_AA64ISAR0_EL1 definitions */
 #define ID_AA64ISAR0_EL1			S3_0_C0_C6_0
 #define ID_AA64ISAR0_RNDR_MASK			ULL(0xf)
@@ -491,6 +497,10 @@
 #define ID_AA64MMFR1_EL1_LOR_SUPPORTED		ULL(0x1)
 #define ID_AA64MMFR1_EL1_VHE_SHIFT		ULL(8)
 #define ID_AA64MMFR1_EL1_VHE_MASK		ULL(0xf)
+#define ID_AA64MMFR1_EL1_HAFDBS_SHIFT		U(0)
+#define ID_AA64MMFR1_EL1_HAFDBS_MASK		ULL(0xf)
+#define ID_AA64MMFR1_EL1_HAFDBS_WIDTH		U(4)
+#define ID_AA64MMFR1_EL1_HAFDBS_HDBSS_SUPPORTED	ULL(0x4)
 
 /* ID_AA64MMFR2_EL1 definitions */
 #define ID_AA64MMFR2_EL1		S3_0_C0_C7_2
@@ -556,6 +566,12 @@
 #define ID_AA64MMFR3_EL1_MEC_MASK		ULL(0xf)
 #define ID_AA64MMFR3_EL1_MEC_WIDTH		U(4)
 #define ID_AA64MMFR3_EL1_MEC_SUPPORTED		ULL(0x1)
+
+/* ID_AA64MMFR4_EL1 definitions */
+#define ID_AA64MMFR4_EL1_HACDBS_SHIFT           U(12)
+#define ID_AA64MMFR4_EL1_HACDBS_WIDTH           U(4)
+#define ID_AA64MMFR4_EL1_HACDBS_MASK            ULL(0xf)
+#define ID_AA64MMFR4_EL1_HACDBS_SUPPORTED       ULL(0x1)
 
 /* ID_AA64PFR1_EL1 definitions */
 #define ID_AA64PFR1_EL1_PFAR_SHIFT		U(60)
@@ -717,6 +733,8 @@
 /* SCR definitions */
 #define SCR_RES1_BITS		((U(1) << 4) | (U(1) << 5))
 #define SCR_NSE_SHIFT		U(62)
+#define SCR_HACDBSEn_BIT	(UL(1) << 61)
+#define SCR_HDBSSEn_BIT		(UL(1) << 60)
 #define SCR_FGTEN2_BIT		(UL(1) << 59)
 #define SCR_NSE_BIT		(ULL(1) << SCR_NSE_SHIFT)
 #define SCR_EnIDCP128_BIT	(UL(1) << 55)
@@ -1753,6 +1771,21 @@
  ******************************************************************************/
 #define TRFCR_EL1	S3_0_C1_C2_1
 #define TRFCR_EL2	S3_4_C1_C2_1
+
+/*******************************************************************************
+ * FEAT_STEP2 - Step2 registers
+ ******************************************************************************/
+#define MDSTEPOP_EL1		S2_0_C0_C5_2
+
+/*******************************************************************************
+ * FEAT_HDBSS - Hardware Dirty state tracking structure
+ ******************************************************************************/
+#define HDBSSBR_EL2		S3_4_C2_C3_2
+
+/*******************************************************************************
+ * FEAT_HACDBS - Hardware accelerator for cleaning Dirty state
+ ******************************************************************************/
+#define HACDBSBR_EL2		S3_4_C2_C3_4
 
 /*******************************************************************************
  * Trace System Registers

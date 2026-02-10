@@ -6,6 +6,7 @@
 
 TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	extensions/afp/test_afp.c					\
+	extensions/aie/test_aie.c					\
 	extensions/amu/test_amu.c					\
 	extensions/brbe/test_brbe.c					\
 	extensions/d128/test_d128.c					\
@@ -18,6 +19,7 @@ TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	extensions/mpam/test_mpam.c					\
 	extensions/mte/test_mte.c					\
 	extensions/pauth/test_pauth.c					\
+	extensions/pfar/test_pfar.c					\
 	extensions/pmuv3/test_pmuv3.c					\
 	extensions/ras/test_ras.c					\
 	extensions/sctlr2/test_sctlr2.c					\

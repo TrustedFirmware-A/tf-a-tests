@@ -46,6 +46,8 @@
     <testcase name="SCTLR2 support" function="test_sctlr2_support" />
     <testcase name="THE support" function="test_the_support" />
     <testcase name="D128 support" function="test_d128_support" />
+    <testcase name="PFAR support" function="test_pfar_support" />
+    <testcase name="AIE support" function="test_aie_support" />
   </testsuite>
 
   <testsuite name="ARM_ARCH_SVC" description="Arm Architecture Service tests">

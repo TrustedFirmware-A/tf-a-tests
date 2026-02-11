@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -146,5 +146,11 @@ void host_do_vdev_complete(u_register_t rec_ptr, unsigned long vdev_id);
 
 /* Handle REC exit due to VDEV communication */
 void host_do_vdev_communicate(struct realm *realm, u_register_t vdev_ptr);
+
+/*
+ * Ensure RMM is activated. Safe to call multiple times; activation happens
+ * only once. Returns true on success, false on failure.
+ */
+bool host_rmm_activate(void);
 
 #endif /* HOST_REALM_HELPER_H */

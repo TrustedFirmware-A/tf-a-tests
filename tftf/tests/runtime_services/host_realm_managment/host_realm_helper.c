@@ -44,6 +44,23 @@ static unsigned int realm_id_bitmap;
 static u_register_t rmm_feat_reg0;
 static u_register_t rmm_feat_reg2;
 static u_register_t rmm_feat_reg3;
+static bool is_rmm_active;
+
+/*
+ * Ensure RMM is activated. Safe to call multiple times; activation happens
+ * only once. Returns true on success, false on failure.
+ */
+bool host_rmm_activate(void)
+{
+	if (!is_rmm_active) {
+		if (host_rmi_rmm_activate() != REALM_SUCCESS) {
+			ERROR("host_rmi_rmm_activate failed\n");
+			return false;
+		}
+		is_rmm_active = true;
+	}
+	return true;
+}
 
 /*
  * The function handler to print the Realm logged buffer,
@@ -135,6 +152,11 @@ static bool validate_realm_params(struct realm *realm_ptr,
 
 	if (params == NULL) {
 		ERROR("params is NULL\n");
+		return false;
+	}
+
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
 		return false;
 	}
 

@@ -2206,3 +2206,11 @@ u_register_t host_rmi_psmmu_st_l2_destroy(u_register_t psmmu_ptr, u_register_t s
 	return host_rmi_handler(&(smc_args) {SMC_RMI_PSMMU_ST_L2_DESTROY, psmmu_ptr,
 						sid}, 3U).ret0;
 }
+
+u_register_t host_rmi_rmm_activate(void)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RMM_ACTIVATE}, 1U);
+	return rets.ret0;
+}

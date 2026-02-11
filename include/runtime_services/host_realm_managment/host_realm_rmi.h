@@ -551,6 +551,11 @@
 #define SMC_RMI_VDEV_COMPLETE			SMC64_RMI_FID(U(0x3E))
 
 /*
+ * FID: 0xC4000202
+ */
+#define SMC_RMI_RMM_ACTIVATE			SMC64_RMI_FID(U(0xB2))
+
+/*
  * FID: 0xC400018F is not used.
  */
 
@@ -1741,6 +1746,7 @@ u_register_t host_realm_map_ns_shared(struct realm *realm,
 u_register_t host_realm_rec_create(struct realm *realm);
 unsigned int host_realm_find_rec_by_mpidr(unsigned int mpidr, struct realm *realm);
 u_register_t host_realm_activate(struct realm *realm);
+u_register_t host_rmi_rmm_activate(void);
 u_register_t host_realm_destroy(struct realm *realm);
 u_register_t host_realm_rec_enter(struct realm *realm,
 				  u_register_t *exit_reason,

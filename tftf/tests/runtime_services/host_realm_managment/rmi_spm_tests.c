@@ -88,6 +88,11 @@ static test_result_t init_buffer_del_spm_rmi(void)
 {
 	u_register_t retrmm;
 
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
+
 	for (int i = 0; i < (NUM_GRANULES * PLATFORM_CORE_COUNT) ; i++) {
 		if ((rand() % 2) == 0) {
 			retrmm = host_rmi_granule_delegate(

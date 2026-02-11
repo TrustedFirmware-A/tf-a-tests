@@ -18,11 +18,16 @@ static struct realm realm;
 test_result_t host_test_realm_no_lpa2_invalid_sl(void)
 {
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			0UL, 0UL, RTT_MIN_LEVEL_LPA2, rec_flag, 1U, 0U)) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.sl = RTT_MIN_LEVEL_LPA2;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_SUCCESS;
 	}
 
@@ -36,12 +41,17 @@ test_result_t host_test_realm_no_lpa2_invalid_sl(void)
 test_result_t host_test_realm_no_lpa2_invalid_s2sz(void)
 {
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 50UL), 0UL,
-			RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.s2sz = 50UL;
+	params.sl = RTT_MIN_LEVEL;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_SUCCESS;
 	}
 
@@ -58,6 +68,7 @@ test_result_t host_test_non_lpa2_realm_on_lpa2plat(void)
 {
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 	struct realm realm;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -65,9 +76,13 @@ test_result_t host_test_non_lpa2_realm_on_lpa2plat(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL), 0UL,
-			RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.s2sz = 48UL;
+	params.sl = RTT_MIN_LEVEL;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -90,6 +105,7 @@ test_result_t host_test_data_bound_non_lpa2_realm_on_lpa2plat(void)
 	struct realm realm;
 	u_register_t ret, base, base_ipa;
 	test_result_t result = TEST_RESULT_FAIL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -97,9 +113,13 @@ test_result_t host_test_data_bound_non_lpa2_realm_on_lpa2plat(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL), 0UL,
-			RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.s2sz = 48UL;
+	params.sl = RTT_MIN_LEVEL;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -114,8 +134,7 @@ test_result_t host_test_data_bound_non_lpa2_realm_on_lpa2plat(void)
 		goto destroy_realm;
 	}
 
-	base_ipa = base | (1UL <<
-			(EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, realm.rmm_feat_reg0) - 1UL));
+	base_ipa = base | (1UL << (realm.s2sz - 1UL));
 
 	ret = host_rmi_create_rtt_levels(&realm, base_ipa, RTT_MIN_LEVEL, 3);
 
@@ -144,18 +163,26 @@ test_result_t host_test_lpa2_realm_on_non_lpa2plat(void)
 {
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 	struct realm realm;
-	u_register_t feature_flag0 = INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 48UL);
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		return TEST_RESULT_SKIPPED;
 	} else {
-		feature_flag0 |= RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0UL, RTT_MIN_LEVEL, rec_flag, 1U, 0U)) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = RTT_MIN_LEVEL;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_SUCCESS;
 	}
 

@@ -96,7 +96,7 @@ static test_result_t init_realm_payload(struct realm *realm, bool *sve_en_ret)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	if (host_rmi_features(0UL, &rmi_feat_reg0) != REALM_SUCCESS) {
+	if (host_rmi_features(RMI_FEATURE_REGISTER_0_INDEX, &rmi_feat_reg0) != REALM_SUCCESS) {
 		ERROR("Failed to get RMI feat_reg0\n");
 		return TEST_RESULT_FAIL;
 	}

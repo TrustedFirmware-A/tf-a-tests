@@ -38,7 +38,8 @@ static struct realm realm;
 		SKIP_TEST_IF_SVE_NOT_SUPPORTED();				\
 										\
 		/* Get RMM support for SVE and its max SVE VL */		\
-		if (host_rmi_features(0UL, &_reg0) != REALM_SUCCESS) {		\
+		if (host_rmi_features(RMI_FEATURE_REGISTER_0_INDEX,		\
+				&_reg0) != REALM_SUCCESS) {			\
 			ERROR("Failed to get RMI feat_reg0\n");			\
 			return TEST_RESULT_FAIL;				\
 		}								\

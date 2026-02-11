@@ -26,13 +26,15 @@ test_result_t host_create_sve_realm_payload(struct realm *realm, bool sve_en,
 					    unsigned int max_recs,
 					    unsigned int max_aux_planes)
 {
-	u_register_t feature_flag0 = 0UL;
-	u_register_t feature_flag1 = RMI_REALM_FLAGS1_RTT_TREE_PP;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[MAX_REC_COUNT] = {RMI_NOT_RUNNABLE};
+	struct test_realm_params params = {0};
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -40,16 +42,18 @@ test_result_t host_create_sve_realm_payload(struct realm *realm, bool sve_en,
 		rec_flag[i] = RMI_RUNNABLE;
 	}
 
-	if (sve_en) {
-		feature_flag0 |= RMI_FEATURE_REGISTER_0_SVE_EN |
-				INPLACE(RMI_FEATURE_REGISTER_0_SVE_VL, sve_vq);
-	}
-
 	/* Initialise Realm payload */
-	if (!host_create_activate_realm_payload(realm,
-				       (u_register_t)REALM_IMAGE_BASE,
-				       feature_flag0, feature_flag1,
-				       sl, rec_flag, max_recs, max_aux_planes)) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sve = sve_en;
+	params.sve_vl = sve_vq;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = max_recs;
+	params.num_aux_planes = max_aux_planes;
+
+	if (!host_create_activate_realm_payload(realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 

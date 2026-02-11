@@ -41,6 +41,9 @@ const char *rmi_exit[] = {
 
 /* Bitmap to track allocated realm IDs */
 static unsigned int realm_id_bitmap;
+static u_register_t rmm_feat_reg0;
+static u_register_t rmm_feat_reg2;
+static u_register_t rmm_feat_reg3;
 
 /*
  * The function handler to print the Realm logged buffer,
@@ -120,152 +123,164 @@ static bool host_create_shared_mem(struct realm *realm_ptr)
 	return true;
 }
 
-bool host_prepare_realm_payload(struct realm *realm_ptr,
-			       u_register_t realm_payload_adr,
-			       u_register_t feature_flag,
-			       u_register_t feature_flag1,
-			       long sl,
-			       const u_register_t *rec_flag,
-			       unsigned int rec_count,
-			       unsigned int num_aux_planes)
+static bool validate_realm_params(struct realm *realm_ptr,
+				   struct test_realm_params *params,
+				   u_register_t feat_reg0,
+				   u_register_t feat_reg3)
 {
-	int8_t value;
+	long sl;
 
-	if (realm_payload_adr == TFTF_BASE) {
-		ERROR("realm_payload_adr should be grater then TFTF_BASE\n");
+	/* Zero out realm_ptr in the beginning */
+	(void)memset((char *)realm_ptr, 0U, sizeof(struct realm));
+
+	if (params == NULL) {
+		ERROR("params is NULL\n");
 		return false;
 	}
 
 	(void)memset((char *)realm_ptr, 0U, sizeof(struct realm));
 
-	/* Read Realm Feature Reg 0 */
-	if (host_rmi_features(0UL, &realm_ptr->rmm_feat_reg0) != REALM_SUCCESS) {
+	if (params->realm_payload_adr == TFTF_BASE) {
+		ERROR("realm_payload_adr should be greater than TFTF_BASE\n");
+		return false;
+	}
+
+	if (params->rec_count > MAX_REC_COUNT) {
+		ERROR("Invalid rec_count: %u\n", params->rec_count);
+		return false;
+	}
+
+	if (params->num_aux_planes > MAX_AUX_PLANE_COUNT) {
+		ERROR("Invalid aux plane count: %u\n", params->num_aux_planes);
+		return false;
+	}
+
+	for (unsigned int i = 0U; i < params->rec_count; i++) {
+		if (params->rec_flag[i] != RMI_RUNNABLE &&
+		    params->rec_flag[i] != RMI_NOT_RUNNABLE) {
+			ERROR("Invalid rec_flag[%u]: 0x%lx\n", i, params->rec_flag[i]);
+			return false;
+		}
+	}
+
+	/* Set default s2sz if not specified */
+	if (params->s2sz == 0U) {
+		unsigned int s2sz = EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feat_reg0);
+
+		if (!(params->lpa2)) {
+			params->s2sz =
+				(s2sz >= MAX_IPA_BITS ? MAX_IPA_BITS : s2sz);
+		} else {
+			params->s2sz = s2sz;
+		}
+	}
+
+	/* Fail if IPA bits > implemented size */
+	if (params->s2sz > EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feat_reg0)) {
+		ERROR("Invalid s2sz: %lu\n", params->s2sz);
+		return false;
+	}
+
+	/* Validate and set start_level */
+	sl = params->sl;
+	if (sl == 0L) {
+		sl = params->lpa2 ? RTT_MIN_LEVEL_LPA2 : RTT_MIN_LEVEL;
+	}
+
+	if (params->lpa2) {
+		if (sl < RTT_MIN_LEVEL_LPA2 || sl > RTT_MAX_LEVEL) {
+			ERROR("Invalid start_level: %ld\n", sl);
+			return false;
+		}
+	} else {
+		if (sl < RTT_MIN_LEVEL || sl > RTT_MAX_LEVEL) {
+			ERROR("Invalid start_level: %ld\n", sl);
+			return false;
+		}
+	}
+
+	/* Validate RTT tree configuration for multiple planes */
+	if (params->num_aux_planes > 0U && params->rtt_tree_single) {
+		if (EXTRACT(RMI_FEATURE_REGISTER_3_RTT_PLANE, feat_reg3) == RMI_PLANE_RTT_AUX) {
+			ERROR("Single RTT for multiple planes not supported by RMM\n");
+			return false;
+		}
+	}
+
+	/* Validate S2AP encoding configuration */
+	if (params->rtt_s2ap_encoding_indirect) {
+		if ((feat_reg3 & RMI_FEATURE_REGISTER_3_RTT_S2AP_INDIRECT) == 0UL) {
+			ERROR("S2AP Indirect Encoding not supported\n");
+			return false;
+		}
+	}
+
+	/* Assign realm_ptr members */
+
+	/* s2sz is already set by validation above */
+	realm_ptr->s2sz = params->s2sz;
+
+	/* start_level is already validated above */
+	realm_ptr->start_level = sl;
+
+	/* Configure RTT tree options */
+	realm_ptr->rtt_tree_single = (params->num_aux_planes > 0U && params->rtt_tree_single);
+	realm_ptr->rtt_s2ap_enc_indirect = params->rtt_s2ap_encoding_indirect;
+
+	/* Store PMU configuration */
+	realm_ptr->pmu_enabled = params->pmu;
+	realm_ptr->pmu_num_ctrs = params->pmu ? params->pmu_num_ctrs : 0U;
+
+	/* Store SVE configuration */
+	realm_ptr->sve_enabled = params->sve;
+	realm_ptr->sve_vl = params->sve ? params->sve_vl : 0U;
+
+	/* Use default number of breakpoints from RMM features */
+	realm_ptr->num_bps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_BPS, feat_reg0);
+
+	/* Use default number of watchpoints from RMM features */
+	realm_ptr->num_wps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_WPS, feat_reg0);
+
+	realm_ptr->rec_count = params->rec_count;
+	for (unsigned int i = 0U; i < params->rec_count; i++) {
+		realm_ptr->rec_flag[i] = params->rec_flag[i];
+	}
+
+	/* Store FEAT_LPA2 configuration */
+	realm_ptr->lpa2 = params->lpa2;
+
+	/* Store FEAT_DA configuration */
+	realm_ptr->da_enabled = params->da;
+
+	realm_ptr->num_aux_planes = params->num_aux_planes;
+	realm_ptr->ats_plane = 0U;
+
+	return true;
+}
+
+bool host_prepare_realm_payload(struct realm *realm_ptr,
+		       struct test_realm_params *params)
+{
+	/* Read Realm Feature Registers once */
+	if (host_rmi_features(RMI_FEATURE_REGISTER_0_INDEX, &rmm_feat_reg0) != REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_rmi_features");
 		return false;
 	}
 
-	/* Fail if IPA bits > implemented size */
-	if (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feature_flag) >
-			EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, realm_ptr->rmm_feat_reg0)) {
-		ERROR("%s() failed\n", "Invalid s2sz");
+	if (host_rmi_features(RMI_FEATURE_REGISTER_2_INDEX, &rmm_feat_reg2) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_rmi_features");
 		return false;
 	}
 
-	/*
-	 * Overwrite s2sz in feature flag if host passed a value
-	 * if host passes default 0 use default RMI_FEATURES instead
-	 */
-	if (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feature_flag) != 0U) {
-		realm_ptr->rmm_feat_reg0 &= ~MASK(RMI_FEATURE_REGISTER_0_S2SZ);
-		realm_ptr->rmm_feat_reg0 |= INPLACE(RMI_FEATURE_REGISTER_0_S2SZ,
-				EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feature_flag));
-	}
-
-	realm_ptr->rtt_tree_single = false;
-	realm_ptr->rtt_s2ap_enc_indirect = false;
-
-	if (num_aux_planes > 0U) {
-		if ((EXTRACT(RMI_FEATURE_REGISTER_0_PLANE_RTT, feature_flag) ==
-					RMI_PLANE_RTT_SINGLE)) {
-			if ((EXTRACT(RMI_FEATURE_REGISTER_0_PLANE_RTT, realm_ptr->rmm_feat_reg0) ==
-						RMI_PLANE_RTT_AUX)) {
-				ERROR("%s() failed\n",
-					"Single RTT for multiple planes not support by RMM");
-				return false;
-			} else {
-				realm_ptr->rtt_tree_single = true;
-			}
-		}
-	}
-
-	if ((feature_flag1 & RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT) != 0U) {
-		if ((realm_ptr->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_RTT_S2AP_INDIRECT) == 0UL) {
-			ERROR("%s() failed\n", "S2AP Indirect Encoding not suported");
-			return false;
-		} else {
-			realm_ptr->rtt_s2ap_enc_indirect = true;
-		}
-	}
-
-	/* Disable PMU if not required */
-	if ((feature_flag & RMI_FEATURE_REGISTER_0_PMU_EN) == 0UL) {
-		realm_ptr->rmm_feat_reg0 &= ~RMI_FEATURE_REGISTER_0_PMU_EN;
-		realm_ptr->pmu_num_ctrs = 0U;
-	} else {
-		/* Requested number of event counters */
-		realm_ptr->pmu_num_ctrs = EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS,
-							feature_flag);
-	}
-
-	/* Disable SVE if not required */
-	if ((feature_flag & RMI_FEATURE_REGISTER_0_SVE_EN) == 0UL) {
-		realm_ptr->rmm_feat_reg0 &= ~RMI_FEATURE_REGISTER_0_SVE_EN;
-		realm_ptr->sve_vl = 0U;
-	} else {
-		realm_ptr->sve_vl = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL,
-						feature_flag);
-	}
-
-	/* Requested number of breakpoints */
-	value = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_BPS, feature_flag);
-	if (value != 0) {
-		realm_ptr->num_bps = (unsigned int)value;
-	} else {
-		realm_ptr->num_bps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_BPS,
-					realm_ptr->rmm_feat_reg0);
-	}
-
-	/* Requested number of watchpoints */
-	value = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_WPS, feature_flag);
-	if (value != 0) {
-		realm_ptr->num_wps = (unsigned int)value;
-	} else {
-		realm_ptr->num_wps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_WPS,
-					realm_ptr->rmm_feat_reg0);
-	}
-
-	/* Set SVE bits from feature_flag */
-	realm_ptr->rmm_feat_reg0 &= ~(RMI_FEATURE_REGISTER_0_SVE_EN |
-				 MASK(RMI_FEATURE_REGISTER_0_SVE_VL));
-	if ((feature_flag & RMI_FEATURE_REGISTER_0_SVE_EN) != 0UL) {
-		realm_ptr->rmm_feat_reg0 |= RMI_FEATURE_REGISTER_0_SVE_EN |
-				       INPLACE(RMI_FEATURE_REGISTER_0_SVE_VL,
-				       EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL,
-						feature_flag));
-	}
-
-	if (realm_ptr->rec_count > MAX_REC_COUNT) {
-		ERROR("Invalid Rec Count\n");
+	if (host_rmi_features(RMI_FEATURE_REGISTER_3_INDEX, &rmm_feat_reg3) != REALM_SUCCESS) {
+		ERROR("%s() failed\n", "host_rmi_features");
 		return false;
 	}
-	realm_ptr->rec_count = rec_count;
-	for (unsigned int i = 0U; i < rec_count; i++) {
-		if (rec_flag[i] == RMI_RUNNABLE ||
-				rec_flag[i] == RMI_NOT_RUNNABLE) {
-			realm_ptr->rec_flag[i] = rec_flag[i];
-		} else {
-			ERROR("Invalid Rec Flag\n");
-			return false;
-		}
-	}
 
-	/*
-	 * Force FEAT_LPA2 to the selected configuration.
-	 */
-	if ((feature_flag & RMI_FEATURE_REGISTER_0_LPA2) == 0ULL) {
-		realm_ptr->rmm_feat_reg0 &= ~RMI_FEATURE_REGISTER_0_LPA2;
-	} else {
-		realm_ptr->rmm_feat_reg0 |= RMI_FEATURE_REGISTER_0_LPA2;
-	}
-
-	realm_ptr->start_level = sl;
-
-	if (num_aux_planes > MAX_AUX_PLANE_COUNT) {
-		ERROR("Invalid aux plane count\n");
+	/* Validate parameters (including feature-dependent checks) and assign realm_ptr members */
+	if (!validate_realm_params(realm_ptr, params, rmm_feat_reg0, rmm_feat_reg3)) {
 		return false;
 	}
-	realm_ptr->num_aux_planes = num_aux_planes;
-	realm_ptr->ats_plane = 0U;
 
 	/* Create Realm */
 	if (host_realm_create(realm_ptr) != REALM_SUCCESS) {
@@ -274,7 +289,7 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 	}
 
 	/* RTT map Realm image */
-	if (host_realm_map_payload_image(realm_ptr, realm_payload_adr) !=
+	if (host_realm_map_payload_image(realm_ptr, params->realm_payload_adr) !=
 			REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_realm_map_payload_image");
 		goto destroy_realm;
@@ -310,24 +325,12 @@ destroy_realm:
 }
 
 bool host_create_realm_payload(struct realm *realm_ptr,
-			       u_register_t realm_payload_adr,
-			       u_register_t feature_flag,
-			       u_register_t feature_flag1,
-			       long sl,
-			       const u_register_t *rec_flag,
-			       unsigned int rec_count,
-			       unsigned int num_aux_planes)
+		       struct test_realm_params *params)
 {
 	bool ret;
 
 	ret = host_prepare_realm_payload(realm_ptr,
-			realm_payload_adr,
-			feature_flag,
-			feature_flag1,
-			sl,
-			rec_flag,
-			rec_count,
-			num_aux_planes);
+			params);
 	if (!ret) {
 		goto destroy_realm;
 	} else {
@@ -358,25 +361,13 @@ destroy_realm:
 }
 
 bool host_create_activate_realm_payload(struct realm *realm_ptr,
-			u_register_t realm_payload_adr,
-			u_register_t feature_flag,
-			u_register_t feature_flag1,
-			long sl,
-			const u_register_t *rec_flag,
-			unsigned int rec_count,
-			unsigned int num_aux_planes)
+			struct test_realm_params *params)
 
 {
 	bool ret;
 
 	ret = host_create_realm_payload(realm_ptr,
-			realm_payload_adr,
-			feature_flag,
-			feature_flag1,
-			sl,
-			rec_flag,
-			rec_count,
-			num_aux_planes);
+			params);
 	if (!ret) {
 		goto destroy_realm;
 	} else {

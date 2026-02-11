@@ -426,9 +426,9 @@ u_register_t host_rmi_rtt_aux_unmap_protected(u_register_t rd,
 	return rets.ret0;
 }
 
-bool host_ipa_is_ns(u_register_t addr, u_register_t rmm_feat_reg0)
+bool host_ipa_is_ns(u_register_t addr, uint8_t s2sz)
 {
-	return (addr >> (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, rmm_feat_reg0) - 1UL) == 1UL);
+	return (addr >> (s2sz - 1UL) == 1UL);
 }
 
 static inline u_register_t host_realm_rtt_create(struct realm *realm,
@@ -725,9 +725,7 @@ u_register_t host_realm_map_unprotected(struct realm *realm,
 	int8_t level;
 	u_register_t ret = 0UL;
 	u_register_t phys = ns_pa;
-	u_register_t map_addr = ns_pa |
-			(1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
-			realm->rmm_feat_reg0) - 1UL));
+	u_register_t map_addr = ns_pa | (1UL << (realm->s2sz - 1UL));
 
 	if (!IS_ALIGNED(map_addr, map_size)) {
 		return REALM_ERROR;
@@ -748,7 +746,7 @@ u_register_t host_realm_map_unprotected(struct realm *realm,
 		return REALM_ERROR;
 	}
 
-	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_LPA2) != 0L) {
+	if (realm->lpa2) {
 		desc = (phys & ~OA_50_51_MASK) |
 				INPLACE(TTE_OA_50_51, EXTRACT(OA_50_51, phys));
 	} else {
@@ -932,7 +930,7 @@ static u_register_t host_realm_aux_unmap_unprotected(struct realm *realm,
 
 	for (unsigned int tree_index = 1U;
 	     tree_index <= realm->num_aux_planes; tree_index++) {
-		bool lpa2 = (realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_LPA2);
+		bool lpa2 = realm->lpa2;
 		unsigned long unmap_ns_addr = unmap_addr &
 						tte_ipa_lvl_mask(realm->start_level, lpa2);
 
@@ -973,7 +971,7 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 
 		switch (rtt.state) {
 		case RMI_ASSIGNED:
-			if (host_ipa_is_ns(map_addr, realm->rmm_feat_reg0)) {
+			if (host_ipa_is_ns(map_addr, realm->s2sz)) {
 				/* Unmap from all Aux RTT */
 				if (!realm->rtt_s2ap_enc_indirect) {
 
@@ -1203,13 +1201,12 @@ u_register_t host_realm_create(struct realm *realm)
 	}
 
 	/* Populate params */
-	params->s2sz = EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
-				realm->rmm_feat_reg0);
+	params->s2sz = realm->s2sz;
 	params->num_bps = realm->num_bps;
 	params->num_wps = realm->num_wps;
 
 	/* SVE enable and vector length */
-	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_SVE_EN) != 0UL) {
+	if (realm->sve_enabled) {
 		params->flags0 = RMI_REALM_FLAGS0_SVE;
 		params->sve_vl = realm->sve_vl;
 	} else {
@@ -1218,7 +1215,7 @@ u_register_t host_realm_create(struct realm *realm)
 	}
 
 	/* PMU enable and number of event counters */
-	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_PMU_EN) != 0UL) {
+	if (realm->pmu_enabled) {
 		params->flags0 |= RMI_REALM_FLAGS0_PMU;
 		params->pmu_num_ctrs = realm->pmu_num_ctrs;
 	} else {
@@ -1226,12 +1223,12 @@ u_register_t host_realm_create(struct realm *realm)
 	}
 
 	/* LPA2 enable */
-	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_LPA2) != 0UL) {
+	if (realm->lpa2) {
 		params->flags0 |= RMI_REALM_FLAGS0_LPA2;
 	}
 
 	/* Enabled RMI FEAT_DA */
-	if ((realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_DA_EN) != 0UL) {
+	if (realm->da_enabled) {
 		params->flags0 |= RMI_REALM_FLAGS0_DA;
 	}
 
@@ -1394,9 +1391,7 @@ u_register_t host_realm_map_ns_shared(struct realm *realm,
 {
 	u_register_t ret;
 
-	realm->ipa_ns_buffer = ns_shared_mem_adr |
-			(1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
-			realm->rmm_feat_reg0) - 1));
+	realm->ipa_ns_buffer = ns_shared_mem_adr | (1UL << (realm->s2sz - 1));
 	realm->ns_buffer_size = ns_shared_mem_size;
 
 	/* MAP SHARED_NS region */
@@ -1416,7 +1411,7 @@ u_register_t host_realm_map_ns_shared(struct realm *realm,
 	/* AUX MAP NS buffer for all RTTs */
 	if (!realm->rtt_tree_single) {
 		for (unsigned int j = 0U; j < realm->num_aux_planes; j++) {
-			bool lpa2 = (realm->rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_LPA2);
+			bool lpa2 = realm->lpa2;
 			unsigned long sl_map_size = tte_map_size(realm->start_level);
 			unsigned long map_ns_addr = realm->ipa_ns_buffer &
 						tte_ipa_lvl_mask(realm->start_level, lpa2);
@@ -1657,8 +1652,7 @@ u_register_t host_realm_destroy(struct realm *realm)
 	 * commands.
 	 */
 	if (host_realm_tear_down_rtt_range(realm, rtt_start_level, 0UL,
-				(1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
-				realm->rmm_feat_reg0) - 1UL))) != RMI_SUCCESS) {
+				(1UL << (realm->s2sz - 1UL))) != RMI_SUCCESS) {
 		ERROR("host_realm_tear_down_rtt_range() line=%u\n", __LINE__);
 		return REALM_ERROR;
 	}

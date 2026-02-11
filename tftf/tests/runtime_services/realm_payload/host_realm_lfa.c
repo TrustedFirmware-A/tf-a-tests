@@ -20,9 +20,11 @@ test_result_t host_test_realm_rsi_version_with_lfa(void)
 	test_result_t lfa_ret;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
 	struct realm realm;
-	u_register_t feature_flag0 = 0U;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	bool ret1, ret2;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -33,12 +35,19 @@ test_result_t host_test_realm_rsi_version_with_lfa(void)
 	}
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U)) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 

@@ -1073,22 +1073,29 @@ int host_vdev_transition(struct realm *realm,
 
 int host_create_realm_with_feat_da(struct realm *realm)
 {
-	u_register_t feature_flag = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
-		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	feature_flag |= RMI_FEATURE_REGISTER_0_DA_EN;
-
 	/* Initialise Realm payload */
 	if (!host_create_activate_realm_payload(realm,
-						(u_register_t)REALM_IMAGE_BASE,
-						feature_flag, 0UL, sl,
-						rec_flag, 1U, 0U)) {
+			&(struct test_realm_params){
+				0,
+				.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE,
+				.rec_flag = rec_flag,
+				.rec_count = 1U,
+				.s2sz = s2sz,
+				.sl = sl,
+				.lpa2 = lpa2,
+				.da = true,
+			})) {
 		return -1;
 	}
 

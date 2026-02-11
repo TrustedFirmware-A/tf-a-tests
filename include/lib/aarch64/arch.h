@@ -568,6 +568,8 @@
 #define ID_AA64MMFR3_EL1_MEC_SUPPORTED		ULL(0x1)
 
 /* ID_AA64MMFR4_EL1 definitions */
+#define ID_AA64MMFR4_EL1			S3_0_C0_C7_4
+
 #define ID_AA64MMFR4_EL1_HACDBS_SHIFT           U(12)
 #define ID_AA64MMFR4_EL1_HACDBS_WIDTH           U(4)
 #define ID_AA64MMFR4_EL1_HACDBS_MASK            ULL(0xf)

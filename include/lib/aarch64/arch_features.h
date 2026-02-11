@@ -328,6 +328,11 @@ static inline bool is_feat_sme2_supported(void)
 	return (features & ID_AA64PFR1_EL1_SME_MASK) >= ID_AA64PFR1_EL1_SME2_SUPPORTED;
 }
 
+static inline bool is_feat_mops_present(void)
+{
+	return (EXTRACT(ID_AA64ISAR2_MOPS, read_id_aa64isar2_el1()) != 0U);
+}
+
 /* Check if extended breakpoints are available part of Debugv8p9 */
 static inline bool is_feat_debugv8p9_ebwe_supported(void)
 {

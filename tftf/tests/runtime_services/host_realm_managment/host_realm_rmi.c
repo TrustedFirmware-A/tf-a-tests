@@ -1232,6 +1232,12 @@ u_register_t host_realm_create(struct realm *realm)
 		params->flags0 |= RMI_REALM_FLAGS0_DA;
 	}
 
+	/* MEC policy: use private MECID unless shared_mec is requested */
+	if (!realm->shared_mec) {
+		params->flags0 |= INPLACE(RMI_REALM_FLAGS0_MEC_POLICY,
+					  RMI_MEC_POLICY_PRIVATE);
+	}
+
 	params->rtt_level_start = realm->start_level;
 	params->algorithm = RMI_HASH_SHA_256;
 	params->rtt_base = realm->rtt_addr;

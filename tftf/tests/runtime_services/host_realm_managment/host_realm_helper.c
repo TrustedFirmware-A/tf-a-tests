@@ -251,6 +251,7 @@ static bool validate_realm_params(struct realm *realm_ptr,
 
 	/* Store FEAT_DA configuration */
 	realm_ptr->da_enabled = params->da;
+	realm_ptr->shared_mec = params->shared_mec;
 
 	realm_ptr->num_aux_planes = params->num_aux_planes;
 	realm_ptr->ats_plane = 0U;

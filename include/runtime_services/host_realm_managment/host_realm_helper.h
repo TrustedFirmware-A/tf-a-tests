@@ -35,6 +35,7 @@ struct test_realm_params {
 	bool pmu;
 	unsigned int pmu_num_ctrs;
 	bool da;
+	bool shared_mec;
 	bool rtt_tree_single;
 	bool rtt_s2ap_encoding_indirect;
 };

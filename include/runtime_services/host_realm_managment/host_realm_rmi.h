@@ -640,10 +640,17 @@
 #define RMI_FEATURE_TRUE		1U
 
 /* RmiRealmFlags0 format */
-#define RMI_REALM_FLAGS0_LPA2		BIT(0)
-#define RMI_REALM_FLAGS0_SVE		BIT(1)
-#define RMI_REALM_FLAGS0_PMU		BIT(2)
-#define RMI_REALM_FLAGS0_DA		BIT(3)
+#define RMI_REALM_FLAGS0_LPA2			BIT(0)
+#define RMI_REALM_FLAGS0_SVE			BIT(1)
+#define RMI_REALM_FLAGS0_PMU			BIT(2)
+#define RMI_REALM_FLAGS0_DA			BIT(3)
+/* RmiMecPolicy: Bits 8:7 */
+#define RMI_REALM_FLAGS0_MEC_POLICY_SHIFT	UL(7)
+#define RMI_REALM_FLAGS0_MEC_POLICY_WIDTH	UL(2)
+
+/* RmiMecPolicy values */
+#define RMI_MEC_POLICY_SHARED		UL(0)
+#define RMI_MEC_POLICY_PRIVATE		UL(1)
 
 /* RmiRealmFlags1 format */
 #define RMI_REALM_FLAGS1_RTT_TREE_PP			BIT(0)
@@ -1557,6 +1564,7 @@ struct realm {
 	bool             shared_mem_created;
 	bool             rtt_tree_single;
 	bool		 rtt_s2ap_enc_indirect;
+	bool		 shared_mec;
 	enum realm_state state;
 	long start_level;
 	u_register_t     aux_rtt_addr[MAX_AUX_PLANE_COUNT];

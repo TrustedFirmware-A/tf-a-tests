@@ -207,9 +207,7 @@ static test_result_t firme_attestation_pat_get(bool chunked)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	if ((info.attest_feat_reg0 &
-	     FIRME_ATTEST_FEAT_REG0_PAT_GET_BIT) == 0U) {
-		tftf_testcase_printf("FIRME attestation PAT_GET ABI not supported\n");
+	if (!is_firme_pat_get_supported()) {
 		return TEST_RESULT_SKIPPED;
 	}
 
@@ -349,9 +347,7 @@ test_result_t test_firme_attestation_pat_get_invalid_buffer_config(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	if ((info.attest_feat_reg0 &
-	     FIRME_ATTEST_FEAT_REG0_PAT_GET_BIT) == 0U) {
-		tftf_testcase_printf("FIRME attestation PAT_GET ABI not supported\n");
+	if (!is_firme_pat_get_supported()) {
 		return TEST_RESULT_SKIPPED;
 	}
 

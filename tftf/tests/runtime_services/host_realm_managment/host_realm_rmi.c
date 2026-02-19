@@ -2139,3 +2139,27 @@ u_register_t host_rmi_vdev_validate_mapping(u_register_t rd,
 	*out_top = rets.ret1;
 	return rets.ret0;
 }
+
+u_register_t host_rmi_psmmu_activate(u_register_t psmmu_ptr, u_register_t params_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PSMMU_ACTIVATE, psmmu_ptr,
+						params_ptr}, 3U).ret0;
+}
+
+u_register_t host_rmi_psmmu_deactivate(u_register_t psmmu_ptr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PSMMU_DEACTIVATE, psmmu_ptr},
+						2U).ret0;
+}
+
+u_register_t host_rmi_psmmu_st_l2_create(u_register_t psmmu_ptr, u_register_t sid)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PSMMU_ST_L2_CREATE, psmmu_ptr,
+						sid}, 3U).ret0;
+}
+
+u_register_t host_rmi_psmmu_st_l2_destroy(u_register_t psmmu_ptr, u_register_t sid)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PSMMU_ST_L2_DESTROY, psmmu_ptr,
+						sid}, 3U).ret0;
+}

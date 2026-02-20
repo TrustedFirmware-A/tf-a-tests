@@ -1767,6 +1767,8 @@
  * FEAT_TCR2 - Extended Translation Control Registers
  ******************************************************************************/
 #define TCR2_EL1		S3_0_C2_C0_3
+#define TCR2_EL1_D128_BIT	(UL(1) << 5)
+
 #define TCR2_EL2		S3_4_C2_C0_3
 
 /*******************************************************************************
@@ -1971,8 +1973,10 @@
 #define SYSREG_ID_actlr_el1			SYSREG_ID(0, 3, 0, 1, 0, 1)
 #define SYSREG_ID_cpacr_el1			SYSREG_ID(0, 3, 0, 1, 0, 2)
 #define SYSREG_ID_zcr_el1			SYSREG_ID(0, 3, 0, 1, 2, 0)
-#define SYSREG_ID_ttbr0_el1			SYSREG_ID(1, 3, 0, 2, 0, 0)
-#define SYSREG_ID_ttbr1_el1			SYSREG_ID(1, 3, 0, 2, 0, 1)
+#define SYSREG_ID_ttbr0_el1_d128		SYSREG_ID(1, 3, 0, 2, 0, 0)
+#define SYSREG_ID_ttbr1_el1_d128		SYSREG_ID(1, 3, 0, 2, 0, 1)
+#define SYSREG_ID_ttbr0_el1			SYSREG_ID(0, 3, 0, 2, 0, 0)
+#define SYSREG_ID_ttbr1_el1			SYSREG_ID(0, 3, 0, 2, 0, 1)
 #define SYSREG_ID_tcr_el1			SYSREG_ID(0, 3, 0, 2, 0, 2)
 #define SYSREG_ID_esr_el1			SYSREG_ID(0, 3, 0, 5, 2, 0)
 #define SYSREG_ID_afsr0_el1			SYSREG_ID(0, 3, 0, 5, 1, 0)
@@ -1984,7 +1988,8 @@
 #define SYSREG_ID_tpidr_el1			SYSREG_ID(0, 3, 0, 13, 0, 4)
 #define SYSREG_ID_amair_el1			SYSREG_ID(0, 3, 0, 10, 3, 0)
 #define SYSREG_ID_cntkctl_el1			SYSREG_ID(0, 3, 0, 14, 1, 0)
-#define SYSREG_ID_par_el1			SYSREG_ID(1, 3, 0, 7, 4, 0)
+#define SYSREG_ID_par_el1_d128			SYSREG_ID(1, 3, 0, 7, 4, 0)
+#define SYSREG_ID_par_el1			SYSREG_ID(0, 3, 0, 7, 4, 0)
 #define SYSREG_ID_mdscr_el1			SYSREG_ID(0, 2, 0, 0, 2, 2)
 #define SYSREG_ID_mdccint_el1			SYSREG_ID(0, 2, 0, 0, 2, 0)
 #define SYSREG_ID_disr_el1			SYSREG_ID(0, 3, 0, 12, 1, 1)
@@ -2000,6 +2005,7 @@
 #define SYSREG_ID_apgakeylo_el1			SYSREG_ID(0, 3, 0, 2,  3, 0)
 #define SYSREG_ID_apgakeyhi_el1			SYSREG_ID(0, 3, 0, 2,  3, 1)
 #define SYSREG_ID_mpamidr_el1			SYSREG_ID(0, 3, 0, 10, 4, 4)
+#define SYSREG_ID_INVALID			SYSREG_ID(0, 4, 3, 15, 15, 7)
 
 /* RNDR definition */
 #define RNDR			S3_3_C2_C4_0

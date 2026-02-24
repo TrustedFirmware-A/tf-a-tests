@@ -1048,7 +1048,7 @@ test_result_t host_realm_set_ripas(void)
 			base + (PAGE_SIZE * test_page_num));
 
 	for (unsigned int i = 0U; i < test_page_num; i++) {
-		ret = host_realm_delegate_map_protected_data(true, &realm,
+		ret = host_realm_delegate_map_protected_data(false, &realm,
 				base + (PAGE_SIZE * i), PAGE_SIZE,
 				base + (PAGE_SIZE * i));
 		if (ret != REALM_SUCCESS) {
@@ -1150,7 +1150,7 @@ test_result_t host_realm_reject_set_ripas(void)
 
 	base = (u_register_t)page_alloc(PAGE_SIZE);
 
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, base);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, base);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failede\n");
 		goto destroy_realm;
@@ -1201,7 +1201,7 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 {
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, data, top, num_aux_planes = 0UL;
+	u_register_t ret, num_aux_planes = 0UL;
 	struct realm realm;
 	struct rmi_rec_run *run;
 	struct rtt_entry rtt;
@@ -1212,6 +1212,7 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, base;
 	struct test_realm_params params = {0};
+	RmiAddrRangeDesc4KB desc = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -1252,7 +1253,7 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	 * Copies content of TFTF_BASE in newly created page, any PA can be used for dummy copy
 	 * maps 1:1 IPA:PA
 	 */
-	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, TFTF_BASE);
+	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, TFTF_BASE);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -1268,15 +1269,22 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base);
 	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base);
 
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
-	if (ret != RMI_SUCCESS || data != base) {
-		ERROR("host_rmi_data_destroy failed\n");
+	desc.size = RMI_PAGE_L3;
+	desc.count = 0U;
+	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
+	desc.reserved = 0U;
+	desc.state = RMI_OP_MEM_STATE_DELEGATED;
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
 	}
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.state != RMI_UNASSIGNED ||
 			rtt.ripas != RMI_DESTROYED) {
-		ERROR("Wrong state after host_rmi_data_destroy\n");
+		ERROR("Wrong state after host_rmi_rtt_data_unmap\n");
 		goto undelegate_destroy;
 	}
 
@@ -1614,7 +1622,7 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 {
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, top, data;
+	u_register_t ret;
 	struct realm realm;
 	struct rmi_rec_run *run;
 	struct rtt_entry rtt;
@@ -1624,6 +1632,7 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	u_register_t s2sz = MAX_IPA_BITS;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, base;
 	struct test_realm_params params = {0};
+	RmiAddrRangeDesc4KB desc = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -1661,7 +1670,7 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 
 	/* DATA_CREATE */
 	/* Copied content of TFTF_BASE to new page, can use any adr, maps 1:1 IPA:PA */
-	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, TFTF_BASE);
+	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, TFTF_BASE);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -1682,21 +1691,29 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 		goto destroy_realm;
 	}
 
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
-	if (ret != RMI_SUCCESS || data != base) {
-		ERROR("host_rmi_data_destroy failed\n");
+	desc.size = RMI_PAGE_L3;
+	desc.count = 0U;
+	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
+	desc.reserved = 0U;
+	desc.state = RMI_OP_MEM_STATE_DELEGATED;
+
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto destroy_realm;
 	}
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.state != RMI_UNASSIGNED ||
 			rtt.ripas != RMI_DESTROYED) {
-		ERROR("Wrong state after host_rmi_data_destroy\n");
+		ERROR("Wrong state after host_rmi_rtt_data_unmap\n");
 		goto destroy_realm;
 	}
 	ret = host_rmi_granule_undelegate(base);
 
 	/* DATA_CREATE_UNKNOWN */
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failede\n");
 		goto destroy_realm;
@@ -1800,7 +1817,9 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	res = TEST_RESULT_SUCCESS;
 
 destroy_data:
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
 	ret = host_rmi_granule_undelegate(base);
 destroy_realm:
 	ret2 = host_destroy_realm(&realm);
@@ -1940,7 +1959,7 @@ test_result_t host_realm_sea_empty(void)
 	INFO("Rec1 ESR=0x%lx\n", esr);
 
 	/* DATA_CREATE_UNKNOWN */
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -2053,7 +2072,7 @@ test_result_t host_realm_sea_empty(void)
 	INFO("Rec5 ESR=0x%lx\n", esr);
 
 	/* DATA_CREATE_UNKNOWN */
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -2589,7 +2608,7 @@ test_result_t host_realm_pas_validation_new(void)
 {
 	bool ret1;
 	test_result_t test_result = TEST_RESULT_FAIL;
-	u_register_t ret, data, top;
+	u_register_t ret, top;
 	struct realm realm;
 	struct rtt_entry rtt;
 	u_register_t rec_flag[2U] = {RMI_RUNNABLE, RMI_RUNNABLE}, base;
@@ -2597,6 +2616,7 @@ test_result_t host_realm_pas_validation_new(void)
 	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	struct test_realm_params params = {0};
+	RmiAddrRangeDesc4KB desc = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -2636,7 +2656,7 @@ test_result_t host_realm_pas_validation_new(void)
 
 	/* 2. DATA_CREATE copy TFTF_BASE, chosen for convenience, can be any adr */
 	INFO("Test 2\n");
-	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, TFTF_BASE);
+	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, TFTF_BASE);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -2648,16 +2668,24 @@ test_result_t host_realm_pas_validation_new(void)
 		goto undelegate_destroy;
 	}
 
+	desc.size = RMI_PAGE_L3;
+	desc.count = 0U;
+	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
+	desc.reserved = 0U;
+	desc.state = RMI_OP_MEM_STATE_DELEGATED;
+
 	/* 2a DATA_DESTROY */
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
-	if (ret != RMI_SUCCESS || data != base) {
-		ERROR("host_rmi_data_destroy failed\n");
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
 	}
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.state != RMI_UNASSIGNED ||
 			rtt.ripas != RMI_DESTROYED) {
-		ERROR("Wrong state after host_rmi_data_destroy\n");
+		ERROR("Wrong state after host_rmi_rtt_data_unmap\n");
 		goto undelegate_destroy;
 	}
 
@@ -2665,7 +2693,7 @@ test_result_t host_realm_pas_validation_new(void)
 	host_rmi_granule_undelegate(base);
 
 	/*2b DATA_CREATE_UNKNOWN */
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto undelegate_destroy;
@@ -2678,15 +2706,17 @@ test_result_t host_realm_pas_validation_new(void)
 	}
 
 	/* 2c DATA_DESTROY */
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
-	if (ret != RMI_SUCCESS || data != base) {
-		ERROR("host_rmi_data_destroy failed\n");
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
 	}
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.state != RMI_UNASSIGNED ||
 			rtt.ripas != RMI_DESTROYED) {
-		ERROR("Wrong state after host_rmi_data_destroy\n");
+		ERROR("Wrong state after host_rmi_rtt_data_unmap\n");
 		goto undelegate_destroy;
 	}
 
@@ -2695,7 +2725,7 @@ test_result_t host_realm_pas_validation_new(void)
 	/* 3. start with new page */
 	INFO("Test 3\n");
 	base = (u_register_t)page_alloc(PAGE_SIZE);
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -2706,15 +2736,19 @@ test_result_t host_realm_pas_validation_new(void)
 		ERROR("wrong state after DATA_CRATE_UNKNOWN\n");
 		goto undelegate_destroy;
 	}
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
-	if (ret != RMI_SUCCESS || data != base) {
-		ERROR("host_rmi_data_destroy failed\n");
+
+	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
 	}
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.state != RMI_UNASSIGNED ||
 			rtt.ripas != RMI_EMPTY) {
-		ERROR("Wrong state after host_rmi_data_destroy\n");
+		ERROR("Wrong state after host_rmi_rtt_data_unmap\n");
 		goto undelegate_destroy;
 	}
 	host_rmi_granule_undelegate(base);
@@ -2735,7 +2769,7 @@ test_result_t host_realm_pas_validation_new(void)
 		goto undelegate_destroy;
 	}
 	/* 4a. DATA_CREATE_UNKNOWN */
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -3499,7 +3533,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_empty(void)
 			RTT_L2_BLOCK_SIZE);
 
 	for (unsigned int i = 0U; i < 512; i++) {
-		ret = host_realm_delegate_map_protected_data(true, &realm, base + (PAGE_SIZE * i),
+		ret = host_realm_delegate_map_protected_data(false, &realm, base + (PAGE_SIZE * i),
 				PAGE_SIZE, 0U);
 		if (ret != RMI_SUCCESS) {
 			ERROR("host_realm_delegate_map_protected_data failed\n");
@@ -3622,7 +3656,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_ram(void)
 
 	INFO("base=0x%lx\n", base);
 	for (unsigned int i = 0U; i < 512; i++) {
-		ret = host_realm_delegate_map_protected_data(false, &realm, base + (PAGE_SIZE * i),
+		ret = host_realm_delegate_map_protected_data(true, &realm, base + (PAGE_SIZE * i),
 				PAGE_SIZE, REALM_IMAGE_BASE);
 		if (ret != RMI_SUCCESS) {
 			ERROR("host_realm_delegate_map_protected_data failed base=0x%lx\n",

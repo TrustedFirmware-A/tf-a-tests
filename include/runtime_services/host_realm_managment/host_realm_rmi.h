@@ -16,7 +16,7 @@
 #include <utils_def.h>
 
 #define RMI_FNUM_MIN_VALUE	U(0x150)
-#define RMI_FNUM_MAX_VALUE	U(0x18F)
+#define RMI_FNUM_MAX_VALUE	U(0x1F6)
 
 /*
  * Defines member of structure and reserves space
@@ -79,39 +79,6 @@
 /* RmiDataMeasureContent type */
 #define RMI_NO_MEASURE_CONTENT	U(0)
 #define RMI_MEASURE_CONTENT	U(1)
-
-/*
- * FID: 0xC4000153
- *
- * arg0 == RD address
- * arg1 == data address
- * arg2 == map address
- * arg3 == SRC address
- * arg4 == flags
- */
-#define SMC_RMI_DATA_CREATE			SMC64_RMI_FID(U(0x3))
-
-/*
- * FID: 0xC4000154
- *
- * arg0 == RD address
- * arg1 == data address
- * arg2 == map address
- */
-#define SMC_RMI_DATA_CREATE_UNKNOWN		SMC64_RMI_FID(U(0x4))
-
-/*
- * FID: 0xC4000155
- *
- * arg0 == RD address
- * arg1 == map address
- *
- * ret1 == Address(PA) of the DATA granule, if ret0 == RMI_SUCCESS.
- *         Otherwise, undefined.
- * ret2 == Top of the non-live address region. Only valid
- *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT, x)
- */
-#define SMC_RMI_DATA_DESTROY			SMC64_RMI_FID(U(0x5))
 
 /*
  * FID: 0xC4000156
@@ -319,6 +286,39 @@
  *	   if ret0 == RMI_SUCCESS
  */
 #define SMC_RMI_RTT_SET_RIPAS			SMC64_RMI_FID(U(0x19))
+
+/*
+ * FID: 0xC4000153
+ *
+ * arg0 == RD address
+ * arg1 == base address
+ * arg2 == top address (data PA for init)
+ * arg3 == flags (src PA for init)
+ * arg4 == reserved (0)
+ */
+#define SMC_RMI_RTT_DATA_MAP_INIT		SMC64_RMI_FID(U(0x3))
+
+/*
+ * FID: 0xC40001F5
+ *
+ * arg0 == RD address
+ * arg1 == base address
+ * arg2 == top address
+ * arg3 == flags (RmiRttProtMapFlags)
+ * arg4 == PA of RmiAddrRangeDesc4KB structure
+ */
+#define SMC_RMI_RTT_DATA_MAP			SMC64_RMI_FID(U(0xA5))
+
+/*
+ * FID: 0xC40001F6
+ *
+ * arg0 == RD address
+ * arg1 == map address
+ *
+ * ret1 == Data PA
+ * ret2 == Top address
+ */
+#define SMC_RMI_RTT_DATA_UNMAP			SMC64_RMI_FID(U(0xA6))
 
 /*
  * TODO: Update the documentation of new FIDs once the 1.1 spec has stabilized.
@@ -886,6 +886,66 @@ typedef enum {
 
 #define RMI_RETURN_STATUS(ret)		((ret) & 0xFF)
 #define RMI_RETURN_INDEX(ret)		(((ret) >> 8U) & 0xFF)
+
+/* Bitfields for RmiResultDataIncomplete type */
+#define RMI_OP_MEM_REQ_SHIFT		(8UL)
+#define RMI_OP_MEM_REQ_WIDTH		(2)
+#define RMI_OP_CAN_CANCEL_BIT_SHIFT	(10UL)
+#define RMI_OP_CAN_CANCEL_BIT_WIDTH	(1)
+
+/* RmiOpMemReq type encoding */
+#define RMI_OP_MEM_REQ_NONE		(0UL)
+#define RMI_OP_MEM_REQ_DONATE		(1UL)
+#define RMI_OP_MEM_REQ_RECLAIM		(2UL)
+
+/* RmiOpCanCancel type encoding */
+#define RMI_OP_CANNOT_CANCEL		(0UL)
+#define RMI_OP_CAN_CANCEL		(1UL)
+
+/* RmiRttAddrType - Address descriptor type */
+#define RMI_ADDR_TYPE_NONE		(0UL)
+#define RMI_ADDR_TYPE_SINGLE		(1UL)
+#define RMI_ADDR_TYPE_LIST		(2UL)
+
+/* RmiOpMemState - Memory operation state */
+#define RMI_OP_MEM_STATE_DELEGATED	(0UL)
+#define RMI_OP_MEM_STATE_UNDELEGATED	(1UL)
+
+/* RmiAddrRangeDesc4KB field shifts */
+#define RMI_ADDR_RANGE_DESC_ADDR_SHIFT	(12UL)
+
+/* RmiAddrRangeDesc4KB type encoding */
+#define RMI_ADDR_RDESC_4K_SZ_SHIFT	(0UL)
+#define RMI_ADDR_RDESC_4K_SZ_WIDTH	(2)
+#define RMI_ADDR_RDESC_4K_CNT_SHIFT	(2UL)
+#define RMI_ADDR_RDESC_4K_CNT_WIDTH	(10)
+#define RMI_ADDR_RDESC_4K_ADDR_SHIFT	(12UL)
+#define RMI_ADDR_RDESC_4K_ADDR_WIDTH	(40)
+#define RMI_ADDR_RDESC_4K_ST_SHIFT	(63UL)
+#define RMI_ADDR_RDESC_4K_ST_WIDTH	(1)
+
+#define RMI_ADDR_RDESC_4K_GET_ADDR(x)				\
+		(EXTRACT(RMI_ADDR_RDESC_4K_ADDR, (x)) << L3_XLAT_ADDRESS_SHIFT)
+
+/* Values for RMI_ADDR_BLK_SIZE */
+#define RMI_PAGE_L3			0UL
+#define RMI_BLOCK_L2			1UL
+#define RMI_BLOCK_L1			2UL
+#define RMI_BLOCK_L0			3UL
+
+typedef struct {
+	union {
+		struct {
+			u_register_t size : 2;      /* Bits 1:0 - Block size */
+			u_register_t count : 10;    /* Bits 11:2 - Block count */
+			u_register_t addr : 40;     /* Bits 51:12 - Base address */
+			u_register_t reserved : 11; /* Bits 62:52 - Reserved (must be zero) */
+			u_register_t state : 1;     /* Bit 63 - State of memory (RmiOpMemState) */
+		};
+		u_register_t desc;
+	};
+} RmiAddrRangeDesc4KB;
+
 #define RTT_MAX_LEVEL			(3L)
 #define RTT_MIN_DEV_BLOCK_LEVEL		(2L)
 #define RTT_MIN_LEVEL			(0L)
@@ -1618,10 +1678,21 @@ u_register_t host_rmi_granule_undelegate(u_register_t addr);
 u_register_t host_rmi_realm_create(u_register_t rd, u_register_t params_ptr);
 u_register_t host_rmi_realm_destroy(u_register_t rd);
 u_register_t host_rmi_features(u_register_t index, u_register_t *features);
-u_register_t host_rmi_data_destroy(u_register_t rd,
-				   u_register_t map_addr,
-				   u_register_t *data,
-				   u_register_t *top);
+u_register_t host_rmi_rtt_data_map_init(u_register_t rd,
+					u_register_t map_addr,
+					u_register_t data,
+					u_register_t src,
+					u_register_t flags);
+u_register_t host_rmi_rtt_data_map(u_register_t rd,
+				   u_register_t base,
+				   u_register_t top,
+				   u_register_t flags,
+				   u_register_t addr_set_desc);
+u_register_t host_rmi_rtt_data_unmap(u_register_t rd,
+				     u_register_t base,
+				     u_register_t top,
+				     u_register_t flags,
+				     u_register_t oaddr);
 u_register_t host_rmi_rtt_readentry(u_register_t rd,
 				    u_register_t map_addr,
 				    long level,
@@ -1675,7 +1746,7 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 				  unsigned int rec_num);
 u_register_t host_realm_init_ipa_state(struct realm *realm, long level,
 				       u_register_t start, uint64_t end);
-u_register_t host_realm_delegate_map_protected_data(bool unknown,
+u_register_t host_realm_delegate_map_protected_data(bool init,
 					   struct realm *realm,
 					   u_register_t target_pa,
 					   u_register_t map_size,

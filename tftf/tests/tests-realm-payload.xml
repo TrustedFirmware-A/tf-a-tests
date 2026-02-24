@@ -189,6 +189,9 @@
 	  <!-- Invoke all possible PDEV state transitions -->
 	  <testcase name="PDEV test valid state transitions"
 	  function="host_pdev_test_valid_state_transition" />
+	  <!-- Invoke all possible VDEV state transitions -->
+	  <testcase name="VDEV test valid state transitions"
+	  function="host_vdev_test_valid_state_transition" />
 	  <!-- Invoke IDE refresh and reset on PDEV -->
 	  <testcase name="Invoke IDE refresh and reset on PDEV"
 	  function="host_pdev_invoke_ide_refresh_reset" />

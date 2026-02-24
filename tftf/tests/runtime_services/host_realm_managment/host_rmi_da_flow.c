@@ -19,6 +19,27 @@
 #include <spdm.h>
 #include <test_helpers.h>
 
+static int host_vdev_expect_state(struct host_vdev *h_vdev,
+				  unsigned char exp_state)
+{
+	u_register_t state;
+	u_register_t ret;
+
+	ret = host_rmi_vdev_get_state((u_register_t)h_vdev->vdev_ptr, &state);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_vdev_get_state failed: 0x%lx\n", ret);
+		return -1;
+	}
+
+	if (state != exp_state) {
+		ERROR("VDEV state mismatch: got %lu expected %u\n",
+		      state, (unsigned int)exp_state);
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
  * Iterate through all host_pdevs and do
  * TSM connect
@@ -152,6 +173,209 @@ test_result_t host_pdev_test_valid_state_transition(void)
 	}
 
 	return (rc == 0) ? TEST_RESULT_SUCCESS : TEST_RESULT_FAIL;
+}
+
+/*
+ * Test valid VDEV state transitions per the "Virtual device lifecycle"
+ * flow in the spec.
+ */
+test_result_t host_vdev_test_valid_state_transition(void)
+{
+	int rc = 0;
+	u_register_t rmi_feat_reg0;
+	u_register_t ret;
+	bool return_error = false;
+	bool realm_created = false;
+	bool tsm_connected = false;
+	bool vdev_assigned = false;
+	struct realm realm;
+	struct host_pdev *h_pdev;
+	struct host_vdev *h_vdev = &gbl_host_vdev;
+
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+
+	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
+	if (h_pdev == NULL) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	/* Initialize Host NS heap memory */
+	rc = page_pool_init((u_register_t)PAGE_POOL_BASE,
+			     (u_register_t)PAGE_POOL_MAX_SIZE);
+	if (rc != HEAP_INIT_SUCCESS) {
+		ERROR("Failed to init heap pool %d\n", rc);
+		return TEST_RESULT_FAIL;
+	}
+
+	rc = host_create_realm_with_feat_da(&realm);
+	if (rc != 0) {
+		ERROR("Realm create with feat_da failed\n");
+		return TEST_RESULT_FAIL;
+	}
+	realm_created = true;
+
+	rc = tsm_connect_device(h_pdev);
+	if (rc != 0) {
+		ERROR("TSM connect failed for device 0x%x\n", h_pdev->dev->bdf);
+		return_error = true;
+		goto out_rm_realm;
+	}
+	tsm_connected = true;
+
+	rc = host_assign_vdev_to_realm(&realm, h_vdev,
+				       h_pdev->dev->bdf, h_pdev->pdev);
+	if (rc != 0) {
+		ERROR("VDEV assign to realm failed\n");
+		return_error = true;
+		goto out_tsm_disconnect;
+	}
+	vdev_assigned = true;
+
+	/* VDEV must start in NEW state after create */
+	if (host_vdev_expect_state(h_vdev, RMI_VDEV_STATE_NEW) != 0) {
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* RMI_VDEV_LOCK from NEW must fail */
+	INFO("VDEV states: lock from NEW must fail\n");
+	ret = host_rmi_vdev_lock(realm.rd, (u_register_t)h_pdev->pdev,
+				 (u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_ERROR_DEVICE) {
+		ERROR("VDEV lock from NEW returned 0x%lx\n", ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	INFO("VDEV states: verify still NEW after failed lock\n");
+	if (host_vdev_expect_state(h_vdev, RMI_VDEV_STATE_NEW) != 0) {
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* NEW -> UNLOCKED via RMI_VDEV_COMMUNICATE */
+	INFO("VDEV states: NEW -> UNLOCKED\n");
+	rc = host_vdev_transition(&realm, h_vdev, RMI_VDEV_STATE_UNLOCKED);
+	if (rc != 0) {
+		ERROR("Transition to UNLOCKED failed\n");
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	if (host_vdev_expect_state(h_vdev, RMI_VDEV_STATE_UNLOCKED) != 0) {
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* RMI_VDEV_START/UNLOCK from UNLOCKED must fail */
+	INFO("VDEV states: start from UNLOCKED must fail\n");
+	ret = host_rmi_vdev_start(realm.rd, (u_register_t)h_pdev->pdev,
+				  (u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_ERROR_DEVICE) {
+		ERROR("VDEV start from UNLOCKED returned 0x%lx\n", ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	INFO("VDEV states: unlock from UNLOCKED must fail\n");
+	ret = host_rmi_vdev_unlock(realm.rd, (u_register_t)h_pdev->pdev,
+				   (u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_ERROR_DEVICE) {
+		ERROR("VDEV unlock from UNLOCKED returned 0x%lx\n", ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* UNLOCKED -> LOCKED via RMI_VDEV_LOCK + COMMUNICATE */
+	INFO("VDEV states: UNLOCKED -> LOCKED\n");
+	rc = host_vdev_transition(&realm, h_vdev, RMI_VDEV_STATE_LOCKED);
+	if (rc != 0) {
+		ERROR("Transition to LOCKED failed\n");
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	if (host_vdev_expect_state(h_vdev, RMI_VDEV_STATE_LOCKED) != 0) {
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* LOCKED -> UNLOCKED via RMI_VDEV_UNLOCK + COMMUNICATE */
+	INFO("VDEV states: LOCKED -> UNLOCKED\n");
+	rc = host_vdev_unlock(&realm, h_vdev, RMI_VDEV_STATE_UNLOCKED);
+	if (rc != 0) {
+		ERROR("Unlock to UNLOCKED failed\n");
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	if (host_vdev_expect_state(h_vdev, RMI_VDEV_STATE_UNLOCKED) != 0) {
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* UNLOCKED -> LOCKED -> STARTED */
+	INFO("VDEV states: UNLOCKED -> LOCKED\n");
+	rc = host_vdev_transition(&realm, h_vdev, RMI_VDEV_STATE_LOCKED);
+	if (rc != 0) {
+		ERROR("Transition to LOCKED failed\n");
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	INFO("VDEV states: LOCKED -> STARTED\n");
+	rc = host_vdev_transition(&realm, h_vdev, RMI_VDEV_STATE_STARTED);
+	if (rc != 0) {
+		ERROR("Transition to STARTED failed\n");
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	if (host_vdev_expect_state(h_vdev, RMI_VDEV_STATE_STARTED) != 0) {
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* STARTED -> UNLOCKED via RMI_VDEV_UNLOCK + COMMUNICATE */
+	INFO("VDEV states: STARTED -> UNLOCKED\n");
+	rc = host_vdev_unlock(&realm, h_vdev, RMI_VDEV_STATE_UNLOCKED);
+	if (rc != 0) {
+		ERROR("Unlock to UNLOCKED failed\n");
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	if (host_vdev_expect_state(h_vdev, RMI_VDEV_STATE_UNLOCKED) != 0) {
+		return_error = true;
+	}
+
+out_unassign_vdev:
+	if (vdev_assigned) {
+		rc = host_unassign_vdev_from_realm(&realm, h_vdev);
+		if (rc != 0) {
+			ERROR("VDEV unassign failed\n");
+			return_error = true;
+		}
+	}
+
+out_tsm_disconnect:
+	if (tsm_connected) {
+		rc = tsm_disconnect_device(h_pdev);
+		if (rc != 0) {
+			ERROR("TSM disconnect failed for device 0x%x\n",
+			      h_pdev->dev->bdf);
+			return_error = true;
+		}
+	}
+
+out_rm_realm:
+	if (realm_created) {
+		if (!host_destroy_realm(&realm)) {
+			return_error = true;
+		}
+	}
+
+	return return_error ? TEST_RESULT_FAIL : TEST_RESULT_SUCCESS;
 }
 
 /* Invoke IDE key refresh and IDE reset on PDEV once it is in READY state */

@@ -34,7 +34,7 @@
 
 #define RMI_ABI_VERSION_GET_MAJOR(_version)	(((_version) >> 16U) & 0x8FFF)
 #define RMI_ABI_VERSION_GET_MINOR(_version)	((_version) & 0xFFFF)
-#define RMI_ABI_VERSION_MAJOR			U(1)
+#define RMI_ABI_VERSION_MAJOR			U(2)
 #define RMI_ABI_VERSION_MINOR			U(0)
 #define RMI_ABI_VERSION_VAL			((RMI_ABI_VERSION_MAJOR << 16U) | \
 						 RMI_ABI_VERSION_MINOR)

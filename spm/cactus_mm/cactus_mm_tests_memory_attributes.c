@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -135,6 +135,53 @@ static void mem_attr_changes_unittest(uintptr_t addr, int pages_count)
 }
 
 /*
+ * This function expects a base address and number of pages identifying the
+ * extents of some NS memory region mapped as non-executable, read-write.
+ *
+ * 1) It changes its data access permissions to read-only.
+ * 2) It restores the original data access permissions.
+ */
+static void ns_mem_attr_changes_unittest(uintptr_t addr, int pages_count)
+{
+	int32_t ret;
+	uint32_t old_attr, new_attr;
+
+	char test_desc[50];
+
+	snprintf(test_desc, sizeof(test_desc),
+		 "RW -> RO (%i page(s) from address 0x%lx)", pages_count, addr);
+	announce_test_start(test_desc);
+
+	old_attr = mem_access_perm(SP_MEMORY_ATTRIBUTES_NON_EXEC,
+				   SP_MEMORY_ATTRIBUTES_ACCESS_RW);
+
+	/* Memory was read-write, let's try changing that to RO */
+	new_attr = mem_access_perm(SP_MEMORY_ATTRIBUTES_NON_EXEC,
+				   SP_MEMORY_ATTRIBUTES_ACCESS_RO);
+
+	ret = request_mem_attr_changes(addr, pages_count, new_attr);
+
+	EXPECT(ret, SPM_SUCCESS);
+	VERBOSE("Successfully changed memory attributes\n");
+
+	/* The attributes should be the ones we have just written. */
+	ret = request_get_mem_attr(addr);
+	EXPECT(ret, new_attr);
+
+	/* Let's revert back to the original attributes for the next test */
+	ret = request_mem_attr_changes(addr, pages_count, old_attr);
+
+	EXPECT(ret, SPM_SUCCESS);
+	VERBOSE("Successfully restored the old attributes\n");
+
+	/* The attributes should be the original ones again. */
+	ret = request_get_mem_attr(addr);
+	EXPECT(ret, old_attr);
+
+	announce_test_end(test_desc);
+}
+
+/*
  * Exercise the ability of the Trusted Firmware to change the data access
  * permissions and instruction execution permissions of some memory region.
  */
@@ -233,6 +280,33 @@ void mem_attr_changes_tests(const secure_partition_boot_info_t *boot_info)
 		mem_attr_changes_unittest(addr, pages_count);
 	}
 	announce_test_end(test_desc7);
+
+	const char *test_desc8 = "Try some valid ns-memory change requests";
+
+	announce_test_start(test_desc8);
+	for (unsigned int i = 0; i < 20; ++i) {
+		uintptr_t sp_ns_comm_buf_end;
+
+		/*
+		 * Choose some random address in the pool of memory in NS
+		 * buffer for these tests.
+		 */
+		const int pages_max = boot_info->sp_ns_comm_buf_size / PAGE_SIZE;
+		int pages_count = bound_rand(1, pages_max);
+
+		sp_ns_comm_buf_end = boot_info->sp_ns_comm_buf_base +
+			boot_info->sp_ns_comm_buf_size;
+
+		addr = bound_rand(boot_info->sp_ns_comm_buf_base,
+				  sp_ns_comm_buf_end - (pages_count *
+							PAGE_SIZE));
+
+		/* Align to PAGE_SIZE. */
+		addr &= ~(PAGE_SIZE - 1);
+
+		ns_mem_attr_changes_unittest(addr, pages_count);
+	}
+	announce_test_end(test_desc8);
 
 	announce_test_section_end(test_sect_desc);
 }

@@ -28,6 +28,10 @@ typedef struct {
 	u_register_t expect;
 } ns_bl1u_test_t;
 
+#define FWU_OVERFLOW_BLOCK_SIZE		0x20U
+#define FWU_OVERFLOW_SRC		((u_register_t)(~(u_register_t)0) - \
+					 (FWU_OVERFLOW_BLOCK_SIZE - 1U))
+
 /*
  * The tests consist in sending a succession of SMCs to trigger FWU operations
  * in BL1. The order of the SMCs is important because they internally change the
@@ -87,6 +91,13 @@ static const ns_bl1u_test_t tests[] = {
 	{
 		.description	= "IMAGE_COPY with source size not mapped",
 		.args		= { FWU_SMC_IMAGE_COPY, BL2U_IMAGE_ID, PLAT_ARM_FWU_FIP_BASE, 0xdeadbeef, 0xdeadbeef },
+		.expect		= -ENOMEM,
+	},
+
+	{
+		.description	= "IMAGE_COPY with source address overflow",
+		.args		= { FWU_SMC_IMAGE_COPY, BL2U_IMAGE_ID, FWU_OVERFLOW_SRC,
+				    FWU_OVERFLOW_BLOCK_SIZE, FWU_OVERFLOW_BLOCK_SIZE },
 		.expect		= -ENOMEM,
 	},
 
@@ -188,6 +199,13 @@ static const ns_bl1u_test_t tests[] = {
 	{
 		.description	= "IMAGE_AUTH with source size not mapped",
 		.args		= { FWU_SMC_IMAGE_AUTH, NS_BL2U_IMAGE_ID, PLAT_ARM_FWU_FIP_BASE, 0xdeadbeef, 0 },
+		.expect		= -ENOMEM,
+	},
+
+	{
+		.description	= "IMAGE_AUTH with source address overflow",
+		.args		= { FWU_SMC_IMAGE_AUTH, NS_BL2U_IMAGE_ID, FWU_OVERFLOW_SRC,
+				    FWU_OVERFLOW_BLOCK_SIZE, 0 },
 		.expect		= -ENOMEM,
 	},
 

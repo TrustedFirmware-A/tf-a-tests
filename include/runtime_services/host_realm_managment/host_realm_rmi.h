@@ -63,18 +63,20 @@
 #define SMC_RMI_VERSION				SMC64_RMI_FID(U(0x0))
 
 /*
- * FID: 0xC4000151
+ * FID: 0xC40001F1
  *
- * arg0 == target granule address
+ * arg0 == base address
+ * arg1 == top address
  */
-#define SMC_RMI_GRANULE_DELEGATE		SMC64_RMI_FID(U(0x1))
+#define SMC_RMI_GRANULE_RANGE_DELEGATE		SMC64_RMI_FID(U(0xA1))
 
 /*
- * FID: 0xC4000152
+ * FID: 0xC40001F2
  *
- * arg0 == target granule address
+ * arg0 == base address
+ * arg1 == top address
  */
-#define SMC_RMI_GRANULE_UNDELEGATE		SMC64_RMI_FID(U(0x2))
+#define SMC_RMI_GRANULE_RANGE_UNDELEGATE		SMC64_RMI_FID(U(0xA2))
 
 /* RmiDataMeasureContent type */
 #define RMI_NO_MEASURE_CONTENT	U(0)

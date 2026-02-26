@@ -1093,16 +1093,30 @@ static u_register_t host_realm_tear_down_rtt_range(struct realm *realm,
 	return REALM_SUCCESS;
 }
 
+static u_register_t host_rmi_granule_delegate_range(u_register_t base,
+						     u_register_t top)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_GRANULE_RANGE_DELEGATE,
+				base, top},
+				3U).ret0;
+}
+
+static u_register_t host_rmi_granule_undelegate_range(u_register_t base,
+						       u_register_t top)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_GRANULE_RANGE_UNDELEGATE,
+				base, top},
+				3U).ret0;
+}
+
 u_register_t host_rmi_granule_delegate(u_register_t addr)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_GRANULE_DELEGATE, addr},
-				2U).ret0;
+	return host_rmi_granule_delegate_range(addr, addr + PAGE_SIZE);
 }
 
 u_register_t host_rmi_granule_undelegate(u_register_t addr)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_GRANULE_UNDELEGATE, addr},
-				2U).ret0;
+	return host_rmi_granule_undelegate_range(addr, addr + PAGE_SIZE);
 }
 
 u_register_t host_rmi_version(u_register_t requested_ver)

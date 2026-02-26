@@ -11,7 +11,6 @@
 #include <realm_rsi.h>
 #include <smmuv3_test_engine.h>
 
-#include <arch_features.h>
 #include <debug.h>
 
 static struct rdev gbl_rdev;
@@ -187,13 +186,6 @@ bool test_realm_smmuv3(void)
 		return false;
 	}
 
-	/*
-	 * TODO. Skip DMA copy test until MEC support is fixed.
-	 */
-	if (is_feat_mec_supported()) {
-		goto dma_disable;
-	}
-
 	for (unsigned long i = 0U; i < sizeof(src_buf); i++) {
 		src_buf[i] = i % 255;
 	}
@@ -215,7 +207,6 @@ bool test_realm_smmuv3(void)
 
 	realm_printf("DMA copy %s\n", res ? "successful" : "failed");
 
-dma_disable:
 	ret = rsi_vdev_dma_disable(rdev->id);
 	if (ret != RSI_SUCCESS) {
 		ERROR("%s() failed, 0x%lx", "rsi_vdev_dma_disable", ret);

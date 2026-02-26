@@ -22,6 +22,7 @@ TESTS_SOURCES	+=							\
 		host_realm_lfa.c					\
 		host_realm_smmuv3_tests.c				\
 		host_realm_mops.c					\
+		host_realm_mops_asm.S					\
 	)
 
 TESTS_SOURCES	+=							\

@@ -10,6 +10,8 @@
 #include <tftf.h>
 #include <tftf_lib.h>
 
+void mops_cpy(void *dst, const void *src, size_t len);
+
 static uint64_t mops_exception_esr;
 static volatile bool mops_exception_el2;
 static volatile bool mops_exception_caught;
@@ -40,10 +42,6 @@ test_result_t host_realm_feat_mops(void)
 	uint8_t dst_fp[64];
 	size_t len = sizeof(src);
 
-	/* Pointers to the source and destination memory*/
-	register uint8_t *dst_fp_ptr = dst_fp;
-	register const uint8_t *src_fp_ptr = src;
-
 	/* Fill the source buffer with a pattern */
 	for (i = 0; i < (int)sizeof(src); i++) {
 		src[i] = (uint8_t)(i ^ 0x5aU);
@@ -55,15 +53,7 @@ test_result_t host_realm_feat_mops(void)
 	 * If FEAT_MOPS isn't enabled at EL0, this should trap.
 	 */
 	register_custom_sync_exception_handler(exception_handler);
-	__asm__ volatile(
-		".arch_extension mops\n\t"
-		/* CPY* operands must be memory addresses with writeback. */
-		"cpyfp [%0]!, [%1]!, %2!\n\t"
-		"cpyfm [%0]!, [%1]!, %2!\n\t"
-		"cpyfe [%0]!, [%1]!, %2!\n\t"
-		: "+r"(dst_fp_ptr), "+r"(src_fp_ptr), "+r"(len)
-		:
-		: "memory");
+	mops_cpy(dst_fp, src, len);
 	unregister_custom_sync_exception_handler();
 
 	/* If FEAT_MOPS is unavailable, there should be an exception in EL2 */

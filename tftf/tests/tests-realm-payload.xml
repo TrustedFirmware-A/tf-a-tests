@@ -70,6 +70,8 @@
 	  function="host_realm_delundel_multi_cpu" />
 	  <testcase name="Testing delegation fails"
 	  function="host_realm_fail_del" />
+	  <testcase name="Test FEAT_MOPS is enabled"
+	  function="host_realm_feat_mops" />
 	  <!-- Test cases related to PMUv3 support -->
 	  <testcase name="PMUv3 cycle counter functional in Realm"
 	  function="host_realm_pmuv3_cycle_works" />

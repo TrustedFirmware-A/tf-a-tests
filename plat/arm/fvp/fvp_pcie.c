@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -76,4 +76,12 @@ int plat_get_dev_region(uint64_t *base, size_t *size,
 	}
 #endif
 	return -1;
+}
+
+/*
+ * Retrieve platform SMMUv3 AEM base address (Base Platform RevC only)
+ */
+uintptr_t plat_get_smmu_base(void)
+{
+	return (u_register_t)SMMUV3_BASE;
 }

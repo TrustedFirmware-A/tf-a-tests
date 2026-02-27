@@ -17,12 +17,6 @@
 #include <test_helpers.h>
 #include <tftf_lib.h>
 
-u_register_t host_rmi_data_create(bool unknown,
-				  u_register_t rd,
-				  u_register_t data,
-				  u_register_t map_addr,
-				  u_register_t src);
-
 /*
  * @Test_Aim@ Test realm SMMUv3
  *
@@ -48,7 +42,7 @@ test_result_t host_test_realm_smmuv3(void)
 	unsigned int range_count;
 	test_result_t result = TEST_RESULT_SUCCESS;
 	bool return_error = false;
-	bool bar64_waround;
+	bool bar64_warkound;
 	int rc;
 
 	host_rmi_init_cmp_result();
@@ -72,7 +66,7 @@ test_result_t host_test_realm_smmuv3(void)
 	if (h_pdev == NULL) {
 		/* If no device is connected to TSM, then skip the test */
 		result = TEST_RESULT_SKIPPED;
-		goto destroy_realm;
+		goto destroy_psmmu;
 	}
 
 	/* Connect device with TSM */
@@ -80,7 +74,7 @@ test_result_t host_test_realm_smmuv3(void)
 	if (rc != 0) {
 		ERROR("TSM connect failed for device 0x%x\n", h_pdev->dev->bdf);
 		return_error = true;
-		goto destroy_realm;
+		goto destroy_psmmu;
 	}
 
 	h_vdev = &gbl_host_vdev;
@@ -89,7 +83,7 @@ test_result_t host_test_realm_smmuv3(void)
 	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->pdev);
 	if (rc != 0) {
 		return_error = true;
-		goto destroy_realm;
+		goto destroy_psmmu;
 	}
 
 	/* Get interface report */
@@ -104,13 +98,13 @@ test_result_t host_test_realm_smmuv3(void)
 	mmio_range = (pci_tdisp_mmio_range_t *)(ifc_report + 1UL);
 
 	/* Check if work-around for 64-bit BARs is required */
-	bar64_waround = (h_pdev->ncoh_addr_range[0].base >
+	bar64_warkound = (h_pdev->ncoh_addr_range[0].base >
 				mmio_range[0].first_page * PAGE_SIZE);
 
-	INFO("Using %s address ranges\n", bar64_waround ? "BARs" : "MMIO");
+	INFO("Using %s address ranges\n", bar64_warkound ? "BARs" : "MMIO");
 
 	for (unsigned int i = 0U; i < range_count; i++) {
-		if (bar64_waround) {
+		if (bar64_warkound) {
 			/* Use address ranges from BARs */
 			addr_range[i].base = h_pdev->ncoh_addr_range[i].base;
 			addr_range[i].top = h_pdev->ncoh_addr_range[i].top;
@@ -138,7 +132,7 @@ test_result_t host_test_realm_smmuv3(void)
 			ALIGN(num_gran * sizeof(u_register_t) + PAGE_SIZE - 1UL,
 			PAGE_SIZE));
 		return_error = true;
-		goto destroy_realm;
+		goto destroy_psmmu;
 	}
 
 	/* Delegate and map all device granules across all MMIO ranges */
@@ -173,7 +167,7 @@ test_result_t host_test_realm_smmuv3(void)
 	if (!host_enter_realm_execute(&realm, REALM_SMMU, RMI_EXIT_VDEV_MAP, 0U)) {
 		ERROR("Realm SMMUv3 test failed\n");
 		return_error = true;
-		goto destroy_realm;
+		goto unmap_memory;
 	}
 
 	run = (struct rmi_rec_run *)realm.run[0];
@@ -255,19 +249,21 @@ undelegate_granules:
 				ERROR("%s() for 0x%lx failed, 0x%lx\n",
 					"host_rmi_granule_undelegate", addr, res);
 				return_error = true;
-				goto destroy_realm;
+				goto destroy_psmmu;
 			}
 			addr += GRANULE_SIZE;
 		}
 	}
 
-destroy_realm:
 	pcie_mem_disable(h_pdev->dev->bdf);
 
-	/* Destroy the Realm */
-	if (!host_destroy_realm(&realm)) {
+destroy_psmmu:
+	/* Deactivate PSMMU and destroy the Realm */
+	if (!destroy_psmmu_realm(&realm)) {
 		return_error = true;
 	}
+
+	page_pool_reset();
 
 	if (return_error) {
 		return TEST_RESULT_FAIL;

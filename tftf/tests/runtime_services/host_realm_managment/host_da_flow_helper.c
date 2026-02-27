@@ -11,14 +11,46 @@
 #include <host_realm_helper.h>
 #include <host_shared_data.h>
 #include <pcie.h>
+#include <platform.h>
+
+static u_register_t psmmu_ptr;
+
+/* Bitmap of L2 Stream Tables created */
+static uint32_t st_l2_bitmap[(HOST_PDEV_MAX + 31U) / 32U];
+
+int activate_psmmu(void)
+{
+	return host_activate_psmmu(psmmu_ptr);
+}
+
+int deactivate_psmmu(void)
+{
+	int rc = host_deactivate_psmmu(psmmu_ptr);
+
+	if (rc == 0) {
+		psmmu_ptr = 0UL;
+	}
+	return rc;
+}
+
+bool destroy_psmmu_realm(struct realm *realm)
+{
+	/* Deactivate PSMMU */
+	if (deactivate_psmmu() != 0) {
+		return false;
+	}
+
+	return host_destroy_realm(realm);
+}
 
 int tsm_disconnect_device(struct host_pdev *h_pdev)
 {
-	int rc;
 	const unsigned char tsm_disconnect_flow[] = {
 		RMI_PDEV_STATE_STOPPING,
 		RMI_PDEV_STATE_STOPPED
 	};
+	unsigned int sid, l2_idx, idx_bit;
+	int rc;
 
 	assert(h_pdev);
 	assert(h_pdev->dev);
@@ -35,8 +67,30 @@ int tsm_disconnect_device(struct host_pdev *h_pdev)
 	rc = host_pdev_state_transition(h_pdev, tsm_disconnect_flow,
 					sizeof(tsm_disconnect_flow));
 	if (rc != 0) {
-		ERROR("PDEV TSM disconnect state transitions: failed\n");
+		ERROR("PDEV TSM disconnect state transitions: failed, %d\n", rc);
 		return rc;
+	}
+
+	/*
+	 * Calculate the base of the StreamID range.
+	 * The size of the Level 2 Stream Table is PAGE_SIZE,
+	 * containing 2^(PAGE_SIZE_SHIFT - 6) 64-byte STEs.
+	 */
+	sid = h_pdev->dev->bdf & ~((1U << (PAGE_SIZE_SHIFT - 6U)) - 1U);
+
+	/* L2 Stream Table bitmap index and mask */
+	l2_idx = sid >> 6U;
+	idx_bit = 1U << (l2_idx & 31U);
+	l2_idx >>= 5U;
+
+	/* Check if L2 Stream Table was created */
+	if ((st_l2_bitmap[l2_idx] & idx_bit) != 0U) {
+		/* Create PSMMU Level 2 Stream Table */
+		rc = host_psmmu_st_l2_destroy(psmmu_ptr, sid);
+		if (rc != 0) {
+			return rc;
+		}
+		st_l2_bitmap[l2_idx] &= ~idx_bit;
 	}
 
 	h_pdev->is_connected_to_tsm = false;
@@ -49,19 +103,24 @@ int tsm_disconnect_device(struct host_pdev *h_pdev)
  * PDEV create/communicate/set_key/abort/stop/destroy and assigns the device
  * to a Realm using RMI VDEV ABIs
  *
- * 1. Create a Realm with DA feature enabled
- * 2. Find a known PCIe endpoint and connect with TSM to get_cert and establish
- *    secure session
+ * 1. Find a known PCIe endpoint and connect with TSM to get_cert and establish
+ *    secure session.
+ * 2. Activate the PSMMU if it is not already activated.
+ * 3. Create a PSMMU Level 2 Stream Table for the base of the StreamID range
+ *    defined by the BDF of the connected device, if it has not already
+ *    been created.
  */
 int tsm_connect_device(struct host_pdev *h_pdev)
 {
-	int rc;
 	const unsigned char tsm_connect_flow[] = {
 		RMI_PDEV_STATE_NEW,
 		RMI_PDEV_STATE_NEEDS_KEY,
 		RMI_PDEV_STATE_HAS_KEY,
 		RMI_PDEV_STATE_READY
 	};
+	unsigned int sid, l2_idx, idx_bit;
+	bool psmmu_activate = false;
+	int rc;
 
 	assert(h_pdev);
 	assert(h_pdev->dev);
@@ -88,13 +147,52 @@ int tsm_connect_device(struct host_pdev *h_pdev)
 	rc = host_pdev_state_transition(h_pdev, tsm_connect_flow,
 					sizeof(tsm_connect_flow));
 	if (rc != 0) {
-		ERROR("PDEV TSM connect state transitions: failed\n");
+		ERROR("PDEV TSM connect state transitions: failed, %d\n", rc);
 		return rc;
 	}
 
-	h_pdev->is_connected_to_tsm = true;
+	if (psmmu_ptr == 0UL) {
+		psmmu_ptr = plat_get_smmu_base();
 
+		rc = activate_psmmu();
+		if (rc != 0) {
+			return rc;
+		}
+		psmmu_activate = true;
+	}
+
+	/*
+	 * Calculate the base of the StreamID range.
+	 * The size of the Level 2 Stream Table is PAGE_SIZE,
+	 * containing 2^(PAGE_SIZE_SHIFT - 6) 64-byte STEs.
+	 */
+	sid = h_pdev->dev->bdf & ~((1U << (PAGE_SIZE_SHIFT - 6U)) - 1U);
+
+	/* L2 Stream Table bitmap index and mask */
+	l2_idx = sid >> 6U;
+	idx_bit = 1U << (l2_idx & 31U);
+	l2_idx >>= 5U;
+
+	/* Check if L2 Stream Table was created */
+	if ((st_l2_bitmap[l2_idx] & idx_bit) == 0U) {
+		/* Create PSMMU Level 2 Stream Table */
+		rc = host_psmmu_st_l2_create(psmmu_ptr, sid);
+		if (rc != 0) {
+			goto destroy_psmmu;
+		}
+		st_l2_bitmap[l2_idx] |= idx_bit;
+	}
+
+	h_pdev->is_connected_to_tsm = true;
 	return 0;
+
+destroy_psmmu:
+	/* Deactivate PSMMU if it was activated in this call */
+	if (psmmu_activate && (deactivate_psmmu() == 0)) {
+		psmmu_ptr = 0UL;
+	}
+
+	return rc;
 }
 
 /* Get the first pdev from host_pdevs and try to connect to TSM */

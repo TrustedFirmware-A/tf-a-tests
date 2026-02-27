@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <arch_features.h>
 #include <debug.h>
+#include <errno.h>
 #include <heap/page_alloc.h>
 #include <host_crypto_utils.h>
 #include <host_da_helper.h>
@@ -1533,4 +1534,89 @@ void host_dump_interface_report(
 		}
 		mp_printf("\n");
 	}
+}
+
+int host_activate_psmmu(u_register_t psmmu_ptr)
+{
+	struct rmi_psmmu_params *params;
+	u_register_t res;
+
+	/* Allocate memory for PSMMU params */
+	params = (struct rmi_psmmu_params *)page_alloc(PAGE_SIZE);
+	if (params == NULL) {
+		ERROR("Failed to allocate memory for PSMMU params\n");
+		return -ENOMEM;
+	}
+
+	/* Flags = 0, no MSI data */
+	(void)memset(params, 0, PAGE_SIZE);
+
+	/* Activate PSMMU */
+	res = host_rmi_psmmu_activate(psmmu_ptr, (u_register_t)params);
+	if (res != REALM_SUCCESS) {
+		ERROR("%s(0x%lx) failed, %lu\n",
+			"host_rmi_psmmu_activate", psmmu_ptr, res);
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+int host_deactivate_psmmu(u_register_t psmmu_ptr)
+{
+	u_register_t res;
+
+	/* Deactivate PSMMU */
+	res = host_rmi_psmmu_deactivate(psmmu_ptr);
+	if (res != REALM_SUCCESS) {
+		ERROR("%s(0x%lx) failed, %lu\n",
+			"host_rmi_psmmu_deactivate", psmmu_ptr, res);
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+int host_psmmu_st_l2_create(u_register_t psmmu_ptr, unsigned int sid)
+{
+	u_register_t res;
+
+	/*
+	 * Calculate the base of the StreamID range.
+	 * The size of the Level 2 Stream Table is PAGE_SIZE,
+	 * containing 2^(PAGE_SIZE_SHIFT - 6) 64-byte STEs.
+	 */
+	sid &= ~((1UL << (PAGE_SIZE_SHIFT - 6U)) - 1UL);
+
+	/* Create PSMMU Level 2 Stream Table */
+	res = host_rmi_psmmu_st_l2_create(psmmu_ptr, (u_register_t)sid);
+	if (res != REALM_SUCCESS) {
+		ERROR("%s(0x%lx 0x%x) failed, %lu\n",
+			"host_rmi_psmmu_st_l2_create", psmmu_ptr, sid, res);
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+int host_psmmu_st_l2_destroy(u_register_t psmmu_ptr, unsigned int sid)
+{
+	u_register_t res;
+
+	/*
+	 * Calculate the base of the StreamID range.
+	 * The size of the Level 2 Stream Table is PAGE_SIZE,
+	 * containing 2^(PAGE_SIZE_SHIFT - 6) 64-byte STEs.
+	 */
+	sid &= ~((1U << (PAGE_SIZE_SHIFT - 6U)) - 1U);
+
+	/* Destroy PSMMU Level 2 Stream Table */
+	res = host_rmi_psmmu_st_l2_destroy(psmmu_ptr, (u_register_t)sid);
+	if (res != REALM_SUCCESS) {
+		ERROR("%s(0x%lx 0x%x) failed, %lu\n",
+			"host_rmi_psmmu_st_l2_destroy", psmmu_ptr, sid, res);
+		return -ENODEV;
+	}
+
+	return 0;
 }

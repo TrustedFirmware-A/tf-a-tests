@@ -1538,9 +1538,11 @@ struct psmmu_params {
  * This structure contains PSMMU parameters.
  * Width: 4096 (0x1000) bytes.
  */
+#define RESERVED_NUM	(0x1000 - sizeof(struct psmmu_params))
+
 struct rmi_psmmu_params {
-	struct psmmu_params params;				/* 0 - 0x38 */
-	SET_MEMBER_RMI(unsigned char reserved[], sizeof(struct psmmu_params), 0x1000);
+	struct psmmu_params params;		/* 0x00 - 0x38 */
+	unsigned char reserved[RESERVED_NUM];	/* 0x40 - 0xFFF */
 };
 
 /* RMI/SMC */

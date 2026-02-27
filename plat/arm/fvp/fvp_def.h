@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -43,11 +43,13 @@
 #define LS64_ATOMIC_DEVICE_BASE		0x1d000000
 #define LS64_ATOMIC_DEVICE_SIZE		0x10000
 
-/*
- * Base Platform RevC only
- *
- * PCIe config region
- */
+/* Peripherals specific to Base Platform RevC only */
+
+/* SMMUv3 AEM */
+#define SMMUV3_BASE			0x2b400000
+#define SMMUV3_SIZE			SZ_1M
+
+/* PCIe config region */
 #define PCIE_CONFIG_BASE		0x40000000
 #define PCIE_CONFIG_SIZE		SZ_256M
 

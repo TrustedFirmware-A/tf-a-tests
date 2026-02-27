@@ -175,5 +175,9 @@ void host_get_addr_range(struct host_pdev *h_pdev);
 void host_dump_interface_report(
 			pci_tdisp_device_interface_report_struct_t *ifc_report,
 			size_t ifc_report_len);
+int host_activate_psmmu(u_register_t psmmu_ptr);
+int host_deactivate_psmmu(u_register_t psmmu_ptr);
+int host_psmmu_st_l2_create(u_register_t psmmu_ptr, unsigned int sid);
+int host_psmmu_st_l2_destroy(u_register_t psmmu_ptr, unsigned int sid);
 
 #endif /* HOST_DA_HELPER_H */

@@ -5,8 +5,10 @@
  */
 #include <arch_features.h>
 #include <arch_helpers.h>
+#include <host_realm_rmi.h>
 #include <string.h>
 #include <sync.h>
+#include <test_helpers.h>
 #include <tftf.h>
 #include <tftf_lib.h>
 
@@ -41,6 +43,8 @@ test_result_t host_realm_feat_mops(void)
 	uint8_t src[64];
 	uint8_t dst_fp[64];
 	size_t len = sizeof(src);
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	/* Fill the source buffer with a pattern */
 	for (i = 0; i < (int)sizeof(src); i++) {

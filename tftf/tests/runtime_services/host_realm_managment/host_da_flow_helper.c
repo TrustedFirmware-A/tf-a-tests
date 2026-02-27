@@ -65,7 +65,6 @@ bool destroy_psmmu_realm(struct realm *realm)
 int tsm_disconnect_device(struct host_pdev *h_pdev)
 {
 	const unsigned char tsm_disconnect_flow[] = {
-		RMI_PDEV_STATE_STOPPING,
 		RMI_PDEV_STATE_STOPPED
 	};
 	unsigned int sid, l2_idx, idx_bit;
@@ -83,7 +82,28 @@ int tsm_disconnect_device(struct host_pdev *h_pdev)
 	     PCIE_EXTRACT_BDF_FUNC(h_pdev->dev->bdf));
 	INFO("===========================================\n");
 
-	rc = host_pdev_state_transition(h_pdev, tsm_disconnect_flow,
+	rc = host_pdev_stream_disconnect(h_pdev);
+	if (rc != RMI_SUCCESS) {
+		ERROR("PDEV TSM disconnect: pdev stream disconnect: failed\n");
+		return -1;
+	}
+
+	rc = host_pdev_stream_complete(h_pdev);
+	if (rc != 0) {
+		ERROR("PDEV TSM connect stream complete: failed\n");
+		return -1;
+	}
+
+	h_pdev->pdev_stream_handle_valid = false;
+
+	rc = host_pdev_state_transition(h_pdev, true, tsm_disconnect_flow,
+					sizeof(tsm_disconnect_flow));
+	if (rc != 0) {
+		ERROR("PDEV TSM disconnect state transitions: failed\n");
+		return -1;
+	}
+
+	rc = host_pdev_state_transition(h_pdev, false, tsm_disconnect_flow,
 					sizeof(tsm_disconnect_flow));
 	if (rc != 0) {
 		ERROR("PDEV TSM disconnect state transitions: failed, %d\n", rc);
@@ -131,10 +151,14 @@ int tsm_disconnect_device(struct host_pdev *h_pdev)
  */
 int tsm_connect_device(struct host_pdev *h_pdev)
 {
-	const unsigned char tsm_connect_flow[] = {
+	const unsigned char tsm_connect_ep_flow[] = {
 		RMI_PDEV_STATE_NEW,
 		RMI_PDEV_STATE_NEEDS_KEY,
 		RMI_PDEV_STATE_HAS_KEY,
+		RMI_PDEV_STATE_READY
+	};
+	const unsigned char tsm_connect_rp_flow[] = {
+		RMI_PDEV_STATE_NEW,
 		RMI_PDEV_STATE_READY
 	};
 	unsigned int sid, l2_idx, idx_bit;
@@ -163,8 +187,9 @@ int tsm_connect_device(struct host_pdev *h_pdev)
 
 	INFO("======================================\n");
 
-	rc = host_pdev_state_transition(h_pdev, tsm_connect_flow,
-					sizeof(tsm_connect_flow));
+	/* move rp and ep pdevs to ready state */
+	rc = host_pdev_state_transition(h_pdev, false, tsm_connect_rp_flow,
+					sizeof(tsm_connect_rp_flow));
 	if (rc != 0) {
 		ERROR("PDEV TSM connect state transitions: failed, %d\n", rc);
 		return rc;
@@ -176,6 +201,37 @@ int tsm_connect_device(struct host_pdev *h_pdev)
 	}
 
 	psmmu_activate = true;
+
+	rc = host_pdev_state_transition(h_pdev, true, tsm_connect_ep_flow,
+					sizeof(tsm_connect_ep_flow));
+	if (rc != 0) {
+		ERROR("PDEV TSM connect state transitions for ep_pdev: failed\n");
+		return rc;
+	}
+
+	/* Add stream to connect ep and rp pdev */
+	rc = host_pdev_stream_connect(h_pdev);
+	if (rc != 0) {
+		ERROR("PDEV TSM connect stream connect: failed\n");
+		return rc;
+	}
+
+
+	rc = host_pdev_stream_complete(h_pdev);
+	if (rc != 0) {
+		ERROR("PDEV TSM connect stream complete: failed\n");
+		return rc;
+	}
+
+	if (psmmu_ptr == 0UL) {
+		psmmu_ptr = plat_get_smmu_base();
+
+		rc = activate_psmmu();
+		if (rc != 0) {
+			return rc;
+		}
+		psmmu_activate = true;
+	}
 
 	/*
 	 * Calculate the base of the StreamID range.
@@ -397,7 +453,7 @@ int realm_assign_unassign_devices(struct realm *realm_ptr)
 
 			int rc = realm_assign_unassign_device(realm_ptr, h_vdev,
 							      h_pdev->dev->bdf,
-							      h_pdev->pdev);
+							      h_pdev->ep_pdev);
 			if (rc != 0) {
 				return rc;
 			}

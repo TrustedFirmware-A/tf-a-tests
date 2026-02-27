@@ -64,10 +64,14 @@
 #define DEV_OBJ_INTERFACE_REPORT	3U
 
 struct host_pdev {
+	bool setup_done;
+
 	/* PDEV related fields */
-	void *pdev;
-	unsigned long pdev_flags;
-	void *pdev_aux[PDEV_PARAM_AUX_GRANULES_MAX];
+	void *rp_pdev;
+	void *ep_pdev;
+	bool pdev_stream_handle_valid;
+	unsigned long pdev_stream_handle;
+	bool has_ide;
 	struct rmi_dev_comm_data *dev_comm_data;
 
 	/* Algorithm used to generate device digests */
@@ -141,13 +145,17 @@ struct host_pdev *get_host_pdev_by_type(uint8_t type);
  * the PDEV to STOPPED state and cleanup the resources held by PDEV.
  */
 int host_pdev_state_transition(struct host_pdev *h_pdev,
+			       bool ep_pdev,
 			       const unsigned char pdev_states[],
 			       size_t pdev_states_max);
 
-int host_pdev_setup(struct host_pdev *h_pdev);
-int host_pdev_transition(struct host_pdev *h_pdev, unsigned char to_state);
+int host_pdev_transition(struct host_pdev *h_pdev, bool ep_pdev, unsigned char to_state);
 int host_pdev_reclaim(struct host_pdev *h_pdev);
-int host_pdev_create(struct host_pdev *h_pdev);
+int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_stream_connect(struct host_pdev *h_pdev);
+int host_pdev_stream_complete(struct host_pdev *h_pdev);
+int host_pdev_stream_disconnect(struct host_pdev *h_pdev);
+int host_pdev_stream_key_refresh(struct host_pdev *h_pdev);
 
 int host_create_realm_with_feat_da(struct realm *realm, bool activate);
 int host_vdev_transition(struct realm *realm, struct host_vdev *h_vdev,

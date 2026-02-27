@@ -80,7 +80,7 @@ test_result_t host_test_realm_smmuv3(void)
 	h_vdev = &gbl_host_vdev;
 
 	/* Assign TSM connected device to a Realm */
-	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->pdev);
+	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->ep_pdev);
 	if (rc != 0) {
 		return_error = true;
 		goto destroy_psmmu;

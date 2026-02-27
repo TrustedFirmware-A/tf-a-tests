@@ -235,7 +235,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	h_vdev = &gbl_host_vdev;
 
 	/* Assign TSM connected device to a Realm */
-	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->pdev);
+	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->ep_pdev);
 	if (rc != 0) {
 		goto undelegate_granules;
 	}

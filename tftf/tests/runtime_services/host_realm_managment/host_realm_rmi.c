@@ -2287,22 +2287,55 @@ u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr)
 				2U).ret0;
 }
 
-u_register_t host_rmi_pdev_ide_key_refresh(u_register_t pdev_ptr, u_register_t event)
+u_register_t host_rmi_pdev_abort(u_register_t pdev_ptr)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_IDE_KEY_REFRESH, pdev_ptr,
-					     event}, 3U).ret0;
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_ABORT, pdev_ptr},
+				2U).ret0;
 }
 
-u_register_t host_rmi_pdev_ide_reset(u_register_t pdev_ptr)
+u_register_t host_rmi_pdev_stream_key_refresh(u_register_t pdev1_ptr,
+					      u_register_t pdev2_ptr,
+					      u_register_t handle)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_IDE_RESET, pdev_ptr},
-				2U).ret0;
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_KEY_REFRESH, pdev1_ptr, pdev2_ptr,
+					     handle}, 4U).ret0;
 }
 
 u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr)
 {
 	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_DESTROY, pdev_ptr},
 				2U).ret0;
+}
+
+u_register_t host_rmi_pdev_stream_connect(u_register_t stream_params_ptr, u_register_t *handle)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_CONNECT, stream_params_ptr},
+				2U);
+	*handle = rets.ret1;
+	return rets.ret0;
+}
+
+u_register_t host_rmi_pdev_stream_disconnect(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+				  u_register_t stream_handle)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_DISCONNECT, pdev1_ptr, pdev2_ptr,
+			stream_handle}, 4U).ret0;
+}
+
+u_register_t host_rmi_pdev_stream_complete(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+				  u_register_t stream_handle)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_COMPLETE, pdev1_ptr, pdev2_ptr,
+			stream_handle}, 4U).ret0;
+}
+
+u_register_t host_rmi_pdev_stream_key_purge(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+				  u_register_t stream_handle)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_KEY_PURGE, pdev1_ptr, pdev2_ptr,
+			stream_handle}, 4U).ret0;
 }
 
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,

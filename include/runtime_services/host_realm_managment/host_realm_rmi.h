@@ -84,11 +84,6 @@
 #define RMI_MEASURE_CONTENT	U(1)
 
 /*
- * FID: 0xC4000156
- */
-#define SMC_RMI_PDEV_AUX_COUNT			SMC64_RMI_FID(U(0x6))
-
-/*
  * FID: 0xC4000157
  *
  * arg0 == RD address
@@ -416,17 +411,17 @@
 #define SMC_RMI_PDEV_GET_STATE			SMC64_RMI_FID(U(0x28))
 
 /*
- * FID: 0xC4000179
+ * FID: 0xC4000179 is not used.
  */
-#define SMC_RMI_PDEV_IDE_RESET			SMC64_RMI_FID(U(0x29))
 
-/*
- * FID: 0xC400017A
- *
- * arg0 == PA of the PDEV
- * arg1 == Select coherent or non-coherent IDE stream
- */
-#define SMC_RMI_PDEV_IDE_KEY_REFRESH		SMC64_RMI_FID(U(0x2A))
+ /*
+  * FID: 0xC400017A
+  *
+  * arg0 == PA of the first PDEV object
+  * arg1 == PA of the second PDEV object
+  * arg2 == Stream handle
+  */
+#define SMC_RMI_PDEV_STREAM_KEY_REFRESH		SMC64_RMI_FID(U(0x2A))
 
 /*
  * FID: 0xC400017B
@@ -755,6 +750,41 @@
  */
 #define SMC_RMI_PSMMU_ST_L2_DESTROY		SMC64_RMI_FID(U(0x8C))
 
+/*
+ * FID: 0xC4000204
+ *
+ * arg0 == PA of PDEV stream parameters
+ *
+ * ret1 == PDEV stream handle
+ */
+#define SMC_RMI_PDEV_STREAM_CONNECT		SMC64_RMI_FID(U(0xB4))
+
+/*
+ * FID: 0xC4000205
+ *
+ * arg0 == PA of the first PDEV object
+ * arg1 == PA of the second PDEV object
+ * arg2 == Stream handle
+ */
+#define SMC_RMI_PDEV_STREAM_DISCONNECT		SMC64_RMI_FID(U(0xB5))
+
+/*
+ * FID: 0xC4000206
+ *
+ * arg0 == PA of the first PDEV object
+ * arg1 == PA of the second PDEV object
+ * arg2 == Stream handle
+ */
+#define SMC_RMI_PDEV_STREAM_COMPLETE		SMC64_RMI_FID(U(0xB6))
+
+/*
+ * FID: 0xC4000207
+ *
+ * arg0 == PA of the first PDEV object
+ * arg1 == PA of the second PDEV object
+ * arg2 == Stream handle
+ */
+#define SMC_RMI_PDEV_STREAM_KEY_PURGE		SMC64_RMI_FID(U(0xB7))
 
 #define GRANULE_SIZE			PAGE_SIZE_4KB
 
@@ -1359,13 +1389,6 @@ struct rmi_rec_run {
 #define RMI_PDEV_SPDM_FALSE			U(0)
 #define RMI_PDEV_SPDM_TRUE			U(1)
 
-/*
- * RmiPdevIde
- * Represents whether the link to the device is protected using IDE.
- * Width: 1 bit
- */
-#define RMI_PDEV_IDE_FALSE			U(0)
-#define RMI_PDEV_IDE_TRUE			U(1)
 
 /*
  * RmiPdevCoherent
@@ -1384,51 +1407,6 @@ struct rmi_rec_run {
 #define RMI_TRUST_COMP				U(1)
 
 /*
- * RmiPdevCategory
- * Represents PDEV category.
- * Width: 2 bits
- */
-#define RMI_PDEV_SMEM				U(0)
-#define RMI_PDEV_CMEM_CXL			U(1)
-
-/*
- * RmiPdevFlags
- * Fieldset contains flags provided by the Host during PDEV creation
- * Width: 64 bits
- */
-/* RmiPdevSpdm: Bit 0 */
-#define RMI_PDEV_FLAGS_SPDM_SHIFT		UL(0)
-#define RMI_PDEV_FLAGS_SPDM_WIDTH		UL(1)
-/* RmiPdevIde: Bit 1 */
-#define RMI_PDEV_FLAGS_NCOH_IDE_SHIFT		UL(1)
-#define RMI_PDEV_FLAGS_NCOH_IDE_WIDTH		UL(1)
-/* RmiFeature: Bit 2 */
-#define RMI_PDEV_FLAGS_NCOH_ADDR_SHIFT		UL(2)
-#define RMI_PDEV_FLAGS_NCOH_ADDR_WIDTH		UL(1)
-/* RmiPdevIde: Bit 3 */
-#define RMI_PDEV_FLAGS_COH_IDE_SHIFT		UL(3)
-#define RMI_PDEV_FLAGS_COH_IDE_WIDTH		UL(1)
-/* RmiFeature: Bit 4 */
-#define RMI_PDEV_FLAGS_COH_ADDR_SHIFT		UL(4)
-#define RMI_PDEV_FLAGS_COH_ADDR_WIDTH		UL(1)
-/* RmiFeature: Bit 5 */
-#define RMI_PDEV_FLAGS_P2P_SHIFT		UL(5)
-#define RMI_PDEV_FLAGS_P2P_WIDTH		UL(1)
-/* RmiPdevTrust: Bit 6 */
-#define RMI_PDEV_FLAGS_TRUST_SHIFT		UL(6)
-#define RMI_PDEV_FLAGS_TRUST_WIDTH		UL(1)
-/* RmiPdevCategory: Bit 8-7 */
-#define RMI_PDEV_FLAGS_CATEGORY_SHIFT		UL(7)
-#define RMI_PDEV_FLAGS_CATEGORY_WIDTH		UL(2)
-
-/*
- * RmiPdevEvent
- * Represents physical device event.
- * Width: 8 bits
- */
-#define RMI_PDEV_EVENT_IDE_KEY_REFRESH		U(0)
-
-/*
  * RmmPdevState
  * Represents the state of a PDEV
  * Width: 8 bits
@@ -1437,11 +1415,16 @@ struct rmi_rec_run {
 #define RMI_PDEV_STATE_NEEDS_KEY		U(1)
 #define RMI_PDEV_STATE_HAS_KEY			U(2)
 #define RMI_PDEV_STATE_READY			U(3)
-#define RMI_PDEV_STATE_IDE_RESETTING		U(4)
-#define RMI_PDEV_STATE_COMMUNICATING		U(5)
-#define RMI_PDEV_STATE_STOPPING			U(6)
-#define RMI_PDEV_STATE_STOPPED			U(7)
-#define RMI_PDEV_STATE_ERROR			U(8)
+#define RMI_PDEV_STATE_STOPPED			U(4)
+#define RMI_PDEV_STATE_ERROR			U(5)
+
+/*
+ * RmiPdevCoherent
+ * Coherency of device accesses
+ * Width: 1 bits
+ */
+#define RMI_NCOH				U(0)
+#define RMI_COH					U(1)
 
 /*
  * RmiSignatureAlgorithm
@@ -1495,6 +1478,8 @@ struct rmi_dev_comm_enter {
 #define RMI_DEV_COMM_EXIT_FLAGS_RESET_RSP_WIDTH		UL(1)
 #define RMI_DEV_COMM_EXIT_FLAGS_MULTI_SHIFT		UL(5)
 #define RMI_DEV_COMM_EXIT_FLAGS_MULTI_WIDTH		UL(1)
+#define RMI_DEV_COMM_EXIT_FLAGS_STREAM_WAIT_SHIFT	UL(6)
+#define RMI_DEV_COMM_EXIT_FLAGS_STREAM_WAIT_WIDTH	UL(1)
 
 /*
  * RmiDevCommObject
@@ -1604,66 +1589,54 @@ struct rmi_address_range {
 };
 
 /*
- * Maximum number of aux granules paramenter passed in rmi_pdev_params during
- * PDEV createto PDEV create
+ * RmiPdevCategory
+ * PDEV category
+ * Width: 2 bits
  */
-#define PDEV_PARAM_AUX_GRANULES_MAX		U(32)
+#define RMI_PDEV_ROOTPORT			U(0)
+#define RMI_PDEV_ENDPOINT_ACCEL_OFF_CHIP	U(1)
+#define RMI_PDEV_ENDPOINT_ACCEL_ON_CHIP		U(2)
 
 /*
- * Maximum number of device non-coherent RmiAddressRange parameter passed in
- * rmi_pdev_params during PDEV create
+ * RmiPdevFlags
+ * Flags provided by the Host during PDEV creation
+ * Width: 64 bits
  */
-#define PDEV_PARAM_NCOH_ADDR_RANGE_MAX		U(16)
-
-/*
- * Maximum number of device coherent RmiAddressRange parameter passed in
- * rmi_pdev_params during PDEV create
- */
-#define PDEV_PARAM_COH_ADDR_RANGE_MAX		U(4)
+/* RmiPdevSpdm: Bit 0 */
+#define RMI_PDEV_FLAGS_SPDM_SHIFT		UL(0)
+#define RMI_PDEV_FLAGS_SPDM_WIDTH		UL(1)
+/* RmiPdevTrust: Bit 1 */
+#define RMI_PDEV_FLAGS_TRUST_SHIFT		UL(1)
+#define RMI_PDEV_FLAGS_TRUST_WIDTH		UL(1)
+/* RmiPdevCategory: Bits 3:2 */
+#define RMI_PDEV_FLAGS_CATEGORY_SHIFT		UL(2)
+#define RMI_PDEV_FLAGS_CATEGORY_WIDTH		UL(2)
 
 /*
  * RmiPdevParams
- * This structure contains parameters provided by Host during PDEV creation.
+ * Parameters provided by the Host during PDEV creation
  * Width: 4096 (0x1000) bytes.
  */
 struct rmi_pdev_params {
 	/* RmiPdevFlags: Flags */
-	SET_MEMBER_RMI(unsigned long flags, 0, 0x8);
+	SET_MEMBER_RMI(unsigned long flags, 0x0, 0x8);
 	/* Bits64: Physical device identifier */
 	SET_MEMBER_RMI(unsigned long pdev_id, 0x8, 0x10);
-	/* Bits16: Segment ID */
-	SET_MEMBER_RMI(unsigned short segment_id, 0x10, 0x18);
-	/* Address: ECAM base address of the PCIe configuration space */
-	SET_MEMBER_RMI(unsigned long ecam_addr, 0x18, 0x20);
-	/* Bits16: Root Port identifier */
-	SET_MEMBER_RMI(unsigned short root_id, 0x20, 0x28);
-	/* UInt64: Certificate identifier */
-	SET_MEMBER_RMI(unsigned long cert_id, 0x28, 0x30);
-	/* UInt64: Base requester ID range (inclusive) */
-	SET_MEMBER_RMI(unsigned long rid_base, 0x30, 0x38);
-	/* UInt64: Top of requester ID range (exclusive) */
-	SET_MEMBER_RMI(unsigned long rid_top, 0x38, 0x40);
+	/* Bits64: Routing identifier */
+	SET_MEMBER_RMI(unsigned long routing_id, 0x10, 0x18);
+	/* UInt64: Device identity index */
+	SET_MEMBER_RMI(unsigned long id_index, 0x18, 0x20);
+	/* Bits32: Base of requester ID range (inclusive). */
+	SET_MEMBER_RMI(unsigned int rid_base, 0x20, 0x28);
+	/* Bits32: Top of requester ID range (exclusive). */
+	SET_MEMBER_RMI(unsigned int rid_top, 0x28, 0x30);
 	/* RmiHashAlgorithm: Algorithm used to generate device digests */
-	SET_MEMBER_RMI(unsigned char hash_algo, 0x40, 0x48);
-	/* UInt64: Number of auxiliary granules */
-	SET_MEMBER_RMI(unsigned long num_aux, 0x48, 0x50);
-	/* UInt64: IDE stream identifier */
-	SET_MEMBER_RMI(unsigned long ide_sid, 0x50, 0x58);
-	/* UInt64: Number of device non-coherent address ranges */
-	SET_MEMBER_RMI(unsigned long ncoh_num_addr_range, 0x58, 0x60);
-	/* UInt64: Number of device coherent address ranges */
-	SET_MEMBER_RMI(unsigned long coh_num_addr_range, 0x60, 0x100);
-	/* Address: Addresses of auxiliary granules */
-	SET_MEMBER_RMI(unsigned long aux[PDEV_PARAM_AUX_GRANULES_MAX], 0x100,
-		       0x200);
-	/* RmiAddressRange: Device non-coherent address range */
-	SET_MEMBER_RMI(struct rmi_address_range
-		       ncoh_addr_range[PDEV_PARAM_NCOH_ADDR_RANGE_MAX],
-		       0x200, 0x300);
-	/* RmiAddressRange: Device coherent address range */
-	SET_MEMBER_RMI(struct rmi_address_range
-		       coh_addr_range[PDEV_PARAM_COH_ADDR_RANGE_MAX],
-		       0x300, 0x1000);
+	SET_MEMBER_RMI(unsigned char hash_algo, 0x30, 0x38);
+	/*
+	 * UInt64: Order of the maximum number of VDEVs which can be created for this
+	 * PDEV.
+	 */
+	SET_MEMBER_RMI(unsigned long max_vdevs_order, 0x38, 0x1000);
 };
 
 /* Max length of public key data passed in rmi_public_key_params */
@@ -1760,6 +1733,49 @@ struct rmi_vdev_measure_params {
 	/* Bits256: Nonce value used in measurement requests */
 	SET_MEMBER_RMI(unsigned char nonce[VDEV_MEAS_PARAM_NONCE_LEN], 0x100, 0x1000);
 };
+
+/*
+ * RmiPdevStreamFlags
+ * Flags provided by the Host during PDEV stream creation
+ * Width: 64 bits
+ */
+
+/*
+ * RmiPdevStreamType
+ * Type of a PDEV stream
+ * Width: 8 bits
+ */
+#define RMI_PDEV_STREAM_NON_TEE			U(0)
+#define RMI_PDEV_STREAM_NCOH			U(1)
+#define RMI_PDEV_STREAM_COH			U(2)
+#define RMI_PDEV_STREAM_NCOH_SYS		U(3)
+#define RMI_PDEV_STREAM_COH_SYS			U(4)
+
+#define RMI_PDEV_STREAM_ADDR_RANGE_CNT		U(16)
+
+/*
+ * RmiPdevStreamParams
+ * Parameters provided by the Host during PDEV stream creation
+ * Width: 4096 (0x1000) bytes.
+ */
+struct rmi_pdev_stream_params {
+	/* RmiPdevStreamFlags: Flags */
+	SET_MEMBER_RMI(unsigned long flags, 0x0, 0x8);
+	/* RmiPdevStreamType: Stream type */
+	SET_MEMBER_RMI(unsigned char stream_type, 0x8, 0x10);
+	/* Address: Address of first PDEV. */
+	SET_MEMBER_RMI(unsigned long pdev_1, 0x10, 0x18);
+	/* Address: Address of second PDEV */
+	SET_MEMBER_RMI(unsigned long pdev_2, 0x18, 0x20);
+	/* UInt64: IDE stream ID */
+	SET_MEMBER_RMI(unsigned long ide_sid, 0x20, 0x28);
+	/* UInt64: Number of device address ranges */
+	SET_MEMBER_RMI(unsigned long num_addr_range, 0x28, 0x100);
+	/* RmiAddrRange: Device address range */
+	SET_MEMBER_RMI(struct rmi_address_range
+		addr_range[RMI_PDEV_STREAM_ADDR_RANGE_CNT], 0x100, 0x1000);
+};
+
 
 /* Tracking Region Size with GRANULE_SIZE = 4KB */
 #define RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB		UL(0)
@@ -1972,9 +1988,17 @@ u_register_t host_rmi_pdev_communicate(u_register_t pdev_ptr,
 u_register_t host_rmi_pdev_set_pubkey(u_register_t pdev_ptr,
 				      u_register_t pubkey_params_ptr);
 u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr);
-u_register_t host_rmi_pdev_ide_key_refresh(u_register_t pdev_ptr, u_register_t event);
-u_register_t host_rmi_pdev_ide_reset(u_register_t pdev_ptr);
+u_register_t host_rmi_pdev_abort(u_register_t pdev_ptr);
+u_register_t host_rmi_pdev_stream_key_refresh(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+					      u_register_t handle);
 u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr);
+u_register_t host_rmi_pdev_stream_connect(u_register_t stream_params_ptr, u_register_t *handle);
+u_register_t host_rmi_pdev_stream_disconnect(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+				  u_register_t stream_handle);
+u_register_t host_rmi_pdev_stream_complete(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+				  u_register_t stream_handle);
+u_register_t host_rmi_pdev_stream_key_purge(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+				  u_register_t stream_handle);
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 				  u_register_t vdev_ptr,
 				  u_register_t params_ptr);

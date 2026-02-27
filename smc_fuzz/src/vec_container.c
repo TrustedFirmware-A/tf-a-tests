@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -41,7 +41,7 @@ void pushvec(uint64_t *obj, struct vec_container *vc, struct memmod *mmod)
 	uint64_t *ne = NULL;
 	if ((vc->nele % VEC_CONTAINER_THRESHOLD) == 0) {
 		if (vc->nele != 0) {
-			ne = GENMALLOC((VEC_CONTAINER_THRESHOLD * vc->nele) * sizeof(uint64_t));
+			ne = GENMALLOC((VEC_CONTAINER_THRESHOLD + vc->nele) * vc->element_size);
 			memcpy(ne, vc->elements, (vc->element_size * vc->nele));
 			GENFREE(vc->elements);
 		} else {
@@ -51,5 +51,15 @@ void pushvec(uint64_t *obj, struct vec_container *vc, struct memmod *mmod)
 	}
 	memcpy(&vc->elements[vc->nele], obj, vc->element_size);
 	vc->nele++;
+}
+
+bool vec_containerelem(struct vec_container *vc, uint64_t el)
+{
+	for (int j = 0; j < vc->nele; j++) {
+		if (el == vc->elements[j]) {
+			return true;
+		}
+	}
+	return false;
 }
 

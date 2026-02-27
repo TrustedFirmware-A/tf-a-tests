@@ -1,14 +1,16 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arg_struct_def.h>
 #include <ffa_fuzz_helper.h>
-#include <sdei_fuzz_helper.h>
+#include <psci_fuzz_helper.h>
 #include "smcmalloc.h"
+#include <sdei_fuzz_helper.h>
 #include <tsp_fuzz_helper.h>
+
 #include <tftf_lib.h>
 
 int cntid;
@@ -34,6 +36,10 @@ test_result_t runtestfunction(int funcid, struct memmod *mmod)
 	run_tsp_fuzz(funcid);
 #ifdef VEN_INCLUDE
 	run_ven_el3_fuzz(funcid, mmod);
+#endif
+
+#ifdef PSCI_INCLUDE
+	res = run_psci_fuzz(funcid, mmod);
 #endif
 
 	cntid++;

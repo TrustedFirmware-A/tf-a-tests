@@ -1,0 +1,67 @@
+#
+# Copyright (c) 2026 Arm Limited. All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+
+define PSCI_VERSION_CALL_SMCID = 0x84000000
+define PSCI_AFFINITY_INFO_AARCH64_CALL_SMCID = 0xc4000004
+define PSCI_FEATURES_CALL_SMCID = 0x8400000A
+define PSCI_STAT_RESIDENCY_AARCH64_CALL_SMCID = 0xc4000010
+define PSCI_STAT_COUNT_AARCH64_CALL_SMCID = 0xc4000010
+define PSCI_NODE_HW_STATE_AARCH64_CALL_SMCID = 0xc400000d
+define PSCI_SET_SUSPEND_MODE_CALL_SMC_ID = 0x8400000F
+
+smc: PSCI_VERSION_CALL PSCI_VERSION_CALL_SMCID
+	arg1 = 0
+smc: PSCI_AFFINITY_INFO_AARCH64_CALL PSCI_AFFINITY_INFO_AARCH64_CALL_SMCID
+	arg1:affinfo
+		field:res1:[40,63] := 0
+		field:aff3:[32,39] = 0
+		field:res0:[24,31] := 1
+		field:aff2:[16,23] = 0
+		field:aff1:[8,15] = 0
+		field:aff0:[0,7] = 0
+	arg2:lowafflevel
+		field:lal:[63,0] = 0
+smc: PSCI_FEATURES_CALL PSCI_FEATURES_CALL_SMCID
+	arg1:psci_func_id
+		field:id:[0,31] = 0
+smc: PSCI_STAT_RESIDENCY_AARCH64_CALL PSCI_STAT_RESIDENCY_AARCH64_CALL_SMCID
+	arg1:tcpu
+		field:res:[25,63] := 0
+		field:mt:[24,24] := 1
+		field:aff2:[16,23] = 0
+		field:aff1:[8,15] = 0
+		field:aff0:[0,7] = 0
+	arg2:ps
+		field:res1:[26,31] := 0
+		field:power_state:[24,25] = 0
+		field:res0:[17,23] := 0
+		field:statetype:[16,16] = 0
+		field:stateid:[0,15] := 0
+smc: PSCI_STAT_COUNT_AARCH64_CALL PSCI_STAT_COUNT_AARCH64_CALL_SMCID
+	arg1:tcpu
+		field:res:[25,63] := 0
+		field:mt:[24,24] := 1
+		field:aff2:[16,23] = 0
+		field:aff1:[8,15] = 0
+		field:aff0:[0,7] = 0
+	arg2:ps
+		field:res1:[26,31] := 0
+		field:power_state:[24,25] = 0
+		field:res0:[17,23] := 0
+		field:statetype:[16,16] = 0
+		field:stateid:[0,15] := 0
+smc: PSCI_NODE_HW_STATE_AARCH64_CALL PSCI_NODE_HW_STATE_AARCH64_CALL_SMCID
+	arg1:tcpu
+		field:res:[25,63] := 0
+		field:mt:[24,24] := 1
+		field:aff2:[16,23] = 0
+		field:aff1:[8,15] = 0
+		field:aff0:[0,7] = 0
+	arg2:pl
+		field:power_level:[0,31] = 0
+smc: PSCI_SET_SUSPEND_MODE_CALL PSCI_SET_SUSPEND_MODE_CALL_SMC_ID
+	arg1:md
+		field:mode:[0,31] = 0

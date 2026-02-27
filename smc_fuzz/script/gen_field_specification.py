@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-def gen_field_specification(fsname,argfieldname,argendbit,argstartbit,argdefval,argnumfield):
+def gen_field_specification(fsname,argfieldname,argendbit,argstartbit,argdefval,argnumfield,argres):
 	faafile  = open(fsname, "w")
 	hline = "struct fuzzer_arg_def {\n"
 	hline += "        int regnum;\n"
@@ -19,6 +19,7 @@ def gen_field_specification(fsname,argfieldname,argendbit,argstartbit,argdefval,
 	hline += "        int contlen;\n"
 	hline += "        int *conttype;\n"
 	hline += "        int genvalues;\n"
+	hline += "        int reserved;\n"
 	hline += "};\n\n"
 	hline += "struct fuzzer_arg_arange {\n"
 	hline += "        int arg_span[2];\n"
@@ -37,8 +38,9 @@ def gen_field_specification(fsname,argfieldname,argendbit,argstartbit,argdefval,
 					hline = "{ .bitw = "
 				hline += str((int(argendbit[sn][an][fn]) - int(argstartbit[sn][an][fn])) + 1)
 				hline += ", .bitst = " + argstartbit[sn][an][fn] + ", .bnames = \""
-				hline += fn + "\", .defval = " + argdefval[sn][an][fn] + ", .regnum = "
-				hline += argnumfield[sn][an][fn] + ", .smcname = \"" + sn + "\", .smcargname = \""
+				hline += fn + "\", .defval = " + argdefval[sn][an][fn] + ", .reserved = "
+				hline += str(argres[sn][an][fn]) + ", .regnum = " + argnumfield[sn][an][fn]
+				hline += ", .smcname = \"" + sn + "\", .smcargname = \""
 				hline += an + "\" }"
 				ifield = 0
 				faafile.write(hline)

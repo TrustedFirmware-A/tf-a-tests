@@ -671,6 +671,85 @@ of constraint specification and generation of the arguments:
                 }
         }
 
+Generating variable coverage data when invoking the FVP
+=======================================================
+
+There is a capability to generate coverage data of the values given by the fuzzer to a given
+field after running the test on the FVP.
+
+First add the following field to the relevant TFTF config:
+
+.. code-block:: none
+
+	SMC_FUZZ_VARIABLE_COVERAGE=1
+
+and compile TF-A as normal
+
+Run the FVP model while enabling the output of uart3:
+
+.. code-block:: none
+
+	-C bp.pl011_uart0.uart_enable=1 \
+	-C bp.pl011_uart1.uart_enable=1 \
+	-C bp.pl011_uart2.uart_enable=1 \
+	-C bp.pl011_uart3.uart_enable=1 \
+	-C bp.pl011_uart0.out_file="uart0.log" \
+	-C bp.pl011_uart1.out_file="uart1.log" \
+	-C bp.pl011_uart2.out_file="uart2.log" \
+	-C bp.pl011_uart3.out_file="uart3.log" \
+
+Once complete, a python module will have to be installed:
+
+.. code-block:: none
+
+	pip install tabulate
+
+Finally run a script to generate the coverage data as follows(in smc_fuzz/script):
+
+.. code-block:: none
+
+	python3 generate_var_coverage.py -df <uart3 file> -sd <smc description file>
+
+As an example for SDEI:
+
+.. code-block:: none
+
+	python3 generate_var_coverage.py -df ../../../uart3.log -sd ../sdei_smc_calls.txt
+
+
+Which would generate output that would look like:
+
+.. code-block:: none
+
+	SDEI_EVENT_REGISTER_CALL
+	+--------+------------+------------+-----------+------------+------------+------------+
+	| enum   | addr       | arg        | routing   | relative   | reserved   | aff        |
+	+========+============+============+===========+============+============+============+
+	| 0x7d1  | 0x8800015c | 0xdeadbeef | 0x1       | 0x0        | 0x0        | 0x81000000 |
+	+--------+------------+------------+-----------+------------+------------+------------+
+	| 0x7d2  | -          | -          | 0x0       | -          | -          | -          |
+	+--------+------------+------------+-----------+------------+------------+------------+
+	| 0x0    | -          | -          | -         | -          | -          | -          |
+	+--------+------------+------------+-----------+------------+------------+------------+
+	| 0x7d0  | -          | -          | -         | -          | -          | -          |
+	+--------+------------+------------+-----------+------------+------------+------------+
+
+	SDEI_EVENT_ENABLE_CALL
+	+--------+
+	| enum   |
+	+========+
+	| 0x0    |
+	+--------+
+
+	SDEI_FEATURES_CALL
+	+--------+
+	| feat   |
+	+========+
+	| 0x1    |
+	+--------+
+	| 0x0    |
+	+--------+
+
 
 *Copyright (c) 2024, Arm Limited. All rights reserved.*
 

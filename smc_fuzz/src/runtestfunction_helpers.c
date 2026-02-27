@@ -9,19 +9,24 @@
 #include <sdei_fuzz_helper.h>
 #include "smcmalloc.h"
 #include <tsp_fuzz_helper.h>
+#include <tftf_lib.h>
 
-int cntid = 0;
+int cntid;
 #include <vendor_fuzz_helper.h>
 
 /*
  * Invoke the SMC call based on the function name specified.
  */
-void runtestfunction(int funcid, struct memmod *mmod)
+test_result_t runtestfunction(int funcid, struct memmod *mmod)
 {
+	test_result_t res = TEST_RESULT_SUCCESS;
 	bool inrange = (cntid >= SMC_FUZZ_CALL_START) && (cntid < SMC_FUZZ_CALL_END);
 	inrange = inrange && (funcid != EXCLUDE_FUNCID);
 #ifdef SDEI_INCLUDE
-	run_sdei_fuzz(funcid, mmod, inrange, cntid);
+	res = run_sdei_fuzz(funcid, mmod, inrange, cntid);
+	if (res != TEST_RESULT_SUCCESS) {
+		return res;
+	}
 #endif
 #ifdef FFA_INCLUDE
 	run_ffa_fuzz(funcid, mmod);
@@ -32,4 +37,6 @@ void runtestfunction(int funcid, struct memmod *mmod)
 #endif
 
 	cntid++;
+
+	return res;
 }

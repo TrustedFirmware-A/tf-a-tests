@@ -18,7 +18,7 @@
 
 
 extern char _binary___dtb_start[];
-extern void runtestfunction(int funcid, struct memmod *mmod);
+extern test_result_t runtestfunction(int funcid, struct memmod *mmod);
 extern void init_input_arg_struct(void);
 
 struct memmod tmod __aligned(65536) __section("smcfuzz");
@@ -500,7 +500,9 @@ test_result_t smc_fuzzing_instance(uint32_t seed)
 			#ifdef SMC_FUZZER_DEBUG
 				printf("the name of the SMC call is %s\n", tlnode->snames[selent]);
 			#endif
-				runtestfunction(tlnode->snameid[selent], mmod);
+				if (runtestfunction(tlnode->snameid[selent], mmod) != TEST_RESULT_SUCCESS) {
+					return TEST_RESULT_FAIL;
+				}
 				nd = 1;
 			} else {
 				tlnode = &tlnode->treenodes[selent];

@@ -748,6 +748,9 @@ void realm_payload_main(void)
 		case REALM_SMMU:
 			test_succeed = test_realm_smmuv3();
 			break;
+		case REALM_FEAT_MOPS:
+			test_succeed = test_realm_feat_mops();
+			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);
 			break;

@@ -27,6 +27,7 @@ REALM_SOURCES:=								\
 	$(addprefix realm/,						\
 	aarch64/realm_entrypoint.S					\
 	aarch64/realm_exceptions.S					\
+	aarch64/realm_mops_asm.S					\
 	realm_attestation.c						\
 	realm_brbe_tests.c						\
 	realm_da.c							\
@@ -36,7 +37,8 @@ REALM_SOURCES:=								\
 	realm_helpers.c							\
 	realm_interrupt.c						\
 	realm_mpam.c							\
-	realm_multiple_rec.c						\
+	realm_mops.c							\
+	realm_multiple_rec.c					\
 	realm_pauth.c							\
 	realm_payload_main.c						\
 	realm_plane.c							\

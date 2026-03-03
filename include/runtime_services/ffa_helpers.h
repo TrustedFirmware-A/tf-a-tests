@@ -209,7 +209,7 @@ struct ffa_boot_info_header {
 /** Partition property: partition runs in the AArch64 execution state. */
 #define FFA_PARTITION_AARCH64_EXEC (UINT32_C(1) << 8)
 
-/** Partition info descriptor as defined in FF-A v1.1 EAC0 Table 13.37 */
+/** Partition info descriptor as defined in FF-A v1.3 ALP2 Table 6.2 */
 struct ffa_partition_info {
 	/** The ID of the VM the information is about */
 	ffa_id_t id;
@@ -217,9 +217,28 @@ struct ffa_partition_info {
 	uint16_t exec_context;
 	/** The Partition's properties, e.g. supported messaging methods */
 	uint32_t properties;
-	/** The uuid of the partition */
-	struct ffa_uuid uuid;
+	/** The protocol uuid of the partition */
+        struct ffa_uuid protocol_uuid;
+	/** The image uuid of the partition */
+        struct ffa_uuid image_uuid;
+	/** The FF-A version of the partition */
+        uint32_t ffa_version;
+        uint32_t reserved_0;
 };
+
+/*
+ * Maximum ffa_partition_info entries that can be returned by an invocation
+ * of FFA_PARTITION_INFO_GET_REGS_64 is size in bytes, of available
+ * registers/args in struct ffa_value divided by size of struct
+ * ffa_partition_info. For this ABI, arg3-arg17 in ffa_value can be used, i.e.
+ * 15 uint64_t fields. For FF-A v1.3, this value should be 2.
+ */
+#define MAX_INFO_REGS_ENTRIES_PER_CALL \
+	((15 * sizeof(uint64_t)) / sizeof(struct ffa_partition_info))
+
+_Static_assert(MAX_INFO_REGS_ENTRIES_PER_CALL == 2,
+	      "FF-A v1.3 supports no more than 2 entries"
+	      " per FFA_PARTITION_INFO_GET_REGS64 calls");
 
 /**
  * Bits[31:3] of partition properties must be zero for FF-A v1.0.

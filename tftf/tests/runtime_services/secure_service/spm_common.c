@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2025, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -704,14 +704,14 @@ bool ffa_partition_info_regs_get_part_info(
 	 * function, arg1 is reserved, arg2 encodes indices. arg3 and greater
 	 * values reflect partition properties.
 	 */
-	uint64_t *arg_ptrs = (uint64_t *)args + ((idx * 3) + 3);
+	uint64_t *arg_ptrs = (uint64_t *)args + ((idx * 6) + 3);
 	uint64_t info, uuid_lo, uuid_high;
 
 	/*
-	 * Each partition information is encoded in 3 registers, so there can be
-	 * a maximum of 5 entries.
+	 * Each partition information is encoded in 6 registers, so there can be
+	 * a maximum of 2 entries.
 	 */
-	if (idx >= 5 || !partition_info) {
+	if (idx >= MAX_INFO_REGS_ENTRIES_PER_CALL || !partition_info) {
 		return false;
 	}
 
@@ -724,15 +724,15 @@ bool ffa_partition_info_regs_get_part_info(
 	uuid_high = *arg_ptrs;
 
 	/*
-	 * As defined in FF-A 1.2 ALP0, 14.9 FFA_PARTITION_INFO_GET_REGS.
+	 * As defined in FF-A 1.3 ALP2, 14.9 FFA_PARTITION_INFO_GET_REGS.
 	 */
 	partition_info->id = info & 0xFFFFU;
 	partition_info->exec_context = (info >> 16) & 0xFFFFU;
 	partition_info->properties = (info >> 32);
-	partition_info->uuid.uuid[0] = uuid_lo & 0xFFFFFFFFU;
-	partition_info->uuid.uuid[1] = (uuid_lo >> 32) & 0xFFFFFFFFU;
-	partition_info->uuid.uuid[2] = uuid_high & 0xFFFFFFFFU;
-	partition_info->uuid.uuid[3] = (uuid_high >> 32) & 0xFFFFFFFFU;
+	partition_info->protocol_uuid.uuid[0] = uuid_lo & 0xFFFFFFFFU;
+	partition_info->protocol_uuid.uuid[1] = (uuid_lo >> 32) & 0xFFFFFFFFU;
+	partition_info->protocol_uuid.uuid[2] = uuid_high & 0xFFFFFFFFU;
+	partition_info->protocol_uuid.uuid[3] = (uuid_high >> 32) & 0xFFFFFFFFU;
 
 	return true;
 }
@@ -748,7 +748,7 @@ static bool ffa_compare_partition_info(
 	 * partition info descriptor MBZ.
 	 */
 	struct ffa_uuid expected_uuid =
-		ffa_uuid_equal(uuid, NULL_UUID) ? expected->uuid : NULL_UUID;
+		ffa_uuid_equal(uuid, NULL_UUID) ? expected->protocol_uuid : NULL_UUID;
 
 	if (info->id != expected->id) {
 		ERROR("Wrong ID. Expected %#x, got %#x\n", expected->id,
@@ -767,13 +767,13 @@ static bool ffa_compare_partition_info(
 		result = false;
 	}
 
-	if (!ffa_uuid_equal(info->uuid, expected_uuid)) {
+	if (!ffa_uuid_equal(info->protocol_uuid, expected_uuid)) {
 		ERROR("Wrong UUID. Expected %#x %#x %#x %#x, "
 		      "got %#x %#x %#x %#x\n",
 		      expected_uuid.uuid[0], expected_uuid.uuid[1],
 		      expected_uuid.uuid[2], expected_uuid.uuid[3],
-		      info->uuid.uuid[0], info->uuid.uuid[1],
-		      info->uuid.uuid[2], info->uuid.uuid[3]);
+		      info->protocol_uuid.uuid[0], info->protocol_uuid.uuid[1],
+		      info->protocol_uuid.uuid[2], info->protocol_uuid.uuid[3]);
 		result = false;
 	}
 
@@ -787,15 +787,16 @@ static bool ffa_compare_partition_info(
  */
 bool ffa_partition_info_regs_helper(const struct ffa_uuid uuid,
 		       const struct ffa_partition_info *expected,
-		       const uint16_t expected_size)
+		       const uint16_t desc_count_per_invocation,
+		       const uint16_t desc_count_total)
 {
 	/*
 	 * TODO: For now, support only one invocation. Can be enhanced easily
 	 * to extend to arbitrary number of partitions.
 	 */
-	if (expected_size > 5) {
+	if (desc_count_per_invocation > MAX_INFO_REGS_ENTRIES_PER_CALL) {
 		ERROR("%s only supports information received in"
-			" one invocation of the ABI (5 partitions)\n",
+			" one invocation of the ABI (2 partitions)\n",
 			__func__);
 		return false;
 	}
@@ -807,10 +808,10 @@ bool ffa_partition_info_regs_helper(const struct ffa_uuid uuid,
 	}
 
 	if (ffa_partition_info_regs_partition_count(ret) !=
-	    expected_size) {
+	    desc_count_total) {
 		ERROR("Unexpected number of partitions %d (expected %d)\n",
 		      ffa_partition_info_regs_partition_count(ret),
-		      expected_size);
+		      desc_count_total);
 		return false;
 	}
 
@@ -821,7 +822,7 @@ bool ffa_partition_info_regs_helper(const struct ffa_uuid uuid,
 		return false;
 	}
 
-	for (unsigned int i = 0U; i < expected_size; i++) {
+	for (unsigned int i = 0U; i < desc_count_per_invocation; i++) {
 		struct ffa_partition_info info = { 0 };
 
 		ffa_partition_info_regs_get_part_info(&ret, i, &info);

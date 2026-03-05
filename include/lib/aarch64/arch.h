@@ -773,7 +773,6 @@
 #define SCR_FGTEN_BIT		(UL(1) << 27)
 #define SCR_ATA_BIT		(UL(1) << 26)
 #define SCR_EnSCXT_BIT		(UL(1) << 25)
-#define SCR_IDTE3_BITS		(SCR_TID5_BIT | SCR_TID3_BIT)
 #define SCR_TID5_BIT		(UL(1) << 23)
 #define SCR_TID3_BIT		(UL(1) << 22)
 #define SCR_FIEN_BIT		(UL(1) << 21)

@@ -672,6 +672,8 @@ test_result_t host_pdev_invoke_ide_refresh_reset(void)
 test_result_t host_realm_test_root_port_key_management(void)
 {
 	u_register_t rmi_rc;
+	u_register_t create_handle;
+	u_register_t donate_req;
 	int ret;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
@@ -693,7 +695,18 @@ test_result_t host_realm_test_root_port_key_management(void)
 	 * Directly call host_rmi_pdev_create with invalid pdev, expect an error
 	 * to be returned from TRP.
 	 */
-	rmi_rc = host_rmi_pdev_create((u_register_t)0UL, (u_register_t)0UL);
+	rmi_rc = host_rmi_pdev_create((u_register_t)0UL, (u_register_t)0UL,
+		&create_handle,
+		&donate_req);
+
+	/*
+	 * Start the RSO flow for RMI_pdev_CREATE. It is expected
+	 * that the host will donate all the memory in one go.
+	 */
+	if (RMI_RETURN_STATUS(rmi_rc) == RMI_INCOMPLETE) {
+		rmi_rc = host_realm_sro_continue(ret, &create_handle, &donate_req, NULL);
+	}
+
 	if (rmi_rc != RMI_SUCCESS) {
 		return TEST_RESULT_SUCCESS;
 	}

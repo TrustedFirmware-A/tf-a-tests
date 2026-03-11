@@ -327,6 +327,8 @@ int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev)
 	struct rmi_pdev_params *pdev_params;
 	u_register_t ret;
 	void *pdev;
+	u_register_t create_handle = 0UL;
+	u_register_t donate_req = 0UL;
 	int rc;
 
 	/* Allocate granules and memory for PDEV objects like certificate, key */
@@ -368,8 +370,28 @@ int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev)
 	pdev_params->id_index = h_pdev->cert_slot_id;
 	pdev_params->hash_algo = h_pdev->pdev_hash_algo;
 	pdev_params->max_vdevs_order = 2; // max 3 vdevs
+
 	ret = host_rmi_pdev_create((u_register_t)pdev,
-				   (u_register_t)pdev_params);
+				   (u_register_t)pdev_params,
+				   &create_handle,
+				   &donate_req);
+
+	/*
+	 * Start the RSO flow for RMI_pdev_CREATE. It is expected
+	 * that the host will donate all the memory in one go.
+	 */
+	if (ep_pdev) {
+		if (RMI_RETURN_STATUS(ret) != RMI_INCOMPLETE) {
+			return REALM_ERROR;
+		}
+		/* We expect a SRO operation at this point */
+		ret = host_realm_sro_continue(ret, &create_handle, &donate_req, NULL);
+	}
+
+	if (RMI_RETURN_STATUS(ret) != RMI_SUCCESS) {
+		ERROR("%s() failed, ret=0x%lx\n",
+				"host_rmi_pdev_create", ret);
+	}
 
 	page_free((u_register_t)pdev_params);
 	if (ret != RMI_SUCCESS) {
@@ -465,9 +487,14 @@ static int host_pdev_destroy(struct host_pdev *h_pdev, bool ep_pdev)
 	void **pdev;
 	u_register_t ret;
 	int rc = 0;
+	u_register_t destroy_handle = 0UL;
+	u_register_t donate_req = 0UL;
 
 	pdev = ep_pdev ? &h_pdev->ep_pdev : &h_pdev->rp_pdev;
 	ret = host_rmi_pdev_destroy((u_register_t)*pdev);
+	if (RMI_RETURN_STATUS(ret) == RMI_INCOMPLETE) {
+		ret = host_realm_sro_continue(ret, &destroy_handle, &donate_req, NULL);
+	}
 	if (ret != RMI_SUCCESS) {
 		return -1;
 	}
@@ -902,6 +929,7 @@ int host_pdev_transition(struct host_pdev *h_pdev, bool ep_pdev, unsigned char t
 					  NULL, RMI_PDEV_STATE_STOPPED, false);
 		break;
 	default:
+		ERROR("pdev_state_transition: Unhandled state\n");
 		rc = -1;
 		break;
 	}

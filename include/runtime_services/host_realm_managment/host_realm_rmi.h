@@ -1981,7 +1981,9 @@ u_register_t host_realm_map_unprotected(struct realm *realm, u_register_t ns_pa,
 u_register_t host_realm_fold_rtt(u_register_t rd, u_register_t addr, long level);
 
 u_register_t host_rmi_pdev_create(u_register_t pdev_ptr,
-				  u_register_t params_ptr);
+				  u_register_t params_ptr,
+				  u_register_t *handle,
+				  u_register_t *donate_req);
 u_register_t host_rmi_pdev_get_state(u_register_t pdev_ptr, u_register_t *state);
 u_register_t host_rmi_pdev_communicate(u_register_t pdev_ptr,
 				       u_register_t data_ptr);

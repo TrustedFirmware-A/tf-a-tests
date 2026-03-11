@@ -2251,10 +2251,19 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 	return ret;
 }
 
-u_register_t host_rmi_pdev_create(u_register_t pdev_ptr, u_register_t params_ptr)
+u_register_t host_rmi_pdev_create(u_register_t pdev_ptr,
+				  u_register_t params_ptr,
+				  u_register_t *handle,
+				  u_register_t *donate_req)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_CREATE, pdev_ptr,
-					     params_ptr}, 3U).ret0;
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_CREATE, pdev_ptr,
+					     params_ptr, (u_register_t)&rets}, 4U);
+
+	*handle = rets.ret1;
+	*donate_req = rets.ret2;
+	return rets.ret0;
 }
 
 u_register_t host_rmi_pdev_get_state(u_register_t pdev_ptr, u_register_t *state)

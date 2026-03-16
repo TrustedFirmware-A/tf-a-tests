@@ -809,6 +809,10 @@ static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 		return TEST_RESULT_FAIL;
 	}
 
+	if ((rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_PMU_EN) == 0UL) {
+		return TEST_RESULT_SKIPPED;
+	}
+
 	num_cnts = EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS, rmm_feat_reg0);
 	host_set_pmu_state(&pmu_state);
 

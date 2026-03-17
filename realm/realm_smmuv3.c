@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 
+#include <host_shared_data.h>
 #include <realm_da_helpers.h>
 #include <realm_helpers.h>
 #include <realm_rsi.h>
@@ -13,9 +14,7 @@
 
 #include <debug.h>
 
-static struct rdev gbl_rdev;
-
-/* RDEV info. Device type and attestation evidence digest */
+/* VDEV info. Device type and attestation evidence digest */
 static struct rsi_vdev_info gbl_vdev_info[2] __aligned(GRANULE_SIZE);
 static struct rsi_realm_config realm_config __aligned(GRANULE_SIZE);
 
@@ -51,7 +50,7 @@ static void dump_memory(uint8_t *addr, unsigned int num)
 	} while (num != 0U);
 }
 
-static bool realm_validate_mapping(struct rdev *rdev, struct rsi_vdev_info *vdev_info,
+static bool realm_validate_mapping(u_register_t vdev_id, struct rsi_vdev_info *vdev_info,
 				   u_register_t ipa_base, u_register_t ipa_top,
 				   u_register_t pa_base)
 {
@@ -69,7 +68,7 @@ static bool realm_validate_mapping(struct rdev *rdev, struct rsi_vdev_info *vdev
 	new_ipa_base = ipa_base;
 
 	while (new_ipa_base < ipa_top) {
-		ret = rsi_vdev_vaildate_mapping(rdev->id, new_ipa_base,
+		ret = rsi_vdev_vaildate_mapping(vdev_id, new_ipa_base,
 						ipa_top, pa_base, flags,
 						vdev_info->lock_nonce,
 						vdev_info->meas_nonce,
@@ -100,9 +99,8 @@ static bool realm_validate_mapping(struct rdev *rdev, struct rsi_vdev_info *vdev
 bool test_realm_smmuv3(void)
 {
 	u_register_t rsi_feature_reg0, rsi_rc;
-	u_register_t flags, ret;
+	u_register_t flags, ret, vdev_id;
 	u_register_t range_count, non_ats_plane;
-	struct rdev *rdev;
 	struct rsi_vdev_info *vdev_info;
 	struct rmi_address_range addr_range[MAX_ADDR_RANGE_NUM];
 	bool res = true;
@@ -120,19 +118,13 @@ bool test_realm_smmuv3(void)
 		return false;
 	}
 
-	/* Get the global RDEV. Currently only one RDEV is supported */
-	rdev = &gbl_rdev;
-
-	if (rdev == NULL) {
-		realm_printf("realm_rdev_init failed\n");
-		return false;
-	}
+	vdev_id = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
 
 	/* Use idx 1 to have struct size alignment */
 	vdev_info = &gbl_vdev_info[1];
 
 	/* After meas and ifc_report, get device info */
-	rsi_rc = realm_rsi_vdev_get_info(rdev, vdev_info);
+	rsi_rc = realm_rsi_vdev_get_info(vdev_id, vdev_info);
 	if (rsi_rc != RSI_SUCCESS) {
 		return false;
 	}
@@ -154,7 +146,7 @@ bool test_realm_smmuv3(void)
 		/* 1:1 mapping */
 		u_register_t pa_base = ipa_base;
 
-		if (!realm_validate_mapping(rdev, vdev_info,
+		if (!realm_validate_mapping(vdev_id, vdev_info,
 					    ipa_base, ipa_top, pa_base)) {
 			return false;
 		}
@@ -177,7 +169,7 @@ bool test_realm_smmuv3(void)
 		non_ats_plane = 0UL;
 	}
 
-	ret = rsi_vdev_dma_enable(rdev->id, flags, non_ats_plane,
+	ret = rsi_vdev_dma_enable(vdev_id, flags, non_ats_plane,
 					vdev_info->lock_nonce,
 					vdev_info->meas_nonce,
 					vdev_info->report_nonce);
@@ -207,7 +199,7 @@ bool test_realm_smmuv3(void)
 
 	realm_printf("DMA copy %s\n", res ? "successful" : "failed");
 
-	ret = rsi_vdev_dma_disable(rdev->id);
+	ret = rsi_vdev_dma_disable(vdev_id);
 	if (ret != RSI_SUCCESS) {
 		ERROR("%s() failed, 0x%lx", "rsi_vdev_dma_disable", ret);
 		return false;

@@ -742,19 +742,19 @@ u_register_t rsi_realm_config(struct rsi_realm_config *s);
 /* Function to enter aux plane. See RSI_PLANE_ENTER */
 u_register_t rsi_plane_enter(u_register_t plane_index, u_register_t run);
 
-u_register_t rsi_vdev_get_info(u_register_t rdev_id, u_register_t rdev_info_ptr);
+u_register_t rsi_vdev_get_info(u_register_t vdev_id, u_register_t vdev_info_ptr);
 
 /* Function to validate Realm device memory mappings */
-u_register_t rsi_vdev_vaildate_mapping(u_register_t rdev_id, u_register_t ipa_base,
+u_register_t rsi_vdev_vaildate_mapping(u_register_t vdev_id, u_register_t ipa_base,
 					u_register_t ipa_top, u_register_t pa_base,
 					u_register_t flags, u_register_t lock_nonce,
 					u_register_t meas_nonce, u_register_t report_nonce,
 					u_register_t *new_ipa_base, rsi_response_type *response);
 /* Function to enable DMA */
-u_register_t rsi_vdev_dma_enable(u_register_t rdev_id, u_register_t flags,
+u_register_t rsi_vdev_dma_enable(u_register_t vdev_id, u_register_t flags,
 				 u_register_t non_ats_plane, u_register_t lock_nonce,
 				 u_register_t meas_nonce, u_register_t report_nonce);
 /* Function to disable DMA */
-u_register_t rsi_vdev_dma_disable(u_register_t rdev_id);
+u_register_t rsi_vdev_dma_disable(u_register_t vdev_id);
 
 #endif /* REALM_RSI_H */

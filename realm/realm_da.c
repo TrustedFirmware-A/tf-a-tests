@@ -16,21 +16,18 @@
 #include <host_shared_data.h>
 #include <sync.h>
 
-static struct rdev gbl_rdev;
-
-/* RDEV info. Device type and attestation evidence digest */
+/* VDEV info. Device type and attestation evidence digest */
 static struct rsi_vdev_info gbl_vdev_info[2] __aligned(GRANULE_SIZE);
 
 /*
- * If the Realm supports DA feature, this function calls series of RSI RDEV
- * on the assigned device.
+ * If the Realm supports DA feature, this function gets VDEV info for the
+ * assigned device.
  *
  * Returns 'false' on error.
  */
-bool test_realm_da_rsi_calls(void)
+bool test_realm_da_rsi_vdev_get_info(void)
 {
-	struct rdev *rdev;
-	u_register_t rsi_feature_reg0, rsi_rc;
+	u_register_t rsi_feature_reg0, rsi_rc, vdev_id;
 	struct rsi_vdev_info *vdev_info;
 
 	/* Check if RSI_FEATURES support DA */
@@ -45,14 +42,13 @@ bool test_realm_da_rsi_calls(void)
 		return false;
 	}
 
-	/* Get the global RDEV. Currently only one RDEV is supported */
-	rdev = &gbl_rdev;
+	vdev_id = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
 
 	/* Use idx 1 to have struct size alignment */
 	vdev_info = &gbl_vdev_info[1];
 
 	/* After meas and ifc_report, get device info */
-	rsi_rc = realm_rsi_vdev_get_info(rdev, vdev_info);
+	rsi_rc = realm_rsi_vdev_get_info(vdev_id, vdev_info);
 	if (rsi_rc != RSI_SUCCESS) {
 		return false;
 	}

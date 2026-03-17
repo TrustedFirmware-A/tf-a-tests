@@ -163,6 +163,9 @@ test_result_t host_test_realm_smmuv3(void)
 		}
 	}
 
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U,
+				      HOST_ARG1_INDEX, h_vdev->vdev_id);
+
 	/* Call Realm to do DA related RSI calls */
 	if (!host_enter_realm_execute(&realm, REALM_SMMU, RMI_EXIT_VDEV_MAP, 0U)) {
 		ERROR("Realm SMMUv3 test failed\n");

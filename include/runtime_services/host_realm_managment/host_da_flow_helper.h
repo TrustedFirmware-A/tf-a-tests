@@ -19,7 +19,9 @@ int tsm_disconnect_devices(void);
 int realm_assign_device(struct realm *realm_ptr,
 			struct host_vdev *h_vdev,
 			unsigned long tdi_id,
-			void *pdev_ptr);
+			void *pdev_ptr,
+			struct rmi_address_range *addr_range,
+			size_t num_address_range);
 int realm_assign_unassign_device(struct realm *realm_ptr,
 				 struct host_vdev *h_vdev,
 				 unsigned long tdi_id,

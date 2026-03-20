@@ -80,7 +80,7 @@ test_result_t host_test_realm_smmuv3(void)
 	h_vdev = &gbl_host_vdev;
 
 	/* Assign TSM connected device to a Realm */
-	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->ep_pdev);
+	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->ep_pdev, NULL, 0);
 	if (rc != 0) {
 		return_error = true;
 		goto destroy_psmmu;
@@ -119,6 +119,23 @@ test_result_t host_test_realm_smmuv3(void)
 			addr_range[i].base, addr_range[i].top - 1UL);
 	}
 
+	/*
+	 * Now that the device ranges are known, destroy the vdev, and recreate
+	 * it with the ranges from the if report
+	 */
+	rc = host_unassign_vdev_from_realm(&realm, h_vdev);
+	if (rc != 0) {
+		ERROR("Destroying VDEV failed\n");
+		return_error = true;
+		goto destroy_pdev;
+	}
+	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf,
+				 h_pdev->ep_pdev, addr_range, range_count);
+	if (rc != 0) {
+		return_error = true;
+		goto destroy_pdev;
+	}
+
 	/* Set MMIO range for Realm */
 	host_shared_data_set_mmio_range(&realm, PRIMARY_PLANE_ID, 0U,
 					range_count, &addr_range[0]);
@@ -132,7 +149,7 @@ test_result_t host_test_realm_smmuv3(void)
 			ALIGN(num_gran * sizeof(u_register_t) + PAGE_SIZE - 1UL,
 			PAGE_SIZE));
 		return_error = true;
-		goto destroy_psmmu;
+		goto unassign_vdev;
 	}
 
 	/* Delegate and map all device granules across all MMIO ranges */
@@ -145,7 +162,7 @@ test_result_t host_test_realm_smmuv3(void)
 				ERROR("%s() for 0x%lx failed, %lu\n",
 					"host_rmi_granule_delegate", addr, res);
 				return_error = true;
-				goto undelegate_granules;
+				goto unmap_memory;
 			}
 			++num_dlg[i];	/* number of granules delegated */
 
@@ -183,7 +200,7 @@ test_result_t host_test_realm_smmuv3(void)
 		/*
 		 * Validate device memory mappings
 		 */
-		res = host_rmi_vdev_validate_mapping(realm.rd, realm.rec[0],
+		res = host_rmi_rtt_dev_validate(realm.rd, realm.rec[0],
 						(u_register_t)h_pdev,
 						(u_register_t)h_vdev,
 						run->exit.dev_mem_base,
@@ -191,7 +208,7 @@ test_result_t host_test_realm_smmuv3(void)
 						&out_top);
 		if (res != RMI_SUCCESS) {
 			ERROR("%s() failed, %lu out_top=0x%lx\n",
-				"host_rmi_vdev_validate_mapping", res, out_top);
+				"host_rmi_rtt_dev_validate", res, out_top);
 				run->entry.flags = REC_ENTRY_FLAG_DEV_MEM_RESPONSE;
 				return_error = true;
 		}
@@ -212,50 +229,50 @@ test_result_t host_test_realm_smmuv3(void)
 		return_error = true;
 	}
 
+unmap_memory:
+	for (unsigned int i = 0U; i < range_count; i++) {
+		u_register_t addr = addr_range[i].base;
+
+		while (addr < addr_range[i].top) {
+			u_register_t out_top, out_range, out_count;
+
+
+			res = host_rmi_rtt_dev_unmap(realm.rd, addr, addr + GRANULE_SIZE,
+						     RMI_ADDR_TYPE_SINGLE, addr, &out_top,
+						     &out_range, &out_count);
+			if (res != REALM_SUCCESS) {
+				ERROR("%s() for 0x%lx failed, %lu\n",
+					"host_dev_mem_map", addr, res);
+				return_error = true;
+				goto unmap_memory;
+			}
+			--num_map;	/* number of granules mapped */
+
+			res = host_rmi_granule_undelegate(addr);
+			if (res != RMI_SUCCESS) {
+				ERROR("%s() for 0x%lx failed, %lu\n",
+					"host_rmi_granule_undelegate", addr, res);
+				return_error = true;
+			}
+			--num_dlg[i];	/* number of granules delegated */
+			addr += GRANULE_SIZE;
+		}
+	}
+
+unassign_vdev:
 	rc = host_unassign_vdev_from_realm(&realm, h_vdev);
 	if (rc != 0) {
 		ERROR("Destroying VDEV failed\n");
 		return_error = true;
-		goto undelegate_granules;
 	}
 
+
+destroy_pdev:
 	/* Destroy PDEV */
 	rc = tsm_disconnect_device(h_pdev);
 	if (rc != 0) {
 		ERROR("Destroying PDEV failed\n");
 		return_error = true;
-	}
-
-unmap_memory:
-	/* Unmap all device memory */
-	for (unsigned int i = 0U; i < num_map; i++) {
-		__unused u_register_t pa, top;
-
-		res = host_rmi_vdev_unmap(realm.rd, map_addr[i],
-					  RTT_MAX_LEVEL, &pa, &top);
-		if (res != RMI_SUCCESS) {
-			ERROR("%s() for 0x%lx failed, 0x%lx\n",
-				"host_rmi_vdev_unmap", map_addr[i], res);
-			return_error = true;
-			goto undelegate_granules;
-		}
-	}
-
-undelegate_granules:
-	/* Undelegate device granules across all MMIO ranges */
-	for (unsigned int i = 0U; i < range_count; i++) {
-		u_register_t addr = addr_range[i].base;
-
-		for (unsigned int j = 0U; j < num_dlg[i]; j++) {
-			res = host_rmi_granule_undelegate(addr);
-			if (res != RMI_SUCCESS) {
-				ERROR("%s() for 0x%lx failed, 0x%lx\n",
-					"host_rmi_granule_undelegate", addr, res);
-				return_error = true;
-				goto destroy_psmmu;
-			}
-			addr += GRANULE_SIZE;
-		}
 	}
 
 	pcie_mem_disable(h_pdev->dev->bdf);

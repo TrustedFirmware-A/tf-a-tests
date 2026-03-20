@@ -257,7 +257,7 @@ test_result_t host_da_get_info_parameter_test(void)
 		goto undelegate_destroy;
 	}
 
-	rc = host_assign_vdev_to_realm(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->ep_pdev);
+	rc = host_assign_vdev_to_realm(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->ep_pdev, NULL, 0);
 	if (rc != 0) {
 		ERROR("VDEV assign to realm failed\n");
 		goto disconnect_device;
@@ -444,7 +444,7 @@ test_result_t host_vdev_test_valid_state_transition(void)
 	tsm_connected = true;
 
 	rc = host_assign_vdev_to_realm(&realm, h_vdev,
-				       h_pdev->dev->bdf, h_pdev->ep_pdev);
+				       h_pdev->dev->bdf, h_pdev->ep_pdev, NULL, 0);
 	if (rc != 0) {
 		ERROR("VDEV assign to realm failed\n");
 		return_error = true;

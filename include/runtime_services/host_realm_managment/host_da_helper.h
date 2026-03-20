@@ -166,12 +166,14 @@ int host_vdev_get_interface_report(struct realm *realm,
 int host_vdev_get_measurements(struct realm *realm,
 			       struct host_vdev *h_vdev,
 			       unsigned char target_state);
-int host_vdev_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t ipa,
-		  u_register_t level, u_register_t addr);
+int host_rtt_dev_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t base,
+			u_register_t top, u_register_t flags, u_register_t oaddr,
+			u_register_t *out_top);
 int host_vdev_unlock(struct realm *realm, struct host_vdev *h_vdev,
 		     unsigned char target_state);
 int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
-			      unsigned long tdi_id, void *pdev_ptr);
+			      unsigned long tdi_id, void *pdev_ptr,
+			      struct rmi_address_range *addr_range, size_t num_address_range);
 int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev);
 
 u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev,

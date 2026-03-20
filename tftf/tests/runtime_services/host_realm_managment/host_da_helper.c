@@ -349,8 +349,7 @@ int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev)
 	memset(pdev_params, 0, GRANULE_SIZE);
 
 	pdev_params->flags =
-		INPLACE(RMI_PDEV_FLAGS_SPDM, RMI_PDEV_SPDM_TRUE) |
-		INPLACE(RMI_PDEV_FLAGS_TRUST, RMI_TRUST_SEL);
+		INPLACE(RMI_PDEV_FLAGS_SPDM, RMI_PDEV_SPDM_TRUE);
 
 	if (ep_pdev) {
 		/* Create EP pdev */
@@ -1113,11 +1112,12 @@ int host_vdev_get_interface_report(struct realm *realm,
 	return rc;
 }
 
-int host_vdev_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t ipa,
-		  u_register_t level, u_register_t addr)
+int host_rtt_dev_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t base,
+			u_register_t top, u_register_t flags, u_register_t oaddr,
+			u_register_t *out_top)
 {
-	return host_rmi_vdev_map(realm->rd, (u_register_t)h_vdev->vdev_ptr,
-			       ipa, level, addr);
+	return host_rmi_rtt_dev_map(realm->rd, (u_register_t)h_vdev->vdev_ptr,
+			       base, top, flags, oaddr, out_top);
 }
 
 int host_vdev_unlock(struct realm *realm,
@@ -1346,7 +1346,8 @@ err_undel_vdev:
 }
 
 int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
-			      unsigned long tdi_id, void *pdev_ptr)
+			      unsigned long tdi_id, void *pdev_ptr,
+			      struct rmi_address_range *addr_range, size_t num_address_range)
 {
 	struct rmi_vdev_params *vdev_params;
 	u_register_t ret;
@@ -1375,7 +1376,16 @@ int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
 	vdev_params->tdi_id = tdi_id;
 
 	vdev_params->flags = h_vdev->flags;
-	vdev_params->num_aux = 0UL;
+
+	if ((addr_range != NULL) && (num_address_range > 0)) {
+		memcpy(vdev_params->addr_range,
+		       addr_range,
+		       num_address_range * sizeof(addr_range[0]));
+		vdev_params->num_addr_range = num_address_range;
+	} else {
+		memset(vdev_params->addr_range, 0, num_address_range * sizeof(addr_range[0]));
+		vdev_params->num_addr_range = 0U;
+	}
 
 	ret = host_rmi_vdev_create(realm->rd, (u_register_t)pdev_ptr,
 				  (u_register_t)h_vdev->vdev_ptr,
@@ -1471,29 +1481,39 @@ u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev,
 {
 	u_register_t map_addr = dev_pa;	/* 1:1 PA->IPA mapping */
 	u_register_t ret;
+	u_register_t out_top;
+	size_t granule_count = RTT_MAP_SIZE(map_level) / GRANULE_SIZE;
+	size_t i = 0;
 
 	*dev_ipa = 0UL;
 
-	ret = host_vdev_map(realm, h_vdev, map_addr, map_level, dev_pa);
+	while (i < granule_count) {
+		unsigned long base = map_addr + (GRANULE_SIZE * i);
+		unsigned long top = map_addr + (GRANULE_SIZE * (i + 1));
 
-	if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
-		/* Create missing RTTs and retry */
-		long level = (long)RMI_RETURN_INDEX(ret);
+		ret = host_rtt_dev_map(realm, h_vdev, base, top, RMI_ADDR_TYPE_SINGLE, base,
+				&out_top);
 
-		ret = host_rmi_create_rtt_levels(realm, map_addr,
-						 level, map_level);
-		if (ret != RMI_SUCCESS) {
-			tftf_testcase_printf("%s() failed, 0x%lx\n",
-				"host_rmi_create_rtt_levels", ret);
+		if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
+			/* Create a missing RTT and retry */
+			long level = (long)RMI_RETURN_INDEX(ret);
+
+			ret = host_rmi_create_rtt_level(realm, base, level + 1);
+			if (ret != RMI_SUCCESS) {
+				ERROR("%s() failed, 0x%lx\n",
+					"host_rmi_create_rtt_level", ret);
+				return REALM_ERROR;
+			}
+
+			/* try mapping again */
+			continue;
+		} else if ((ret != RMI_SUCCESS) ||
+			    (out_top != top)) {
+			ERROR("%s() failed, 0x%lx, out_top=0x%lx\n",
+				"host_rmi_vdev_map", ret, out_top);
 			return REALM_ERROR;
 		}
-
-		ret = host_vdev_map(realm, h_vdev, map_addr, map_level, dev_pa);
-	}
-	if (ret != RMI_SUCCESS) {
-		tftf_testcase_printf("%s() failed, 0x%lx\n",
-			"host_rmi_vdev_map", ret);
-		return REALM_ERROR;
+		++i;
 	}
 
 	*dev_ipa = map_addr;

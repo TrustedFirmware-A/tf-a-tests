@@ -188,9 +188,8 @@
 #define SMC_RMI_RTT_MAP_UNPROTECTED		SMC64_RMI_FID(U(0xF))
 
 /*
- * FID: 0xC4000160
+ * FID: 0xC4000160 is not used.
  */
-#define SMC_RMI_VDEV_AUX_COUNT			SMC64_RMI_FID(U(0x10))
 
 /*
  * FID: 0xC4000161
@@ -219,13 +218,16 @@
 /*
  * FID: 0xC4000163
  *
- * arg0 == RD address
- * arg1 == PA of the RD for the target Realm
- * arg2 == PA of the target REC
- * arg3 == Base of target IPA region
- * arg4 == Top of target IPA region
+ * arg0 == PA of the RD for the target Realm
+ * arg1 == PA of the target REC
+ * arg2 == PA of the PDEV
+ * arg3 == PA of the VDEV
+ * arg4 == Base of target IPA region
+ * arg5 == Top of target IPA region
+ *
+ * ret1 == Top IPA of range whose RIPAS was modified
  */
-#define SMC_RMI_VDEV_VALIDATE_MAPPING		SMC64_RMI_FID(U(0x13))
+#define SMC_RMI_RTT_DEV_VALIDATE		SMC64_RMI_FID(U(0x13))
 
 /*
  * FID: 0xC4000164
@@ -362,28 +364,53 @@
  */
 
 /*
- * FID: 0xC4000172
+ * FID: 0xC40001F7
  *
- * arg0 == RD address
- * arg1 == map address
- * arg2 == level
- * arg3 == PA of the target device memory
+ * arg0 == PA of the RD for the target Realm
+ * arg1 == PA of the VDEV
+ * arg2 == Base of the target IPA range
+ * arg3 == Top of the target IPA range
+ * arg4 == Flags
+ * arg5 == Output address set descriptor.
+ *         If flags.oaddr_type == RMI_ADDR_TYPE_SINGLE then this describes a
+ *         contiguous PA range which will be mapped into the target IPA range.
+ *         If flags.oaddr_type == RMI_ADDR_TYPE_LIST then this is the PA of a
+ *         Granule that holds an RMI Address List.
+ *         This describes a list of PA regions which will be mapped into the
+ *         target IPA range.
+ *
+ * ret1 == Top IPA of range which has been mapped
  */
-#define SMC_RMI_VDEV_MAP			SMC64_RMI_FID(U(0x22))
+#define SMC_RMI_RTT_DEV_MAP			SMC64_RMI_FID(U(0xA7))
 
 /*
- * FID: 0xC4000173
+ * FID: 0xC40001F8
  *
- * arg0 == PA of the RD which owns the target device memory
- * arg1 == PA of the VDEV
- * arg2 == IPA at which the memory is mapped in the target Realm
- * arg3 == RTT level
+ * arg0 == PA of the RD for the target Realm
+ * arg1 == Base of the target IPA range
+ * arg2 == Top of the target IPA range
+ * arg3 == Flags
+ * arg4 == Output address set descriptor.
+ *         If flags.oaddr_type == RMI_ADDR_TYPE_SINGLE then this describes a
+ *         contiguous PA range which has been unmapped from the target IPA
+ *         range.
+ *         If flags.oaddr_type == RMI_ADDR_TYPE_LIST then this is the PA of a
+ *         Granule that holds an RMI Address List.
+ *         This describes a list of PA regions which have been unmapped from the
+ *         target IPA range.
  *
- * ret1 == PA of the device memory which was unmapped
- * ret2 == Top IPA of non-live RTT entries, from entry at which the RTT walk
- *         terminated
+ * ret1 == Top IPA of range which has been mapped
+ * ret2 == Output address range.
+ *         If flags.oaddr_type == RMI_ADDR_TYPE_SINGLE then this describes a
+ *         contiguous PA range which has been unmapped from the target IPA
+ *         range.
+ *         If flags.oaddr_type != RMI_ADDR_TYPE_SINGLE then this value is zero.
+ * ret3 == Number of entries in output address list.
+ *         If flags.oaddr_type == RMI_ADDR_TYPE_LIST then this is the number of
+ *         entries which have been written to the output address list.
+ *         If flags.oaddr_type != RMI_ADDR_TYPE_LIST then this value is zero.
  */
-#define SMC_RMI_VDEV_UNMAP			SMC64_RMI_FID(U(0x23))
+#define SMC_RMI_RTT_DEV_UNMAP			SMC64_RMI_FID(U(0xA8))
 
 /*
  * FID: 0xC4000174
@@ -519,6 +546,8 @@
  * arg0 == PA of the RD
  * arg1 == PA of the PDEV
  * arg2 == PA of the VDEV
+ *
+ * ret1 == Address of assigned Granule
  */
 #define SMC_RMI_VDEV_UNLOCK			SMC64_RMI_FID(U(0x3A))
 
@@ -1399,14 +1428,6 @@ struct rmi_rec_run {
 #define RMI_PDEV_COHERENT_TRUE			U(1)
 
 /*
- * RmiPdevTrust
- * Represents the device trust model.
- * Width: 1 bit
- */
-#define RMI_TRUST_SEL				U(0)
-#define RMI_TRUST_COMP				U(1)
-
-/*
  * RmmPdevState
  * Represents the state of a PDEV
  * Width: 8 bits
@@ -1605,11 +1626,8 @@ struct rmi_address_range {
 /* RmiPdevSpdm: Bit 0 */
 #define RMI_PDEV_FLAGS_SPDM_SHIFT		UL(0)
 #define RMI_PDEV_FLAGS_SPDM_WIDTH		UL(1)
-/* RmiPdevTrust: Bit 1 */
-#define RMI_PDEV_FLAGS_TRUST_SHIFT		UL(1)
-#define RMI_PDEV_FLAGS_TRUST_WIDTH		UL(1)
-/* RmiPdevCategory: Bits 3:2 */
-#define RMI_PDEV_FLAGS_CATEGORY_SHIFT		UL(2)
+/* RmiPdevCategory: Bits 2:1 */
+#define RMI_PDEV_FLAGS_CATEGORY_SHIFT		UL(1)
 #define RMI_PDEV_FLAGS_CATEGORY_WIDTH		UL(2)
 
 /*
@@ -1669,10 +1687,9 @@ struct rmi_public_key_params {
  * Fieldset contains flags provided by the Host during VDEV creation.
  * Width: 64 bits
  */
-#define RMI_VDEV_FLAGS_VSMMU_SHIFT		UL(0)
-#define RMI_VDEV_FLAGS_VSMMU_WIDTH		UL(1)
-#define RMI_VDEV_FLAGS_RES0_SHIFT		UL(1)
-#define RMI_VDEV_FLAGS_RES0_WIDTH		UL(63)
+/* RmiFeature: Whether device uses a VSMMU */
+#define RMI_VDEV_FLAGS_VSMMU_SHIFT             UL(0)
+#define RMI_VDEV_FLAGS_VSMMU_WIDTH             UL(1)
 
 /*
  * RmiVdevState
@@ -1688,27 +1705,29 @@ struct rmi_public_key_params {
 /* Maximum number of aux granules paramenter passed to VDEV create */
 #define VDEV_PARAM_AUX_GRANULES_MAX		U(32)
 
+#define RMI_VDEV_PARAMS_ADDR_RANGE_MAX 8
+
 /*
  * RmiVdevParams
- * The RmiVdevParams structure contains parameters provided by the Host during
- * VDEV creation.
+ * Parameters provided by the Host during VDEV creation
  * Width: 4096 (0x1000) bytes.
  */
 struct rmi_vdev_params {
 	/* RmiVdevFlags: Flags */
-	SET_MEMBER_RMI(unsigned long flags, 0, 0x8);
+	SET_MEMBER_RMI(unsigned long flags, 0x0, 0x8);
 	/* Bits64: Virtual device identifier */
 	SET_MEMBER_RMI(unsigned long vdev_id, 0x8, 0x10);
 	/* Bits64: TDI identifier */
-	SET_MEMBER_RMI(unsigned long tdi_id, 0x10, 0x18);
-	/* UInt64: Number of auxiliary granules */
-	SET_MEMBER_RMI(unsigned long num_aux, 0x18, 0x20);
-	/* PA of VSMMU. This field is ignored unless flags.VSMMU is RMI_TRUE. */
+	SET_MEMBER_RMI(unsigned long tdi_id, 0x10, 0x20);
+	/* Address: PA of VSMMU. */
 	SET_MEMBER_RMI(unsigned long vsmmu_addr, 0x20, 0x28);
-	/* Virtual Stream Identifier. This field is ignored unless flags.VSMMU is RMI_TRUE. */
-	SET_MEMBER_RMI(unsigned long vsid, 0x28, 0x100);
-	/* Address: Addresses of auxiliary granules */
-	SET_MEMBER_RMI(unsigned long aux[VDEV_PARAM_AUX_GRANULES_MAX], 0x100, 0x1000);
+	/* Bits64: Virtual Stream Identifier. */
+	SET_MEMBER_RMI(unsigned long vsid, 0x28, 0x30);
+	/* UInt64: Number of device address ranges. */
+	SET_MEMBER_RMI(unsigned long num_addr_range, 0x30, 0x200);
+	/* RmiAddrRange: Device address ranges. */
+	SET_MEMBER_RMI(struct rmi_address_range
+		addr_range[RMI_VDEV_PARAMS_ADDR_RANGE_MAX], 0x200, 0x1000);
 };
 
 /*
@@ -1930,6 +1949,9 @@ u_register_t host_rmi_rtt_init_ripas(u_register_t rd,
 				   u_register_t start,
 				   u_register_t end,
 				   u_register_t *top);
+u_register_t host_rmi_create_rtt_level(struct realm *realm,
+				       u_register_t map_addr,
+				       long level);
 u_register_t host_rmi_create_rtt_levels(struct realm *realm,
 					u_register_t map_addr,
 					long level, long max_level);
@@ -2007,11 +2029,14 @@ u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 u_register_t host_rmi_vdev_complete(u_register_t rec_ptr, u_register_t vdev_ptr);
 u_register_t host_rmi_vdev_get_interface_report(u_register_t rd_ptr, u_register_t pdev_ptr,
 						u_register_t vdev_ptr);
-u_register_t host_rmi_vdev_map(u_register_t rd_ptr, u_register_t vdev_ptr,
-			       u_register_t ipa, u_register_t level, u_register_t addr);
-u_register_t host_rmi_vdev_unmap(u_register_t rd_ptr,
-			       u_register_t ipa, u_register_t level,
-			       u_register_t *pa, u_register_t *top);
+u_register_t host_rmi_rtt_dev_map(u_register_t rd_ptr, u_register_t vdev_ptr,
+			       u_register_t base, u_register_t top, u_register_t flags,
+			       u_register_t oaddr, u_register_t *out_top);
+u_register_t host_rmi_rtt_dev_unmap(u_register_t rd_ptr,
+			       u_register_t base, u_register_t top, u_register_t flags,
+			       u_register_t oaddr,
+			       u_register_t *out_top, u_register_t *out_range,
+			       u_register_t *out_count);
 u_register_t host_rmi_vdev_get_measurements(u_register_t rd_ptr, u_register_t pdev_ptr,
 					    u_register_t vdev_ptr, u_register_t params_ptr);
 u_register_t host_rmi_vdev_lock(u_register_t rd_ptr, u_register_t pdev_ptr,
@@ -2028,10 +2053,10 @@ u_register_t host_rmi_vdev_get_state(u_register_t vdev_ptr, u_register_t *state)
 u_register_t host_rmi_vdev_abort(u_register_t vdev_ptr);
 u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,
 				   u_register_t vdev_ptr);
-u_register_t host_rmi_vdev_validate_mapping(u_register_t rd, u_register_t rec_ptr,
-					    u_register_t pdev_ptr, u_register_t vdev_ptr,
-					    u_register_t base, u_register_t top,
-					    u_register_t *out_top);
+u_register_t host_rmi_rtt_dev_validate(u_register_t rd, u_register_t rec_ptr,
+				       u_register_t pdev_ptr, u_register_t vdev_ptr,
+				       u_register_t base, u_register_t top,
+				       u_register_t *out_top);
 u_register_t host_rmi_psmmu_activate(u_register_t psmmu_ptr, u_register_t params_ptr,
 					u_register_t *handle, u_register_t *donate_req);
 u_register_t host_rmi_psmmu_deactivate(u_register_t psmmu_ptr, u_register_t *handle,

@@ -341,7 +341,9 @@ int tsm_disconnect_devices(void)
 int realm_assign_device(struct realm *realm_ptr,
 			struct host_vdev *h_vdev,
 			unsigned long tdi_id,
-			void *pdev_ptr)
+			void *pdev_ptr,
+			struct rmi_address_range *addr_range,
+			size_t num_address_range)
 {
 	int rc;
 
@@ -354,7 +356,8 @@ int realm_assign_device(struct realm *realm_ptr,
 	     PCIE_EXTRACT_BDF_FUNC((uint32_t)tdi_id));
 	INFO("======================================\n");
 
-	rc = host_assign_vdev_to_realm(realm_ptr, h_vdev, tdi_id, pdev_ptr);
+	rc = host_assign_vdev_to_realm(realm_ptr, h_vdev, tdi_id, pdev_ptr,
+		addr_range, num_address_range);
 	if (rc != 0) {
 		ERROR("VDEV assign to realm failed\n");
 		return rc;
@@ -408,7 +411,7 @@ int realm_assign_unassign_device(struct realm *realm_ptr,
 	bool realm_rc;
 	int rc;
 
-	rc = realm_assign_device(realm_ptr, h_vdev, tdi_id, pdev_ptr);
+	rc = realm_assign_device(realm_ptr, h_vdev, tdi_id, pdev_ptr, NULL, 0U);
 	if (rc != 0) {
 		return rc;
 	}

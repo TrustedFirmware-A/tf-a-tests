@@ -416,8 +416,8 @@ undelegate_granules:
 		}
 	}
 
-	if (!host_destroy_realm(&realm)) {
-		ERROR("host_destroy_realm() failed\n");
+	/* Deactivate PSMMU and destroy the Realm */
+	if (!destroy_psmmu_realm(&realm)) {
 		return TEST_RESULT_FAIL;
 	}
 

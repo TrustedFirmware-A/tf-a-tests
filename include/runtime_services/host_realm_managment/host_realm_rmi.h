@@ -185,7 +185,7 @@
  *
  * ret0 == status/index
  */
-#define RMI_RTT_AUX_CREATE		SMC64_RMI_FID(U(0x2D))
+#define RMI_RTT_AUX_CREATE			SMC64_RMI_FID(U(0x2D))
 
 /*
  * arg0 == RD address
@@ -198,7 +198,7 @@
  * ret2 == Top of the non-live address region. Only valid
  *         if ret0 == RMI_SUCCESS or ret0 == (RMI_ERROR_RTT_WALK, x)
  */
-#define RMI_RTT_AUX_DESTROY		SMC64_RMI_FID(U(0x2E))
+#define RMI_RTT_AUX_DESTROY			SMC64_RMI_FID(U(0x2E))
 
 /*
  * arg0 == RD address
@@ -347,7 +347,7 @@
 /*
  * FID: 0xC400016E
  */
-#define SMC_RMI_PSMMU_MSI_CONFIG		SMC64_RMI_FID(U(0x1E))
+#define SMC_RMI_RMM_CONFIG_SET			SMC64_RMI_FID(U(0x1E))
 
 /*
  * FID: 0xC400016F
@@ -589,6 +589,38 @@
  */
 #define SMC_RMI_VDEV_START			SMC64_RMI_FID(U(0x83))
 
+/*
+ * FID: 0xC40001D7
+ *
+ * arg0 == PA of PSMMU
+ * arg1 == PA of PSMMU parameters
+ */
+#define SMC_RMI_PSMMU_ACTIVATE			SMC64_RMI_FID(U(0x87))
+
+/*
+ * FID: 0xC40001D8
+ *
+ * arg0 == PA of PSMMU
+ */
+#define SMC_RMI_PSMMU_DEACTIVATE		SMC64_RMI_FID(U(0x88))
+
+/*
+ * FID: 0xC40001DB
+ *
+ * arg0 == PA of PSMMU
+ * sid	== Base of StreamID range described by the Level 2 Stream Table 
+ */
+#define SMC_RMI_PSMMU_ST_L2_CREATE		SMC64_RMI_FID(U(0x8B))
+
+/*
+ * FID: 0xC40001DC
+ *
+ * arg0 == PA of PSMMU
+ * sid	== Base of StreamID range described by the Level 2 Stream Table 
+ */
+#define SMC_RMI_PSMMU_ST_L2_DESTROY		SMC64_RMI_FID(U(0x8C))
+
+
 #define GRANULE_SIZE			PAGE_SIZE_4KB
 
 /* Maximum number of auxiliary granules required for a REC */
@@ -824,29 +856,29 @@ typedef enum {
  */
 struct rmi_realm_params {
 	/* RmiRealmFlags0 */
-	SET_MEMBER(unsigned long flags0, 0, 0x8);			/* Offset 0 */
+	SET_MEMBER_RMI(unsigned long flags0, 0, 0x8);			/* Offset 0 */
 	/* Requested IPA width */
-	SET_MEMBER(unsigned int s2sz, 0x8, 0x10);			/* 0x8 */
+	SET_MEMBER_RMI(unsigned int s2sz, 0x8, 0x10);			/* 0x8 */
 	/* Requested SVE vector length */
-	SET_MEMBER(unsigned int sve_vl, 0x10, 0x18);			/* 0x10 */
+	SET_MEMBER_RMI(unsigned int sve_vl, 0x10, 0x18);		/* 0x10 */
 	/* Requested number of breakpoints */
-	SET_MEMBER(unsigned int num_bps, 0x18, 0x20);			/* 0x18 */
+	SET_MEMBER_RMI(unsigned int num_bps, 0x18, 0x20);		/* 0x18 */
 	/* Requested number of watchpoints */
-	SET_MEMBER(unsigned int num_wps, 0x20, 0x28);			/* 0x20 */
+	SET_MEMBER_RMI(unsigned int num_wps, 0x20, 0x28);		/* 0x20 */
 	/* Requested number of PMU counters */
-	SET_MEMBER(unsigned int pmu_num_ctrs, 0x28, 0x30);		/* 0x28 */
+	SET_MEMBER_RMI(unsigned int pmu_num_ctrs, 0x28, 0x30);		/* 0x28 */
 	/* Measurement algorithm */
-	SET_MEMBER(unsigned char algorithm, 0x30, 0x38);		/* 0x30 */
+	SET_MEMBER_RMI(unsigned char algorithm, 0x30, 0x38);		/* 0x30 */
 	/* Number of auxiliary Planes */
-	SET_MEMBER(unsigned int num_aux_planes, 0x38, 0x400);		/* 0x38 */
+	SET_MEMBER_RMI(unsigned int num_aux_planes, 0x38, 0x400);	/* 0x38 */
 	/* Realm Personalization Value */
-	SET_MEMBER(unsigned char rpv[RPV_SIZE], 0x400, 0x440);		/* 0x400 */
+	SET_MEMBER_RMI(unsigned char rpv[RPV_SIZE], 0x400, 0x440);	/* 0x400 */
 	/*
 	 * Index of Plane whose stage 2 permissions are observed
 	 * by ATS requests from devices assigned to the Realm.
 	 */
 	SET_MEMBER_RMI(unsigned long ats_plane, 0x440, 0x800);		/* 0x440 */
-	SET_MEMBER(struct {
+	SET_MEMBER_RMI(struct {
 			/* Virtual Machine Identifier */
 			unsigned short vmid;				/* 0x800 */
 			/* Realm Translation Table base */
@@ -857,13 +889,13 @@ struct rmi_realm_params {
 			unsigned int rtt_num_start;			/* 0x818 */
 		   }, 0x800, 0x820);
 	/* RmiRealmFlags1 */
-	SET_MEMBER(unsigned long flags1, 0x820, 0x828);			/* 0x820 */
+	SET_MEMBER_RMI(unsigned long flags1, 0x820, 0x828);		/* 0x820 */
 	/* MECID */
-	SET_MEMBER(long mecid, 0x828, 0xF00);				/* 0x828 */
+	SET_MEMBER_RMI(long mecid, 0x828, 0xF00);			/* 0x828 */
 	/* Auxiliary Virtual Machine Identifiers */
-	SET_MEMBER(unsigned short aux_vmid[3], 0xF00, 0xF80);		/* 0xF00 */
+	SET_MEMBER_RMI(unsigned short aux_vmid[3], 0xF00, 0xF80);	/* 0xF00 */
 	/* Base address of auxiliary RTTs */
-	SET_MEMBER(unsigned long aux_rtt_base[3], 0xF80, 0x1000);	/* 0xF80 */
+	SET_MEMBER_RMI(unsigned long aux_rtt_base[3], 0xF80, 0x1000);	/* 0xF80 */
 };
 
 /*
@@ -873,14 +905,14 @@ struct rmi_realm_params {
  */
 struct rmi_rec_params {
 	/* Flags */
-	SET_MEMBER(u_register_t flags, 0, 0x100);		/* Offset 0 */
+	SET_MEMBER_RMI(u_register_t flags, 0, 0x100);		/* Offset 0 */
 	/* MPIDR of the REC */
-	SET_MEMBER(u_register_t mpidr, 0x100, 0x200);		/* 0x100 */
+	SET_MEMBER_RMI(u_register_t mpidr, 0x100, 0x200);	/* 0x100 */
 	/* Program counter */
-	SET_MEMBER(u_register_t pc, 0x200, 0x300);		/* 0x200 */
+	SET_MEMBER_RMI(u_register_t pc, 0x200, 0x300);		/* 0x200 */
 	/* General-purpose registers */
-	SET_MEMBER(u_register_t gprs[REC_CREATE_NR_GPRS], 0x300, 0x800); /* 0x300 */
-	SET_MEMBER(struct {
+	SET_MEMBER_RMI(u_register_t gprs[REC_CREATE_NR_GPRS], 0x300, 0x800); /* 0x300 */
+	SET_MEMBER_RMI(struct {
 		/* Number of auxiliary Granules */
 		u_register_t num_aux;				/* 0x800 */
 		/* Addresses of auxiliary Granules */
@@ -909,10 +941,10 @@ struct rmi_rec_params {
  */
 struct rmi_rec_entry {
 	/* Flags */
-	SET_MEMBER(u_register_t flags, 0, 0x200);		/* Offset 0 */
+	SET_MEMBER_RMI(u_register_t flags, 0, 0x200);		/* Offset 0 */
 	/* General-purpose registers */
-	SET_MEMBER(u_register_t gprs[REC_EXIT_NR_GPRS], 0x200, 0x300); /* 0x200 */
-	SET_MEMBER(struct {
+	SET_MEMBER_RMI(u_register_t gprs[REC_EXIT_NR_GPRS], 0x200, 0x300); /* 0x200 */
+	SET_MEMBER_RMI(struct {
 		/* GICv3 Hypervisor Control Register */
 		u_register_t gicv3_hcr;				/* 0x300 */
 		/* GICv3 List Registers */
@@ -978,19 +1010,19 @@ struct rmi_rec_exit {
 		   }, 0x500, 0x520);
 	SET_MEMBER_RMI(struct {
 			/* Base addr of target region for pending S2AP change */
-			unsigned long s2ap_base; /* 0x520 */
+			unsigned long s2ap_base; 	/* 0x520 */
 			/* Top addr of target region for pending S2AP change */
-			unsigned long s2ap_top; /* 0x528 */
+			unsigned long s2ap_top; 	/* 0x528 */
 			/* Virtual device ID 1 */
-			unsigned long vdev_id_1; /* 0x530 */
+			unsigned long vdev_id_1; 	/* 0x530 */
 			/* Virtual device ID 2 */
-			unsigned long vdev_id_2; /* 0x538 */
+			unsigned long vdev_id_2; 	/* 0x538 */
 			/* Base IPA of target region for VDEV mapping validation */
-			unsigned long dev_mem_base; /* 0x540 */
+			unsigned long dev_mem_base;	/* 0x540 */
 			/* Top IPA of target region for VDEV mapping validation */
-			unsigned long dev_mem_top; /* 0x548 */
+			unsigned long dev_mem_top;	/* 0x548 */
 			/* Base PA of device memory region */
-			unsigned long dev_mem_pa; /* 0x550 */
+			unsigned long dev_mem_pa;	/* 0x550 */
 		   }, 0x520, 0x600);
 
 	/* Host call immediate value */
@@ -1007,9 +1039,9 @@ struct rmi_rec_exit {
  */
 struct rmi_rec_run {
 	/* Entry information */
-	SET_MEMBER(struct rmi_rec_entry entry, 0, 0x800);	/* Offset 0 */
+	SET_MEMBER_RMI(struct rmi_rec_entry entry, 0, 0x800);	/* Offset 0 */
 	/* Exit information */
-	SET_MEMBER(struct rmi_rec_exit exit, 0x800, 0x1000);	/* 0x800 */
+	SET_MEMBER_RMI(struct rmi_rec_exit exit, 0x800, 0x1000);/* 0x800 */
 };
 
 /*
@@ -1242,6 +1274,7 @@ struct rmi_dev_comm_exit {
 #define RMI_DEV_COMM_ENTER_OFFSET		0x0
 #define RMI_DEV_COMM_EXIT_OFFSET		0x800
 #define RMI_DEV_COMM_DATA_SIZE			0x1000
+
 struct rmi_dev_comm_data {
 	/* RmiDevCommEnter: Entry information */
 	SET_MEMBER_RMI(struct rmi_dev_comm_enter enter,
@@ -1471,6 +1504,47 @@ struct realm {
 	unsigned short   aux_vmid[MAX_AUX_PLANE_COUNT];
 };
 
+/*
+ * RmiPsmmuFlags
+ * Contains flags provided by the Host during PSMMU activation.
+ * Width: 64 bits
+ */
+#define RMI_PSMMU_FLAGS_MSI_SHIFT	U(0)
+#define RMI_PSMMU_FLAGS_MSI_WIDTH	U(1)
+#define RMI_PSMMU_FLAGS_ATS_SHIFT	U(1)
+#define RMI_PSMMU_FLAGS_ATS_WIDTH	U(1)
+#define RMI_PSMMU_FLAGS_PRI_SHIFT	U(2)
+#define RMI_PSMMU_FLAGS_PRI_WIDTH	U(1)
+
+struct psmmu_params {
+	/* Flags */
+	SET_MEMBER_RMI(unsigned long flags, 0, 0x8);		/* Offset 0 */
+	/* Physical MSI address of the GERROR interrupt */
+	SET_MEMBER_RMI(unsigned long gerr_addr, 0x8, 0x10);	/* 0x8 */
+	/* Physical MSI data of the GERROR interrupt */
+	SET_MEMBER_RMI(unsigned long gerr_data, 0x10, 0x18);	/* 0x10 */
+	/* Physical MSI address of the EVENTQ interrupt */
+	SET_MEMBER_RMI(unsigned long eventq_addr, 0x18, 0x20);	/* 0x18 */
+	/* Physical MSI data of the EVENTQ interrupt */
+	SET_MEMBER_RMI(unsigned long eventq_data, 0x20, 0x28);	/* 0x20 */
+	/* Physical MSI address of the PRIQ interrupt */
+	SET_MEMBER_RMI(unsigned long priq_addr, 0x28, 0x30);	/* 0x28 */
+	/* Physical MSI daya of the PRIQ interrupt */
+	SET_MEMBER_RMI(unsigned long priq_data, 0x30, 0x38);	/* 0x30 */
+};
+
+/*
+ * RmiPsmmuParams
+ * This structure contains PSMMU parameters.
+ * Width: 4096 (0x1000) bytes.
+ */
+#define RESERVED_NUM	(0x1000 - sizeof(struct psmmu_params))
+
+struct rmi_psmmu_params {
+	struct psmmu_params params;		/* 0x00 - 0x38 */
+	unsigned char reserved[RESERVED_NUM];	/* 0x40 - 0xFFF */
+};
+
 /* RMI/SMC */
 u_register_t host_rmi_version(u_register_t req_ver);
 u_register_t host_rmi_granule_delegate(u_register_t addr);
@@ -1587,4 +1661,9 @@ u_register_t host_rmi_vdev_validate_mapping(u_register_t rd, u_register_t rec_pt
 					    u_register_t pdev_ptr, u_register_t vdev_ptr,
 					    u_register_t base, u_register_t top,
 					    u_register_t *out_top);
+u_register_t host_rmi_psmmu_activate(u_register_t psmmu_ptr, u_register_t params_ptr);
+u_register_t host_rmi_psmmu_deactivate(u_register_t psmmu_ptr);
+u_register_t host_rmi_psmmu_st_l2_create(u_register_t psmmu_ptr, u_register_t sid);
+u_register_t host_rmi_psmmu_st_l2_destroy(u_register_t psmmu_ptr, u_register_t sid);
+
 #endif /* HOST_REALM_RMI_H */

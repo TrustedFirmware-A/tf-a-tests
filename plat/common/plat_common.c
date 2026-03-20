@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -29,6 +29,7 @@
 #pragma weak plat_pcie_get_bar_config
 #pragma weak plat_get_invalid_addr
 #pragma weak plat_get_dev_region
+#pragma weak plat_get_smmu_base
 
 #if IMAGE_TFTF
 
@@ -175,4 +176,9 @@ int plat_get_dev_region(uint64_t *dev_base, size_t *dev_size,
 			uint32_t dev_type, uint32_t dev_idx)
 {
 	return -1;
+}
+
+uintptr_t plat_get_smmu_base(void)
+{
+	return (uintptr_t)0x0;
 }

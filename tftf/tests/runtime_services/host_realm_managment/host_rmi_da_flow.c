@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -71,8 +71,8 @@ test_result_t host_da_workflow_on_all_offchip_devices(void)
 	}
 
 out_rm_realm:
-	/* Destroy the Realm */
-	if (!host_destroy_realm(&realm)) {
+	/* Deactivate PSMMU and destroy the Realm */
+	if (!destroy_psmmu_realm(&realm)) {
 		return_error = true;
 	}
 

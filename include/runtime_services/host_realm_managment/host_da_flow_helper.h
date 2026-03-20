@@ -24,5 +24,8 @@ int realm_assign_unassign_device(struct realm *realm_ptr,
 				 struct host_vdev *h_vdev,
 				 unsigned long tdi_id,
 				 void *pdev_ptr);
+int activate_psmmu(void);
+int deactivate_psmmu(void);
+bool destroy_psmmu_realm(struct realm *realm);
 
 #endif /* HOST_DA_FLOW_HELPER_H */

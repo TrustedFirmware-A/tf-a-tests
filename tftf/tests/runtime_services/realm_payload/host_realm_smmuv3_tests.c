@@ -55,7 +55,7 @@ test_result_t host_test_realm_smmuv3(void)
 	 * TODO: creating this after host_pdev_setup causes Realm create to
 	 * fail.
 	 */
-	rc = host_create_realm_with_feat_da(&realm);
+	rc = host_create_realm_with_feat_da(&realm, true);
 	if (rc != 0) {
 		ERROR("Realm create with feat_da failed\n");
 		return TEST_RESULT_FAIL;

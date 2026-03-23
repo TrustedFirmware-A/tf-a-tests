@@ -27,7 +27,7 @@ static struct rsi_vdev_info gbl_vdev_info[2] __aligned(GRANULE_SIZE);
  */
 bool test_realm_da_rsi_vdev_get_info(void)
 {
-	u_register_t rsi_feature_reg0, rsi_rc, vdev_id;
+	u_register_t rsi_feature_reg0, rsi_rc, vdev_id, info_addr;
 	struct rsi_vdev_info *vdev_info;
 
 	/* Check if RSI_FEATURES support DA */
@@ -43,15 +43,23 @@ bool test_realm_da_rsi_vdev_get_info(void)
 	}
 
 	vdev_id = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	info_addr = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
 
-	/* Use idx 1 to have struct size alignment */
-	vdev_info = &gbl_vdev_info[1];
+	/* Fallback for NULL info_addr */
+	if (info_addr == 0) {
+		info_addr = (u_register_t)&gbl_vdev_info;
+	}
 
-	/* After meas and ifc_report, get device info */
-	rsi_rc = realm_rsi_vdev_get_info(vdev_id, vdev_info);
+	rsi_rc = rsi_vdev_get_info(vdev_id, info_addr);
+
+	realm_shared_data_set_my_realm_val(HOST_ARG1_INDEX, rsi_rc);
+	realm_printf("RSI_VDEV_GET_INFO(addr=0x%lx) rc=0x%lx\n",
+		     info_addr, rsi_rc);
 	if (rsi_rc != RSI_SUCCESS) {
 		return false;
 	}
 
+	vdev_info = (struct rsi_vdev_info *)info_addr;
+	realm_rsi_vdev_print_info(vdev_info);
 	return true;
 }

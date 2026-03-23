@@ -1071,12 +1071,13 @@ int host_vdev_transition(struct realm *realm,
 	return 0;
 }
 
-int host_create_realm_with_feat_da(struct realm *realm)
+int host_create_realm_with_feat_da(struct realm *realm, bool activate)
 {
 	bool lpa2 = false;
 	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
+	struct test_realm_params params;
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		lpa2 = true;
@@ -1084,19 +1085,25 @@ int host_create_realm_with_feat_da(struct realm *realm)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	/* Initialise Realm payload */
-	if (!host_create_activate_realm_payload(realm,
-			&(struct test_realm_params){
-				0,
-				.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE,
-				.rec_flag = rec_flag,
-				.rec_count = 1U,
-				.s2sz = s2sz,
-				.sl = sl,
-				.lpa2 = lpa2,
-				.da = true,
-			})) {
-		return -1;
+	params = (struct test_realm_params) {
+		0,
+		.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE,
+		.rec_flag = rec_flag,
+		.rec_count = 1U,
+		.s2sz = s2sz,
+		.sl = sl,
+		.lpa2 = lpa2,
+		.da = true,
+	};
+
+	if (activate) {
+		if (!host_create_activate_realm_payload(realm, &params)) {
+			return -1;
+		}
+	} else {
+		if (!host_create_realm_payload(realm, &params)) {
+			return -1;
+		}
 	}
 
 	return 0;
@@ -1262,6 +1269,7 @@ void host_do_vdev_complete(u_register_t rec_ptr, unsigned long vdev_id)
 
 	h_vdev = find_host_vdev_from_id(vdev_id);
 	if (h_vdev == NULL) {
+		WARN("VDEV with provided vdev_id not found");
 		return;
 	}
 

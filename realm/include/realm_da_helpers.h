@@ -12,5 +12,6 @@
 
 unsigned long realm_rsi_vdev_get_info(u_register_t vdev_id,
 				      struct rsi_vdev_info *vdev_info);
+void realm_rsi_vdev_print_info(const struct rsi_vdev_info *vdev_info);
 
 #endif /* REALM_DA_HELPERS_H */

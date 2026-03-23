@@ -156,7 +156,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 
 	host_rmi_init_cmp_result();
 
-	rc = host_create_realm_with_feat_da(&realm);
+	rc = host_create_realm_with_feat_da(&realm, true);
 	if (rc != 0) {
 		ERROR("Realm create with feat_da failed\n");
 		return TEST_RESULT_FAIL;

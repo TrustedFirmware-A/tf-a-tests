@@ -108,6 +108,10 @@ u_register_t handle_plane_exit(u_register_t plane_index,
 		u_register_t smc_id = run->exit.gprs[0];
 
 		restore_plane_context(run);
+
+		/* advance pc */
+		run->enter.pc += 0x4UL;
+
 		switch (smc_id) {
 		case SMC_PSCI_CPU_ON_AARCH64:
 			assert(run->exit.gprs[1] < MAX_REC_COUNT);

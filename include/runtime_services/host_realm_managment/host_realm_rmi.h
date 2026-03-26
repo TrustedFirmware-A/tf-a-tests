@@ -13,6 +13,7 @@
 
 #include <realm_def.h>
 #include <smccc.h>
+#include <tftf_lib.h>
 #include <utils_def.h>
 
 #define RMI_FNUM_MIN_VALUE	U(0x150)
@@ -348,6 +349,11 @@
 
 /*
  * FID: 0xC400016E
+ *
+ * arg0 == RMI Granule size
+ * arg1 == Tracking region size
+ *
+ * ret0 == Return code
  */
 #define SMC_RMI_RMM_CONFIG_SET			SMC64_RMI_FID(U(0x1E))
 
@@ -551,6 +557,28 @@
 #define SMC_RMI_VDEV_COMPLETE			SMC64_RMI_FID(U(0x3E))
 
 /*
+ * FID: 0xC40001E1
+ *
+ * arg0 == PA of the tracking region.
+ *
+ * ret0 == Return code
+ * ret1 == Tracking region state
+ * ret2 == Memory category
+ * ret3 == Tracking granularity
+ */
+#define SMC_RMI_GRANULE_TRACKING_GET		SMC64_RMI_FID(U(0x91))
+
+/*
+ * FID: 0xC40001EC
+ *
+ * arg0 == PA of the tracking region.
+ * ret0 == Return code
+ * ret1 == RMI Granule size
+ * ret2 == Tracking region size
+ */
+#define SMC_RMI_RMM_CONFIG_GET			SMC64_RMI_FID(U(0x9C))
+
+/*
  * FID: 0xC4000202
  */
 #define SMC_RMI_RMM_ACTIVATE			SMC64_RMI_FID(U(0xB2))
@@ -570,9 +598,9 @@
 /*
  * FID: 0xC40001EC
  *
+ * arg0 == PA of the config structure.
+ *
  * ret0 == Return code
- * ret1 == RMI Granule size
- * ret2 == Tracking region size
  */
 #define SMC_RMI_RMM_CONFIG_GET			SMC64_RMI_FID(U(0x9C))
 
@@ -715,7 +743,7 @@
  * FID: 0xC40001DB
  *
  * arg0 == PA of PSMMU
- * sid	== Base of StreamID range described by the Level 2 Stream Table 
+ * sid	== Base of StreamID range described by the Level 2 Stream Table
  */
 #define SMC_RMI_PSMMU_ST_L2_CREATE		SMC64_RMI_FID(U(0x8B))
 
@@ -723,7 +751,7 @@
  * FID: 0xC40001DC
  *
  * arg0 == PA of PSMMU
- * sid	== Base of StreamID range described by the Level 2 Stream Table 
+ * sid	== Base of StreamID range described by the Level 2 Stream Table
  */
 #define SMC_RMI_PSMMU_ST_L2_DESTROY		SMC64_RMI_FID(U(0x8C))
 
@@ -1733,6 +1761,33 @@ struct rmi_vdev_measure_params {
 	SET_MEMBER_RMI(unsigned char nonce[VDEV_MEAS_PARAM_NONCE_LEN], 0x100, 0x1000);
 };
 
+/* Tracking Region Size with GRANULE_SIZE = 4KB */
+#define RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB		UL(0)
+
+/* Tracking Region Size with GRANULE_SIZE = 16KB */
+#define RMI_GRAN_16KB_TRACKING_REGION_SIZE_32MB		UL(0)
+#define RMI_GRAN_16KB_TRACKING_REGION_SIZE_64GB		UL(1)
+
+/* Tracking Region Size with GRANULE_SIZE = 64KB */
+#define RMI_GRAN_64KB_TRACKING_REGION_SIZE_512MB	UL(0)
+#define RMI_GRAN_64KB_TRACKING_REGION_SIZE_4TB		UL(1)
+
+/*
+ * RmiGranuleSize enumeration values.
+ */
+#define RMI_GRANULE_SIZE_4K			UL(0)
+#define RMI_GRANULE_SIZE_16K			UL(1)
+#define RMI_GRANULE_SIZE_64K			UL(2)
+
+/*
+ * The RMM config parameters shared with the Host via
+ * RMI_RMM_CONFIG_GET and RMI_RMM_CONFIG_SET.
+ */
+struct rmi_rmm_config {
+	SET_MEMBER_RMI(unsigned long tracking_size, 0, 0x8);		/* Offset 0 */
+	SET_MEMBER_RMI(unsigned long granule_size, 0, 0x1000);		/* Offset 16 */
+};
+
 struct rtt_entry {
 	long walk_level;
 	uint64_t out_addr;
@@ -1956,5 +2011,15 @@ u_register_t host_rmi_psmmu_activate(u_register_t psmmu_ptr, u_register_t params
 u_register_t host_rmi_psmmu_deactivate(u_register_t psmmu_ptr);
 u_register_t host_rmi_psmmu_st_l2_create(u_register_t psmmu_ptr, u_register_t sid);
 u_register_t host_rmi_psmmu_st_l2_destroy(u_register_t psmmu_ptr, u_register_t sid);
+u_register_t host_rmi_rmm_config_set(struct rmi_rmm_config *config);
+u_register_t host_rmi_rmm_config_get(struct rmi_rmm_config *config);
+u_register_t host_rmi_granule_tracking_get(u_register_t addr,
+					   u_register_t *state,
+					   u_register_t *category,
+					   u_register_t *granularity);
+u_register_t host_realm_sro_continue(u_register_t status,
+				     u_register_t *op_handle,
+				     u_register_t *donate_req,
+				     smc_ret_values *ret);
 
 #endif /* HOST_REALM_RMI_H */

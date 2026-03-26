@@ -4455,3 +4455,24 @@ destroy_realm:
 
 	return TEST_RESULT_SUCCESS;
 }
+
+/* @Test_Aim@ Test to check that the RMI_RMM_CONFIG_GET returns the
+ * expected values.
+ */
+test_result_t host_test_realm_rmi_rmm_config_get(void)
+{
+	struct rmi_rmm_config config __aligned(PAGE_SIZE) = { 0 };
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (host_rmi_rmm_config_get(&config) != RMI_SUCCESS) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if ((config.tracking_size != RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB) ||
+	    (config.granule_size != RMI_GRANULE_SIZE_4K)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}

@@ -41,10 +41,6 @@ static unsigned short vmid;
 static spinlock_t pool_lock;
 static unsigned int pool_counter;
 
-/*
- * @TODO: [JAS] We might need either an array per PE or to protect the
- * list against concurrent access or maybe even both things.
- */
 static unsigned long list_buffer[PLATFORM_CORE_COUNT][PAGE_SIZE];
 
 #define SRO_LIST_ENTRIES		(GRANULE_SIZE/sizeof(unsigned long))
@@ -344,8 +340,10 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
  *
  * - Return: An rmi_result OP code with the outcome of the SRO flow.
  */
-static u_register_t do_sro_continue(u_register_t status, u_register_t *op_handle,
-				    u_register_t *donate_req, smc_ret_values *ret)
+u_register_t host_realm_sro_continue(u_register_t status,
+				     u_register_t *op_handle,
+				     u_register_t *donate_req,
+				     smc_ret_values *ret)
 {
 	u_register_t cmd_status;
 	u_register_t ret_status;
@@ -1854,7 +1852,7 @@ u_register_t host_realm_rec_create(struct realm *realm)
 			return REALM_ERROR;
 		}
 
-		ret = do_sro_continue(ret, &create_handle, &donate_req, NULL);
+		ret = host_realm_sro_continue(ret, &create_handle, &donate_req, NULL);
 
 		if (RMI_RETURN_STATUS(ret) != RMI_SUCCESS) {
 			ERROR("%s() failed,index=%u, ret=0x%lx\n",
@@ -1925,7 +1923,7 @@ u_register_t host_realm_destroy(struct realm *realm)
 			return REALM_ERROR;
 		}
 
-		ret = do_sro_continue(ret, &destroy_handle, &donate_req, NULL);
+		ret = host_realm_sro_continue(ret, &destroy_handle, &donate_req, NULL);
 
 		if (RMI_RETURN_STATUS(ret) != RMI_SUCCESS) {
 			ERROR("%s() failed, rec=0x%lx ret=0x%lx\n",
@@ -2450,10 +2448,46 @@ u_register_t host_rmi_psmmu_st_l2_destroy(u_register_t psmmu_ptr, u_register_t s
 						sid}, 3U).ret0;
 }
 
+u_register_t host_rmi_rmm_config_set(struct rmi_rmm_config *config)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RMM_CONFIG_SET,
+				(u_register_t)config}, 2U);
+
+	return rets.ret0;
+}
+
+u_register_t host_rmi_rmm_config_get(struct rmi_rmm_config *config)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RMM_CONFIG_GET,
+					     (u_register_t)config}, 2U);
+
+	return rets.ret0;
+}
+
+u_register_t host_rmi_granule_tracking_get(u_register_t addr,
+					   u_register_t *state,
+					   u_register_t *category,
+					   u_register_t *granularity)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_GRANULE_TRACKING_GET, addr}, 2U);
+
+	*state = rets.ret1;
+	*category = rets.ret2;
+	*granularity = rets.ret3;
+	return rets.ret0;
+}
+
 u_register_t host_rmi_rmm_activate(void)
 {
 	smc_ret_values rets;
 
 	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RMM_ACTIVATE}, 1U);
+
 	return rets.ret0;
 }

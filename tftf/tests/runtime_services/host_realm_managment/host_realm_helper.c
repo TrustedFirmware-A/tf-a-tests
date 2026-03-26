@@ -44,7 +44,6 @@ static unsigned int realm_id_bitmap;
 static u_register_t rmm_feat_reg0;
 static u_register_t rmm_feat_reg2;
 static u_register_t rmm_feat_reg3;
-static bool is_rmm_active;
 
 /*
  * Ensure RMM is activated. Safe to call multiple times; activation happens
@@ -52,13 +51,26 @@ static bool is_rmm_active;
  */
 bool host_rmm_activate(void)
 {
-	if (!is_rmm_active) {
+	static bool rmm_is_active;
+	struct rmi_rmm_config config __aligned(PAGE_SIZE);
+
+	/* Configure and activate RMM if it is not already activated */
+	if (!rmm_is_active) {
+		config.tracking_size = RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB;
+		config.granule_size = RMI_GRANULE_SIZE_4K;
+
+		if (host_rmi_rmm_config_set(&config) != REALM_SUCCESS) {
+			ERROR("host_rmi_rmm_config_set failed\n");
+			return false;
+		}
+
 		if (host_rmi_rmm_activate() != REALM_SUCCESS) {
 			ERROR("host_rmi_rmm_activate failed\n");
 			return false;
 		}
-		is_rmm_active = true;
+		rmm_is_active = true;
 	}
+
 	return true;
 }
 
@@ -155,8 +167,9 @@ static bool validate_realm_params(struct realm *realm_ptr,
 		return false;
 	}
 
-	/* Activate RMM */
+	/* Configure and activate RMM */
 	if (!host_rmm_activate()) {
+		ERROR("Failed to activate RMM\n");
 		return false;
 	}
 

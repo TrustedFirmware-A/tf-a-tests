@@ -67,6 +67,7 @@ FRAMEWORK_SOURCES	+=						\
 	lib/power_management/hotplug/hotplug.c				\
 	lib/power_management/suspend/${ARCH}/asm_tftf_suspend.S		\
 	lib/power_management/suspend/tftf_suspend.c			\
+	lib/firme/firme.c							\
 	lib/psci/psci.c							\
 	lib/sdei/sdei.c							\
 	lib/smc/${ARCH}/asm_smc.S					\

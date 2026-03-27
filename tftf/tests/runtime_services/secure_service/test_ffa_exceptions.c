@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -76,6 +76,11 @@ test_result_t rl_memory_cannot_be_accessed_in_s(void)
 	VERBOSE("TFTF - Handle: %llx Address: %p\n",
 		handle, constituents[0].address);
 
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
+
 	host_rmi_init_cmp_result();
 
 	/* Delegate the shared page to Realm. */
@@ -139,6 +144,11 @@ test_result_t test_ffa_rxtx_to_realm_pas(void)
 	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
 	 **********************************************************************/
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
 
 	/* Delegate the shared page to Realm. */
 	retmm = host_rmi_granule_delegate((u_register_t)mb.recv);

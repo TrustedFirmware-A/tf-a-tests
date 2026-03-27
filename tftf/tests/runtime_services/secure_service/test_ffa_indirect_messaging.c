@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -170,6 +170,11 @@ test_result_t test_ffa_indirect_message_sp_to_vm_rx_realm_fail(void)
 	tftf_irq_register_handler(FFA_SCHEDULE_RECEIVER_INTERRUPT_ID,
 				  schedule_receiver_interrupt_handler);
 
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
+
 	/*
 	 * Delegate RX buffer of VM to realm.
 	 */
@@ -305,6 +310,11 @@ test_result_t test_ffa_indirect_message_vm_to_sp_tx_realm_fail(void)
 
 	/* Fill TX buffer with payload. */
 	memcpy(message->payload, payload, ARRAY_SIZE(payload));
+
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
 
 	/* Delegate TX buffer of VM to realm PAS. */
 	ret_rmm = host_rmi_granule_delegate((u_register_t)vm1_tx_buffer);

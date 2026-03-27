@@ -91,6 +91,15 @@
 #define IGRPEN1_EL1_ENABLE_BIT		(1 << IGRPEN1_EL1_ENABLE_SHIFT)
 
 /* ICH_ICH_LR<n>_EL2 definitions */
+/*
+ * When ICH_LR<n>_EL2.HW is 0 (there is no corresponding physical
+ * interrupt), this field has the following meaning:
+ * Bits[44:42] : RES0.
+ * Bit[41] : EOI. If this bit is 1, then when the interrupt identified by
+ * vINTID is deactivated, a maintenance interrupt is asserted.
+ * Bits[40:32] : RES0.
+ */
+#define ICH_LRn_EL2_EOI				(1UL << 41)
 #define ICH_LRn_EL2_STATE_Invalid		(0UL << 62)
 #define ICH_LRn_EL2_STATE_Pending		(1UL << 62)
 #define ICH_LRn_EL2_STATE_Active		(2UL << 62)
@@ -101,6 +110,82 @@
 #define ICH_LRn_EL2_Priority_MASK		0xFF
 #define ICH_LRn_EL2_vINTID_SHIFT		0
 #define ICH_LRn_EL2_vINTID_MASK			0xFFFF
+
+/* Global enable bit for the virtual CPU interface */
+#define ICH_HCR_EL2_EN_BIT              (UL(1) << 0)
+
+/* Underflow Interrupt Enable */
+#define ICH_HCR_EL2_UIE_BIT             (UL(1) << 1)
+
+/* List Register Entry Not Present Interrupt Enable */
+#define ICH_HCR_EL2_LRENPIE_BIT         (UL(1) << 2)
+
+/* No Pending Interrupt Enable */
+#define ICH_HCR_EL2_NPIE_BIT            (UL(1) << 3)
+
+/* VM Group 0 Enabled Interrupt Enable */
+#define ICH_HCR_EL2_VGRP0EIE_BIT        (UL(1) << 4)
+
+/* VM Group 0 Disabled Interrupt Enable */
+#define ICH_HCR_EL2_VGRP0DIE_BIT        (UL(1) << 5)
+
+/* VM Group 1 Enabled Interrupt Enable */
+#define ICH_HCR_EL2_VGRP1EIE_BIT        (UL(1) << 6)
+
+/* VM Group 1 Disabled Interrupt Enable */
+#define ICH_HCR_EL2_VGRP1DIE_BIT        (UL(1) << 7)
+
+/*
+ * When FEAT_GICv4p1 is implemented:
+ * Controls whether deactivation of virtual SGIs
+ * can increment ICH_HCR_EL2.EOIcount
+ */
+#define ICH_HCR_EL2_VSGIEEOICOUNT_BIT   (UL(1) << 8)
+
+/*
+ * Trap all EL1 accesses to System registers
+ * that are common to Group 0 and Group 1 to EL2
+ */
+#define ICH_HCR_EL2_TC_BIT              (UL(1) << 10)
+
+/*
+ * Trap all EL1 accesses to ICC_* and ICV_* System registers
+ * for Group 0 interrupts to EL2
+ */
+#define ICH_HCR_EL2_TALL0_BIT           (UL(1) << 11)
+
+/*
+ * Trap all EL1 accesses to ICC_* and ICV_* System registers
+ * for Group 1 interrupts to EL2
+ */
+#define ICH_HCR_EL2_TALL1_BIT           (UL(1) << 12)
+
+/* Trap all locally generated SEIs */
+#define ICH_HCR_EL2_TSEI_BIT            (UL(1) << 13)
+
+/*
+ * When FEAT_GICv3_TDIR is implemented:
+ * Trap EL1 writes to ICC_DIR_EL1 and ICV_DIR_EL1
+ */
+#define ICH_HCR_EL2_TDIR_BIT            (UL(1) << 14)
+
+/*
+ * When ICH_VTR_EL2.DVIM == 1:
+ * Directly-injected Virtual Interrupt Mask
+ */
+#define ICH_HCR_EL2_DVIM_BIT            (UL(1) << 15)
+
+#define ICH_HCR_EL2_EOI_COUNT_SHIFT     UL(27)
+#define ICH_HCR_EL2_EOI_COUNT_WIDTH     UL(5)
+#define ICH_HCR_EL2_EOI_COUNT_MASK      MASK(ICH_HCR_EL2_EOI_COUNT)
+
+/* ICH_MISR_EL2 definitions */
+/*
+ * Bit[0] : EOI. End of Interrupt maintenance interrupt.
+ * Set to 1 when at least one bit in ICH_LR<n>_EL2.EOI is 1 and the
+ * corresponding interrupt has been deactivated.
+ */
+#define ICH_MISR_EL2_EOI			(1UL << 0)
 
 /* ICV_CTLR_EL1 definitions */
 #define ICV_CTLR_EL1_PRIbits_SHIFT		8

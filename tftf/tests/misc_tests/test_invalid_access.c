@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -142,6 +142,11 @@ test_result_t rl_memory_cannot_be_accessed_in_ns(void)
 		goto out_unregister;
 	}
 
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
+		return false;
+	}
+
 	host_rmi_init_cmp_result();
 
 	/* Delegate the shared page to Realm. */
@@ -233,6 +238,11 @@ static test_result_t memory_cannot_be_accessed_in_rl(u_register_t params)
 	static char rd[GRANULE_SIZE] __aligned(GRANULE_SIZE);
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
+		return false;
+	}
 
 	retrmm = host_rmi_granule_delegate((u_register_t)&rd[0]);
 	if (retrmm != 0UL) {

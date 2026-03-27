@@ -26,14 +26,15 @@
 	do {									\
 		SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();			\
 										\
-		/* Get feature register0 */					\
-		if (host_rmi_features(0UL, &_reg0) != REALM_SUCCESS) {		\
+		/* Get feature register2 */					\
+		if (host_rmi_features(RMI_FEATURE_REGISTER_2_INDEX,		\
+				&_reg0) != REALM_SUCCESS) {			\
 			ERROR("Failed to get RMI feat_reg0\n");			\
 			return TEST_RESULT_FAIL;				\
 		}								\
 										\
 		/* DA not supported in RMI features? */				\
-		if ((_reg0 & RMI_FEATURE_REGISTER_0_DA_EN) == 0UL) {		\
+		if ((_reg0 & RMI_FEATURE_REGISTER_2_DA_EN) == 0UL) {		\
 			WARN("DA not in RMI features, skipping\n");		\
 			return TEST_RESULT_SKIPPED;				\
 		}								\

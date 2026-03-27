@@ -19,25 +19,32 @@
 test_result_t host_realm_test_brbe_save_restore(void)
 {
 	unsigned long rec_flag[] = {RMI_RUNNABLE};
-	unsigned long feature_flag =  0UL;
-	unsigned long feature_flag1 =  0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	struct realm realm;
 	long sl = RTT_MIN_LEVEL;
 	static unsigned long brbcr_el2_saved;
 	static unsigned long brbcr_el1_saved;
 	test_result_t test_result = TEST_RESULT_SUCCESS;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 	SKIP_TEST_IF_BRBE_NOT_SUPPORTED();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-						feature_flag, feature_flag1, sl, rec_flag, 1U, 0U,
-						get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 

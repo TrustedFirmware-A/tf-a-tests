@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,6 +7,7 @@
 #include <cactus_test_cmds.h>
 #include <debug.h>
 #include <ffa_endpoints.h>
+#include <host_realm_helper.h>
 #include <host_realm_rmi.h>
 #include <smccc.h>
 #include <spm_test_helpers.h>
@@ -138,6 +139,11 @@ test_result_t test_smmu_spm_invalid_access(void)
 	 * Check SPMC has ffa_version and expected FFA endpoints are deployed.
 	 **********************************************************************/
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
 
 	/* Update the NS buffer to Realm PAS. */
 	retmm = host_rmi_granule_delegate((u_register_t)PLAT_CACTUS_NS_MEMCPY_BASE);

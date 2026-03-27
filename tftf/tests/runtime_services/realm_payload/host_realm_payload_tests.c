@@ -40,6 +40,9 @@ static uint128_t pauth_keys_before[NUM_KEYS];
 static uint128_t pauth_keys_after[NUM_KEYS];
 #endif
 
+/* EL1 Virtual Timer IRQ */
+#define EL1_VIRT_TIMER_IRQ	27U
+
 static unsigned int tftf_get_pmu_irq(void)
 {
 	if (arm_gic_get_version() == 5)
@@ -56,6 +59,14 @@ static unsigned int tftf_get_pmu_virq(void)
 		return PMU_VIRQ;
 }
 
+static unsigned int tftf_get_timer_virq(void)
+{
+	if (arm_gic_get_version() == 5)
+		return EL1_VIRT_TIMER_IRQ | INPLACE(INT_TYPE, INT_PPI);
+	else
+		return EL1_VIRT_TIMER_IRQ;
+}
+
 /*
  * @Test_Aim@ Test RSI_PLANE_SYSREG_READ/WRITE
  */
@@ -64,9 +75,11 @@ test_result_t host_test_realm_create_planes_register_rw(void)
 	bool ret1, ret2;
 	u_register_t rec_flag[MAX_REC_COUNT];
 	struct realm realm;
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	struct rmi_rec_run *run;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -75,7 +88,8 @@ test_result_t host_test_realm_create_planes_register_rw(void)
 	}
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -83,8 +97,15 @@ test_result_t host_test_realm_create_planes_register_rw(void)
 		rec_flag[i] = RMI_RUNNABLE;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 1U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+	params.num_aux_planes = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -124,9 +145,11 @@ test_result_t host_test_realm_create_planes_enter_multiple_rtt(void)
 	bool ret1, ret2;
 	u_register_t rec_flag[MAX_REC_COUNT];
 	struct realm realm;
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	struct rmi_rec_run *run;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -135,7 +158,8 @@ test_result_t host_test_realm_create_planes_enter_multiple_rtt(void)
 	}
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -144,15 +168,22 @@ test_result_t host_test_realm_create_planes_enter_multiple_rtt(void)
 	}
 
 	/* Test invalid combination Tree per plane with s2ap indirect */
-	if (host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT,
-			sl, rec_flag, 1U, MAX_AUX_PLANE_COUNT, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.rtt_s2ap_encoding_indirect = true;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+	params.num_aux_planes = MAX_AUX_PLANE_COUNT;
+
+	if (host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, MAX_AUX_PLANE_COUNT,
-			get_test_mecid())) {
+	params.rtt_s2ap_encoding_indirect = false;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -232,7 +263,8 @@ test_result_t host_test_realm_create_planes_enter_single_rtt(void)
 	bool ret1, ret2;
 	u_register_t rec_flag = RMI_RUNNABLE;
 	struct realm realm;
-	u_register_t feature_flag0 = 0UL, feature_flag1;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	struct rmi_rec_run *run;
 
@@ -243,19 +275,25 @@ test_result_t host_test_realm_create_planes_enter_single_rtt(void)
 	}
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
 	/* use single RTT for all planes */
-	feature_flag0 |= INPLACE(RMI_FEATURE_REGISTER_0_PLANE_RTT,
-			RMI_PLANE_RTT_SINGLE);
+	struct test_realm_params params = {0};
 
-	feature_flag1 = RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.rtt_tree_single = true;
+	params.rtt_s2ap_encoding_indirect = true;
+	params.sl = sl;
+	params.rec_flag = &rec_flag;
+	params.rec_count = 1U;
+	params.num_aux_planes = MAX_AUX_PLANE_COUNT;
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, feature_flag1, sl, &rec_flag, 1U, MAX_AUX_PLANE_COUNT,
-			get_test_mecid())) {
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -333,14 +371,12 @@ destroy_realm:
 test_result_t host_test_realm_pn_access_outside_par(void)
 {
 	struct realm realm;
-	u_register_t feature_flag0;
-	u_register_t feature_reg0;
 	u_register_t esr, far;
 	u_register_t test_ipa;
-	unsigned long s2sz;
 	struct rmi_rec_run *run;
 	bool iaccess_pass = false, daccess_pass = false;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE};
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -349,28 +385,19 @@ test_result_t host_test_realm_pn_access_outside_par(void)
 		return TEST_RESULT_SKIPPED;
 	}
 
-	/* Read Realm Feature Reg 0 */
-	if (host_rmi_features(0UL, &feature_reg0) != REALM_SUCCESS) {
-		ERROR("%s() failed\n", "host_rmi_features");
-		return TEST_RESULT_FAIL;
-	}
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.s2sz = 43U;
+	params.sl = RTT_MIN_LEVEL;
+	params.rec_flag = rec_flag;
+	params.rec_count = 2U;
+	params.num_aux_planes = 1U;
 
-	/*
-	 * Calculate the IPA range for the realm. This would be below the
-	 * maximum supported by the architecture.
-	 */
-	s2sz = EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feature_reg0);
-	feature_flag0 = INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, s2sz - 5U);
-
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, RTT_MIN_LEVEL, rec_flag, 2U, 1U,
-			get_test_mecid())) {
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
 	/* Generate IPA ouside the PAR to test */
-	test_ipa = TFTF_BASE | (1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
-						realm.rmm_feat_reg0) + 1U));
+	test_ipa = TFTF_BASE | (1UL << (realm.s2sz + 1U));
 
 	/* Instruct Plane0 to enter Plane1 on REC 0 */
 	host_realm_set_aux_plane_args(&realm, 1U, 0U);
@@ -475,34 +502,43 @@ test_result_t host_test_realm_create_enter(void)
 	bool ret1, ret2;
 	u_register_t rec_flag[MAX_REC_COUNT];
 	struct realm realm;
-	u_register_t feature_flag0 = 0UL, feature_flag1 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
+	bool rtt_s2ap_encoding_indirect = false;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
 	if (is_single_rtt_supported()) {
 		/* Use s2ap encoding indirect */
 		INFO("Using S2ap indirect for single plane\n");
-		feature_flag1 = RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+		rtt_s2ap_encoding_indirect = true;
 	}
 
 	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
 		rec_flag[i] = RMI_RUNNABLE;
 	}
 
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.rtt_s2ap_encoding_indirect = rtt_s2ap_encoding_indirect;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = MAX_REC_COUNT;
+
 	for (unsigned int i = 0U; i < 5U; i++) {
 		/* Run random Rec */
 		unsigned int run_num = (unsigned int)rand() % MAX_REC_COUNT;
 
-		if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, feature_flag1, sl, rec_flag, MAX_REC_COUNT, 0U,
-				get_test_mecid())) {
-			return TEST_RESULT_FAIL;
+		if (!host_create_activate_realm_payload(&realm, &params)) {
 		}
 
 		host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, run_num,
@@ -530,18 +566,27 @@ test_result_t host_test_realm_rsi_version(void)
 	bool ret1, ret2;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
 	struct realm realm;
-	u_register_t feature_flag0 = 0U;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -569,13 +614,16 @@ test_result_t host_realm_enable_pauth(void)
 	bool ret1, ret2;
 	u_register_t rec_flag[MAX_REC_COUNT];
 	struct realm realm;
-	u_register_t feature_flag0 = 0U;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -584,9 +632,14 @@ test_result_t host_realm_enable_pauth(void)
 	}
 
 	pauth_test_lib_fill_regs_and_template(pauth_keys_before);
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, MAX_REC_COUNT, 0U,
-				get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = MAX_REC_COUNT;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -637,18 +690,27 @@ test_result_t host_realm_pauth_fault(void)
 	bool ret1, ret2;
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 	struct realm realm;
-	u_register_t feature_flag0 = 0U;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -663,6 +725,19 @@ test_result_t host_realm_pauth_fault(void)
 
 	return host_cmp_result();
 #endif
+}
+
+
+/*
+ * IRQ handler for PMU_PPI #23.
+ * This handler should not be called, as RMM handles IRQs.
+ */
+static int host_overflow_interrupt(void *data)
+{
+	(void)data;
+
+	assert(false);
+	return -1;
 }
 
 /*
@@ -693,16 +768,21 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr,
 			return false;
 		}
 
+		write_ich_hcr_el2(ICH_HCR_EL2_EN_BIT |
+				ICH_HCR_EL2_VSGIEEOICOUNT_BIT |
+				ICH_HCR_EL2_DVIM_BIT);
+
 		/* Inject PMU virtual interrupt */
-		run->entry.gicv3_lrs[0] =
+		write_ich_lr0_el2(
 			ICH_LRn_EL2_STATE_Pending | ICH_LRn_EL2_Group_1 |
-			(tftf_get_pmu_virq() << ICH_LRn_EL2_vINTID_SHIFT);
+			(tftf_get_pmu_virq() << ICH_LRn_EL2_vINTID_SHIFT));
 
 		/* Re-enter Realm */
 		INFO("Re-entering Realm with vIRQ %u pending\n", tftf_get_pmu_virq());
 
 		retrmm = host_realm_rec_enter(realm_ptr, &exit_reason,
 						&host_call_result, rec_num);
+
 		if ((retrmm == REALM_SUCCESS) &&
 		    (exit_reason == RMI_EXIT_HOST_CALL) &&
 		    (host_call_result == TEST_RESULT_SUCCESS)) {
@@ -712,6 +792,118 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr,
 		ERROR("%s() failed, ret=%lx host_call_result %u\n",
 			"host_realm_rec_enter", retrmm, host_call_result);
 	}
+	return false;
+}
+
+/* GIC Maintenance Interrupt ID (PPI 25) */
+#define GIC_MAINT_IRQ		25U
+
+/*
+ * IRQ handler for GIC Maintenance Interrupt.
+ */
+static int host_maint_interrupt(void *data)
+{
+	(void)data;
+
+	assert(false);
+	return -1;
+}
+
+/*
+ * IRQ handler for EL1 Virtual Timer IRQ.
+ */
+static int host_timer_interrupt(void *data)
+{
+	(void)data;
+
+	assert(false);
+	return -1;
+}
+
+/*
+ * Handle timer IRQ exit from realm.
+ */
+static bool host_realm_handle_timer_irq_exit(struct realm *realm_ptr,
+		unsigned int rec_num)
+{
+	u_register_t exit_reason, retrmm;
+	unsigned int host_call_result;
+	u_register_t intid0;
+	struct rmi_rec_run *run = (struct rmi_rec_run *)realm_ptr->run[rec_num];
+
+	INFO("=== First exit: LR[0]=0x%lx MISR=0x%lx ===\n",
+	     read_ich_lr0_el2(), read_ich_misr_el2());
+
+	/* Extract and check INTID */
+	intid0 = (read_ich_lr0_el2() >> ICH_LRn_EL2_vINTID_SHIFT) & 0xFFFFFF;
+
+	/* Check if virtual timer has expired */
+	if ((run->exit.cntv_ctl & (CNTV_CTL_ENABLE_MASK << CNTV_CTL_ENABLE_SHIFT)) &&
+	    (run->exit.cntv_ctl & (CNTV_CTL_ISTATUS_MASK << CNTV_CTL_ISTATUS_SHIFT))) {
+		INFO("Timer expired: CNTV_CTL=0x%lx CNTV_CVAL=0x%lx\n",
+		     run->exit.cntv_ctl, run->exit.cntv_cval);
+	} else {
+		ERROR("Timer IRQ exit but timer not expired: CNTV_CTL=0x%lx\n",
+		      run->exit.cntv_ctl);
+		return false;
+	}
+
+	tftf_irq_disable(tftf_get_timer_virq());
+
+	/* Inject Timer virtual interrupt */
+	write_ich_hcr_el2(ICH_HCR_EL2_EN_BIT |
+			ICH_HCR_EL2_VSGIEEOICOUNT_BIT |
+			ICH_HCR_EL2_DVIM_BIT);
+
+	/* Inject Timer virtual interrupt */
+	write_ich_lr0_el2(ICH_LRn_EL2_EOI |
+		ICH_LRn_EL2_STATE_Pending | ICH_LRn_EL2_Group_1 |
+		(tftf_get_timer_virq() << ICH_LRn_EL2_vINTID_SHIFT));
+
+	/* Re-enter Realm */
+	INFO("=== Re-entering with vIRQ %u, Entry LR[0]=0x%lx ===\n",
+		tftf_get_timer_virq(), read_ich_lr0_el2());
+
+	retrmm = host_realm_rec_enter(realm_ptr, &exit_reason,
+					&host_call_result, rec_num);
+
+	INFO("=== Second exit: reason=%lx LR[0]=0x%lx MISR=0x%lx ===\n",
+	     exit_reason, read_ich_lr0_el2(), read_ich_misr_el2());
+
+	/* Extract and check INTID */
+	intid0 = (read_ich_lr0_el2() >> ICH_LRn_EL2_vINTID_SHIFT) & 0xFFFFFF;
+
+	/* Check if MISR EOI bit is set, timer isr is disabled by realm */
+	while (((exit_reason == RMI_EXIT_IRQ) ||
+			(read_ich_misr_el2() & ICH_MISR_EL2_EOI) == 0U)) {
+		INFO("Timer ISR not disabled by Realm re-enter\n");
+
+		retrmm = host_realm_rec_enter(realm_ptr, &exit_reason,
+			&host_call_result, rec_num);
+	}
+
+	/* Check if timer ISR with EOI bit is set in LR[0] and free it */
+	if (intid0 == tftf_get_timer_virq() &&
+	    (read_ich_lr0_el2() & ICH_LRn_EL2_EOI)) {
+		INFO("Timer IRQ %u with EOI bit set found in LR[0], clearing LR\n",
+		     tftf_get_timer_virq());
+		write_ich_lr0_el2(0U);
+	}
+
+	/* If second exit is due to maintenance IRQ, re-enter realm */
+	if ((retrmm == REALM_SUCCESS) && (exit_reason == RMI_EXIT_IRQ)) {
+		retrmm = host_realm_rec_enter(realm_ptr, &exit_reason,
+						&host_call_result, rec_num);
+	}
+
+	if ((retrmm == REALM_SUCCESS) &&
+	    (exit_reason == RMI_EXIT_HOST_CALL) &&
+	    (host_call_result == TEST_RESULT_SUCCESS)) {
+		return true;
+	}
+
+	ERROR("%s() failed, ret=%lx exit_reason=%lx host_call_result %u\n",
+		"host_realm_rec_enter", retrmm, exit_reason, host_call_result);
 	return false;
 }
 
@@ -726,33 +918,34 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr,
 static test_result_t host_test_realm_pmuv3(uint8_t cmd)
 {
 	struct realm realm;
-	u_register_t feature_flag0, rmm_feat_reg0;
+	u_register_t rmm_feat_reg0;
 	unsigned int num_cnts;
-	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 	bool ret1, ret2;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	/* Get Max PMU counter implemented through RMI_FEATURES */
-	if (host_rmi_features(0UL, &rmm_feat_reg0) != REALM_SUCCESS) {
+	if (host_rmi_features(RMI_FEATURE_REGISTER_0_INDEX, &rmm_feat_reg0) != REALM_SUCCESS) {
 		ERROR("%s() failed\n", "host_rmi_features");
 		return TEST_RESULT_FAIL;
+	}
+
+	if ((rmm_feat_reg0 & RMI_FEATURE_REGISTER_0_PMU_EN) == 0UL) {
+		return TEST_RESULT_SKIPPED;
 	}
 
 	num_cnts = EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS, rmm_feat_reg0);
 	host_set_pmu_state(&pmu_state);
 
-	feature_flag0 = RMI_FEATURE_REGISTER_0_PMU_EN |
-			INPLACE(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS, num_cnts);
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.pmu = true;
+	params.pmu_num_ctrs = num_cnts;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
 
-	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 |= RMI_FEATURE_REGISTER_0_LPA2;
-		sl = RTT_MIN_LEVEL_LPA2;
-	}
-
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -808,18 +1001,6 @@ test_result_t host_realm_pmuv3_event_works(void)
 test_result_t host_realm_pmuv3_rmm_preserves(void)
 {
 	return host_test_realm_pmuv3(REALM_PMU_PRESERVE);
-}
-
-/*
- * IRQ handler for PMU_PPI #23.
- * This handler should not be called, as RMM handles IRQs.
- */
-static int host_overflow_interrupt(void *data)
-{
-	(void)data;
-
-	assert(false);
-	return -1;
 }
 
 static test_result_t host_realm_pmuv3_overflow_interrupt(uint8_t cmd)
@@ -879,14 +1060,17 @@ test_result_t host_test_multiple_realm_create_enter(void)
 {
 	bool ret;
 	u_register_t rec_flag[MAX_REC_COUNT];
-	u_register_t feature_flag0 = 0U;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	unsigned int run_rec[MAX_REALM_COUNT], num;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -894,14 +1078,18 @@ test_result_t host_test_multiple_realm_create_enter(void)
 		rec_flag[i] = RMI_RUNNABLE;
 	}
 
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = MAX_REC_COUNT;
+
 	for (num = 0U; num < MAX_REALM_COUNT; num++) {
 		/* Generate random REC start number */
 		run_rec[num] = (unsigned int)rand() % MAX_REC_COUNT;
 
-		ret = host_create_activate_realm_payload(&realm[num],
-							(u_register_t)REALM_IMAGE_BASE,
-							feature_flag0, 0U, sl, rec_flag,
-							MAX_REC_COUNT, 0U, get_test_mecid());
+		ret = host_create_activate_realm_payload(&realm[num], &params);
 		if (!ret) {
 			goto destroy_realms;
 		}
@@ -955,18 +1143,27 @@ test_result_t host_realm_set_ripas(void)
 	struct rmi_rec_run *run;
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 	u_register_t test_page_num = 3U;
-	u_register_t feature_flag0 = 0U;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -978,7 +1175,7 @@ test_result_t host_realm_set_ripas(void)
 			base + (PAGE_SIZE * test_page_num));
 
 	for (unsigned int i = 0U; i < test_page_num; i++) {
-		ret = host_realm_delegate_map_protected_data(true, &realm,
+		ret = host_realm_delegate_map_protected_data(false, &realm,
 				base + (PAGE_SIZE * i), PAGE_SIZE,
 				base + (PAGE_SIZE * i));
 		if (ret != REALM_SUCCESS) {
@@ -1054,24 +1251,33 @@ test_result_t host_realm_reject_set_ripas(void)
 	struct realm realm;
 	struct rmi_rec_run *run;
 	u_register_t rec_flag[1] = {RMI_RUNNABLE}, base;
-	u_register_t feature_flag0 = 0U;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
 	base = (u_register_t)page_alloc(PAGE_SIZE);
 
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, base);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, base);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failede\n");
 		goto destroy_realm;
@@ -1122,18 +1328,24 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 {
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, data, top, num_aux_planes = 0UL;
+	u_register_t ret, num_aux_planes = 0UL;
 	struct realm realm;
 	struct rmi_rec_run *run;
 	struct rtt_entry rtt;
-	u_register_t feature_flag0 = 0UL, feature_flag1 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
+	bool rtt_tree_single = false;
+	bool rtt_s2ap_encoding_indirect = false;
 	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, base;
+	struct test_realm_params params = {0};
+	RmiAddrRangeDesc4KB desc = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -1142,15 +1354,21 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 		num_aux_planes = 1UL;
 
 		/* use single RTT for all planes */
-		feature_flag0 |= INPLACE(RMI_FEATURE_REGISTER_0_PLANE_RTT,
-			RMI_PLANE_RTT_SINGLE);
-
-		feature_flag1 = RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+		rtt_tree_single = true;
+		rtt_s2ap_encoding_indirect = true;
 	}
 
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes,
-			get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.rtt_tree_single = rtt_tree_single;
+	params.rtt_s2ap_encoding_indirect = rtt_s2ap_encoding_indirect;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 4U;
+	params.num_aux_planes = num_aux_planes;
+
+	if (!host_create_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1162,7 +1380,7 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	 * Copies content of TFTF_BASE in newly created page, any PA can be used for dummy copy
 	 * maps 1:1 IPA:PA
 	 */
-	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, TFTF_BASE);
+	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, TFTF_BASE);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -1178,15 +1396,22 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base);
 	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base);
 
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
-	if (ret != RMI_SUCCESS || data != base) {
-		ERROR("host_rmi_data_destroy failed\n");
+	desc.size = RMI_PAGE_L3;
+	desc.count = 0U;
+	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
+	desc.reserved = 0U;
+	desc.state = RMI_OP_MEM_STATE_DELEGATED;
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
 	}
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.state != RMI_UNASSIGNED ||
 			rtt.ripas != RMI_DESTROYED) {
-		ERROR("Wrong state after host_rmi_data_destroy\n");
+		ERROR("Wrong state after host_rmi_rtt_data_unmap\n");
 		goto undelegate_destroy;
 	}
 
@@ -1281,10 +1506,10 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 
 	/* ESR.EC == 0b100100 Data Abort exception from a lower Exception level */
 	if (!ret1 || ((run->exit.hpfar >> 4U) != (base >> PAGE_SIZE_SHIFT)
-		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
-		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
-		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
-		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
+			|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
+			|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+			|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
+			|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U))) {
 		ERROR("Plane1 Rec3 did not fault\n");
 		goto undelegate_destroy;
 	}
@@ -1323,15 +1548,18 @@ test_result_t host_realm_abort_unassigned_ram(void)
 	struct realm realm;
 	struct rmi_rec_run *run;
 	struct rtt_entry rtt;
-	u_register_t feature_flag0 = 0UL, feature_flag1 = 0UL;
+	bool lpa2 = false, rtt_tree_single = false, rtt_s2ap_encoding_indirect = false;
 	long sl = RTT_MIN_LEVEL;
+	u_register_t s2sz = MAX_IPA_BITS;
 	test_result_t res = TEST_RESULT_FAIL;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, base;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -1340,15 +1568,21 @@ test_result_t host_realm_abort_unassigned_ram(void)
 		num_aux_planes = 1UL;
 
 		/* use single RTT for all planes */
-		feature_flag0 |= INPLACE(RMI_FEATURE_REGISTER_0_PLANE_RTT,
-			RMI_PLANE_RTT_SINGLE);
-
-		feature_flag1 = RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+		rtt_tree_single = true;
+		rtt_s2ap_encoding_indirect = true;
 	}
 
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes,
-			get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.rtt_tree_single = rtt_tree_single;
+	params.rtt_s2ap_encoding_indirect = rtt_s2ap_encoding_indirect;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 4U;
+	params.num_aux_planes = num_aux_planes;
+
+	if (!host_create_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1515,19 +1749,23 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 {
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, top, data;
+	u_register_t ret;
 	struct realm realm;
 	struct rmi_rec_run *run;
 	struct rtt_entry rtt;
-	u_register_t feature_flag0 = 0UL, num_aux_planes = 0UL;
-	u_register_t feature_flag1 = 0UL;
+	bool lpa2 = false, rtt_tree_single = false, rtt_s2ap_encoding_indirect = false;
+	u_register_t num_aux_planes = 0UL;
 	long sl = RTT_MIN_LEVEL;
+	u_register_t s2sz = MAX_IPA_BITS;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, base;
+	struct test_realm_params params = {0};
+	RmiAddrRangeDesc4KB desc = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -1536,15 +1774,21 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 		num_aux_planes = 1UL;
 
 		/* use single RTT for all planes */
-		feature_flag0 |= INPLACE(RMI_FEATURE_REGISTER_0_PLANE_RTT,
-			RMI_PLANE_RTT_SINGLE);
-
-		feature_flag1 = RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+		rtt_tree_single = true;
+		rtt_s2ap_encoding_indirect = true;
 	}
 
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes,
-			get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.rtt_tree_single = rtt_tree_single;
+	params.rtt_s2ap_encoding_indirect = rtt_s2ap_encoding_indirect;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 4U;
+	params.num_aux_planes = num_aux_planes;
+
+	if (!host_create_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1553,7 +1797,7 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 
 	/* DATA_CREATE */
 	/* Copied content of TFTF_BASE to new page, can use any adr, maps 1:1 IPA:PA */
-	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, TFTF_BASE);
+	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, TFTF_BASE);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -1574,21 +1818,29 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 		goto destroy_realm;
 	}
 
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
-	if (ret != RMI_SUCCESS || data != base) {
-		ERROR("host_rmi_data_destroy failed\n");
+	desc.size = RMI_PAGE_L3;
+	desc.count = 0U;
+	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
+	desc.reserved = 0U;
+	desc.state = RMI_OP_MEM_STATE_DELEGATED;
+
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto destroy_realm;
 	}
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.state != RMI_UNASSIGNED ||
 			rtt.ripas != RMI_DESTROYED) {
-		ERROR("Wrong state after host_rmi_data_destroy\n");
+		ERROR("Wrong state after host_rmi_rtt_data_unmap\n");
 		goto destroy_realm;
 	}
 	ret = host_rmi_granule_undelegate(base);
 
 	/* DATA_CREATE_UNKNOWN */
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failede\n");
 		goto destroy_realm;
@@ -1692,7 +1944,9 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	res = TEST_RESULT_SUCCESS;
 
 destroy_data:
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
 	ret = host_rmi_granule_undelegate(base);
 destroy_realm:
 	ret2 = host_destroy_realm(&realm);
@@ -1724,18 +1978,20 @@ test_result_t host_realm_sea_empty(void)
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
 	u_register_t ret, base, esr, num_aux_planes = 0UL, far;
-	u_register_t feature_flag1 = 0UL;
+	bool lpa2 = false, rtt_tree_single = false, rtt_s2ap_encoding_indirect = false;
 	struct realm realm;
 	struct rtt_entry rtt;
-	u_register_t feature_flag0 = 0UL;
 	long sl = RTT_MIN_LEVEL;
+	u_register_t s2sz = MAX_IPA_BITS;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
 				   RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -1744,15 +2000,21 @@ test_result_t host_realm_sea_empty(void)
 		num_aux_planes = 1UL;
 
 		/* use single RTT for all planes */
-		feature_flag0 |= INPLACE(RMI_FEATURE_REGISTER_0_PLANE_RTT,
-			RMI_PLANE_RTT_SINGLE);
-
-		feature_flag1 = RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+		rtt_tree_single = true;
+		rtt_s2ap_encoding_indirect = true;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, feature_flag1, sl, rec_flag, 8U, num_aux_planes,
-			get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.rtt_tree_single = rtt_tree_single;
+	params.rtt_s2ap_encoding_indirect = rtt_s2ap_encoding_indirect;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 8U;
+	params.num_aux_planes = num_aux_planes;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -1824,7 +2086,7 @@ test_result_t host_realm_sea_empty(void)
 	INFO("Rec1 ESR=0x%lx\n", esr);
 
 	/* DATA_CREATE_UNKNOWN */
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -1937,7 +2199,7 @@ test_result_t host_realm_sea_empty(void)
 	INFO("Rec5 ESR=0x%lx\n", esr);
 
 	/* DATA_CREATE_UNKNOWN */
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -2026,14 +2288,18 @@ test_result_t host_realm_sea_unprotected(void)
 	struct realm realm;
 	struct rtt_entry rtt;
 	struct rmi_rec_run *run;
-	u_register_t feature_flag0 = 0UL, feature_flag1 = 0UL, num_aux_planes = 0U;
+	bool lpa2 = false, rtt_tree_single = false, rtt_s2ap_encoding_indirect = false;
+	u_register_t num_aux_planes = 0U;
 	long sl = RTT_MIN_LEVEL;
+	u_register_t s2sz = MAX_IPA_BITS;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -2042,22 +2308,27 @@ test_result_t host_realm_sea_unprotected(void)
 		num_aux_planes = 1UL;
 
 		/* use single RTT for all planes */
-		feature_flag0 |= INPLACE(RMI_FEATURE_REGISTER_0_PLANE_RTT,
-			RMI_PLANE_RTT_SINGLE);
-
-		feature_flag1 = RMI_REALM_FLAGS1_RTT_S2AP_ENCODING_INDIRECT;
+		rtt_tree_single = true;
+		rtt_s2ap_encoding_indirect = true;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, feature_flag1, sl, rec_flag, 4U, num_aux_planes,
-			get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.rtt_tree_single = rtt_tree_single;
+	params.rtt_s2ap_encoding_indirect = rtt_s2ap_encoding_indirect;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 4U;
+	params.num_aux_planes = num_aux_planes;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
 	/* Can choose any unprotected IPA adr, TFTF_BASE chosen for convenience */
 	base = TFTF_BASE;
-	base_ipa = base | (1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
-					realm.rmm_feat_reg0) - 1U));
+	base_ipa = base | (1UL << (realm.s2sz - 1U));
 
 
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
@@ -2224,14 +2495,17 @@ test_result_t host_realm_enable_dit(void)
 {
 	bool ret1, ret2;
 	struct realm realm;
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[MAX_REC_COUNT], dit;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -2239,8 +2513,14 @@ test_result_t host_realm_enable_dit(void)
 		rec_flag[i] = RMI_RUNNABLE;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, MAX_REC_COUNT, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = MAX_REC_COUNT;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -2455,22 +2735,32 @@ test_result_t host_realm_pas_validation_new(void)
 {
 	bool ret1;
 	test_result_t test_result = TEST_RESULT_FAIL;
-	u_register_t ret, data, top;
+	u_register_t ret, top;
 	struct realm realm;
 	struct rtt_entry rtt;
 	u_register_t rec_flag[2U] = {RMI_RUNNABLE, RMI_RUNNABLE}, base;
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
+	RmiAddrRangeDesc4KB desc = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 2U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 2U;
+
+	if (!host_create_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -2493,7 +2783,7 @@ test_result_t host_realm_pas_validation_new(void)
 
 	/* 2. DATA_CREATE copy TFTF_BASE, chosen for convenience, can be any adr */
 	INFO("Test 2\n");
-	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, TFTF_BASE);
+	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, TFTF_BASE);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -2505,16 +2795,24 @@ test_result_t host_realm_pas_validation_new(void)
 		goto undelegate_destroy;
 	}
 
+	desc.size = RMI_PAGE_L3;
+	desc.count = 0U;
+	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
+	desc.reserved = 0U;
+	desc.state = RMI_OP_MEM_STATE_DELEGATED;
+
 	/* 2a DATA_DESTROY */
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
-	if (ret != RMI_SUCCESS || data != base) {
-		ERROR("host_rmi_data_destroy failed\n");
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
 	}
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.state != RMI_UNASSIGNED ||
 			rtt.ripas != RMI_DESTROYED) {
-		ERROR("Wrong state after host_rmi_data_destroy\n");
+		ERROR("Wrong state after host_rmi_rtt_data_unmap\n");
 		goto undelegate_destroy;
 	}
 
@@ -2522,7 +2820,7 @@ test_result_t host_realm_pas_validation_new(void)
 	host_rmi_granule_undelegate(base);
 
 	/*2b DATA_CREATE_UNKNOWN */
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto undelegate_destroy;
@@ -2535,15 +2833,17 @@ test_result_t host_realm_pas_validation_new(void)
 	}
 
 	/* 2c DATA_DESTROY */
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
-	if (ret != RMI_SUCCESS || data != base) {
-		ERROR("host_rmi_data_destroy failed\n");
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
 	}
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.state != RMI_UNASSIGNED ||
 			rtt.ripas != RMI_DESTROYED) {
-		ERROR("Wrong state after host_rmi_data_destroy\n");
+		ERROR("Wrong state after host_rmi_rtt_data_unmap\n");
 		goto undelegate_destroy;
 	}
 
@@ -2552,7 +2852,7 @@ test_result_t host_realm_pas_validation_new(void)
 	/* 3. start with new page */
 	INFO("Test 3\n");
 	base = (u_register_t)page_alloc(PAGE_SIZE);
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -2563,15 +2863,19 @@ test_result_t host_realm_pas_validation_new(void)
 		ERROR("wrong state after DATA_CRATE_UNKNOWN\n");
 		goto undelegate_destroy;
 	}
-	ret = host_rmi_data_destroy(realm.rd, base, &data, &top);
-	if (ret != RMI_SUCCESS || data != base) {
-		ERROR("host_rmi_data_destroy failed\n");
+
+	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
+	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
+			RMI_ADDR_TYPE_SINGLE,
+				desc.desc);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
 	}
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (ret != RMI_SUCCESS || rtt.state != RMI_UNASSIGNED ||
 			rtt.ripas != RMI_EMPTY) {
-		ERROR("Wrong state after host_rmi_data_destroy\n");
+		ERROR("Wrong state after host_rmi_rtt_data_unmap\n");
 		goto undelegate_destroy;
 	}
 	host_rmi_granule_undelegate(base);
@@ -2592,7 +2896,7 @@ test_result_t host_realm_pas_validation_new(void)
 		goto undelegate_destroy;
 	}
 	/* 4a. DATA_CREATE_UNKNOWN */
-	ret = host_realm_delegate_map_protected_data(true, &realm, base, PAGE_SIZE, 0U);
+	ret = host_realm_delegate_map_protected_data(false, &realm, base, PAGE_SIZE, 0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
@@ -2645,18 +2949,27 @@ test_result_t host_realm_pas_validation_active(void)
 	test_result_t test_result = TEST_RESULT_FAIL;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
 	struct realm realm;
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_realm_payload(&realm, &params)) {
 		goto destroy_realm;
 	}
 
@@ -2692,25 +3005,28 @@ test_result_t host_realm_sea_adr_fault(void)
 {
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t base_ipa, esr, feature_flag0, base;
+	u_register_t base_ipa, esr, base;
 	struct realm realm;
 	u_register_t rec_flag[4U] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
 	struct rmi_rec_run *run;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	feature_flag0 = INPLACE(RMI_FEATURE_REGISTER_0_S2SZ, 0x2CU);
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.s2sz = 0x2CU;
+	params.sl = RTT_MIN_LEVEL;
+	params.rec_flag = rec_flag;
+	params.rec_count = 4U;
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, RTT_MIN_LEVEL, rec_flag, 4U, 0U, get_test_mecid())) {
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
 	/* Any Adr */
 	base = TFTF_BASE;
 	/* IPA outside Realm space */
-	base_ipa = base | (1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
-					realm.rmm_feat_reg0) + 1U));
+	base_ipa = base | (1UL << (realm.s2sz + 1U));
 	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base_ipa);
 	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base_ipa);
 
@@ -2838,18 +3154,27 @@ test_result_t host_test_rtt_fold_unfold_unassigned_empty(void)
 	struct realm realm;
 	struct rtt_entry rtt;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		ERROR("Realm creation failed\n");
 		goto destroy_realm;
 	}
@@ -2861,7 +3186,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_empty(void)
 		if (ret != RMI_SUCCESS || rtt.walk_level > 0U || rtt.state != RMI_UNASSIGNED
 			|| (rtt.ripas != RMI_EMPTY)) {
 			base += RTT_MAP_SIZE(1U);
-			if (host_ipa_is_ns(base, realm.rmm_feat_reg0)) {
+			if (host_ipa_is_ns(base, realm.s2sz)) {
 				ERROR("could not find unmapped adr range\n");
 				goto destroy_realm;
 			}
@@ -2995,18 +3320,27 @@ test_result_t host_test_rtt_fold_unfold_unassigned_ram(void)
 	struct realm realm;
 	struct rtt_entry rtt;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_realm_payload(&realm, &params)) {
 		ERROR("Realm creation failed\n");
 		goto destroy_realm;
 	}
@@ -3018,7 +3352,7 @@ test_result_t host_test_rtt_fold_unfold_unassigned_ram(void)
 		if (ret != RMI_SUCCESS || rtt.walk_level > 0L || rtt.state != RMI_UNASSIGNED
 			|| (rtt.ripas != RMI_EMPTY)) {
 			base += RTT_MAP_SIZE(1U);
-			if (host_ipa_is_ns(base, realm.rmm_feat_reg0)) {
+			if (host_ipa_is_ns(base, realm.s2sz)) {
 				ERROR("could not find unmapped adr range\n");
 				goto destroy_realm;
 			}
@@ -3170,18 +3504,27 @@ test_result_t host_test_rtt_fold_unfold_assigned_ns(void)
 	struct realm realm;
 	struct rtt_entry rtt;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		ERROR("Realm creation failed\n");
 		goto destroy_realm;
 	}
@@ -3195,8 +3538,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_ns(void)
 	 * or even if it is invalid memory.
 	 */
 	base_pa = ALIGN(TFTF_BASE, RTT_L1_BLOCK_SIZE);
-	ns_ipa = base_pa | (1UL << (EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ,
-					realm.rmm_feat_reg0) - 1U));
+	ns_ipa = base_pa | (1UL << (realm.s2sz - 1U));
 
 	INFO("base=0x%lx\n", ns_ipa);
 	ret = host_realm_map_unprotected(&realm, base_pa, RTT_L1_BLOCK_SIZE);
@@ -3285,18 +3627,27 @@ test_result_t host_test_rtt_fold_unfold_assigned_empty(void)
 	struct realm realm;
 	struct rtt_entry rtt;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		ERROR("Realm creation failed\n");
 		goto destroy_realm;
 	}
@@ -3309,7 +3660,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_empty(void)
 			RTT_L2_BLOCK_SIZE);
 
 	for (unsigned int i = 0U; i < 512; i++) {
-		ret = host_realm_delegate_map_protected_data(true, &realm, base + (PAGE_SIZE * i),
+		ret = host_realm_delegate_map_protected_data(false, &realm, base + (PAGE_SIZE * i),
 				PAGE_SIZE, 0U);
 		if (ret != RMI_SUCCESS) {
 			ERROR("host_realm_delegate_map_protected_data failed\n");
@@ -3398,18 +3749,27 @@ test_result_t host_test_rtt_fold_unfold_assigned_ram(void)
 	struct realm realm;
 	struct rtt_entry rtt;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_realm_payload(&realm, &params)) {
 		ERROR("Realm creation failed\n");
 		goto destroy_realm;
 	}
@@ -3423,7 +3783,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_ram(void)
 
 	INFO("base=0x%lx\n", base);
 	for (unsigned int i = 0U; i < 512; i++) {
-		ret = host_realm_delegate_map_protected_data(false, &realm, base + (PAGE_SIZE * i),
+		ret = host_realm_delegate_map_protected_data(true, &realm, base + (PAGE_SIZE * i),
 				PAGE_SIZE, REALM_IMAGE_BASE);
 		if (ret != RMI_SUCCESS) {
 			ERROR("host_realm_delegate_map_protected_data failed base=0x%lx\n",
@@ -3510,22 +3870,30 @@ test_result_t host_test_feat_doublefault2(void)
 	u_register_t base;
 	struct realm realm;
 	struct rtt_entry rtt;
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 	SKIP_TEST_IF_DOUBLE_FAULT2_NOT_SUPPORTED();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
 	rec_flag = RMI_RUNNABLE;
 
-	if (!host_create_activate_realm_payload(&realm,
-					(u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, &rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = &rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -3574,18 +3942,27 @@ test_result_t host_realm_test_attestation(void)
 	bool ret1, ret2;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
 	struct realm realm;
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -3615,18 +3992,27 @@ test_result_t host_realm_test_attestation_fault(void)
 	bool ret1, ret2;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
 	struct realm realm;
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-				feature_flag0, 0U, sl, rec_flag, 1U, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -3654,14 +4040,17 @@ test_result_t host_realm_feat_tcr2(void)
 {
 	bool ret1, ret2;
 	struct realm realm;
-	u_register_t feature_flag0 = 0UL;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[MAX_REC_COUNT], tcr2_el1_val;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag0 = RMI_FEATURE_REGISTER_0_LPA2;
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
@@ -3680,8 +4069,14 @@ test_result_t host_realm_feat_tcr2(void)
 		rec_flag[i] = RMI_RUNNABLE;
 	}
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-			feature_flag0, 0U, sl, rec_flag, 2, 0U, get_test_mecid())) {
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 2U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 
@@ -3718,6 +4113,364 @@ test_result_t host_realm_feat_tcr2(void)
 	if (!ret1 || !ret2) {
 		ERROR("%s(): enter=%d destroy=%d\n",
 		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/*
+ * @Test_Aim@ Test EL1 virtual timer in realm
+ */
+test_result_t host_test_realm_el1_timer(void)
+{
+	bool ret1, ret2;
+	int ret;
+	u_register_t rec_flag[] = {RMI_RUNNABLE};
+	struct realm realm;
+	struct test_realm_params params = {0};
+	u_register_t timer_irq_received = 0U, elapsed_ms = 0U;
+	u_register_t deadline_ms = 100U;  /* Timer deadline in ms */
+	u_register_t wait_time_ms = 150U; /* Wait time to ensure timer fires */
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	/* Register GIC Maintenance IRQ handler */
+	ret = tftf_irq_register_handler(GIC_MAINT_IRQ, host_maint_interrupt);
+
+	if (ret != 0) {
+		tftf_testcase_printf("Failed to register GIC Maintenance IRQ handler\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Enable GIC Maintenance IRQ in host GIC */
+	tftf_irq_enable(GIC_MAINT_IRQ, GIC_HIGHEST_NS_PRIORITY);
+
+	/* Register Timer IRQ handler */
+	ret = tftf_irq_register_handler(tftf_get_timer_virq(),
+			host_timer_interrupt);
+
+	if (ret != 0) {
+		tftf_testcase_printf("Failed to register Timer IRQ handler\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Enable Timer IRQ in host GIC */
+	tftf_irq_enable(tftf_get_timer_virq(), GIC_HIGHEST_NS_PRIORITY);
+
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Set timer parameters */
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U,
+			HOST_ARG1_INDEX, deadline_ms);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U,
+			HOST_ARG2_INDEX, wait_time_ms);
+
+	/* Run the timer test in realm */
+	ret1 = host_enter_realm_execute(&realm, REALM_EL1_TIMER_CMD,
+			RMI_EXIT_IRQ, 0U);
+
+	if (!ret1) {
+		ERROR("Timer test failed to enter realm\n");
+		goto destroy_realm;
+	}
+
+	/* Handle the timer IRQ exit and re-enter realm */
+	ret1 = host_realm_handle_timer_irq_exit(&realm, 0U);
+
+	if (!ret1) {
+		ERROR("Timer IRQ handling failed\n");
+		goto destroy_realm;
+	}
+
+	/* Get timer test results from realm */
+	timer_irq_received = host_shared_data_get_realm_val(&realm,
+			PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX);
+	elapsed_ms = host_shared_data_get_realm_val(&realm,
+			PRIMARY_PLANE_ID, 0U, HOST_ARG2_INDEX);
+
+	INFO("Timer test: irq_received=%lu, elapsed_ms=%lu\n",
+	     timer_irq_received, elapsed_ms);
+
+destroy_realm:
+	ret2 = host_destroy_realm(&realm);
+
+	tftf_irq_disable(tftf_get_timer_virq());
+	tftf_irq_disable(GIC_MAINT_IRQ);
+
+	/* Unregister GIC Maintenance IRQ handler */
+	tftf_irq_unregister_handler(GIC_MAINT_IRQ);
+
+	/* Unregister Timer IRQ handler */
+	tftf_irq_unregister_handler(tftf_get_timer_virq());
+
+	if (!ret1 || !ret2) {
+		ERROR("%s(): enter=%d destroy=%d\n",
+		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Verify timer interrupt was received */
+	if (timer_irq_received != 1U) {
+		ERROR("Timer interrupt was not received\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Verify elapsed time is reasonable (within range) */
+	if (elapsed_ms < deadline_ms ||
+			elapsed_ms > (wait_time_ms + 50U)) {
+		ERROR("Timer elapsed time out of range: %lu ms (expected %lu-%lu ms)\n",
+			elapsed_ms, deadline_ms, wait_time_ms + 50U);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/*
+ * @Test_Aim@ Test GIC trap handling in Realm
+ *
+ * This test verifies that GIC register accesses from within a Realm
+ * are properly trapped and handled by the RMM. The test creates a Realm,
+ * sets ICH_HCR_EL2.TC bit to trap GIC register accesses, and verifies
+ * that each GIC register access causes an RMI_EXIT_SYNC with appropriate
+ * ESR values. The host re-enters the realm after each trap.
+ */
+
+
+/* System register encodings for GIC registers */
+#define IS_ICC_CTLR_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icc_ctlr_el1)
+#define IS_ICC_PMR_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icc_pmr_el1)
+#define IS_ICC_IGRPEN1_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icc_igrpen1_el1)
+#define IS_ICV_CTLR_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icv_ctlr_el1)
+#define IS_ICV_PMR_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icv_pmr_el1)
+#define IS_ICC_SGI0R_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icc_sgi0r_el1)
+#define IS_ICC_DIR_EL1(iss)		(ISS_SYSREG_ID(iss) == SYSREG_ID_icc_dir_el1)
+
+test_result_t host_test_realm_gic_trap(void)
+{
+	u_register_t ret1;
+	bool ret2;
+	u_register_t rec_flag[] = {RMI_RUNNABLE};
+	struct realm realm;
+	struct test_realm_params params = {0};
+	u_register_t exit_reason;
+	unsigned int host_call_result;
+	u_register_t test_result = 0U;
+	u_register_t icc_ctlr_val;
+	u_register_t icc_pmr_val;
+	struct rmi_rec_run *run;
+	int trap_count = 0;
+
+	(void)icc_ctlr_val;
+	(void)icc_pmr_val;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	/* Create and activate realm */
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Set ICH_HCR_EL2.TC bit to trap EL1 GIC register accesses */
+	write_ich_hcr_el2(read_ich_hcr_el2() | ICH_HCR_EL2_TC_BIT);
+
+	run = (struct rmi_rec_run *)realm.run[0];
+
+	/* Run the GIC trap test in realm */
+	host_shared_data_set_realm_cmd(&realm, REALM_GIC_TRAP_CMD,
+				       PRIMARY_PLANE_ID, 0U);
+
+	ret1 = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 0U);
+
+	if (ret1 != RMI_SUCCESS) {
+		ERROR("Failed to enter realm for GIC trap test, ret=0x%lx\n", ret1);
+		test_result = 1U;
+		goto destroy_realm;
+	}
+
+	 /*
+	  * Loop to handle multiple sync exits from GIC register traps
+	  * Expected sequence from realm test:
+	  *  1. read ICC_CTLR_EL1
+	  *  2. read ICC_PMR_EL1
+	  *  3. write ICC_PMR_EL1 (0xE0)
+	  *  4. read ICC_PMR_EL1 (verify)
+	  *  5. write ICC_PMR_EL1 (restore)
+	  *  6. read ICC_IGRPEN1_EL1
+	  *  7. write ICC_DIR_EL1
+	  *  8. read ICV_CTLR_EL1
+	  *  9. read ICV_PMR_EL1
+	  * 10. write ICC_SGI0R_EL1
+	  */
+	while (run->exit.exit_reason == RMI_EXIT_SYNC) {
+		u_register_t esr = run->exit.esr;
+		u_register_t ec = EC_BITS(esr);
+		u_register_t iss = ISS_BITS(esr);
+		const char *reg_name = "UNKNOWN";
+		const char *direction;
+
+		(void)reg_name;
+		(void)direction;
+
+		/*
+		 * Check if this is a trapped system register access
+		 * EC_AARCH64_SYS (0x18) indicates system register trap
+		 */
+		if (ec != EC_AARCH64_SYS) {
+			ERROR("Unexpected exception EC=0x%lx ESR=0x%lx\n",
+			      ec, esr);
+			ret1 = false;
+			goto destroy_realm;
+		}
+
+		trap_count++;
+		direction = IS_ISS_SYSREG_READ(iss) ? "READ" : "WRITE";
+
+		/* Validate the trapped register matches expected GIC registers */
+		if (IS_ICC_CTLR_EL1(iss) || IS_ICV_CTLR_EL1(iss)) {
+			reg_name = "ICC/ICV_CTLR_EL1";
+		} else if (IS_ICC_PMR_EL1(iss) || IS_ICV_PMR_EL1(iss)) {
+			reg_name = "ICC/ICV_PMR_EL1";
+		} else if (IS_ICC_IGRPEN1_EL1(iss)) {
+			reg_name = "ICC_IGRPEN1_EL1";
+		} else if (IS_ICC_SGI0R_EL1(iss)) {
+			reg_name = "ICC_SGI0R_EL1";
+		} else if (IS_ICC_DIR_EL1(iss)) {
+			reg_name = "ICC_DIR_EL1";
+		} else {
+			ERROR("Unexpected GIC register trap: ISS=0x%lx\n", iss);
+			ret1 = false;
+			//goto destroy_realm;
+		}
+
+		INFO("GIC trap #%d: %s %s (ESR=0x%lx, ISS=0x%lx)\n",
+		     trap_count, direction, reg_name, esr, iss);
+
+		/* Emulate GIC register access */
+		if (IS_ISS_SYSREG_WRITE(iss)) {
+			/* Emulate write operation - RMM copies source register to gprs[0] */
+			u_register_t value = run->exit.gprs[0];
+
+			if (IS_ICC_PMR_EL1(iss) || IS_ICV_PMR_EL1(iss)) {
+				write_icc_pmr_el1(value);
+				INFO("Host emulated write: R0=0x%lx -> ICC_PMR_EL1\n",
+				     value);
+			} else if (IS_ICC_CTLR_EL1(iss) || IS_ICV_CTLR_EL1(iss)) {
+				write_icc_ctlr_el1(value);
+				INFO("Host emulated write: R0=0x%lx -> ICC_CTLR_EL1\n",
+				     value);
+			} else if (IS_ICC_IGRPEN1_EL1(iss)) {
+				write_icc_igrpen1_el1(value);
+				INFO("Host emulated write: R0=0x%lx -> ICC_IGRPEN1_EL1\n",
+				     value);
+			} else if (IS_ICC_SGI0R_EL1(iss)) {
+				write_icc_sgi0r_el1(value);
+				INFO("Host emulated write: R0=0x%lx -> ICC_SGI0R_EL1\n",
+				     value);
+			} else if (IS_ICC_DIR_EL1(iss)) {
+				write_icc_dir_el1(value);
+				INFO("Host emulated write: R0=0x%lx -> ICC_DIR_EL1\n",
+				     value);
+			}
+		} else {
+			/* Emulate read operation */
+			u_register_t value = 0;
+
+			if (IS_ICC_PMR_EL1(iss) || IS_ICV_PMR_EL1(iss)) {
+				value = read_icc_pmr_el1();
+				INFO("Host emulated read: ICC_PMR_EL1=0x%lx\n", value);
+			} else if (IS_ICC_CTLR_EL1(iss) || IS_ICV_CTLR_EL1(iss)) {
+				value = read_icc_ctlr_el1();
+				INFO("Host emulated read: ICC_CTLR_EL1=0x%lx\n", value);
+			} else if (IS_ICC_IGRPEN1_EL1(iss)) {
+				value = read_icc_igrpen1_el1();
+				INFO("Host emulated read: ICC_IGRPEN1_EL1=0x%lx\n", value);
+			}
+
+			/* Store read value in R0, RMM will copy to target register */
+			run->entry.gprs[0] = value;
+		}
+
+		/* Re-enter realm to continue execution */
+		ret1 = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 0U);
+		if (ret1 != RMI_SUCCESS) {
+			ERROR("Failed to re-enter realm after trap %d\n",
+			      trap_count);
+			goto destroy_realm;
+		}
+	}
+
+	/* Final exit should be host call */
+	if (run->exit.exit_reason != RMI_EXIT_HOST_CALL) {
+		ERROR("Expected RMI_EXIT_HOST_CALL, got 0x%lx\n",
+		      run->exit.exit_reason);
+		ret1 = false;
+		goto destroy_realm;
+	}
+
+	INFO("Total GIC register traps: %d\n", trap_count);
+
+	/* Get test results from realm */
+	test_result = host_shared_data_get_realm_val(&realm,
+			PRIMARY_PLANE_ID, 0U, HOST_ARG1_INDEX);
+	icc_ctlr_val = host_shared_data_get_realm_val(&realm,
+			PRIMARY_PLANE_ID, 0U, HOST_ARG2_INDEX);
+	icc_pmr_val = host_shared_data_get_realm_val(&realm,
+			PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX);
+
+	INFO("GIC trap test: result=%lu, ICC_CTLR=0x%lx, ICC_PMR=0x%lx\n",
+	     test_result, icc_ctlr_val, icc_pmr_val);
+
+destroy_realm:
+	ret2 = host_destroy_realm(&realm);
+
+	if ((ret1 != RMI_SUCCESS) || !ret2) {
+		ERROR("%s(): enter=%ld destroy=%d\n",
+		      __func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Verify realm test passed */
+	if (test_result != 1U) {
+		ERROR("GIC trap test failed in realm\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Verify we got at least some traps */
+	if (trap_count == 0) {
+		ERROR("No GIC register traps detected\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/* @Test_Aim@ Test to check that the RMI_RMM_CONFIG_GET returns the
+ * expected values.
+ */
+test_result_t host_test_realm_rmi_rmm_config_get(void)
+{
+	struct rmi_rmm_config config __aligned(PAGE_SIZE) = { 0 };
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (host_rmi_rmm_config_get(&config) != RMI_SUCCESS) {
+		return TEST_RESULT_FAIL;
+	}
+
+	if ((config.tracking_size != RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB) ||
+	    (config.granule_size != RMI_GRANULE_SIZE_4K)) {
 		return TEST_RESULT_FAIL;
 	}
 

@@ -24,23 +24,17 @@
 test_result_t host_realm_feat_mops(void)
 {
 	unsigned long rec_flag[] = {RMI_RUNNABLE};
-	unsigned long feature_flag = 0UL;
-	unsigned long feature_flag1 = 0UL;
 	struct realm realm;
-	long sl = RTT_MIN_LEVEL;
 	test_result_t test_result = TEST_RESULT_SUCCESS;
+	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	if (is_feat_52b_on_4k_2_supported()) {
-		feature_flag = RMI_FEATURE_REGISTER_0_LPA2;
-		sl = RTT_MIN_LEVEL_LPA2;
-	}
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
 
-	if (!host_create_activate_realm_payload(&realm, (u_register_t)REALM_IMAGE_BASE,
-						feature_flag, feature_flag1, sl,
-						rec_flag, 1U, 0U,
-						get_test_mecid())) {
+	if (!host_create_activate_realm_payload(&realm, &params)) {
 		return TEST_RESULT_FAIL;
 	}
 

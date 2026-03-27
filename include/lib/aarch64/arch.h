@@ -104,11 +104,13 @@
 #define ICC_EOIR0_EL1		S3_0_C12_C8_1
 #define ICC_EOIR1_EL1		S3_0_C12_C12_1
 #define ICC_SGI0R_EL1		S3_0_C12_C11_7
-#define ICV_CTRL_EL1		S3_0_C12_C12_4
+#define ICC_DIR_EL1		S3_0_C12_C11_1
+#define ICV_CTLR_EL1		S3_0_C12_C12_4
 #define ICV_IAR1_EL1		S3_0_C12_C12_0
 #define ICV_IGRPEN1_EL1		S3_0_C12_C12_7
 #define ICV_EOIR1_EL1		S3_0_C12_C12_1
 #define ICV_PMR_EL1		S3_0_C4_C6_0
+#define ICV_DIR_EL1		S3_0_C12_C11_1
 
 /*******************************************************************************
  * Definitions for CPU system register interface to GICv5
@@ -161,6 +163,40 @@
 #define GICCDPRI_PRIORITY_WIDTH			5UL
 #define GICCDPEND_PENDING_BIT			BIT(32)
 #define GICRCDIA_VALID_BIT			BIT(32)
+
+/*******************************************************************************
+ * Virtual GIC registers
+ ******************************************************************************/
+#define ICH_AP0R0_EL2		S3_4_C12_C8_0
+#define ICH_AP0R1_EL2		S3_4_C12_C8_1
+#define ICH_AP0R2_EL2		S3_4_C12_C8_2
+#define ICH_AP0R3_EL2		S3_4_C12_C8_3
+#define ICH_AP1R0_EL2		S3_4_C12_C9_0
+#define ICH_AP1R1_EL2		S3_4_C12_C9_1
+#define ICH_AP1R2_EL2		S3_4_C12_C9_2
+#define ICH_AP1R3_EL2		S3_4_C12_C9_3
+
+#define ICH_LR0_EL2		S3_4_C12_C12_0
+#define ICH_LR1_EL2		S3_4_C12_C12_1
+#define ICH_LR2_EL2		S3_4_C12_C12_2
+#define ICH_LR3_EL2		S3_4_C12_C12_3
+#define ICH_LR4_EL2		S3_4_C12_C12_4
+#define ICH_LR5_EL2		S3_4_C12_C12_5
+#define ICH_LR6_EL2		S3_4_C12_C12_6
+#define ICH_LR7_EL2		S3_4_C12_C12_7
+#define ICH_LR8_EL2		S3_4_C12_C13_0
+#define ICH_LR9_EL2		S3_4_C12_C13_1
+#define ICH_LR10_EL2		S3_4_C12_C13_2
+#define ICH_LR11_EL2		S3_4_C12_C13_3
+#define ICH_LR12_EL2		S3_4_C12_C13_4
+#define ICH_LR13_EL2		S3_4_C12_C13_5
+#define ICH_LR14_EL2		S3_4_C12_C13_6
+#define ICH_LR15_EL2		S3_4_C12_C13_7
+
+#define ICH_HCR_EL2		S3_4_C12_C11_0
+#define ICH_VTR_EL2		S3_4_C12_C11_1
+#define ICH_MISR_EL2		S3_4_C12_C11_2
+#define ICH_VMCR_EL2		S3_4_C12_C11_7
 
 /*******************************************************************************
  * Definitions for EL2 system registers.
@@ -1166,6 +1202,15 @@
 #define CNTP_CTL_IMASK_MASK     U(1)
 #define CNTP_CTL_ISTATUS_MASK   U(1)
 
+/* Virtual timer control register bit fields shifts and masks */
+#define CNTV_CTL_ENABLE_SHIFT   U(0)
+#define CNTV_CTL_IMASK_SHIFT    U(1)
+#define CNTV_CTL_ISTATUS_SHIFT  U(2)
+
+#define CNTV_CTL_ENABLE_MASK    U(1)
+#define CNTV_CTL_IMASK_MASK     U(1)
+#define CNTV_CTL_ISTATUS_MASK   U(1)
+
 /* Exception Syndrome register bits and bobs */
 #define ESR_EC_SHIFT			U(26)
 #define ESR_EC_MASK			U(0x3f)
@@ -1199,6 +1244,33 @@
 #define EC_AARCH32_FP			U(0x28)
 #define EC_AARCH64_FP			U(0x2c)
 #define EC_SERROR			U(0x2f)
+
+/* ESR ISS encoding for system register traps (EC_AARCH64_SYS) */
+#define ISS_SYSREG_DIRECTION_SHIFT	U(0)
+#define ISS_SYSREG_DIRECTION_MASK	U(0x1)
+#define ISS_SYSREG_CRM_SHIFT		U(1)
+#define ISS_SYSREG_CRM_MASK		U(0xF)
+#define ISS_SYSREG_RT_SHIFT		U(5)
+#define ISS_SYSREG_RT_MASK		U(0x1F)
+#define ISS_SYSREG_CRN_SHIFT		U(10)
+#define ISS_SYSREG_CRN_MASK		U(0xF)
+#define ISS_SYSREG_OP1_SHIFT		U(14)
+#define ISS_SYSREG_OP1_MASK		U(0x7)
+#define ISS_SYSREG_OP2_SHIFT		U(17)
+#define ISS_SYSREG_OP2_MASK		U(0x7)
+#define ISS_SYSREG_OP0_SHIFT		U(20)
+#define ISS_SYSREG_OP0_MASK		U(0x3)
+
+#define ISS_SYSREG_DIRECTION_READ	U(0x1)
+#define ISS_SYSREG_DIRECTION_WRITE	U(0x0)
+
+/* Extract SYSREG_ID from ISS by reconstructing from individual fields */
+#define ISS_SYSREG_ID(iss)		\
+	(((((iss) >> ISS_SYSREG_OP0_SHIFT) & ISS_SYSREG_OP0_MASK) << SYSREG_ID_OP0_SHIFT) | \
+	 ((((iss) >> ISS_SYSREG_OP1_SHIFT) & ISS_SYSREG_OP1_MASK) << SYSREG_ID_OP1_SHIFT) | \
+	 ((((iss) >> ISS_SYSREG_CRN_SHIFT) & ISS_SYSREG_CRN_MASK) << SYSREG_ID_CRN_SHIFT) | \
+	 ((((iss) >> ISS_SYSREG_CRM_SHIFT) & ISS_SYSREG_CRM_MASK) << SYSREG_ID_CRM_SHIFT) | \
+	 ((((iss) >> ISS_SYSREG_OP2_SHIFT) & ISS_SYSREG_OP2_MASK) << SYSREG_ID_OP2_SHIFT))
 
 /* Common DFSC/IFSC code */
 #define ISS_FSC_MASK			U(0x3f)
@@ -2008,6 +2080,15 @@
 #define SYSREG_ID_apgakeyhi_el1			SYSREG_ID(0, 3, 0, 2,  3, 1)
 #define SYSREG_ID_mpamidr_el1			SYSREG_ID(0, 3, 0, 10, 4, 4)
 #define SYSREG_ID_INVALID			SYSREG_ID(0, 4, 3, 15, 15, 7)
+
+/* GICv3 CPU Interface registers */
+#define SYSREG_ID_icc_ctlr_el1			SYSREG_ID(0, 3, 0, 12, 12, 4)
+#define SYSREG_ID_icc_pmr_el1			SYSREG_ID(0, 3, 0, 4, 6, 0)
+#define SYSREG_ID_icc_igrpen1_el1		SYSREG_ID(0, 3, 0, 12, 12, 7)
+#define SYSREG_ID_icc_sgi0r_el1			SYSREG_ID(0, 3, 0, 12, 11, 7)
+#define SYSREG_ID_icc_dir_el1			SYSREG_ID(0, 3, 0, 12, 11, 1)
+#define SYSREG_ID_icv_ctlr_el1			SYSREG_ID(0, 3, 0, 12, 12, 4)
+#define SYSREG_ID_icv_pmr_el1			SYSREG_ID(0, 3, 0, 4, 6, 0)
 
 /* RNDR definition */
 #define RNDR			S3_3_C2_C4_0

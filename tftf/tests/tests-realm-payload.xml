@@ -72,6 +72,8 @@
 	  function="host_realm_fail_del" />
 	  <testcase name="Test FEAT_MOPS is enabled"
 	  function="host_realm_feat_mops" />
+	  <testcase name="Verify RMM Configuration"
+	  function="host_test_realm_rmi_rmm_config_get" />
 	  <!-- Test cases related to PMUv3 support -->
 	  <testcase name="PMUv3 cycle counter functional in Realm"
 	  function="host_realm_pmuv3_cycle_works" />
@@ -166,14 +168,6 @@
 	  <testcase name="Test if BRBE realted registers are preserved "
 	  function="host_realm_test_brbe_save_restore" />
 	  <!-- Test cases related to FEAT_MEC -->
-	  <testcase name="Test Realms with different MECIDs"
-	  function="host_realm_test_mecid" />
-	  <testcase name="Test Realms with the same MECID"
-	  function="host_realm_test_mecid_fault" />
-	  <testcase name="Test Realm with minimum MECID"
-	  function="host_realm_test_min_mecid" />
-	  <testcase name="Test Realms with maximum MECID"
-	  function="host_realm_test_max_mecid" />
 	  <testcase name="Test Realms with shared default MECID"
 	  function="host_realm_test_default_mecid" />
 	  <!-- Test case for EL3-RMM IDE KM Interface -->
@@ -201,8 +195,14 @@
 	  <!-- Test case related to SMMUv3 -->
 	  <testcase name="Check DMA command by SMMUv3TestEngine completes"
 	  function="host_test_realm_smmuv3" />
+	  <!-- Test case for EL1 timer in Realm -->
+	  <testcase name="Test EL1 physical timer in Realm"
+	  function="host_test_realm_el1_timer" />
 	  <!-- Test case for LFA with Realm Payload -->
 	  <testcase name="Test Live Firmware Activation of RMM with Realm Payload"
 	  function="host_test_realm_rsi_version_with_lfa" />
+	  <!-- Test case for GIC trap in Realm -->
+	  <testcase name="Test GIC trap handling in Realm"
+	  function="host_test_realm_gic_trap" />
   </testsuite>
 </testsuites>

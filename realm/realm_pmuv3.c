@@ -285,7 +285,7 @@ bool test_pmuv3_overflow_interrupt(bool cycle_cnt)
 	pmu_reset();
 
 	/* Get the number of priority bits implemented */
-	priority_bits = ((read_icv_ctrl_el1() >> ICV_CTLR_EL1_PRIbits_SHIFT) &
+	priority_bits = ((read_icv_ctlr_el1() >> ICV_CTLR_EL1_PRIbits_SHIFT) &
 				ICV_CTLR_EL1_PRIbits_MASK) + 1UL;
 
 	/* Unimplemented bits are RES0 and start from LSB */

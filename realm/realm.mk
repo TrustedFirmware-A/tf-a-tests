@@ -34,6 +34,7 @@ REALM_SOURCES:=								\
 	realm_da_helpers.c						\
 	realm_debug.c							\
 	realm_exception_report.c					\
+	realm_gic_trap.c						\
 	realm_helpers.c							\
 	realm_interrupt.c						\
 	realm_mpam.c							\
@@ -50,6 +51,7 @@ REALM_SOURCES:=								\
 	realm_simd.c							\
 	realm_smmuv3.c							\
 	smmuv3_test_engine.c						\
+	realm_timer.c							\
 	)
 
 REALM_SOURCES += lib/${ARCH}/cache_helpers.S				\

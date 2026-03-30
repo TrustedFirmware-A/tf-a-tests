@@ -129,14 +129,14 @@ typedef struct el2_tcr2_regs {
 	uint64_t tcr2_el2;
 } el2_tcr2_regs_t;
 
-typedef struct el2_sxpoe_regs {
+typedef struct el2_s1poe_regs {
 	uint64_t por_el2;
-} el2_sxpoe_regs_t;
+} el2_s1poe_regs_t;
 
-typedef struct el2_sxpie_regs {
+typedef struct el2_s1pie_regs {
 	uint64_t pire0_el2;
 	uint64_t pir_el2;
-} el2_sxpie_regs_t;
+} el2_s1pie_regs_t;
 
 typedef struct el2_s2pie_regs {
 	uint64_t s2pir_el2;
@@ -175,8 +175,8 @@ typedef struct el2_sysregs {
 	el2_csv2_regs_t csv2;
 	el2_hcx_regs_t hcx;
 	el2_tcr2_regs_t tcr2;
-	el2_sxpoe_regs_t sxpoe;
-	el2_sxpie_regs_t sxpie;
+	el2_s1poe_regs_t s1poe;
+	el2_s1pie_regs_t s1pie;
 	el2_s2pie_regs_t s2pie;
 	el2_gcs_regs_t gcs;
 	el2_mpam_regs_t mpam;

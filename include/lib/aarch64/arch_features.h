@@ -559,16 +559,6 @@ static inline bool is_feat_s2pie_present(void)
 		>= ID_AA64MMFR3_EL1_S2PIE_SUPPORTED;
 }
 
-static inline bool is_feat_sxpoe_present(void)
-{
-	return is_feat_s1poe_present() || is_feat_s2poe_present();
-}
-
-static inline bool is_feat_sxpie_present(void)
-{
-	return is_feat_s1pie_present() || is_feat_s2pie_present();
-}
-
 static inline bool is_feat_mte2_present(void)
 {
 	return EXTRACT(ID_AA64PFR1_EL1_MTE, read_id_aa64pfr1_el1())

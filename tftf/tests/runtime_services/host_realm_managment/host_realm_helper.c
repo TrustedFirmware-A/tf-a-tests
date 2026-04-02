@@ -6,6 +6,7 @@
  */
 
 #include <stdint.h>
+#include <spinlock.h>
 
 #include <arch_helpers.h>
 #include <debug.h>
@@ -41,6 +42,13 @@ const char *rmi_exit[] = {
 
 /* Bitmap to track allocated realm IDs */
 static unsigned int realm_id_bitmap;
+/*
+ * The spinlock will be initialized properly without the need to call the `init` function
+ * because it's declared as a static global variable. The zero-initialization puts it
+ * in the `unlocked` state.
+ */
+static spinlock_t realm_id_bitmap_lock;
+
 static u_register_t rmm_feat_reg0;
 static u_register_t rmm_feat_reg2;
 static u_register_t rmm_feat_reg3;
@@ -338,15 +346,16 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 
 	realm_ptr->payload_created = true;
 
+	spin_lock(&realm_id_bitmap_lock);
 	/* Allocate unique realm ID after successful creation */
 	for (unsigned int i = 0U; i < MAX_REALM_COUNT; i++) {
 		if ((realm_id_bitmap & (1U << i)) == 0U) {
 			realm_ptr->realm_id = i;
-			/* @TODO make thread-safe */
 			realm_id_bitmap |= (1U << i);
 			break;
 		}
 	}
+	spin_unlock(&realm_id_bitmap_lock);
 
 	return true;
 
@@ -438,8 +447,9 @@ bool host_destroy_realm(struct realm *realm_ptr)
 	}
 
 	/* Free realm ID */
-	/* @TODO make thread-safe */
+	spin_lock(&realm_id_bitmap_lock);
 	realm_id_bitmap &= ~(1U << realm_ptr->realm_id);
+	spin_unlock(&realm_id_bitmap_lock);
 
 	memset((char *)realm_ptr, 0U, sizeof(struct realm));
 

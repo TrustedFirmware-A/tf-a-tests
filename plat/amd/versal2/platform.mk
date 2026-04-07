@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2024, Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (c) 2024-2026, Advanced Micro Devices, Inc. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -14,6 +14,7 @@ PLAT_SOURCES	:=	drivers/arm/pl011/${ARCH}/pl011_console.S       \
 			drivers/arm/timer/private_timer.c		\
 			drivers/console/console.c                       \
 			${VERSAL2_PATH}/versal2_setup.c		\
+			${VERSAL2_PATH}/versal2_topology.c	\
 			${VERSAL2_PATH}/versal2_pwr_state.c	\
 			${VERSAL2_PATH}/aarch64/plat_helpers.S	\
 			${XLNX_COMMON_PATH}/timer/timers.c

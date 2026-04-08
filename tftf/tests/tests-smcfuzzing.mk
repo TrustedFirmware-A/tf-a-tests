@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2024, Arm Limited. All rights reserved.
+# Copyright (c) 2026, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -98,7 +98,8 @@ TESTS_SOURCES	+=							\
 		ffa_fuzz_helper.c					\
 		tsp_fuzz_helper.c					\
 		nfifo.c							\
-		constraint.c						\
-		vendor_fuzz_helper.c					\
 		vec_container.c						\
+		constraint.c						\
+		vendor_fuzz_helper.c 					\
+		psci_fuzz_helper.c					\
 	)

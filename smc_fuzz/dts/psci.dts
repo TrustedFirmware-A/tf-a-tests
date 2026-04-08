@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2026, Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/dts-v1/;
+
+/ {
+
+	psci {
+		bias = <30>;
+		psci_version {
+			bias = <30>;
+			functionname = "psci_version_funcid";
+		};
+		psci_affinity_info {
+			bias = <30>;
+			functionname = "psci_affinity_info_funcid";
+		};
+		psci_features {
+			bias = <30>;
+			functionname = "psci_features_funcid";
+		};
+		psci_stat_residency {
+			bias = <30>;
+			functionname = "psci_stat_residency_funcid";
+		};
+		psci_stat_count {
+			bias = <30>;
+			functionname = "psci_stat_count_funcid";
+		};
+		psci_node_hw_state {
+			bias = <30>;
+			functionname = "psci_node_hw_state_funcid";
+		};
+		psci_set_suspend_mode {
+			bias = <30>;
+			functionname = "psci_set_suspend_mode_funcid";
+		};
+	};
+};

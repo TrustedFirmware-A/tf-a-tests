@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,9 +9,11 @@
 
 #define VEC_CONTAINER_THRESHOLD 10
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "smcmalloc.h"
 
 struct vec_container {
@@ -23,6 +25,7 @@ struct vec_container {
 void vec_containerinit(struct vec_container *vc, size_t esize, struct memmod *mmod);
 void vec_containerfree(struct vec_container *vc, struct memmod *mmod);
 void pushvec(uint64_t *obj, struct vec_container *vc, struct memmod *mmod);
+bool vec_containerelem(struct vec_container *vc, uint64_t el);
 
 
 #endif /* VEC_CONTAINER_H */

@@ -4,11 +4,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+# Platforms that build the AMD-Xilinx tests; others get standard tests only.
+AMD_XILINX_TEST_ALLOWED_PLATS	:= versal versal2
+
 include tftf/tests/tests-versal-common.mk
 
-# AMD common test sources.  Directories are enumerated explicitly so each
-# test suite's inclusion in the Versal/Versal Gen 2 build images is
-# reviewable on a per-platform basis.
+# AMD common test sources, enumerated for per-platform reviewability.
+# Skipped on platforms not in AMD_XILINX_TEST_ALLOWED_PLATS.
+ifneq ($(filter $(PLAT),$(AMD_XILINX_TEST_ALLOWED_PLATS)),)
 TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/clock_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/feature_check/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/force_powerdown/*.c)	\
@@ -28,6 +31,7 @@ TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/clock_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/system_shutdown/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/tf_a_feature_check/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/tf_a_register_sgi/*.c)
+endif # PLAT in AMD_XILINX_TEST_ALLOWED_PLATS
 
 include tftf/tests/tests-standard.mk
 TESTS_SOURCES := $(sort ${TESTS_SOURCES})

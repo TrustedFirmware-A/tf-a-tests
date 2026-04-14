@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2020-2026, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -31,6 +31,14 @@ static const plat_state_prop_t cluster_state_prop[] = {
 	{0}
 };
 
+/* The state property array with details of idle state possible
+ * for the system level.
+ */
+static const plat_state_prop_t system_state_prop[] = {
+	{TC_PS_OFF_DEPTH, TC_PS_OFF_STATE_ID, PSTATE_TYPE_POWERDOWN},
+	{0},
+};
+
 const plat_state_prop_t *plat_get_state_prop(unsigned int level)
 {
 	switch (level) {
@@ -38,6 +46,8 @@ const plat_state_prop_t *plat_get_state_prop(unsigned int level)
 		return core_state_prop;
 	case MPIDR_AFFLVL1:
 		return cluster_state_prop;
+	case MPIDR_AFFLVL2:
+		return system_state_prop;
 	default:
 		return NULL;
 	}

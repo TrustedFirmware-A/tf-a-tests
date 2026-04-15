@@ -1,5 +1,5 @@
 ..
-  Copyright (c) 2023, Advanced Micro Devices, Inc. All rights reserved. !
+  Copyright (c) 2023-2026, Advanced Micro Devices, Inc. All rights reserved. !
 
   SPDX-License-Identifier: BSD-3-Clause !
 
@@ -27,6 +27,18 @@ Available Variants:
   Chip name: Versal Prime Series Gen 2 2vm3654
 
 
+Console Selection
+-----------------
+
+The Versal2 platform supports selecting the UART console through the
+``VERSAL2_CONSOLE`` build option. The base address for the selected console
+is resolved in the platform header.
+
+Available Options:
+
+- pl011_1 (Default): Uses UART1 (``PL011_UART1_BASE``)
+- pl011 or pl011_0: Uses UART0 (``PL011_UART0_BASE``)
+
 Build Command
 -------------
 For individual tests/test suite:
@@ -47,3 +59,8 @@ To build with a specific variant (alternate topology):
 
         make CROSS_COMPILE=aarch64-none-elf- PLAT=versal2 VERSAL2_VARIANT=14 TESTS=versal tftf
 
+To build with UART0 as the console:
+
+.. code-block:: shell
+
+        make CROSS_COMPILE=aarch64-none-elf- PLAT=versal2 VERSAL2_CONSOLE=pl011_0 TESTS=versal tftf

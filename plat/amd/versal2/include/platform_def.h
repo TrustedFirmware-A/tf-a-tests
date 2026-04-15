@@ -98,10 +98,27 @@
 #define PL011_BAUDRATE				U(115200)
 #define PL011_UART_CLK_IN_HZ			U(100000000)
 
-#define PLAT_ARM_UART_BASE                      PL011_UART1_BASE
-#define PLAT_ARM_UART_SIZE                      U(0x1000)
+/*
+ * Console base address selection based on VERSAL2_CONSOLE_ID build argument
+ * VERSAL2_CONSOLE_ID=0 (pl011 or pl011_0) selects UART0
+ * VERSAL2_CONSOLE_ID=1 (pl011_1) selects UART1 (default)
+ */
+#ifndef VERSAL2_CONSOLE_ID
+#define VERSAL2_CONSOLE_ID			U(1)
+#endif
 
-#define CRASH_CONSOLE_BASE			PL011_UART1_BASE
+#if (VERSAL2_CONSOLE_ID == 0)
+#define VERSAL2_CONSOLE_BASE			PL011_UART0_BASE
+#elif (VERSAL2_CONSOLE_ID == 1)
+#define VERSAL2_CONSOLE_BASE			PL011_UART1_BASE
+#else
+#error "Invalid VERSAL2_CONSOLE_ID. Supported values: 0 (UART0), 1 (UART1)"
+#endif
+
+#define PLAT_ARM_UART_BASE			VERSAL2_CONSOLE_BASE
+#define PLAT_ARM_UART_SIZE			U(0x1000)
+
+#define CRASH_CONSOLE_BASE			VERSAL2_CONSOLE_BASE
 #define CRASH_CONSOLE_SIZE			PLAT_ARM_UART_SIZE
 
 /* Per-CPU Hypervisor Timer Interrupt ID */

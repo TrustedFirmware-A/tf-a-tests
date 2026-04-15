@@ -5,6 +5,13 @@
 #
 
 RDASPEN_PATH = plat/arm/automotive_rd/rdaspen
+
+PLATFORM_CORE_COUNT ?= 16
+
+# Pass PLATFORM_CORE_COUNT to the build system.
+$(eval $(call add_define,TFTF_DEFINES,PLATFORM_CORE_COUNT))
+$(info Building rdaspen with PLATFORM_CORE_COUNT=$(PLATFORM_CORE_COUNT))
+
 PLAT_INCLUDES	:=	-I ${RDASPEN_PATH}/include 				\
 			-I ${RDASPEN_PATH}/ras/include
 

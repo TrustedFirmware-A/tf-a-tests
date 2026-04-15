@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2024-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,8 +16,25 @@
 
 #define CACHE_WRITEBACK_GRANULE			U(0x40)
 
+/*
+ * Topology configuration based on VERSAL2_VARIANT. Each value encodes
+ * (cluster count * 10 + cores per cluster), e.g. 42 = 4 clusters, 2 cores;
+ * 14 = 1 cluster, 4 cores.
+ */
+#ifndef VERSAL2_VARIANT
+#define VERSAL2_VARIANT				U(42)
+#endif
+
+#if (VERSAL2_VARIANT == 42)
 #define PLATFORM_CLUSTER_COUNT			U(4)
 #define PLATFORM_CORE_COUNT_PER_CLUSTER		U(2)
+#elif (VERSAL2_VARIANT == 14)
+#define PLATFORM_CLUSTER_COUNT			U(1)
+#define PLATFORM_CORE_COUNT_PER_CLUSTER		U(4)
+#else
+#error "Invalid VERSAL2_VARIANT. Supported values: 14, 42"
+#endif
+
 #define PLATFORM_MAX_PE_PER_CPU			U(1)
 /* Because of make_mpid from include/lib/tftf_lib.h */
 #define PLAT_MAX_PE_PER_CPU		PLATFORM_MAX_PE_PER_CPU

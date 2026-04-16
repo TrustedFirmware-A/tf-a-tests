@@ -150,7 +150,7 @@ int host_pdev_transition(struct host_pdev *h_pdev, unsigned char to_state);
 int host_pdev_reclaim(struct host_pdev *h_pdev);
 int host_pdev_create(struct host_pdev *h_pdev);
 
-int host_create_realm_with_feat_da(struct realm *realm);
+int host_create_realm_with_feat_da(struct realm *realm, bool activate);
 int host_vdev_transition(struct realm *realm, struct host_vdev *h_vdev,
 			 unsigned char to_state);
 int host_vdev_get_interface_report(struct realm *realm,

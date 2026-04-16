@@ -328,10 +328,10 @@ int realm_assign_device(struct realm *realm_ptr,
 	return rc;
 }
 
-static int realm_assign_unassign_device(struct realm *realm_ptr,
-						struct host_vdev *h_vdev,
-						unsigned long tdi_id,
-						void *pdev_ptr)
+int realm_assign_unassign_device(struct realm *realm_ptr,
+				 struct host_vdev *h_vdev,
+				 unsigned long tdi_id,
+				 void *pdev_ptr)
 {
 	bool realm_rc;
 	int rc;
@@ -341,8 +341,11 @@ static int realm_assign_unassign_device(struct realm *realm_ptr,
 		return rc;
 	}
 
+	host_shared_data_set_host_val(realm_ptr, PRIMARY_PLANE_ID, 0U,
+				      HOST_ARG1_INDEX, h_vdev->vdev_id);
+
 	/* Enter Realm. Execute realm DA commands */
-	realm_rc = host_enter_realm_execute(realm_ptr, REALM_DA_RSI_CALLS,
+	realm_rc = host_enter_realm_execute(realm_ptr, REALM_DA_RSI_VDEV_GET_INFO,
 					    RMI_EXIT_HOST_CALL, 0U);
 
 	/* Unassign VDEV */

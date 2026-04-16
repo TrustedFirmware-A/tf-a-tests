@@ -55,7 +55,7 @@ test_result_t host_test_realm_smmuv3(void)
 	 * TODO: creating this after host_pdev_setup causes Realm create to
 	 * fail.
 	 */
-	rc = host_create_realm_with_feat_da(&realm);
+	rc = host_create_realm_with_feat_da(&realm, true);
 	if (rc != 0) {
 		ERROR("Realm create with feat_da failed\n");
 		return TEST_RESULT_FAIL;
@@ -162,6 +162,9 @@ test_result_t host_test_realm_smmuv3(void)
 			addr += GRANULE_SIZE;
 		}
 	}
+
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U,
+				      HOST_ARG1_INDEX, h_vdev->vdev_id);
 
 	/* Call Realm to do DA related RSI calls */
 	if (!host_enter_realm_execute(&realm, REALM_SMMU, RMI_EXIT_VDEV_MAP, 0U)) {

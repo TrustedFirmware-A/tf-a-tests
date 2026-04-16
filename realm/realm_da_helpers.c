@@ -9,18 +9,9 @@
 #include <realm_da_helpers.h>
 #include <realm_rsi.h>
 
-unsigned long realm_rsi_vdev_get_info(struct rdev *rdev, struct rsi_vdev_info *vdev_info)
+void realm_rsi_vdev_print_info(const struct rsi_vdev_info *vdev_info)
 {
-	unsigned long rsi_rc;
-
-	(void)memset(vdev_info, 0, sizeof(struct rsi_vdev_info));
-	rsi_rc = rsi_vdev_get_info(rdev->id, (u_register_t)vdev_info);
-	if (rsi_rc != RSI_SUCCESS) {
-		ERROR("rsi_vdev_get_info() failed 0x%lx\n", rsi_rc);
-		return rsi_rc;
-	}
-
-	/* Print RDEV realm_printf */
+	/* Print VDEV info */
 	realm_printf("RSI_VDEV_GET_INFO:\n");
 	realm_printf("\tflags: 0x%lx\n", vdev_info->flags);
 	realm_printf("\tcert_id: 0x%lx\n", vdev_info->cert_id);
@@ -32,14 +23,28 @@ unsigned long realm_rsi_vdev_get_info(struct rdev *rdev, struct rsi_vdev_info *v
 	realm_printf("\tformat_version: 0x%lx\n", vdev_info->format_version);
 	realm_printf("\tstate: 0x%lx\n", vdev_info->state);
 	realm_printf("\tvca_digest: 0x%016lx...\n",
-			*((unsigned long *)vdev_info->vca_digest));
+			*((const unsigned long *)vdev_info->vca_digest));
 	realm_printf("\tcert_digest: 0x%016lx...\n",
-			*((unsigned long *)vdev_info->cert_digest));
+			*((const unsigned long *)vdev_info->cert_digest));
 	realm_printf("\tpubkey_digest: 0x%016lx...\n",
-			*((unsigned long *)vdev_info->pubkey_digest));
+			*((const unsigned long *)vdev_info->pubkey_digest));
 	realm_printf("\tmeas_digest: 0x%016lx...\n",
-			*((unsigned long *)vdev_info->meas_digest));
+			*((const unsigned long *)vdev_info->meas_digest));
 	realm_printf("\treport_digest: 0x%016lx...\n",
-			*((unsigned long *)vdev_info->report_digest));
+			*((const unsigned long *)vdev_info->report_digest));
+}
+
+unsigned long realm_rsi_vdev_get_info(u_register_t vdev_id, struct rsi_vdev_info *vdev_info)
+{
+	unsigned long rsi_rc;
+
+	(void)memset(vdev_info, 0, sizeof(struct rsi_vdev_info));
+	rsi_rc = rsi_vdev_get_info(vdev_id, (u_register_t)vdev_info);
+	if (rsi_rc != RSI_SUCCESS) {
+		ERROR("rsi_vdev_get_info() failed 0x%lx\n", rsi_rc);
+		return rsi_rc;
+	}
+
+	realm_rsi_vdev_print_info(vdev_info);
 	return RSI_SUCCESS;
 }

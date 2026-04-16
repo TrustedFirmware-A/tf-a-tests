@@ -183,12 +183,18 @@
 	  <!-- Test cases related to Dev Mem Map and Unmap -->
 	  <testcase name="Realm payload Dev Mem Map and Unmap"
 	  function="host_realm_dev_mem_map_unmap" />
-	  <!-- Invoke DA workflow on PCIe off-chip device -->
+      <!-- Invoke DA workflow on PCIe off-chip device -->
 	  <testcase name="DA workflow on all PCIe off-chip devices"
 	  function="host_da_workflow_on_all_offchip_devices" />
+	  <!-- Invoke DA RSI calls -->
+	  <testcase name="Trigger RSI_VDEV_GET_INFO with various params"
+	  function="host_da_get_info_parameter_test" />
 	  <!-- Invoke all possible PDEV state transitions -->
 	  <testcase name="PDEV test valid state transitions"
 	  function="host_pdev_test_valid_state_transition" />
+	  <!-- Invoke all possible VDEV state transitions -->
+	  <testcase name="VDEV test valid state transitions"
+	  function="host_vdev_test_valid_state_transition" />
 	  <!-- Invoke IDE refresh and reset on PDEV -->
 	  <testcase name="Invoke IDE refresh and reset on PDEV"
 	  function="host_pdev_invoke_ide_refresh_reset" />

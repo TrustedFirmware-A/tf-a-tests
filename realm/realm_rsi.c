@@ -259,19 +259,19 @@ u_register_t rsi_plane_sysreg_write(u_register_t plane_index,
 	return res.ret0;
 }
 
-/* This function triggers RDEV interruptible operation to get_measurements */
-u_register_t rsi_vdev_get_info(u_register_t rdev_id, u_register_t rdev_info_ptr)
+/* This function retrieves info for the Realm-visible VDEV identifier. */
+u_register_t rsi_vdev_get_info(u_register_t vdev_id, u_register_t vdev_info_ptr)
 {
 	smc_ret_values res = {};
 
 	res = tftf_smc(&(smc_args)
-		       {SMC_RSI_VDEV_GET_INFO, rdev_id,
-			rdev_info_ptr, 0UL, 0UL, 0UL, 0UL, 0UL});
+		       {SMC_RSI_VDEV_GET_INFO, vdev_id,
+			vdev_info_ptr, 0UL, 0UL, 0UL, 0UL, 0UL});
 
 	return res.ret0;
 }
 
-u_register_t rsi_vdev_vaildate_mapping(u_register_t rdev_id,
+u_register_t rsi_vdev_vaildate_mapping(u_register_t vdev_id,
 					u_register_t ipa_base,
 					u_register_t ipa_top,
 					u_register_t pa_base,
@@ -286,7 +286,7 @@ u_register_t rsi_vdev_vaildate_mapping(u_register_t rdev_id,
 
 	tftf_smc_no_retval_x8(&(smc_args_ext) {
 			SMC_RSI_VDEV_VALIDATE_MAPPING,
-			rdev_id, ipa_base, ipa_top, pa_base, flags,
+			vdev_id, ipa_base, ipa_top, pa_base, flags,
 			lock_nonce, meas_nonce, report_nonce
 			},
 			&res);
@@ -299,7 +299,7 @@ u_register_t rsi_vdev_vaildate_mapping(u_register_t rdev_id,
 	return res.ret0;
 }
 
-u_register_t rsi_vdev_dma_enable(u_register_t rdev_id,
+u_register_t rsi_vdev_dma_enable(u_register_t vdev_id,
 				 u_register_t flags,
 				 u_register_t non_ats_plane,
 				 u_register_t lock_nonce,
@@ -309,19 +309,19 @@ u_register_t rsi_vdev_dma_enable(u_register_t rdev_id,
 	smc_ret_values res = {};
 
 	res = tftf_smc(&(smc_args) {
-			SMC_RSI_VDEV_DMA_ENABLE, rdev_id,
+			SMC_RSI_VDEV_DMA_ENABLE, vdev_id,
 			flags, non_ats_plane, lock_nonce,
 			meas_nonce, report_nonce
 			});
 	return res.ret0;
 }
 
-u_register_t rsi_vdev_dma_disable(u_register_t rdev_id)
+u_register_t rsi_vdev_dma_disable(u_register_t vdev_id)
 {
 	smc_ret_values res = {};
 
 	res = tftf_smc(&(smc_args) {
-			SMC_RSI_VDEV_DMA_DISABLE, rdev_id
+			SMC_RSI_VDEV_DMA_DISABLE, vdev_id
 			});
 	return res.ret0;
 }

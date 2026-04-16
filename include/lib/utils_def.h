@@ -243,4 +243,9 @@
 #define b32(x)  (b16(x) | (b16(x) >> 16))
 #define next_power_of_2(x)      (b32(x - 1) + 1)
 
+/*
+ * Check if a given value is a power of 2
+ */
+#define is_power_of_2(x)	(((x) != 0) && (((x) & ((x) - 1)) == 0))
+
 #endif /* UTILS_DEF_H */

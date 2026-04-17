@@ -122,11 +122,6 @@ msg_start:
 	@echo "Building ${PLAT}"
 	@echo "Selected set of tests: ${TESTS}"
 
-# Set flags for Realm Payload Tests
-ifeq (${ENABLE_REALM_PAYLOAD_TESTS},1)
-ARM_ARCH_MINOR := 5
-endif
-
 # Include test images makefiles.
 include tftf/framework/framework.mk
 include tftf/tests/tests.mk

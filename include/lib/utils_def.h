@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2026, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -135,14 +135,6 @@
 #else
 #define REGSZ		U(8)
 #endif
-
-/*
- * Test for the current architecture version to be at least the version
- * expected.
- */
-#define ARM_ARCH_AT_LEAST(_maj, _min) \
-	((ARM_ARCH_MAJOR > (_maj)) || \
-	 ((ARM_ARCH_MAJOR == (_maj)) && (ARM_ARCH_MINOR >= (_min))))
 
 /*
  * Import an assembly or linker symbol as a C expression with the specified

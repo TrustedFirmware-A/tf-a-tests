@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,10 +8,6 @@
 #define __ASM_MACROS_COMMON_S__
 
 #include <lib/utils_def.h>
-
-#if ENABLE_BTI && !ARM_ARCH_AT_LEAST(8, 5)
-#error Branch Target Identification requires ARM_ARCH_MINOR >= 5
-#endif
 
 	/*
 	 * Provide a wrapper for the "bti" instructions using the more

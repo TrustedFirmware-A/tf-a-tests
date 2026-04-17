@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2019-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -17,10 +17,7 @@ test_result_t test_mte_instructions(void)
 
 	/*
 	 * This code must be compiled with '-march=armv8.5-memtag' option
-	 * by setting 'ARM_ARCH_FEATURE=memtag' and 'ARM_ARCH_MINOR=5'
-	 * build flags in tftf_config/fvp-cpu-extensions when this CI
-	 * configuration is built separately.
-	 * Otherwise this compiler's option must be specified explicitly.
+	 * to build correctly.
 	 *
 	 * Execute Memory Tagging Extension instructions.
 	 */

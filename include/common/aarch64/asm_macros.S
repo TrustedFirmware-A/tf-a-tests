@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -199,6 +199,22 @@
 	cmp	\scratch_reg, #(MODE_EL2 << MODE_EL_SHIFT)
 	b.eq	\label_el2
 	b	\label_error
+	.endm
+
+	.macro is_armv8_3_pauth_present_asm reg:req, clobber:req
+	mrs	\reg, ID_AA64ISAR1_EL1
+	mov_imm	\clobber, ((ID_AA64ISAR1_GPI_MASK << ID_AA64ISAR1_GPI_SHIFT) \
+			 | (ID_AA64ISAR1_GPA_MASK << ID_AA64ISAR1_GPA_SHIFT) \
+			 | (ID_AA64ISAR1_API_MASK << ID_AA64ISAR1_API_SHIFT) \
+			 | (ID_AA64ISAR1_APA_MASK << ID_AA64ISAR1_APA_SHIFT))
+	tst	\reg, \clobber
+	/* Found, skip more checks */
+	bne	skip_qarma3_\@
+	mrs	\reg, ID_AA64ISAR2_EL1
+	mov_imm	\clobber, ((ID_AA64ISAR2_GPA3_MASK << ID_AA64ISAR2_GPA3_SHIFT) \
+			 | (ID_AA64ISAR2_APA3_MASK << ID_AA64ISAR2_APA3_SHIFT))
+	tst	\reg, \clobber
+	skip_qarma3_\@:
 	.endm
 
 	/*

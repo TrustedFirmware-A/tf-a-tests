@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2026, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -53,8 +53,7 @@ ifeq (${FWU_BL_TEST},1)
 	NS_BL1U_SOURCES	+= fwu/ns_bl1u/ns_bl1u_tests.c
 endif
 
-ifeq (${ENABLE_PAUTH},1)
-# ARMv8.3 Pointer Authentication support files
+ifeq (${ARCH},aarch64)
 NS_BL1U_SOURCES	+=	lib/extensions/pauth/aarch64/pauth.c		\
 			lib/extensions/pauth/aarch64/pauth_helpers.S
 endif
@@ -69,7 +68,6 @@ $(eval $(call add_define,NS_BL1U_DEFINES,ARM_ARCH_MINOR))
 $(eval $(call add_define,NS_BL1U_DEFINES,DEBUG))
 $(eval $(call add_define,NS_BL1U_DEFINES,ENABLE_ASSERTIONS))
 $(eval $(call add_define,NS_BL1U_DEFINES,ENABLE_BTI))
-$(eval $(call add_define,NS_BL1U_DEFINES,ENABLE_PAUTH))
 $(eval $(call add_define,NS_BL1U_DEFINES,FWU_BL_TEST))
 $(eval $(call add_define,NS_BL1U_DEFINES,LOG_LEVEL))
 $(eval $(call add_define,NS_BL1U_DEFINES,PLAT_${PLAT}))

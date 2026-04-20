@@ -549,20 +549,14 @@ void __dead2 tftf_cold_boot_main(void)
 	tftf_arch_setup();
 
 	/*
-	 * Enable pointer authentication. tftf_cold_boot_main() never returns,
-	 * so it is safe to do it here. If this function was to return, the
-	 * authentication would fail then.
+	 * Enable pointer authentication by programming APIAKey_EL1.
+	 * tftf_cold_boot_main() never returns, so it is safe to do it here. If
+	 * this function was to return, the authentication would fail then on
+	 * the `retaa`.
 	 */
-#if ENABLE_PAUTH
-	assert(is_armv8_3_pauth_present());
-
-	/*
-	 * Program APIAKey_EL1 key and enable ARMv8.3-PAuth here as this
-	 * function doesn't return, and RETAA instuction won't be executed,
-	 * what would cause translation fault otherwise.
-	 */
-	pauth_init_enable();
-#endif /* ENABLE_PAUTH */
+	if (is_armv8_3_pauth_present()) {
+		pauth_init_enable();
+	}
 
 	arm_gic_probe();
 

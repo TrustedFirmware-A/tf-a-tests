@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2019-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -40,6 +40,9 @@ void pauth_test_lib_read_keys(uint128_t *pauth_keys_arr);
 /* Test PAuth instructions. */
 void pauth_test_lib_test_intrs(void);
 
+#else
+static inline void pauth_init_enable(void) {}
+static inline void pauth_disable(void) {}
 #endif	/* __aarch64__ */
 
 #endif /* PAUTH_H */

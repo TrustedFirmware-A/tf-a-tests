@@ -81,6 +81,5 @@ REALM_DEFINES:=
 $(eval $(call add_define,REALM_DEFINES,ARM_ARCH_MAJOR))
 $(eval $(call add_define,REALM_DEFINES,ARM_ARCH_MINOR))
 $(eval $(call add_define,REALM_DEFINES,ENABLE_BTI))
-$(eval $(call add_define,REALM_DEFINES,ENABLE_PAUTH))
 $(eval $(call add_define,REALM_DEFINES,LOG_LEVEL))
 $(eval $(call add_define,REALM_DEFINES,IMAGE_REALM))

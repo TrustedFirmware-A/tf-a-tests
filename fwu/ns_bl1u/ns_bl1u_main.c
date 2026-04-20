@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2018-2019, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch_helpers.h>
+#include <arch_features.h>
 #include <assert.h>
 #include <bl1.h>
 #include <debug.h>
@@ -212,10 +213,10 @@ void ns_bl1u_main(void)
 		}
 	}
 
-#if ENABLE_PAUTH
 	/* Disable pointer authentication before jumping to NS_BL2U */
-	pauth_disable();
-#endif
+	if (is_armv8_3_pauth_present()) {
+		pauth_disable();
+	}
 
 	/*
 	 * Clean and invalidate the caches.

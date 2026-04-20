@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2019-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -33,6 +33,11 @@ static inline uint32_t arch_get_debug_version(void)
 {
 	return ((read_dbgdidr() & DBGDIDR_VERSION_BITS) >>
 		DBGDIDR_VERSION_SHIFT);
+}
+
+static inline bool is_armv8_3_pauth_present(void)
+{
+	return false;
 }
 
 static inline bool get_armv8_4_trf_support(void)

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020, Arm Limited. All rights reserved.
+# Copyright (c) 2020-2026, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -15,11 +15,6 @@
 # Use BRANCH_PROTECTION to enable BTI.
 ENABLE_BTI		:= 0
 
-# Enable Pointer Authentication support in the TFTF.
-# Internal flag not meant for direct setting.
-# Use BRANCH_PROTECTION to enable PAUTH.
-ENABLE_PAUTH		:= 0
-
 # Process BRANCH_PROTECTION value and set
 # Pointer Authentication and Branch Target Identification flags
 ifeq (${BRANCH_PROTECTION},0)
@@ -31,15 +26,12 @@ else ifeq (${BRANCH_PROTECTION},1)
 	# Enables all types of branch protection features
 	BP_OPTION := standard
 	ENABLE_BTI := 1
-	ENABLE_PAUTH := 1
 else ifeq (${BRANCH_PROTECTION},2)
 	# Return address signing to its standard level
 	BP_OPTION := pac-ret
-	ENABLE_PAUTH := 1
 else ifeq (${BRANCH_PROTECTION},3)
 	# Extend the signing to include leaf functions
 	BP_OPTION := pac-ret+leaf
-	ENABLE_PAUTH := 1
 else ifeq (${BRANCH_PROTECTION},4)
 	# Turn on branch target identification mechanism
 	BP_OPTION := bti

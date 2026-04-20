@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,14 +11,10 @@
  * Number of system registers we need to save/restore across a CPU suspend:
  * EL1: MAIR, CPACR, TTBR0, TCR, VBAR, SCTLR
  * EL2: MAIR, CPTR, TTBR0, TCR, VBAR, SCTLR, HCR, SMCR
- * APIAKeyLo_EL1 and APIAKeyHi_EL1 (if enabled).
+ * APIAKeyLo_EL1 and APIAKeyHi_EL1.
  * On need basis other registers can be included in tftf_suspend_context.
  */
-#if ENABLE_PAUTH
 #define NR_CTX_REGS 10
-#else
-#define NR_CTX_REGS 8
-#endif
 
 /* Offsets of the fields in the context structure. Needed by asm code. */
 #define	SUSPEND_CTX_MAIR_OFFSET		0

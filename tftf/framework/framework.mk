@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2026, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -88,7 +88,6 @@ FRAMEWORK_SOURCES	+=						\
 FRAMEWORK_SOURCES	+=	${COMPILER_RT_SRCS}
 
 ifeq (${ARCH},aarch64)
-# ARMv8.3 Pointer Authentication support files
 FRAMEWORK_SOURCES	+=						\
 	drivers/arm/gic/aarch64/gic_v5.c				\
 	lib/exceptions/aarch64/sync.c					\

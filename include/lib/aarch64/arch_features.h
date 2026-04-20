@@ -94,19 +94,6 @@ static inline bool is_armv8_3_pauth_present(void)
 		is_feat_pacqarma3_present());
 }
 
-static inline bool is_armv8_3_pauth_apa_api_apa3_present(void)
-{
-	uint64_t mask_id_aa64isar1 =
-		(ID_AA64ISAR1_API_MASK << ID_AA64ISAR1_API_SHIFT) |
-		(ID_AA64ISAR1_APA_MASK << ID_AA64ISAR1_APA_SHIFT);
-
-	uint64_t mask_id_aa64isar2 =
-		(ID_AA64ISAR2_APA3_MASK << ID_AA64ISAR2_APA3_SHIFT);
-
-	return ((read_id_aa64isar1_el1() & mask_id_aa64isar1) |
-		(read_id_aa64isar2_el1() & mask_id_aa64isar2)) != 0U;
-}
-
 static inline bool is_armv8_4_dit_present(void)
 {
 	return ((read_id_aa64pfr0_el1() >> ID_AA64PFR0_DIT_SHIFT) &

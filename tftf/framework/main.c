@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -554,7 +554,7 @@ void __dead2 tftf_cold_boot_main(void)
 	 * authentication would fail then.
 	 */
 #if ENABLE_PAUTH
-	assert(is_armv8_3_pauth_apa_api_apa3_present());
+	assert(is_armv8_3_pauth_present());
 
 	/*
 	 * Program APIAKey_EL1 key and enable ARMv8.3-PAuth here as this

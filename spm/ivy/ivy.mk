@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-include branch_protection.mk
 include lib/xlat_tables_v2/xlat_tables.mk
 
 # Include ivy platform Makefile
@@ -89,7 +88,6 @@ $(eval $(call add_define,IVY_DEFINES,ARM_ARCH_MAJOR))
 $(eval $(call add_define,IVY_DEFINES,ARM_ARCH_MINOR))
 $(eval $(call add_define,IVY_DEFINES,DEBUG))
 $(eval $(call add_define,IVY_DEFINES,ENABLE_ASSERTIONS))
-$(eval $(call add_define,IVY_DEFINES,ENABLE_BTI))
 $(eval $(call add_define,IVY_DEFINES,LOG_LEVEL))
 $(eval $(call add_define,IVY_DEFINES,PLAT_${PLAT}))
 $(eval $(call add_define,IVY_DEFINES,IVY_SHIM))

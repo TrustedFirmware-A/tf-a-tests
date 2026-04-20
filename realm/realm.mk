@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-include branch_protection.mk
-
 REALM_INCLUDES :=							\
 	-Itftf/framework/include					\
 	-Iinclude							\
@@ -80,6 +78,5 @@ REALM_INCLUDES +=	-Iinclude/lib/extensions
 REALM_DEFINES:=
 $(eval $(call add_define,REALM_DEFINES,ARM_ARCH_MAJOR))
 $(eval $(call add_define,REALM_DEFINES,ARM_ARCH_MINOR))
-$(eval $(call add_define,REALM_DEFINES,ENABLE_BTI))
 $(eval $(call add_define,REALM_DEFINES,LOG_LEVEL))
 $(eval $(call add_define,REALM_DEFINES,IMAGE_REALM))

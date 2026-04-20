@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2026, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -45,9 +45,6 @@ USE_NVM			:= 0
 
 # Build verbosity
 V			:= 0
-
-# Select the branch protection features to use
-BRANCH_PROTECTION	:= 0
 
 # Build RME stack
 ENABLE_REALM_PAYLOAD_TESTS	:= 0

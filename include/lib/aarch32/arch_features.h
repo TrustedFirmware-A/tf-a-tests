@@ -40,6 +40,11 @@ static inline bool is_armv8_3_pauth_present(void)
 	return false;
 }
 
+static inline bool is_armv8_5_bti_present(void)
+{
+	return false;
+}
+
 static inline bool get_armv8_4_trf_support(void)
 {
 	return ((read_id_dfr0() >> ID_DFR0_TRACEFILT_SHIFT) &

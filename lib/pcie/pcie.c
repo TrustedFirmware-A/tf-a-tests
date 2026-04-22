@@ -653,10 +653,9 @@ static void pcie_print_device_info(void)
 				(bus_num <= ecam_end_bus)) {
 				bdf_counter = 1;
 				bdf = PCIE_CREATE_BDF(seg_num, bus_num, dev_num, func_num);
-				INFO("  BDF: 0x%x\n", bdf);
-				INFO("  Seg: 0x%x Bus: 0x%x Dev: 0x%x "
-					"Func: 0x%x Dev ID: 0x%x Vendor ID: 0x%x\n",
-					seg_num, bus_num, dev_num, func_num,
+				INFO("  BDF: 0x%x\t[Seg: 0x%x Bus: 0x%x Dev: 0x%x "
+					"Func: 0x%x Dev ID: 0x%x Vendor ID: 0x%x]\n",
+					bdf, seg_num, bus_num, dev_num, func_num,
 					device_id, vendor_id);
 			}
 		}

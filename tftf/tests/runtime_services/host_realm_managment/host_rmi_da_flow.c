@@ -81,6 +81,84 @@ static int host_vdev_expect_state(struct host_vdev *h_vdev,
 	return 0;
 }
 
+test_result_t host_vdev_create_rejects_out_of_range_tdi_id(void)
+{
+	test_result_t result = TEST_RESULT_SUCCESS;
+	bool return_error = false;
+	int rc;
+	u_register_t ret;
+	u_register_t rmi_feat_reg0;
+	unsigned long invalid_tdi_id;
+	struct realm realm;
+	struct host_pdev *h_pdev = NULL;
+	struct host_vdev *h_vdev = &gbl_host_vdev;
+
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+
+	rc = page_pool_init((u_register_t)PAGE_POOL_BASE,
+			    (u_register_t)PAGE_POOL_MAX_SIZE);
+	if (rc != HEAP_INIT_SUCCESS) {
+		ERROR("Failed to init heap pool %d\n", rc);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = host_create_realm_with_feat_da(&realm, true);
+	if (ret != 0UL) {
+		ERROR("Realm create with feat_da failed\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
+	if (h_pdev == NULL) {
+		result = TEST_RESULT_SKIPPED;
+		goto out_destroy_realm;
+	}
+
+	if (tsm_connect_device(h_pdev) != 0) {
+		ERROR("TSM connect failed for device 0x%x\n", h_pdev->dev->bdf);
+		return_error = true;
+		goto out_destroy_realm;
+	}
+
+	/*
+	 * RMI_PDEV_CREATE gives the endpoint PDEV a single-BDF RID range:
+	 * [bdf, bdf + 1). Per bet0 RMI_VDEV_CREATE, rid_top is therefore
+	 * the first out-of-range TDI ID.
+	 */
+	invalid_tdi_id = (unsigned long)h_pdev->dev->bdf + 1UL;
+
+	ret = host_create_vdev(&realm, h_vdev, invalid_tdi_id, h_pdev->ep_pdev);
+	if (ret == RMI_SUCCESS) {
+		ERROR("RMI_VDEV_CREATE with out-of-range tdi_id=0x%lx returned 0x%lx\n",
+		      invalid_tdi_id, ret);
+		return_error = true;
+
+		if (host_unassign_vdev_from_realm(&realm, h_vdev) != 0) {
+			ERROR("VDEV cleanup failed after unexpected create success\n");
+		}
+	} else if (ret != RMI_ERROR_INPUT) {
+		ERROR("RMI_VDEV_CREATE with out-of-range tdi_id=0x%lx returned 0x%lx\n",
+		      invalid_tdi_id, ret);
+		return_error = true;
+	}
+
+	if (tsm_disconnect_device(h_pdev) != 0) {
+		ERROR("TSM disconnect failed for device 0x%x\n", h_pdev->dev->bdf);
+		return_error = true;
+	}
+
+out_destroy_realm:
+	if (!destroy_psmmu_realm(&realm)) {
+		return_error = true;
+	}
+
+	if (return_error) {
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
 /*
  * Iterate through all host_pdevs and do
  * TSM connect
@@ -591,7 +669,7 @@ out_tsm_disconnect:
 
 out_rm_realm:
 	if (realm_created) {
-		if (!host_destroy_realm(&realm)) {
+		if (!destroy_psmmu_realm(&realm)) {
 			return_error = true;
 		}
 	}

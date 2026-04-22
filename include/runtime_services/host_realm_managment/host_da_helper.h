@@ -171,6 +171,8 @@ int host_rtt_dev_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t
 			u_register_t *out_top);
 int host_vdev_unlock(struct realm *realm, struct host_vdev *h_vdev,
 		     unsigned char target_state);
+u_register_t host_create_vdev(struct realm *realm, struct host_vdev *h_vdev,
+			      unsigned long tdi_id, void *pdev_ptr);
 int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
 			      unsigned long tdi_id, void *pdev_ptr,
 			      struct rmi_address_range *addr_range, size_t num_address_range);

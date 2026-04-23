@@ -464,6 +464,12 @@ u_register_t host_rmi_realm_destroy(u_register_t rd)
 				2U).ret0;
 }
 
+u_register_t host_rmi_realm_terminate(u_register_t rd)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_REALM_TERMINATE, rd},
+				2U).ret0;
+}
+
 u_register_t host_rmi_rtt_data_unmap(u_register_t rd,
 				     u_register_t base,
 				     u_register_t top,
@@ -1915,6 +1921,26 @@ u_register_t host_realm_activate(struct realm *realm)
 	return REALM_SUCCESS;
 }
 
+u_register_t host_realm_terminate(struct realm *realm)
+{
+	u_register_t ret;
+
+	if ((realm->state == REALM_STATE_NULL) ||  (realm->state == REALM_STATE_ZOMBIE)) {
+		return REALM_SUCCESS;
+	}
+
+	ret = host_rmi_realm_terminate(realm->rd);
+	if (ret != RMI_SUCCESS) {
+		ERROR("%s() failed, ret=0x%lx\n", "host_rmi_realm_terminate",
+			ret);
+		return REALM_ERROR;
+	}
+
+	realm->state = REALM_STATE_ZOMBIE;
+
+	return REALM_SUCCESS;
+}
+
 u_register_t host_realm_destroy(struct realm *realm)
 {
 	u_register_t ret;
@@ -1985,6 +2011,14 @@ u_register_t host_realm_destroy(struct realm *realm)
 			return REALM_ERROR;
 		}
 		page_free(realm->host_shared_data);
+	}
+
+	if (realm->state != REALM_STATE_ZOMBIE) {
+		ret = host_realm_terminate(realm);
+		if (ret != RMI_SUCCESS) {
+			ERROR("host_realm_terminate failed\n");
+			return ret;
+		}
 	}
 
 	/*

@@ -17,7 +17,7 @@
 #include <utils_def.h>
 
 #define RMI_FNUM_MIN_VALUE	U(0x150)
-#define RMI_FNUM_MAX_VALUE	U(0x1F6)
+#define RMI_FNUM_MAX_VALUE	U(0x201)
 
 /*
  * Defines member of structure and reserves space
@@ -104,6 +104,13 @@
  * arg0 == RD address
  */
 #define SMC_RMI_REALM_DESTROY			SMC64_RMI_FID(U(0x9))
+
+/*
+ * FID: 0xC4000201
+ *
+ * arg0 == RD address
+ */
+#define SMC_RMI_REALM_TERMINATE			SMC64_RMI_FID(U(0xB1))
 
 /*
  * FID: 0xC400015A
@@ -1834,6 +1841,7 @@ enum realm_state {
 	REALM_STATE_NULL,
 	REALM_STATE_NEW,
 	REALM_STATE_ACTIVE,
+	REALM_STATE_ZOMBIE,
 	REALM_STATE_SYSTEM_OFF
 };
 
@@ -1920,6 +1928,7 @@ u_register_t host_rmi_granule_delegate(u_register_t addr);
 u_register_t host_rmi_granule_undelegate(u_register_t addr);
 u_register_t host_rmi_realm_create(u_register_t rd, u_register_t params_ptr);
 u_register_t host_rmi_realm_destroy(u_register_t rd);
+u_register_t host_rmi_realm_terminate(u_register_t rd);
 u_register_t host_rmi_features(u_register_t index, u_register_t *features);
 u_register_t host_rmi_rtt_data_map_init(u_register_t rd,
 					u_register_t map_addr,
@@ -1985,6 +1994,7 @@ u_register_t host_realm_map_ns_shared(struct realm *realm,
 u_register_t host_realm_rec_create(struct realm *realm);
 unsigned int host_realm_find_rec_by_mpidr(unsigned int mpidr, struct realm *realm);
 u_register_t host_realm_activate(struct realm *realm);
+u_register_t host_realm_terminate(struct realm *realm);
 u_register_t host_rmi_rmm_activate(void);
 u_register_t host_realm_destroy(struct realm *realm);
 u_register_t host_realm_rec_enter(struct realm *realm,

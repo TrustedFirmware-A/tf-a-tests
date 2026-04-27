@@ -215,13 +215,21 @@
 #define SMC_RMI_RTT_READ_ENTRY			SMC64_RMI_FID(U(0x11))
 
 /*
- * FID: 0xC4000162
+ * FID: 0xC40001FC
  *
  * arg0 == RD address
- * arg1 == map address
- * arg2 == level
+ * arg1 == base address
+ * arg2 == top address
+ * arg3 == flags (RMI_UNPROT_UNMAP_FLAGS_*)
+ * arg4 == output address set descriptor (RmiAddrRangeDesc4KB)
+ *
+ * ret0 == status
+ * ret1 == out_top (end address of unmapped range)
+ * ret2 == out_range (start address of unmapped range)
+ * ret3 == out_count (number of unmapped entries)
+ *   (all outputs valid only if ret0 == RMI_SUCCESS)
  */
-#define SMC_RMI_RTT_UNMAP_UNPROTECTED		SMC64_RMI_FID(U(0x12))
+#define SMC_RMI_RTT_UNPROT_UNMAP		SMC64_RMI_FID(U(0xAC))
 
 /*
  * FID: 0xC4000163
@@ -1146,6 +1154,12 @@ typedef enum {
 #define RMI_UNPROT_MAP_FLAGS_S2AP_SHIFT		(19UL)
 #define RMI_UNPROT_MAP_FLAGS_S2AP_WIDTH		(4)
 
+/* Unprotected unmap flags field shifts */
+#define RMI_UNPROT_UNMAP_FLAGS_OADDR_TYPE_SHIFT	(0UL)
+#define RMI_UNPROT_UNMAP_FLAGS_OADDR_TYPE_WIDTH	(2)
+#define RMI_UNPROT_UNMAP_FLAGS_LIST_COUNT_SHIFT	(2UL)
+#define RMI_UNPROT_UNMAP_FLAGS_LIST_COUNT_WIDTH	(14)
+
 /* MemAttr for Normal WB when FEAT_S2FWB is enabled. */
 #define RMI_UNPROT_MAP_MEMATTR_FWB_NORMAL_WB	(6UL)
 
@@ -1974,9 +1988,13 @@ u_register_t host_rmi_create_rtt_levels(struct realm *realm,
 					u_register_t map_addr,
 					long level, long max_level);
 u_register_t host_rmi_rtt_unmap_unprotected(u_register_t rd,
-					    u_register_t map_addr,
-					    long level,
-					    u_register_t *top);
+					    u_register_t base,
+					    u_register_t top,
+					    u_register_t flags,
+					    u_register_t oaddr,
+					    u_register_t *out_top,
+					    u_register_t *out_range,
+					    u_register_t *out_count);
 u_register_t host_rmi_rtt_set_ripas(u_register_t rd,
 				    u_register_t rec,
 				    u_register_t start,
@@ -2019,6 +2037,9 @@ u_register_t host_realm_delegate_map_protected_data(bool init,
 					   u_register_t src_pa);
 u_register_t host_realm_map_unprotected(struct realm *realm, u_register_t ns_pa,
 					u_register_t map_size);
+u_register_t host_realm_unmap_unprotected(struct realm *realm,
+					  u_register_t map_addr,
+					  long level);
 u_register_t host_realm_fold_rtt(u_register_t rd, u_register_t addr, long level);
 
 u_register_t host_rmi_pdev_create(u_register_t pdev_ptr,

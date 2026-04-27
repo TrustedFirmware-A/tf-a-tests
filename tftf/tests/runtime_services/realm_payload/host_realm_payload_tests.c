@@ -3479,7 +3479,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_ns(void)
 
 	bool ret1;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, ns_ipa, base_pa, top;
+	u_register_t ret, ns_ipa, base_pa;
 	struct realm realm;
 	struct rtt_entry rtt;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
@@ -3574,9 +3574,9 @@ test_result_t host_test_rtt_fold_unfold_assigned_ns(void)
 	INFO("unmap\n\n");
 
 	/* unmap */
-	ret = host_rmi_rtt_unmap_unprotected(realm.rd, ns_ipa, 1L, &top);
+	ret = host_realm_unmap_unprotected(&realm, ns_ipa, 1L);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_mapunprotected failed ret=0x%lx\n", ret);
+		ERROR("host_realm_unmap_unprotected failed ret=0x%lx\n", ret);
 	}
 
 destroy_realm:

@@ -635,12 +635,19 @@ u_register_t host_rmi_rtt_set_ripas(u_register_t rd,
 }
 
 u_register_t host_rmi_rtt_mapunprotected(u_register_t rd,
-					 u_register_t map_addr,
-					 long level,
-					 u_register_t ns_pa)
+				 u_register_t base,
+				 u_register_t top,
+				 u_register_t flags,
+				 u_register_t oaddr,
+				 u_register_t *out_top)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_RTT_MAP_UNPROTECTED,
-				rd, map_addr, (u_register_t)level, ns_pa}, 5U).ret0;
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_UNPROT_MAP,
+				rd, base, top, flags, oaddr}, 6U);
+
+	*out_top = rets.ret1;
+	return rets.ret0;
 }
 
 u_register_t host_rmi_rtt_aux_map_unprotected(u_register_t rd,
@@ -1052,27 +1059,19 @@ while (size >= PAGE_SIZE) {
 	return REALM_ERROR;
 }
 
-static u_register_t rtt_s2ap_set_pi_index(u_register_t s2tte, u_register_t pi_index)
-{
-	s2tte &= ~S2TTE_PI_INDEX_MASK;
-	s2tte |= INPLACE(S2TTE_PI_INDEX_BIT0, pi_index & 1) |
-		INPLACE(S2TTE_PI_INDEX_BIT1, (pi_index >> 1) & 1) |
-		INPLACE(S2TTE_PI_INDEX_BIT2, (pi_index >> 2) & 1) |
-		INPLACE(S2TTE_PI_INDEX_BIT3, (pi_index >> 3) & 1);
-	return s2tte;
-}
-
 u_register_t host_realm_map_unprotected(struct realm *realm,
 					u_register_t ns_pa,
 					u_register_t map_size)
 {
 	u_register_t rd = realm->rd;
 	long map_level;
-	u_register_t desc;
+	u_register_t flags;
+	u_register_t s2ap;
+	u_register_t out_top;
 	int8_t level;
 	u_register_t ret = 0UL;
-	u_register_t phys = ns_pa;
 	u_register_t map_addr = ns_pa | (1UL << (realm->s2sz - 1UL));
+	RmiAddrRangeDesc4KB oaddr_desc;
 
 	if (!IS_ALIGNED(map_addr, map_size)) {
 		return REALM_ERROR;
@@ -1081,33 +1080,42 @@ u_register_t host_realm_map_unprotected(struct realm *realm,
 	switch (map_size) {
 	case PAGE_SIZE:
 		map_level = 3UL;
+		oaddr_desc.size = RMI_PAGE_L3;
 		break;
 	case RTT_L2_BLOCK_SIZE:
 		map_level = 2UL;
+		oaddr_desc.size = RMI_BLOCK_L2;
 		break;
 	case RTT_L1_BLOCK_SIZE:
 		map_level = 1UL;
+		oaddr_desc.size = RMI_BLOCK_L1;
 		break;
 	default:
 		ERROR("Unknown map_size=0x%lx\n", map_size);
 		return REALM_ERROR;
 	}
 
-	if (realm->lpa2) {
-		desc = (phys & ~OA_50_51_MASK) |
-				INPLACE(TTE_OA_50_51, EXTRACT(OA_50_51, phys));
-	} else {
-		desc = phys;
-	}
+	oaddr_desc.count = 1U;
+	oaddr_desc.addr = (ns_pa >> PAGE_SHIFT);
+	oaddr_desc.reserved = 0U;
+	oaddr_desc.state = RMI_OP_MEM_STATE_UNDELEGATED;
 
 	if (realm->rtt_s2ap_enc_indirect) {
-		desc |= S2TTE_MEMATTR_FWB_NORMAL_WB;
-		desc = rtt_s2ap_set_pi_index(desc, RMI_PERM_S2AP_RW_IDX);
+		s2ap = RMI_PERM_S2AP_RW_IDX;
 	} else {
-		desc |= S2TTE_ATTR_FWB_WB_RW;
+		s2ap = RMI_UNPROT_MAP_S2AP_RW_XN;
 	}
 
-	ret = host_rmi_rtt_mapunprotected(rd, map_addr, map_level, desc);
+	flags = INPLACE(RMI_UNPROT_MAP_FLAGS_OADDR_TYPE, RMI_ADDR_TYPE_SINGLE) |
+		INPLACE(RMI_UNPROT_MAP_FLAGS_MEMATTR,
+			RMI_UNPROT_MAP_MEMATTR_FWB_NORMAL_WB) |
+		INPLACE(RMI_UNPROT_MAP_FLAGS_S2AP, s2ap);
+
+	ret = host_rmi_rtt_mapunprotected(rd, map_addr,
+					  map_addr + map_size,
+					  flags,
+					  oaddr_desc.desc,
+					  &out_top);
 
 	if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
 		/* Create missing RTTs and retry */
@@ -1120,14 +1128,19 @@ u_register_t host_realm_map_unprotected(struct realm *realm,
 			return REALM_ERROR;
 		}
 
-		ret = host_rmi_rtt_mapunprotected(rd, map_addr, map_level,
-						  desc);
+		ret = host_rmi_rtt_mapunprotected(rd, map_addr,
+					  map_addr + map_size,
+					  flags,
+					  oaddr_desc.desc,
+					  &out_top);
 	}
 	if (ret != RMI_SUCCESS) {
 		ERROR("%s() failed, ret=0x%lx\n", "host_rmi_rtt_mapunprotected",
 			ret);
 		return REALM_ERROR;
 	}
+
+	assert(out_top == (map_addr + map_size));
 
 	return REALM_SUCCESS;
 }

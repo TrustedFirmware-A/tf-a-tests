@@ -185,14 +185,15 @@
 #define SMC_RMI_RTT_DESTROY			SMC64_RMI_FID(U(0xE))
 
 /*
- * FID: 0xC400015F
+ * FID: 0xC40001FB
  *
  * arg0 == RD address
- * arg1 == map address
- * arg2 == level
- * arg3 == s2tte
+ * arg1 == base address
+ * arg2 == top address
+ * arg3 == flags (RmiRttUnprotMapFlags)
+ * arg4 == output address set descriptor (RmiAddrRangeDesc4KB)
  */
-#define SMC_RMI_RTT_MAP_UNPROTECTED		SMC64_RMI_FID(U(0xF))
+#define SMC_RMI_RTT_UNPROT_MAP			SMC64_RMI_FID(U(0xAB))
 
 /*
  * FID: 0xC4000160 is not used.
@@ -1135,6 +1136,34 @@ typedef enum {
 /* RmiAddrRangeDesc4KB field shifts */
 #define RMI_ADDR_RANGE_DESC_ADDR_SHIFT	(12UL)
 
+/* RmiRttUnprotMapFlags field shifts */
+#define RMI_UNPROT_MAP_FLAGS_OADDR_TYPE_SHIFT	(0UL)
+#define RMI_UNPROT_MAP_FLAGS_OADDR_TYPE_WIDTH	(2)
+#define RMI_UNPROT_MAP_FLAGS_LIST_COUNT_SHIFT	(2UL)
+#define RMI_UNPROT_MAP_FLAGS_LIST_COUNT_WIDTH	(14)
+#define RMI_UNPROT_MAP_FLAGS_MEMATTR_SHIFT	(16UL)
+#define RMI_UNPROT_MAP_FLAGS_MEMATTR_WIDTH	(3)
+#define RMI_UNPROT_MAP_FLAGS_S2AP_SHIFT		(19UL)
+#define RMI_UNPROT_MAP_FLAGS_S2AP_WIDTH		(4)
+
+/* MemAttr for Normal WB when FEAT_S2FWB is enabled. */
+#define RMI_UNPROT_MAP_MEMATTR_FWB_NORMAL_WB	(6UL)
+
+/*
+ * RmiUnprotectedS2AP type
+ * Encoding for indirect S2AP base index value for UNPROTECTED IPA
+ */
+#define RMI_PERM_S2AP_NO_ACCESS_IDX		U(0)
+#define RMI_PERM_S2AP_RO_IDX			U(1)
+#define RMI_PERM_S2AP_WO_IDX			U(2)
+#define RMI_PERM_S2AP_RW_IDX			U(3)
+
+/*
+ * Direct S2AP encoding value for RW + XN permissions in
+ * RmiRttUnprotMapFlags.s2ap.
+ */
+#define RMI_UNPROT_MAP_S2AP_RW_XN		U(3)
+
 /* RmiAddrRangeDesc4KB type encoding */
 #define RMI_ADDR_RDESC_4K_SZ_SHIFT	(0UL)
 #define RMI_ADDR_RDESC_4K_SZ_WIDTH	(2)
@@ -1223,26 +1252,6 @@ typedef struct {
 #define OA_50_51_SHIFT			ULL(50)
 #define OA_50_51_WIDTH			TTE_OA_50_51_WIDTH
 #define OA_50_51_MASK			MASK(OA_50_51)
-
-/*
- * When FEAT_S2PIE is enabled PIINDEX is saved at following index
- */
-#define S2TTE_PI_INDEX_BIT0_SHIFT	6
-#define S2TTE_PI_INDEX_BIT1_SHIFT	51
-#define S2TTE_PI_INDEX_BIT2_SHIFT	53
-#define S2TTE_PI_INDEX_BIT3_SHIFT	54
-#define S2TTE_PI_INDEX_MASK		((1UL << S2TTE_PI_INDEX_BIT0_SHIFT) | \
-					(1UL << S2TTE_PI_INDEX_BIT1_SHIFT) | \
-					(1UL << S2TTE_PI_INDEX_BIT2_SHIFT) | \
-					(1UL << S2TTE_PI_INDEX_BIT3_SHIFT))
-/*
- * RmiUnprotectedS2AP type
- * Encoding for S2AP base index value for UNPROTECTED IPA
- */
-#define RMI_PERM_S2AP_NO_ACCESS_IDX		U(0)
-#define RMI_PERM_S2AP_RO_IDX			U(1)
-#define RMI_PERM_S2AP_WO_IDX			U(2)
-#define RMI_PERM_S2AP_RW_IDX			U(3)
 
 /*
  * The Realm attribute parameters are shared by the Host via

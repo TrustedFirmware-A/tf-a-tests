@@ -67,3 +67,48 @@ test_result_t test_rndrrs_rng_trap(void)
 {
 	return test_rng_trap(true);
 }
+
+static test_result_t check_nzcv(bool rndrrs) {
+	SKIP_TEST_IF_AARCH32();
+
+#if defined __aarch64__
+	const char *reg_name;
+	uint64_t reg;
+
+	SKIP_TEST_IF_RNG_TRAP_NOT_SUPPORTED();
+
+	if (rndrrs) {
+		reg_name = "RNDRRS";
+	} else {
+		reg_name = "RNDR";
+	}
+
+	write_nzcv(NZCV_N_BIT | NZCV_Z_BIT | NZCV_C_BIT | NZCV_V_BIT);
+	if (rndrrs) {
+		reg = read_rndrrs();
+	} else {
+		reg = read_rndr();
+	}
+	if (reg == 0) {
+		if ((read_nzcv() & NZCV_Z_BIT) == 0) {
+			ERROR("%s returned no entropy but PSTATE.Z wasn't set.\n", reg_name);
+			return TEST_RESULT_FAIL;
+		}
+	}
+	if (read_nzcv() != 0) {
+		ERROR("%s returned entropy but was set.\n", reg_name);
+		return TEST_RESULT_FAIL;
+	}
+#endif
+	return TEST_RESULT_SUCCESS;
+}
+
+test_result_t test_rndr_nzcv(void)
+{
+	return check_nzcv(false);
+}
+
+test_result_t test_rndrrs_nzcv(void)
+{
+	return check_nzcv(true);
+}

@@ -64,6 +64,8 @@
   <testsuite name="RNG_TRAP" description="Tests that RNDR/RRS instructions trap to EL3 and returns a random number">
     <testcase name="Test if RNDR instruction traps to el3 and gets a random number" function="test_rndr_rng_trap" />
     <testcase name="Test if RNDRSS instruction traps to el3 and gets a random number" function="test_rndrrs_rng_trap" />
+    <testcase name="Test if RNDR instruction clears PSTATE.NZCV" function="test_rndr_nzcv" />
+    <testcase name="Test if RNDRRS instruction clears PSTATE.NZCV" function="test_rndrrs_nzcv" />
   </testsuite>
 
 </testsuites>

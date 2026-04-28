@@ -981,6 +981,11 @@
 #define SPSR_DAIF_SHIFT		U(6)
 #define SPSR_DAIF_MASK		U(0xf)
 
+#define NZCV_V_BIT		(U(1) << 28)
+#define NZCV_C_BIT		(U(1) << 29)
+#define NZCV_Z_BIT		(U(1) << 30)
+#define NZCV_N_BIT		(U(1) << 31)
+
 #define SPSR_AIF_SHIFT		U(6)
 #define SPSR_AIF_MASK		U(0x7)
 

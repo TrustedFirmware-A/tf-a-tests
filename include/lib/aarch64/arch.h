@@ -1420,6 +1420,10 @@
 /* PMU event counter ID definitions */
 #define PMU_EV_PC_WRITE_RETIRED		U(0x000C)
 
+/* FEAT_RAS definitions */
+#define ERRIDR_EL1_NUM_WIDTH		U(16)
+#define ERRIDR_EL1_NUM_SHIFT		U(0)
+
 /*******************************************************************************
  * Definitions for system register interface to SVE
  ******************************************************************************/

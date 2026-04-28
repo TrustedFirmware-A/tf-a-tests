@@ -19,6 +19,26 @@ static const mmap_region_t mmap[] = {
 	{0}
 };
 
+static const uintptr_t rdaspen_gicr_base_addrs[] = {
+	GICR_BASE_VIEW0_0_0,
+	GICR_BASE_VIEW0_0_1,
+	GICR_BASE_VIEW0_0_2,
+	GICR_BASE_VIEW0_0_3,
+	GICR_BASE_VIEW0_1_0,
+	GICR_BASE_VIEW0_1_1,
+	GICR_BASE_VIEW0_1_2,
+	GICR_BASE_VIEW0_1_3,
+	GICR_BASE_VIEW0_2_0,
+	GICR_BASE_VIEW0_2_1,
+	GICR_BASE_VIEW0_2_2,
+	GICR_BASE_VIEW0_2_3,
+	GICR_BASE_VIEW0_3_0,
+	GICR_BASE_VIEW0_3_1,
+	GICR_BASE_VIEW0_3_2,
+	GICR_BASE_VIEW0_3_3,
+	0U				/* Zero Termination */
+};
+
 const mmap_region_t *tftf_platform_get_mmap(void)
 {
 	return mmap;
@@ -34,5 +54,5 @@ void tftf_platform_setup(void)
 void plat_arm_gic_init(void)
 {
 	/* GICC is not supported as GICv3 does not require it*/
-	arm_gic_init(0x0, GICD_BASE, GICR_BASE);
+	arm_gic_init_frames(0x0, GICD_BASE, rdaspen_gicr_base_addrs);
 }

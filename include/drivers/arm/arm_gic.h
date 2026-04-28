@@ -117,9 +117,18 @@ void arm_gic_probe(void);
 /******************************************************************************
  * Initialize the GIC Driver. This function will detect the GIC Architecture
  * present on the system and initialize the appropriate driver. The
- * `gicr_base` argument will be ignored on GICv2 systems.
+ * `gicr_base` argument will be ignored on GICv2 systems. On GICv3
+ * systems, `gicr_base` is the base of a single Redistributor frame.
  *****************************************************************************/
 void arm_gic_init(uintptr_t gicc_base, uintptr_t gicd_base, uintptr_t gicr_base);
+
+/******************************************************************************
+ * Initialize the GIC Driver using a 0-terminated list of GICv3 Redistributor
+ * frame base addresses. This is useful for platforms that expose more than one
+ * Redistributor frame.
+ *****************************************************************************/
+void arm_gic_init_frames(uintptr_t gicc_base, uintptr_t gicd_base,
+			 const uintptr_t *gicr_frames);
 
 /******************************************************************************
  * Save the GIC context local to this CPU (like GIC CPU Interface) which will

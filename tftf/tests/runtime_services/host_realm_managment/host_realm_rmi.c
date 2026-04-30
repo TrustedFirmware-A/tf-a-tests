@@ -252,18 +252,25 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
 	u_register_t retval;
 	unsigned long entry;
 	unsigned long *list_addr, list_count;
-	unsigned long consumed_entries, allocation_size, delegation_per_entry, blocks_per_entry;
+	unsigned long consumed_granules, blocks_per_entry, delegation_per_entry;
+	unsigned long allocation_size, alignment;
 
 	/*
 	 * If the memory is contiguous, donate all of it on a single entry,
 	 * otherwise, donate a block per entry.
 	 */
-	list_count = (contig == RMI_OP_MEM_CONTIG) ? 1UL : n_blocks;
-	allocation_size = (list_count == 1UL) ? (size * n_blocks) : size;
-	blocks_per_entry = (list_count == 1UL) ? n_blocks : 1UL;
-	delegation_per_entry = (unsigned long)((list_count == 1UL) ?
-		((size * n_blocks) / GRANULE_SIZE) : (size / GRANULE_SIZE));
+	if (contig == RMI_OP_MEM_CONTIG) {
+		list_count = 1UL;
+		blocks_per_entry = n_blocks;
+		allocation_size = size * n_blocks;
+	} else {
+		list_count = n_blocks;
+		blocks_per_entry = 1UL;
+		allocation_size = size;
+	}
 
+	alignment = allocation_size;
+	delegation_per_entry = allocation_size / GRANULE_SIZE;
 	list_addr = &list_buffer[platform_get_core_pos(read_mpidr_el1())][LIST_START_OFFSET];
 
 	/*
@@ -288,7 +295,8 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
 	 */
 	for (unsigned long i = 0UL; i < list_count; i++) {
 		/* Try to allocate the requested memory */
-		u_register_t mem_ptr = (u_register_t)page_alloc(allocation_size);
+		u_register_t mem_ptr =
+			(u_register_t)page_alloc_aligned(allocation_size, alignment);
 
 		assert(mem_ptr != 0UL);
 
@@ -313,13 +321,13 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
 	}
 
 	retval = host_rmi_op_donate(handle, (u_register_t)list_addr, list_count,
-				    donate_req, &consumed_entries);
+				    donate_req, &consumed_granules);
 
 	/*
-	 * @TODO: As the allocator cannot free memory, ensure that we have
-	 * used all the requested memory so no holes will be created.
+	 * As the allocator cannot free memory, ensure that we have
+	 * used all the requested memory so no gaps will be created.
 	 */
-	assert(list_count == consumed_entries);
+	assert((delegation_per_entry * list_count) == consumed_granules);
 
 	return retval;
 }

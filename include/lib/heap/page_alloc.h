@@ -31,6 +31,12 @@ int page_pool_init(uint64_t heap_base, uint64_t heap_len);
 void *page_alloc(u_register_t bytes_size);
 
 /*
+ * Return a pointer to the allocated pages with the specified alignment.
+ * @alignment must be a power of 2.
+ */
+void *page_alloc_aligned(u_register_t bytes_size, u_register_t alignment);
+
+/*
  * Reset heap memory usage cursor to heap base address
  */
 void page_pool_reset(void);

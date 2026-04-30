@@ -70,15 +70,71 @@ void *page_alloc(u_register_t bytes_size)
 		ERROR("Reached to max KB allowed[%llu]\n", (heap_size/1024U));
 		goto unlock_failed;
 	}
-	/* set pointer to current used heap memory cursor */
+
+	/* Set pointer to current used heap memory cursor */
 	heap_addr = memory_used;
-	/* move used memory cursor by bytes_size */
+
+	/* Move used memory cursor by bytes_size */
 	memory_used += bytes_size;
 	spin_unlock(&mem_lock);
 
 	return (void *)heap_addr;
 
-unlock_failed:/* failed allocation */
+	/* Failed allocation */
+unlock_failed:
+	spin_unlock(&mem_lock);
+	return HEAP_NULL_PTR;
+}
+
+/*
+ * Return a pointer to the allocated pages with the specified alignment.
+ *
+ * @alignment must be a power of 2.
+ */
+void *page_alloc_aligned(u_register_t bytes_size, u_register_t alignment)
+{
+	uint64_t aligned_addr;
+	u_register_t total_bytes_size;
+
+	if (heap_initialised != HEAP_INIT_SUCCESS) {
+		ERROR("heap need to be initialised first\n");
+		return HEAP_NULL_PTR;
+	}
+
+	if (bytes_size == 0UL) {
+		ERROR("bytes_size must be non-zero value\n");
+		return HEAP_NULL_PTR;
+	}
+
+	if (!is_power_of_2(alignment)) {
+		ERROR("alignment must be power of 2\n");
+		return HEAP_NULL_PTR;
+	}
+
+	spin_lock(&mem_lock);
+
+	/* Calculate the aligned address based on current used memory cursor */
+	aligned_addr = round_up(memory_used, alignment);
+
+	/* Calculate the total bytes size needed for allocation */
+	total_bytes_size = (aligned_addr - memory_used) + bytes_size;
+
+	if ((memory_used + total_bytes_size) >= (heap_base_addr + heap_size)) {
+		ERROR("Reached to max KB allowed[%llu]\n", (heap_size/1024U));
+		goto unlock_failed;
+	}
+
+	/* Set pointer to current used heap memory cursor */
+	heap_addr = memory_used;
+
+	/* Move used memory cursor by total_bytes_size */
+	memory_used += total_bytes_size;
+	spin_unlock(&mem_lock);
+
+	return (void *)aligned_addr;
+
+	/* Failed allocation */
+unlock_failed:
 	spin_unlock(&mem_lock);
 	return HEAP_NULL_PTR;
 }

@@ -20,15 +20,34 @@ static uint32_t st_l2_bitmap[(HOST_PDEV_MAX + 31U) / 32U];
 
 int activate_psmmu(void)
 {
-	return host_activate_psmmu(psmmu_ptr);
+	u_register_t psmmu;
+	int rc;
+
+	/* Check whether the PSMMU has already been initialized */
+	if (psmmu_ptr != 0UL) {
+		return 0;
+	}
+
+	psmmu = plat_get_smmu_base();
+
+	rc = host_activate_psmmu(psmmu);
+	if (rc != 0) {
+		return rc;
+	}
+
+	psmmu_ptr = psmmu;
+	return 0;
 }
 
 int deactivate_psmmu(void)
 {
-	int rc = host_deactivate_psmmu(psmmu_ptr);
+	int rc = 0;
 
-	if (rc == 0) {
-		psmmu_ptr = 0UL;
+	if (psmmu_ptr != 0UL) {
+		rc = host_deactivate_psmmu(psmmu_ptr);
+		if (rc == 0) {
+			psmmu_ptr = 0UL;
+		}
 	}
 	return rc;
 }
@@ -85,7 +104,7 @@ int tsm_disconnect_device(struct host_pdev *h_pdev)
 
 	/* Check if L2 Stream Table was created */
 	if ((st_l2_bitmap[l2_idx] & idx_bit) != 0U) {
-		/* Create PSMMU Level 2 Stream Table */
+		/* Destroy PSMMU Level 2 Stream Table */
 		rc = host_psmmu_st_l2_destroy(psmmu_ptr, sid);
 		if (rc != 0) {
 			return rc;
@@ -151,15 +170,12 @@ int tsm_connect_device(struct host_pdev *h_pdev)
 		return rc;
 	}
 
-	if (psmmu_ptr == 0UL) {
-		psmmu_ptr = plat_get_smmu_base();
-
-		rc = activate_psmmu();
-		if (rc != 0) {
-			return rc;
-		}
-		psmmu_activate = true;
+	rc = activate_psmmu();
+	if (rc != 0) {
+		return rc;
 	}
+
+	psmmu_activate = true;
 
 	/*
 	 * Calculate the base of the StreamID range.

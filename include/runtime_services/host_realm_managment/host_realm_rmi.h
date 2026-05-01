@@ -2007,10 +2007,14 @@ u_register_t host_rmi_vdev_validate_mapping(u_register_t rd, u_register_t rec_pt
 					    u_register_t pdev_ptr, u_register_t vdev_ptr,
 					    u_register_t base, u_register_t top,
 					    u_register_t *out_top);
-u_register_t host_rmi_psmmu_activate(u_register_t psmmu_ptr, u_register_t params_ptr);
-u_register_t host_rmi_psmmu_deactivate(u_register_t psmmu_ptr);
-u_register_t host_rmi_psmmu_st_l2_create(u_register_t psmmu_ptr, u_register_t sid);
-u_register_t host_rmi_psmmu_st_l2_destroy(u_register_t psmmu_ptr, u_register_t sid);
+u_register_t host_rmi_psmmu_activate(u_register_t psmmu_ptr, u_register_t params_ptr,
+					u_register_t *handle, u_register_t *donate_req);
+u_register_t host_rmi_psmmu_deactivate(u_register_t psmmu_ptr, u_register_t *handle,
+					u_register_t *reclaim_req);
+u_register_t host_rmi_psmmu_st_l2_create(u_register_t psmmu_ptr, u_register_t sid,
+					 u_register_t *handle, u_register_t *donate_req);
+u_register_t host_rmi_psmmu_st_l2_destroy(u_register_t psmmu_ptr, u_register_t sid,
+					  u_register_t *handle, u_register_t *reclaim_req);
 u_register_t host_rmi_rmm_config_set(struct rmi_rmm_config *config);
 u_register_t host_rmi_rmm_config_get(struct rmi_rmm_config *config);
 u_register_t host_rmi_granule_tracking_get(u_register_t addr,

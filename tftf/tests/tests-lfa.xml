@@ -17,6 +17,7 @@
      <testcase name="RMM Cancel" function="test_lfa_cancel_rmm" />
      <testcase name="BL31 Prime" function="test_lfa_prime_bl31" />
      <testcase name="BL31 Cancel" function="test_lfa_cancel_bl31" />
+     <testcase name="BL31 Late Cancel" function="test_lfa_late_cancel_bl31" />
      <testcase name="BL31 Live Activation" function="test_lfa_activate_bl31" />
   </testsuite>
 </testsuites>

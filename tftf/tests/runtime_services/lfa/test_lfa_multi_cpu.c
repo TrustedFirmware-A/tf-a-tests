@@ -26,11 +26,14 @@ static event_t cpu_exit_test[PLATFORM_CORE_COUNT];
 static int release = 0;
 static int activate_count = 0;
 
+static bool cancel_test = false;
+
 const uint64_t num_ctx_regs = NUM_CTX_REGISTERS;
 uint64_t ctx_registers[PLATFORM_CORE_COUNT][NUM_CTX_REGISTERS];
 
 static test_result_t non_lead_cpu_fn_rmm(void);
 static test_result_t non_lead_cpu_fn_bl31(void);
+static test_result_t non_lead_cpu_fn_bl31_cancel(void);
 
 static bool lfa_test_is_target(const struct lfa_test_target *target,
 			       const struct lfa_test_target *match)
@@ -49,6 +52,10 @@ static uintptr_t lfa_test_secondary_entrypoint(const struct lfa_test_target *tar
 {
 	if (lfa_test_is_target(target, &lfa_test_rmm)) {
 		return (uintptr_t)non_lead_cpu_fn_rmm;
+	}
+
+	if (cancel_test) {
+		return (uintptr_t)non_lead_cpu_fn_bl31_cancel;
 	}
 
 	return (uintptr_t)non_lead_cpu_fn_bl31;
@@ -99,6 +106,7 @@ static test_result_t non_lead_cpu_fn_bl31(void)
 {
 	smc_args args = lfa_test_init_fw_args(LFA_ACTIVATE, fw_id);
 	smc_ret_values ret;
+	test_result_t result = TEST_RESULT_SUCCESS;
 
 	unsigned int mpid = read_mpidr_el1() & MPID_MASK;
 	unsigned int core_pos = platform_get_core_pos(mpid);
@@ -121,26 +129,38 @@ static test_result_t non_lead_cpu_fn_bl31(void)
 		 * Set a timer to wake the core up after WFI. This triggers the
 		 * warm reboot if needed.
 		 */
-		arm_gic_intr_enable(IRQ_PCPU_NS_TIMER);
-		set_timer_period(100);
+		if (!cancel_test) {
+			arm_gic_intr_enable(IRQ_PCPU_NS_TIMER);
+			set_timer_period(100);
+		}
 
 		ret = tftf_smc(&args);
 	} else {
 		ret.ret0 = 0;
 	}
 
-	if (ret.ret0 != 0) {
-		tftf_testcase_printf("%s: LFA_ACTIVATE error: 0x%08lx\n", __func__, ret.ret0);
-		return TEST_RESULT_FAIL;
+	if (!cancel_test && ret.ret0 != 0) {
+		tftf_testcase_printf("%s: LFA_ACTIVATE error: %d\n", __func__, (int)ret.ret0);
+		result = TEST_RESULT_FAIL;
 	}
 
-	/* Tell core 0 that this core is finished with activate. */
+	if (cancel_test && ret.ret0 != -11) {
+		tftf_testcase_printf("%s: LFA_CANCEL error: %d\n", __func__, (int)ret.ret0);
+		result = TEST_RESULT_FAIL;
+	}
+
+	/* Tell core 0 that this core is finished. */
 	tftf_send_event(&cpu_has_finished_test[core_pos]);
 
 	/* Exit once core 0 is ready to exit. */
 	tftf_wait_for_event(&cpu_exit_test[core_pos]);
 
-	return TEST_RESULT_SUCCESS;
+	return result;
+}
+
+static test_result_t non_lead_cpu_fn_bl31_cancel(void) {
+	cancel_test = true;
+	return non_lead_cpu_fn_bl31();
 }
 
 static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target)
@@ -250,8 +270,16 @@ static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target
 
 	args = lfa_test_init_fw_args(LFA_ACTIVATE, fw_id);
 
+	if (cancel_test) {
+		/* Change function ID to LFA_CANCEL. */
+		args.fid = LFA_CANCEL;
+
+		/* Sleep for one second to allow other cores to boot. */
+		tftf_timer_sleep(1000);
+	}
+
 	/* BL31 live activation specific stuff */
-	if (bl31_activation) {
+	if (bl31_activation && !cancel_test) {
 		/* Set skip rendezvous flag if allowed. */
 		if(!perform_rendezvous) {
 			args.arg2 = args.arg2 | 0x1;
@@ -274,7 +302,7 @@ static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target
 	}
 
 	if (ret.ret0 != SMC_OK) {
-		tftf_testcase_printf("%s: LFA_ACTIVATE error: 0x%08lx\n", __func__, ret.ret0);
+		tftf_testcase_printf("%s: LFA_%s error: 0x%08lx\n", __func__, cancel_test ? "CANCEL" : "ACTIVATE", ret.ret0);
 		return TEST_RESULT_FAIL;
 	}
 
@@ -308,9 +336,19 @@ test_result_t test_lfa_activate_rmm_multiple_cpu(void)
 }
 
 /*
+ * @Test_Aim@ Test BL31 Live activation with last second cancel.
+ */
+ test_result_t test_lfa_late_cancel_bl31(void)
+ {
+	 cancel_test = true;
+	 return test_lfa_activate_flow(&lfa_test_bl31);
+ }
+
+/*
  * @Test_Aim@ Test BL31 Live activation.
  */
 test_result_t test_lfa_activate_bl31(void)
 {
+	cancel_test = false;
 	return test_lfa_activate_flow(&lfa_test_bl31);
 }

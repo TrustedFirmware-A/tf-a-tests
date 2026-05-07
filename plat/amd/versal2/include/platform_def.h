@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2024-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,8 +16,25 @@
 
 #define CACHE_WRITEBACK_GRANULE			U(0x40)
 
+/*
+ * Topology configuration based on VERSAL2_VARIANT. Each value encodes
+ * (cluster count * 10 + cores per cluster), e.g. 42 = 4 clusters, 2 cores;
+ * 14 = 1 cluster, 4 cores.
+ */
+#ifndef VERSAL2_VARIANT
+#define VERSAL2_VARIANT				U(42)
+#endif
+
+#if (VERSAL2_VARIANT == 42)
 #define PLATFORM_CLUSTER_COUNT			U(4)
 #define PLATFORM_CORE_COUNT_PER_CLUSTER		U(2)
+#elif (VERSAL2_VARIANT == 14)
+#define PLATFORM_CLUSTER_COUNT			U(1)
+#define PLATFORM_CORE_COUNT_PER_CLUSTER		U(4)
+#else
+#error "Invalid VERSAL2_VARIANT. Supported values: 14, 42"
+#endif
+
 #define PLATFORM_MAX_PE_PER_CPU			U(1)
 /* Because of make_mpid from include/lib/tftf_lib.h */
 #define PLAT_MAX_PE_PER_CPU		PLATFORM_MAX_PE_PER_CPU
@@ -81,10 +98,27 @@
 #define PL011_BAUDRATE				U(115200)
 #define PL011_UART_CLK_IN_HZ			U(100000000)
 
-#define PLAT_ARM_UART_BASE                      PL011_UART1_BASE
-#define PLAT_ARM_UART_SIZE                      U(0x1000)
+/*
+ * Console base address selection based on VERSAL2_CONSOLE_ID build argument
+ * VERSAL2_CONSOLE_ID=0 (pl011 or pl011_0) selects UART0
+ * VERSAL2_CONSOLE_ID=1 (pl011_1) selects UART1 (default)
+ */
+#ifndef VERSAL2_CONSOLE_ID
+#define VERSAL2_CONSOLE_ID			U(1)
+#endif
 
-#define CRASH_CONSOLE_BASE			PL011_UART1_BASE
+#if (VERSAL2_CONSOLE_ID == 0)
+#define VERSAL2_CONSOLE_BASE			PL011_UART0_BASE
+#elif (VERSAL2_CONSOLE_ID == 1)
+#define VERSAL2_CONSOLE_BASE			PL011_UART1_BASE
+#else
+#error "Invalid VERSAL2_CONSOLE_ID. Supported values: 0 (UART0), 1 (UART1)"
+#endif
+
+#define PLAT_ARM_UART_BASE			VERSAL2_CONSOLE_BASE
+#define PLAT_ARM_UART_SIZE			U(0x1000)
+
+#define CRASH_CONSOLE_BASE			VERSAL2_CONSOLE_BASE
 #define CRASH_CONSOLE_SIZE			PLAT_ARM_UART_SIZE
 
 /* Per-CPU Hypervisor Timer Interrupt ID */

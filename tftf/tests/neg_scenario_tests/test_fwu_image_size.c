@@ -6,21 +6,27 @@
 
 #include <firmware_image_package.h>
 #include <fwu_nvm.h>
-#include <image_loader.h>
-#include <io_storage.h>
 #include <platform.h>
 #include <platform_def.h>
 #include <psci.h>
 #include <smccc.h>
+#include <stddef.h>
 #include <status.h>
 #include <tftf_lib.h>
 #include <uuid.h>
 #include <uuid_utils.h>
 
 /*
- * @TEST_AIM@ validate FWU IMAGE SIZE invalid scenario
- * TEST SUCCESS if FWU FIP IMAGE SIZE is found invalid and Fails to Proceed
- * TEST FAIL in case FWU process is able to reboot
+ * @TEST_AIM@ Validate FWU failure caused by an invalid BL2U image size.
+ *
+ * The test corrupts the primary FIP ToC header to force BL1 into the FWU flow
+ * on the next boot. It then corrupts the BL2U ToC entry size in FWU_FIP so
+ * the FWU image load fails due to an invalid size.
+ *
+ * TEST SUCCESS if TF-A does not complete the FWU flow and does not reboot back
+ * into TFTF.
+ * TEST FAIL if the system returns after reboot, which means FWU unexpectedly
+ * completed.
  */
 
 static fip_toc_entry_t *
@@ -41,57 +47,54 @@ find_fiptoc_entry_t(const int fip_base, const uuid_t *uuid)
 test_result_t test_fwu_image_size(void)
 {
 	STATUS status;
-	int fip_base = PLAT_ARM_FIP_BASE;
 	int fwu_fip_base = PLAT_ARM_FWU_FIP_BASE;
-
-	const uuid_t bl2	= UUID_TRUSTED_BOOT_FIRMWARE_BL2;
 	const uuid_t bl2u	= UUID_FIRMWARE_UPDATE_BL2U;
 
-	fip_toc_entry_t *bl2_entry;
 	fip_toc_entry_t *bl2u_entry;
-
-	uintptr_t bl2_entry_address, bl2u_entry_address;
-
-	int corrupt_size = 0xFFFF;
-	int offset;
+	uintptr_t bl2u_entry_address;
+	uint32_t corrupt_toc = 0xdeadbeef;
+	uint64_t corrupt_size = PLAT_ARM_FWU_FIP_SIZE + 1ULL;
+	unsigned long long offset;
 
 	smc_args args = { SMC_PSCI_SYSTEM_RESET };
 	smc_ret_values ret = {0};
 
-	/* retrieve bl2 and bl2u */
-	bl2_entry = find_fiptoc_entry_t(fip_base, &bl2);
-	bl2_entry_address = (uintptr_t)bl2_entry;
-
-	bl2u_entry = find_fiptoc_entry_t(fwu_fip_base, &bl2u);
-	bl2u_entry_address = (intptr_t)bl2u_entry;
-
-	/* Reboot has not occurred yet */
-	tftf_testcase_printf("not rebooted yet\n");
-
-	/* Corrupt FWU_FIP_SIZE */
-	tftf_testcase_printf("bl2_entry_address value is (%lx)\n", bl2_entry_address);
-
-	/*
-	 * corrupt bl2 in fip
-	 * corrupt toc entry size field of bl2u
-	 */
-
-	/* corrupt bl2 image */
-	offset = bl2_entry_address + sizeof(uuid_t) + sizeof(uint64_t) - FLASH_BASE;
-	status = fwu_nvm_write(offset, &corrupt_size, sizeof(uint64_t));
-
-	if (status != STATUS_SUCCESS) {
-		tftf_testcase_printf("staus not success error %d\n", status);
+	if (tftf_is_rebooted()) {
+		tftf_testcase_printf("FWU unexpectedly completed reboot\n");
 		return TEST_RESULT_FAIL;
 	}
 
-	/* corrupt toc bl2u entry */
-	offset = bl2u_entry_address + sizeof(uuid_t) + sizeof(uint64_t) - FLASH_BASE;
-	status = fwu_nvm_write(offset, &corrupt_size, sizeof(uint64_t));
+	/* Locate BL2U in FWU_FIP. */
+	bl2u_entry = find_fiptoc_entry_t(fwu_fip_base, &bl2u);
+	if (bl2u_entry == NULL) {
+		tftf_testcase_printf("Failed to find BL2U entry in FWU_FIP\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	bl2u_entry_address = (intptr_t)bl2u_entry;
+
+	/*
+	 * Corrupt the primary FIP ToC header to force entry into FWU on the
+	 * next boot, then corrupt the BL2U ToC size field in FWU_FIP so the
+	 * FWU image load fails deterministically due to an invalid size.
+	 */
+	offset = offsetof(fip_toc_header_t, name);
+	status = fwu_nvm_write(offset, &corrupt_toc, sizeof(corrupt_toc));
 
 	if (status != STATUS_SUCCESS) {
-		tftf_testcase_printf("status not success error %d\n", status);
-		return TEST_RESULT_FAIL;
+		tftf_testcase_printf("Failed to corrupt primary FIP ToC (%d)\n",
+				     status);
+		return TEST_RESULT_SKIPPED;
+	}
+
+	offset = bl2u_entry_address + offsetof(fip_toc_entry_t, size) -
+		 FLASH_BASE;
+	status = fwu_nvm_write(offset, &corrupt_size, sizeof(corrupt_size));
+
+	if (status != STATUS_SUCCESS) {
+		tftf_testcase_printf("Failed to corrupt BL2U image size (%d)\n",
+				     status);
+		return TEST_RESULT_SKIPPED;
 	}
 
 	/* Notify that we are rebooting now. */

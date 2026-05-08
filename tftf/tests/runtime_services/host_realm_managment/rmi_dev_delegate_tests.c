@@ -92,6 +92,11 @@ test_result_t host_dev_mem_delegate_undelegate(void)
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
+	if (!host_rmm_activate()) {
+		ERROR("Failed to activate RMM\n");
+		return TEST_RESULT_FAIL;
+	}
+
 	host_rmi_init_cmp_result();
 
 	while (true) {

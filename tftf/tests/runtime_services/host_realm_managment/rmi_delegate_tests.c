@@ -189,6 +189,10 @@ test_result_t host_realm_delundel_multi_cpu(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
+
 	lead_mpid = read_mpidr_el1() & MPID_MASK;
 	if (host_init_buffer_del() == TEST_RESULT_FAIL) {
 		return TEST_RESULT_FAIL;
@@ -234,7 +238,7 @@ test_result_t host_realm_delundel_multi_cpu(void)
 				(u_register_t)&bufferdelegate[i * GRANULE_SIZE]);
 			bufferstate[i] = B_UNDELEGATED;
 			if (retrmm != 0UL) {
-				tftf_testcase_printf("Delegate operation returns fail, %lx\n",
+				tftf_testcase_printf("Undelegate operation returns fail, %lx\n",
 						retrmm);
 				return TEST_RESULT_FAIL;
 			}

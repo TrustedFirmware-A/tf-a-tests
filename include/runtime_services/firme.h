@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
- /* FIRME version currently implemented */
+/* FIRME version currently implemented */
 #define FIRME_VERSION_MAJOR		U(1)
 #define FIRME_VERSION_MINOR		U(0)
 #define FIRME_VERSION_MAJOR_SHIFT	U(16)
@@ -56,14 +56,23 @@
 /* Base service feature register definitions */
 #define FIRME_BASE_VERSION_BIT				BIT(0)
 #define FIRME_BASE_FEATURES_BIT				BIT(1)
+#define FIRME_BASE_MIN_SH_BUF_SZ_SHIFT			U(0)
+#define FIRME_BASE_MIN_SH_BUF_SZ_MASK			U(0x3)
+#define FIRME_BASE_MIN_SH_BUF_SZ_4KB			U(0x0)
+#define FIRME_BASE_MIN_SH_BUF_SZ_64KB			U(0x1)
+#define FIRME_BASE_MIN_SH_BUF_SZ_16KB			U(0x2)
+#define FIRME_BASE_MAX_SH_BUF_PG_CNT_SHIFT		U(2)
+#define FIRME_BASE_MAX_SH_BUF_PG_CNT_MASK		U(0x3FFF)
 #define FIRME_BASE_SERVICE_LIST_SHIFT			U(16)
 #define FIRME_BASE_SERVICE_LIST_MASK			U(0xFFFF)
 #define FIRME_BASE_SERVICE_GRANULE_MGMT_BIT		BIT(16)
 #define FIRME_BASE_SERVICE_IDE_KM_BIT			BIT(17)
+#define FIRME_BASE_SERVICE_ATTESTATION_BIT		BIT(19)
 
 #define FIRME_BASE_SERVICE_ID				U(0)
 #define FIRME_GM_SERVICE_ID				U(1)
 #define FIRME_IDE_KM_SERVICE_ID				U(2)
+#define FIRME_ATTESTATION_SERVICE_ID			U(4)
 
 #define FIRME_SERVICE_VERSION_FID			SMC64_FIRME_FID(0)
 #define FIRME_SERVICE_FEATURES_FID			SMC64_FIRME_FID(1)
@@ -95,4 +104,5 @@ int32_t firme_ide_km_keyset_poll(uint64_t ecam_address, uint64_t keyset_id,
 				 uint64_t *handle_ret);
 int32_t firme_ide_km_poll(uint64_t ecam_address, uint64_t *handle_ret,
 			  uint64_t *keyset_id_ret);
+
 #endif /* __FIRME_H__ */

@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include <firme.h>
+#include <firme/firme_attestation.h>
 #include <smccc.h>
 #include <tftf_lib.h>
 
@@ -33,6 +34,26 @@ int32_t firme_features(uint8_t service_id, uint8_t reg_index, uint64_t *reg)
 	}
 
 	return ret.ret0;
+}
+
+int32_t firme_attest_pat_get(uint64_t shared_buf_addr, uint64_t write_offset,
+			     uint64_t shared_buf_page_count,
+			     uint64_t challenge_size, uint64_t *written_size,
+			     uint64_t *remaining_size)
+{
+	smc_args args = { FIRME_ATTEST_PAT_GET_FID, shared_buf_addr,
+			  write_offset, shared_buf_page_count, challenge_size };
+	smc_ret_values ret;
+	int32_t status;
+
+	ret = tftf_smc(&args);
+	status = (int32_t)ret.ret0;
+	if ((status == FIRME_SUCCESS) || (status == FIRME_INCOMPLETE)) {
+		*written_size = (uint64_t)ret.ret1;
+		*remaining_size = (uint64_t)ret.ret2;
+	}
+
+	return status;
 }
 
 int32_t firme_ide_km_keyset_prog(uint64_t ecam_address, uint64_t flags,

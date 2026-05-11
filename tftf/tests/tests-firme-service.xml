@@ -17,13 +17,20 @@
     function="test_firme_base_features" />
     <testcase name="Test the FIRME Granule Management Service feature registers ABI"
     function="test_firme_granule_mgmt_features" />
-
     <testcase name="Test the IDE KM feature registers ABI"
     function="test_firme_ide_km_features" />
     <testcase name="Secure PCIe IDE stream at RootPort"
     function="test_firme_ide_km_secure_pcie_ide_stream" />
     <testcase name="Verify FIRME IDE poll ABI for any pending keyset"
     function="test_firme_ide_km_poll_any_keyset" />
+    <testcase name="Test the FIRME attestation service version via the base service ABI"
+    function="test_firme_attestation_version" />
+    <testcase name="Test FIRME attestation PAT_GET token retrieval"
+    function="test_firme_attestation_pat_get" />
+    <testcase name="Test FIRME attestation PAT_GET chunked token retrieval"
+    function="test_firme_attestation_pat_get_chunked" />
+    <testcase name="Test FIRME attestation PAT_GET invalid shared buffer configurations"
+    function="test_firme_attestation_pat_get_invalid_buffer_config" />
   </testsuite>
 
 </testsuites>

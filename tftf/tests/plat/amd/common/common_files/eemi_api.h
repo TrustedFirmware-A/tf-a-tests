@@ -39,11 +39,6 @@ struct register_sgi {
 	uint32_t reset;                 /**<  Reset to invalid SGI when reset=1 */
 };
 
-struct sys_shutdown {
-	uint32_t shutdown_type;         /**< Shutdown type (shutdown/restart) */
-	uint32_t shutdown_subtype;      /**< Shutdown subtype (subsystem-only/PU-only/system) */
-};
-
 struct test_pll_api {
 	uint32_t clock_id;               /**< Clock ID */
 };

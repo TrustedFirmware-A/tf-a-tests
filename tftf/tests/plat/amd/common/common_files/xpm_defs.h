@@ -49,6 +49,7 @@
  */
 #define PM_SHUTDOWN_TYPE_SHUTDOWN               (0U)
 #define PM_SHUTDOWN_TYPE_RESET                  (1U)
+#define PM_SHUTDOWN_TYPE_SETSCOPE_ONLY          (2U)
 
 #define PM_SHUTDOWN_SUBTYPE_RST_SUBSYSTEM       (0U)
 #define PM_SHUTDOWN_SUBTYPE_RST_PS_ONLY         (1U)

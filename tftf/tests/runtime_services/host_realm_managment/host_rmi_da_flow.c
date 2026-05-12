@@ -659,6 +659,8 @@ test_result_t host_realm_test_root_port_key_management(void)
 	u_register_t rmi_rc;
 	int ret;
 
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
+
 	if (host_rmi_version(RMI_ABI_VERSION_VAL) != 0U) {
 		tftf_testcase_printf("RMM is not TRP\n");
 		return TEST_RESULT_SKIPPED;

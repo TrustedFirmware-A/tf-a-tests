@@ -126,9 +126,7 @@ test_result_t rl_memory_cannot_be_accessed_in_ns(void)
 	test_result_t result = TEST_RESULT_FAIL;
 	u_register_t retmm;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	sync_exception_triggered = false;
 	data_abort_triggered = false;

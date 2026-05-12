@@ -130,10 +130,8 @@ test_result_t test_smmu_spm_invalid_access(void)
 	struct ffa_value ret;
 	u_register_t retmm;
 
-	/* Skip this test if RME is not implemented. */
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	/* Skip this test if Realm PAS is not present. */
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	/**********************************************************************
 	 * Check SPMC has ffa_version and expected FFA endpoints are deployed.

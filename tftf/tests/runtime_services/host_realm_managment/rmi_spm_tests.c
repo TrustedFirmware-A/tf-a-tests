@@ -354,9 +354,7 @@ static test_result_t non_secure_call_realm_multi_cpu_sync(void)
  */
 test_result_t test_spm_rmm_serial_smc(void)
 {
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	lead_mpid = read_mpidr_el1() & MPID_MASK;
 	unsigned int  mpidr;
@@ -414,9 +412,7 @@ test_result_t test_spm_rmm_serial_smc(void)
  */
 test_result_t test_spm_rmm_parallel_smc(void)
 {
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	lead_mpid = read_mpidr_el1() & MPID_MASK;
 	unsigned int cpu_node, mpidr;

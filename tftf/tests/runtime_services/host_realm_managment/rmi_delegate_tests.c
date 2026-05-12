@@ -41,7 +41,7 @@ static char bufferstate[NUM_GRANULES * PLATFORM_CORE_COUNT];
  * twice and then testing a misaligned address
  */
 
-test_result_t host_init_buffer_del(void)
+static test_result_t host_init_buffer_del(void)
 {
 	u_register_t retrmm;
 
@@ -72,11 +72,7 @@ test_result_t host_realm_version_single_cpu(void)
 {
 	u_register_t retrmm = 0U;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
-
-	host_rmi_init_cmp_result();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	retrmm = host_rmi_version(RMI_ABI_VERSION_VAL);
 
@@ -98,11 +94,7 @@ test_result_t host_realm_version_multi_cpu(void)
 	int cpu_node;
 	long long ret;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
-
-	host_rmi_init_cmp_result();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	lead_mpid = read_mpidr_el1() & MPID_MASK;
 
@@ -149,11 +141,7 @@ test_result_t host_realm_delegate_undelegate(void)
 {
 	u_register_t retrmm;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
-
-	host_rmi_init_cmp_result();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	retrmm = host_rmi_granule_delegate((u_register_t)bufferdelegate);
 	if (retrmm != 0UL) {
@@ -177,7 +165,7 @@ static test_result_t host_realm_multi_cpu_payload_test(void)
 {
 	u_register_t retrmm = 0U;
 
-	host_rmi_init_cmp_result();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	retrmm = host_rmi_version(RMI_ABI_VERSION_VAL);
 
@@ -199,14 +187,9 @@ test_result_t host_realm_delundel_multi_cpu(void)
 	long long ret;
 	u_register_t retrmm;
 
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	lead_mpid = read_mpidr_el1() & MPID_MASK;
-
-	host_rmi_init_cmp_result();
-
 	if (host_init_buffer_del() == TEST_RESULT_FAIL) {
 		return TEST_RESULT_FAIL;
 	}
@@ -304,13 +287,9 @@ static test_result_t host_realm_multi_cpu_payload_del_undel(void)
  */
 test_result_t host_realm_fail_del(void)
 {
-	if (get_armv9_2_feat_rme_support() == 0U) {
-		return TEST_RESULT_SKIPPED;
-	}
-
 	u_register_t retrmm;
 
-	host_rmi_init_cmp_result();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	retrmm = host_rmi_granule_delegate((u_register_t)&bufferdelegate[0]);
 	if (retrmm != 0UL) {

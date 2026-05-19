@@ -1197,7 +1197,8 @@ int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
 
 	/* Create vdev and bind it to the Realm */
 	vdev_params = (struct rmi_vdev_params *)page_alloc(PAGE_SIZE);
-	memset(vdev_params, 0, PAGE_SIZE);
+
+	(void)memset(vdev_params, 0, PAGE_SIZE);
 
 	/*
 	 * Currently assigning one device is supported, for more than one device
@@ -1553,6 +1554,8 @@ void host_dump_interface_report(
 int host_activate_psmmu(u_register_t psmmu_ptr)
 {
 	struct rmi_psmmu_params *params;
+	u_register_t activate_handle = 0UL;
+	u_register_t donate_req = 0UL;
 	u_register_t res;
 
 	/* Allocate memory for PSMMU params */
@@ -1566,33 +1569,65 @@ int host_activate_psmmu(u_register_t psmmu_ptr)
 	(void)memset(params, 0, PAGE_SIZE);
 
 	/* Activate PSMMU */
-	res = host_rmi_psmmu_activate(psmmu_ptr, (u_register_t)params);
-	if (res != REALM_SUCCESS) {
-		ERROR("%s(0x%lx) failed, %lu\n",
-			"host_rmi_psmmu_activate", psmmu_ptr, res);
+	res = host_rmi_psmmu_activate(psmmu_ptr, (u_register_t)params,
+					&activate_handle, &donate_req);
+
+	if (RMI_RETURN_STATUS(res) != RMI_INCOMPLETE) {
+		ERROR("res 0x%lx, expected 0x%x\n",
+			RMI_RETURN_STATUS(res), RMI_INCOMPLETE);
+		/* We expect a SRO operation at this point */
 		return -ENODEV;
 	}
 
+	/*
+	 * Start the RSO flow for RMI_PSMMU_ACTIVATE.
+	 * It is expected that the host will donate all the memory in one go.
+	 */
+	res = host_realm_sro_continue(res, &activate_handle, &donate_req, NULL);
+	if (RMI_RETURN_STATUS(res) != RMI_SUCCESS) {
+		ERROR("%s(0x%lx) failed, %lu\n",
+			"host_rmi_psmmu_activate", psmmu_ptr,
+			RMI_RETURN_STATUS(res));
+		return -ENODEV;
+	}
 	return 0;
 }
 
 int host_deactivate_psmmu(u_register_t psmmu_ptr)
 {
+	u_register_t deactivate_handle = 0UL;
+	u_register_t reclaim_req = 0UL;
 	u_register_t res;
 
 	/* Deactivate PSMMU */
-	res = host_rmi_psmmu_deactivate(psmmu_ptr);
-	if (res != REALM_SUCCESS) {
-		ERROR("%s(0x%lx) failed, %lu\n",
-			"host_rmi_psmmu_deactivate", psmmu_ptr, res);
+	res = host_rmi_psmmu_deactivate(psmmu_ptr, &deactivate_handle,
+					&reclaim_req);
+
+	if (RMI_RETURN_STATUS(res) != RMI_INCOMPLETE) {
+		ERROR("res 0x%lx, expected 0x%x\n",
+			RMI_RETURN_STATUS(res), RMI_INCOMPLETE);
+		/* We expect a SRO operation at this point */
 		return -ENODEV;
 	}
 
+	/*
+	 * Start the RSO flow for RMI_PSMMU_DEACTIVATE.
+	 * It is expected that the host will reclaim all the memory in one go.
+	 */
+	res = host_realm_sro_continue(res, &deactivate_handle, &reclaim_req, NULL);
+	if (RMI_RETURN_STATUS(res) != RMI_SUCCESS) {
+		ERROR("%s(0x%lx) failed, %lu\n",
+			"host_rmi_psmmu_deactivate", psmmu_ptr,
+			RMI_RETURN_STATUS(res));
+		return -ENODEV;
+	}
 	return 0;
 }
 
 int host_psmmu_st_l2_create(u_register_t psmmu_ptr, unsigned int sid)
 {
+	u_register_t create_handle = 0UL;
+	u_register_t donate_req = 0UL;
 	u_register_t res;
 
 	/*
@@ -1603,18 +1638,34 @@ int host_psmmu_st_l2_create(u_register_t psmmu_ptr, unsigned int sid)
 	sid &= ~((1UL << (PAGE_SIZE_SHIFT - 6U)) - 1UL);
 
 	/* Create PSMMU Level 2 Stream Table */
-	res = host_rmi_psmmu_st_l2_create(psmmu_ptr, (u_register_t)sid);
-	if (res != REALM_SUCCESS) {
-		ERROR("%s(0x%lx 0x%x) failed, %lu\n",
-			"host_rmi_psmmu_st_l2_create", psmmu_ptr, sid, res);
+	res = host_rmi_psmmu_st_l2_create(psmmu_ptr, (u_register_t)sid,
+					  &create_handle, &donate_req);
+
+	if (RMI_RETURN_STATUS(res) != RMI_INCOMPLETE) {
+		ERROR("res 0x%lx, expected 0x%x\n",
+			RMI_RETURN_STATUS(res), RMI_INCOMPLETE);
+		/* We expect a SRO operation at this point */
 		return -ENODEV;
 	}
 
+	/*
+	 * Start the RSO flow for RMI_PSMMU_ST_L2_CREATE.
+	 * It is expected that the host will donate all the memory in one go.
+	 */
+	res = host_realm_sro_continue(res, &create_handle, &donate_req, NULL);
+	if (RMI_RETURN_STATUS(res) != RMI_SUCCESS) {
+		ERROR("%s(0x%lx 0x%x) failed, %lu\n",
+			"host_rmi_psmmu_st_l2_create", psmmu_ptr, sid,
+			RMI_RETURN_STATUS(res));
+		return -ENODEV;
+	}
 	return 0;
 }
 
 int host_psmmu_st_l2_destroy(u_register_t psmmu_ptr, unsigned int sid)
 {
+	u_register_t destroy_handle = 0UL;
+	u_register_t reclaim_req = 0UL;
 	u_register_t res;
 
 	/*
@@ -1625,12 +1676,26 @@ int host_psmmu_st_l2_destroy(u_register_t psmmu_ptr, unsigned int sid)
 	sid &= ~((1U << (PAGE_SIZE_SHIFT - 6U)) - 1U);
 
 	/* Destroy PSMMU Level 2 Stream Table */
-	res = host_rmi_psmmu_st_l2_destroy(psmmu_ptr, (u_register_t)sid);
-	if (res != REALM_SUCCESS) {
-		ERROR("%s(0x%lx 0x%x) failed, %lu\n",
-			"host_rmi_psmmu_st_l2_destroy", psmmu_ptr, sid, res);
+	res = host_rmi_psmmu_st_l2_destroy(psmmu_ptr, (u_register_t)sid,
+					   &destroy_handle, &reclaim_req);
+
+	if (RMI_RETURN_STATUS(res) != RMI_INCOMPLETE) {
+		ERROR("res 0x%lx, expected 0x%x\n",
+			RMI_RETURN_STATUS(res), RMI_INCOMPLETE);
+		/* We expect a SRO operation at this point */
 		return -ENODEV;
 	}
 
+	/*
+	 * Start the RSO flow for RMI_PSMMU_ST_L2_DESTROY.
+	 * It is expected that the host will reclaim all the memory in one go.
+	 */
+	res = host_realm_sro_continue(res, &destroy_handle, &reclaim_req, NULL);
+	if (RMI_RETURN_STATUS(res) != RMI_SUCCESS) {
+		ERROR("%s(0x%lx 0x%x) failed, %lu\n",
+			"host_rmi_psmmu_st_l2_destroy", psmmu_ptr, sid,
+			RMI_RETURN_STATUS(res));
+		return -ENODEV;
+	}
 	return 0;
 }

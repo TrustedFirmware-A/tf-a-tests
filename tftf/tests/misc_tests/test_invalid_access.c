@@ -142,7 +142,7 @@ test_result_t rl_memory_cannot_be_accessed_in_ns(void)
 
 	/* Activate RMM */
 	if (!host_rmm_activate()) {
-		return false;
+		return TEST_RESULT_FAIL;
 	}
 
 	host_rmi_init_cmp_result();
@@ -239,7 +239,7 @@ static test_result_t memory_cannot_be_accessed_in_rl(u_register_t params)
 
 	/* Activate RMM */
 	if (!host_rmm_activate()) {
-		return false;
+		return TEST_RESULT_FAIL;
 	}
 
 	retrmm = host_rmi_granule_delegate((u_register_t)&rd[0]);

@@ -161,7 +161,7 @@ out_rm_realm:
 test_result_t host_da_get_info_parameter_test(void)
 {
 	test_result_t result = TEST_RESULT_SUCCESS;
-	bool ret2, rc, return_error = false;
+	bool rc, return_error = false;
 	u_register_t ret, valid_ipa, empty_ipa;
 	u_register_t rmi_feat_reg0;
 	struct realm realm;
@@ -301,19 +301,20 @@ unassign_device:
 		ERROR("VDEV unassign to realm failed\n");
 		return_error = true;
 	}
+
 disconnect_device:
 	if ((tsm_disconnect_device(h_pdev) != 0)) {
 		return_error = true;
 	}
-undelegate_destroy:
-	ret = host_rmi_granule_undelegate(valid_ipa);
-	ret = host_rmi_granule_undelegate(empty_ipa);
-destroy_realm:
-	ret2 = host_destroy_realm(&realm);
 
-	if (!ret2) {
-		ERROR("%s(): destroy=%d\n",
-		      __func__, ret2);
+undelegate_destroy:
+	(void)host_rmi_granule_undelegate(valid_ipa);
+	(void)host_rmi_granule_undelegate(empty_ipa);
+
+destroy_realm:
+	/* Deactivate PSMMU and destroy the Realm */
+	if (!destroy_psmmu_realm(&realm)) {
+		ERROR("destroy_psmmu_realm() failed\n");
 		return TEST_RESULT_FAIL;
 	}
 	if (return_error) {
@@ -363,6 +364,11 @@ test_result_t host_pdev_test_valid_state_transition(void)
 	};
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
 
 	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
 	if (h_pdev == NULL) {
@@ -599,10 +605,10 @@ out_rm_realm:
 /* Invoke IDE key refresh and IDE reset on PDEV once it is in READY state */
 test_result_t host_pdev_invoke_ide_refresh_reset(void)
 {
-	int rc = 0;
 	struct host_pdev *h_pdev;
 	u_register_t rmi_feat_reg0;
 	bool return_error = false;
+	int rc = 0;
 	const unsigned char pdev_ide_refresh_reset[] = {
 		RMI_PDEV_STATE_COMMUNICATING,
 		RMI_PDEV_STATE_READY,
@@ -611,6 +617,11 @@ test_result_t host_pdev_invoke_ide_refresh_reset(void)
 	};
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+
+	/* Activate RMM */
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
 
 	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
 	if (h_pdev == NULL) {
@@ -643,6 +654,14 @@ test_result_t host_pdev_invoke_ide_refresh_reset(void)
 	rc = tsm_disconnect_device(h_pdev);
 	if (rc != 0) {
 		ERROR("TSM disconnect failed for device 0x%x\n",
+		      h_pdev->dev->bdf);
+		return_error = true;
+	}
+
+	/* Deactivate PSMMU */
+	rc = deactivate_psmmu();
+	if (rc != 0) {
+		ERROR("PSMMU deactivate failed for device 0x%x\n",
 		      h_pdev->dev->bdf);
 		return_error = true;
 	}

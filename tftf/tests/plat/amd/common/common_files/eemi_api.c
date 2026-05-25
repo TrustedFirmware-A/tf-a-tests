@@ -176,8 +176,9 @@ int xpm_ioctl(const uint32_t node_id, const uint32_t ioctl_id, const uint32_t ar
 
 	ret = eemi_call(PM_IOCTL, ((uint64_t)ioctl_id << 32 | node_id),
 			((uint64_t)arg2 << 32 | arg1), arg3, 0, 0, 0, 0, ret_payload);
-	if (ret == PM_RET_SUCCESS)
+	if ((ret == PM_RET_SUCCESS) && (response != NULL)) {
 		*response = ret_payload[1];
+	}
 
 	return ret;
 }

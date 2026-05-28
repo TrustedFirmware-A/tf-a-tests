@@ -7,6 +7,160 @@ Firmware-A version for simplicity. At any point in time, TF-A Tests version
 Tests are not guaranteed to be compatible. This also means that a version
 upgrade on the TF-A-Tests side might not necessarily introduce any new feature.
 
+Version 2.15
+------------
+
+New features
+^^^^^^^^^^^^
+
+This release adds test coverage for RMMv2.0 ABI changes with the new SRO flow,
+Device Assignment, PSMMU and other features in RMM. It also expands TFTF CPU
+extension, firmware update, fuzzing, FIRME, FF-A/SPM, and platform coverage.
+
+Realm Management Extension
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    - Updated DA related ABIs to spec alp17.
+    - Refactored PDEV/VDEV helper code for Device Assignment flows.
+    - Fixed device map/unmap tests to comply with alp17.
+    - Added VCA caching.
+    - Updated ``RMI_VDEV_UNMAP`` handling to not expect a VDEV.
+    - Added Device Assignment helper routines.
+    - Refactored PDEV flows to use state transitions.
+    - Fixed DA helper routines.
+    - Added tests to invoke valid PDEV state transitions.
+    - Added tests for ``RMI`` PDEV IDE key refresh and reset ABIs.
+    - Fixed DA object caching.
+    - Added DMA SMMUv3 Realm tests.
+    - Enabled SMMUv3 DMA tests with MEC enabled.
+    - Fixed ``rsi_plane_sysreg_read`` and ``rsi_plane_sysreg_write`` tests.
+    - Added tests for ``FEAT_MOPS`` enablement in RMM.
+    - Extracted ``FEAT_MOPS`` CPY instructions to an assembly helper.
+    - Skipped ``FEAT_MOPS`` tests when RME is not implemented.
+    - Moved ``FEAT_MOPS`` testing into Realm execution.
+    - Added PSMMU-related ``RMI`` calls.
+    - Added initial tests for ``RMI`` PSMMU APIs.
+    - Fixed host ownership of GIC state for Realm tests.
+    - Removed VMID, MECID, and auxiliary VMID handling from Realm setup.
+    - Fixed ``RMI_FEATURES`` handling for the 2.0 specification.
+    - Added ``mec_policy`` support.
+    - Removed ``data_create``, ``data_create_unknown``, and ``data_destroy``.
+    - Updated Realm tests to use RMM 2.0 ABIs.
+    - Added ``RMI_RMM_ACTIVATE`` calls for RMM 2.0.
+    - Skipped PMU tests when PMU is unavailable in Realm.
+    - Updated RMI and RSI versions.
+    - Updated Realm support to RMM 2.0-bet0-rc1.
+    - Added Realm timer tests.
+    - Added Realm GIC register trap tests.
+    - Added SRO flow support for RMIs.
+    - Added tests for ``RMI_RMM_CONFIG_GET``.
+    - Fixed PN-P0 SMC handling.
+    - Added tests to invoke valid VDEV state transitions.
+    - Refactored DA RSI command handling.
+    - Added tests for ``RSI_VDEV_GET_INFO``.
+    - Added ``page_alloc_aligned()`` to the page allocator.
+    - Skipped RME test cases when no payload is present at R-EL2.
+    - Added support for PSMMU commands with SRO.
+
+TFTF
+^^^^
+
+- SPM/FF-A Testing
+
+    - Refactored partition info descriptor size and count checks.
+    - Updated FFA_PARTITION_INFO_GET_REGS to the v1.3 format.
+
+- New Tests
+
+    - Firmware Update (FWU)
+
+        - Added overflow-source tests for image copy and authentication.
+        - Refined the invalid BL2U image size negative test.
+
+    - CPU Extension and Architecture Tests
+
+        - Refactored the undef injection test to use FEAT_GCS.
+        - Added a test for FEAT_PFAR.
+        - Added a test for FEAT_AIE.
+        - Added tests for FEAT_STEP2.
+        - Added tests for FEAT_HDBSS.
+        - Added tests for FEAT_HACDBS.
+        - Refactored FEAT_IDTE3 checks for clarity.
+        - Added AMU world switch testing.
+        - Made AMU group 1 RAZ testing generic.
+        - Improved LS64 test coverage.
+        - Added a generic sysreg wrapper for renamed and unprefixed instructions.
+
+    - Fuzzing
+
+        - Added PSCI fuzzing support.
+        - Added a vector container for fuzzing.
+        - Preserved reserved bits for fuzzing sanity levels 1 and 2.
+        - Added test status reporting to the fuzzer.
+        - Updated fuzzing documentation for variable coverage.
+        - Fixed malloc checking in fuzzing code.
+
+    - FIRME
+
+        - Added basic tests for FIRME_VERSION and FIRME_FEATURES.
+
+- Platform
+
+    - Xilinx/AMD
+
+        - Added Versal2 console selection as a build argument.
+        - Added Versal2 scalable variant topology selection.
+        - Refactored Versal2 topology into a dedicated module.
+        - Removed logging from the Xilinx timer interrupt handler.
+        - Fixed errata ABI handling for Versal Net and ZynqMP.
+
+    - Arm
+
+        - Fixed TC platform topology.
+        - Added SMCCC workaround handling for Neoverse V2.
+        - Added Cortex-A320 support for Corstone-1000.
+        - Added an Arm generic timer interface.
+
+    - FVP
+
+        - Made the FEAT_LS64 test easier to run on FVP.
+
+    - QEMU
+
+        - Added QEMU virt platform support.
+
+- Miscellaneous
+
+    - Updated MbedTLS to version 3.6.6.
+    - Updated toolchain requirements to 15.2.Rel1.
+    - Added CNTP system register definitions for AArch32.
+
+Cactus-MM (S-EL0 Management Mode test partition)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    - Added a Non-secure memory attribute change test for Cactus MM.
+
+Issues resolved since last release
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    - Fixed context management guards for PIE and POE registers.
+    - Fixed ``PN`` to ``P0`` SMC handling.
+    - Fixed ``SMCCC_ARCH_FEATURE_AVAILABILITY`` dependency checks.
+    - Fixed access functions for ``ID_AA64DFR0_EL1``, ``ID_AA64DFR1_EL1``, and ``ID_AA64DFR2_EL1``.
+    - Fixed access function for ``ID_AA64MMFR4_EL1``.
+    - Fixed PCIe DOE debug logging.
+    - Fixed ``Debugv8p9`` checks.
+    - Restored PAUTH inlining test instructions.
+    - Fixed AMU failure reporting.
+    - Fixed AMU group 0 counter validation.
+    - Simplified the AMU implementation.
+    - Allowed PAUTH tests to compile with older toolchains.
+    - Dropped the ARMv8.7 compiler requirement for LS64 tests.
+    - Allowed WFXT tests to build without an ARMv8.7-capable compiler.
+    - Fixed ``CSV2_2`` feature detection to allow newer CSV2 versions.
+    - Used RNDR helpers instead of inline assembly.
+    - Added an ISB after restoring PAUTH registers.
+
 Version 2.14
 ------------
 
@@ -2327,7 +2481,7 @@ All test images
 
 --------------
 
-*Copyright (c) 2018-2025, Arm Limited. All rights reserved.*
+*Copyright (c) 2018-2026, Arm Limited. All rights reserved.*
 
 .. _Arm Neoverse Reference Design N1 Edge (RD-N1-Edge): https://developer.arm.com/products/system-design/reference-design/neoverse-reference-design
 .. _Arm SGI-575: https://developer.arm.com/products/system-design/fixed-virtual-platforms

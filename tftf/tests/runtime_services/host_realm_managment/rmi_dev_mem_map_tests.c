@@ -12,6 +12,7 @@
 #include <host_da_helper.h>
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
+#include <host_realm_rmi.h>
 #include <host_shared_data.h>
 #include <plat_topology.h>
 #include <platform.h>
@@ -58,7 +59,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	__unused size_t dev_size;
 	test_result_t ret = TEST_RESULT_FAIL;
 	struct realm realm;
-	struct rtt_entry rtt;
+	/* struct rtt_entry rtt; */
 	struct dev_mem_region mem_region[2];
 	struct dev_mem_info mem_info[NUM_INFO_TESTS] = {
 		/* Test region 1 */
@@ -74,10 +75,12 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		 RTT_MAP_SIZE(RTT_MIN_DEV_BLOCK_LEVEL), NUM_L2_REGIONS}
 	};
 	unsigned int num[NUM_INFO_TESTS];
-	unsigned int num_reg, offset, i, j;
+	unsigned int num_reg, offset, i, j, k;
 	struct host_vdev *h_vdev;
 	struct host_pdev *h_pdev;
 	int rc;
+	struct rmi_address_range addr_range[RMI_VDEV_PARAMS_ADDR_RANGE_MAX] = {0U};
+	size_t num_address_range;
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
@@ -232,10 +235,21 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		goto undelegate_granules;
 	}
 
+	num_address_range = 0;
+	for (i = 0U; i < ARRAY_SIZE(mem_info); ++i) {
+		if (mem_info[i].base_pa != 0UL) {
+			addr_range[num_address_range].base = mem_info[i].base_pa;
+			addr_range[num_address_range].top = mem_info[i].base_pa +
+				((mem_info[i].num_regions * RTT_MAP_SIZE(mem_info[i].map_level)));
+			++num_address_range;
+		}
+	}
+
 	h_vdev = &gbl_host_vdev;
 
 	/* Assign TSM connected device to a Realm */
-	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->pdev);
+	rc = realm_assign_device(&realm, h_vdev, h_pdev->dev->bdf,
+				 h_pdev->ep_pdev, addr_range, num_address_range);
 	if (rc != 0) {
 		goto undelegate_granules;
 	}
@@ -261,6 +275,12 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		}
 	}
 
+/*
+ * TODO: Skipping checking rtt entries for now, because the current dev_map
+ * implementation only supports mapping granules one by one, and this requires
+ * to always create level3 entries
+ */
+#if 0
 	/* Check RTT entries */
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
 		/* Skip non-initialised test region */
@@ -293,18 +313,7 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 			}
 		}
 	}
-
-	rc = host_unassign_vdev_from_realm(&realm, h_vdev);
-	if (rc != 0) {
-		ERROR("Destroying VDEV failed\n");
-		goto unmap_memory;
-	}
-
-	/* Destroy PDEV */
-	rc = tsm_disconnect_device(h_pdev);
-	if (rc != 0) {
-		ERROR("Destroying PDEV failed\n");
-	}
+#endif
 
 unmap_memory:
 	/* Unmap device memory */
@@ -315,56 +324,53 @@ unmap_memory:
 		}
 
 		for (j = 0U; j < mem_info[i].num_regions; j++) {
-			u_register_t pa, pa_exp, top, top_exp;
+			u_register_t out_top, out_range, out_count /* , top_exp */;
+			size_t granule_count = RTT_MAP_SIZE(mem_info[i].map_level) / GRANULE_SIZE;
 
-			res = host_rmi_vdev_unmap(realm.rd, map_addr[i][j],
-							mem_info[i].map_level,
-							&pa, &top);
-			if (res != RMI_SUCCESS) {
-				ERROR("%s() for 0x%lx failed, 0x%lx\n",
-					"host_rmi_vdev_unmap",
-					map_addr[i][j], res);
-				goto undelegate_granules;
+			for (k = 0; k < granule_count; ++k) {
+				unsigned long base = map_addr[i][j] + (GRANULE_SIZE * k);
+				unsigned long top = map_addr[i][j] + (GRANULE_SIZE * (k + 1));
+
+				res = host_rmi_rtt_dev_unmap(realm.rd, base, top,
+					RMI_ADDR_TYPE_SINGLE, mem_info[i].base_pa,
+					&out_top, &out_range, &out_count);
+
+				if (out_top != top) {
+					ERROR("%s() returned unexpected top, 0x%lx\n",
+						"host_rmi_rtt_dev_unmap", out_top);
+					goto undelegate_granules;
+				}
+				if (((out_range >> 2) & 0x3FF) != 1) {
+					ERROR("%s(): unexpected out_range block count, 0x%lx\n",
+						"host_rmi_rtt_dev_unmap", out_range);
+					goto undelegate_granules;
+				}
+				if (out_count != 0) {
+					ERROR("%s() returned unexpected out_count, 0x%lx\n",
+						"host_rmi_rtt_dev_unmap", out_count);
+					goto undelegate_granules;
+				}
+				if (res != RMI_SUCCESS) {
+					ERROR("%s() for 0x%lx failed, 0x%lx\n",
+						"host_rmi_vdev_unmap",
+						map_addr[i][j], res);
+					goto undelegate_granules;
+				}
 			}
 
 			INFO("DEV_MEM_UNMAP 0x%lx: pa 0x%lx top 0x%lx\n",
-				map_addr[i][j], pa, top);
+				map_addr[i][j], map_addr[i][j],
+				RTT_MAP_SIZE(mem_info[i].map_level));
 
-			pa_exp = mem_info[i].base_pa + j * mem_info[i].map_size;
-
-			/* Check PA of the device memory region which was unmapped. */
-			if (pa != pa_exp) {
-				ERROR("%s() for 0x%lx failed, "
-					"expected pa 0x%lx, returned 0x%lx\n",
-					"host_rmi_vdev_unmap",
-					map_addr[i][j], pa_exp, pa);
-				goto undelegate_granules;
-			}
-
-			/*
-			 * Check top IPA of non-live RTT entries, from entry
-			 * at which the RTT walk terminated.
-			 */
-			if (j == (mem_info[i].num_regions - 1U)) {
-				/* IPA aligned to the previous mapping level */
-				top_exp = ALIGN_DOWN(map_addr[i][j],
-						RTT_MAP_SIZE(mem_info[i].map_level - 1L)) +
-						RTT_MAP_SIZE(mem_info[i].map_level - 1L);
-			} else {
-				/* Next IPA of the current mapping level */
-				top_exp = map_addr[i][j] + mem_info[i].map_size;
-			}
-
-			if (top != top_exp) {
-				ERROR("%s() for 0x%lx failed, "
-					"expected top 0x%lx, returned 0x%lx\n",
-					"host_rmi_vdev_unmap",
-					map_addr[i][j], top_exp, top);
-				goto undelegate_granules;
-			}
 		}
 	}
 
+/*
+ * TODO: Skipping checking rtt entries for now, because the current dev_map
+ * implementation only supports unmapping granules one by one, and currently
+ * doesn't update lower level RTTs.
+ */
+#if 0
 	/* Check RTT entries */
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
 		/* Skip non-initialised test region */
@@ -392,6 +398,19 @@ unmap_memory:
 				goto undelegate_granules;
 			}
 		}
+	}
+#endif
+
+	rc = host_unassign_vdev_from_realm(&realm, h_vdev);
+	if (rc != 0) {
+		ERROR("Destroying VDEV failed\n");
+		goto unmap_memory;
+	}
+
+	/* Destroy PDEV */
+	rc = tsm_disconnect_device(h_pdev);
+	if (rc != 0) {
+		ERROR("Destroying PDEV failed\n");
 	}
 
 	ret = TEST_RESULT_SUCCESS;

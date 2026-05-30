@@ -64,11 +64,14 @@
 #define DEV_OBJ_INTERFACE_REPORT	3U
 
 struct host_pdev {
+	bool setup_done;
+
 	/* PDEV related fields */
-	void *pdev;
-	unsigned long pdev_flags;
-	void *pdev_aux[PDEV_PARAM_AUX_GRANULES_MAX];
-	uint32_t pdev_aux_num;
+	void *rp_pdev;
+	void *ep_pdev;
+	bool pdev_stream_handle_valid;
+	unsigned long pdev_stream_handle;
+	bool has_ide;
 	struct rmi_dev_comm_data *dev_comm_data;
 
 	/* Algorithm used to generate device digests */
@@ -142,13 +145,17 @@ struct host_pdev *get_host_pdev_by_type(uint8_t type);
  * the PDEV to STOPPED state and cleanup the resources held by PDEV.
  */
 int host_pdev_state_transition(struct host_pdev *h_pdev,
+			       bool ep_pdev,
 			       const unsigned char pdev_states[],
 			       size_t pdev_states_max);
 
-int host_pdev_setup(struct host_pdev *h_pdev);
-int host_pdev_transition(struct host_pdev *h_pdev, unsigned char to_state);
+int host_pdev_transition(struct host_pdev *h_pdev, bool ep_pdev, unsigned char to_state);
 int host_pdev_reclaim(struct host_pdev *h_pdev);
-int host_pdev_create(struct host_pdev *h_pdev);
+int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_stream_connect(struct host_pdev *h_pdev);
+int host_pdev_stream_complete(struct host_pdev *h_pdev);
+int host_pdev_stream_disconnect(struct host_pdev *h_pdev);
+int host_pdev_stream_key_refresh(struct host_pdev *h_pdev);
 
 int host_create_realm_with_feat_da(struct realm *realm, bool activate);
 int host_vdev_transition(struct realm *realm, struct host_vdev *h_vdev,
@@ -159,12 +166,14 @@ int host_vdev_get_interface_report(struct realm *realm,
 int host_vdev_get_measurements(struct realm *realm,
 			       struct host_vdev *h_vdev,
 			       unsigned char target_state);
-int host_vdev_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t ipa,
-		  u_register_t level, u_register_t addr);
+int host_rtt_dev_map(struct realm *realm, struct host_vdev *h_vdev, u_register_t base,
+			u_register_t top, u_register_t flags, u_register_t oaddr,
+			u_register_t *out_top);
 int host_vdev_unlock(struct realm *realm, struct host_vdev *h_vdev,
 		     unsigned char target_state);
 int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
-			      unsigned long tdi_id, void *pdev_ptr);
+			      unsigned long tdi_id, void *pdev_ptr,
+			      struct rmi_address_range *addr_range, size_t num_address_range);
 int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev);
 
 u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev,

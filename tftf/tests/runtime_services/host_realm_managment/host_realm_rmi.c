@@ -738,32 +738,44 @@ static inline u_register_t host_realm_rtt_create(struct realm *realm,
 	return host_rmi_rtt_create(realm->rd, phys, addr, level);
 }
 
+u_register_t host_rmi_create_rtt_level(struct realm *realm,
+				       u_register_t map_addr,
+				       long level)
+{
+	u_register_t rtt, ret;
+
+	rtt = (u_register_t)page_alloc(PAGE_SIZE);
+	if (rtt == HEAP_NULL_PTR) {
+		ERROR("Failed to allocate memory for rtt\n");
+		return REALM_ERROR;
+	}
+	ret = host_rmi_granule_delegate(rtt);
+	if (ret != RMI_SUCCESS) {
+		ERROR("%s() failed, rtt=0x%lx ret=0x%lx\n",
+			"host_rmi_granule_delegate", rtt, ret);
+		return REALM_ERROR;
+	}
+	ret = host_realm_rtt_create(realm, map_addr, (u_register_t)level, rtt);
+	if (ret != RMI_SUCCESS) {
+		ERROR("%s() failed, rtt=0x%lx ret=0x%lx\n",
+			"host_realm_rtt_create", rtt, ret);
+		host_rmi_granule_undelegate(rtt);
+		page_free(rtt);
+		return REALM_ERROR;
+	}
+	return REALM_SUCCESS;
+}
+
 u_register_t host_rmi_create_rtt_levels(struct realm *realm,
 					u_register_t map_addr,
 					long level, long max_level)
 {
-	u_register_t rtt, ret;
+	u_register_t ret;
 
 	while (level++ < max_level) {
-		rtt = (u_register_t)page_alloc(PAGE_SIZE);
-		if (rtt == HEAP_NULL_PTR) {
-			ERROR("Failed to allocate memory for rtt\n");
-			return REALM_ERROR;
-		} else {
-			ret = host_rmi_granule_delegate(rtt);
-			if (ret != RMI_SUCCESS) {
-				ERROR("%s() failed, rtt=0x%lx ret=0x%lx\n",
-					"host_rmi_granule_delegate", rtt, ret);
-				return REALM_ERROR;
-			}
-		}
-		ret = host_realm_rtt_create(realm, map_addr, (u_register_t)level, rtt);
-		if (ret != RMI_SUCCESS) {
-			ERROR("%s() failed, rtt=0x%lx ret=0x%lx\n",
-				"host_realm_rtt_create", rtt, ret);
-			host_rmi_granule_undelegate(rtt);
-			page_free(rtt);
-			return REALM_ERROR;
+		ret = host_rmi_create_rtt_level(realm, map_addr, level);
+		if (ret != REALM_SUCCESS) {
+			return ret;
 		}
 	}
 
@@ -2251,20 +2263,19 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 	return ret;
 }
 
-u_register_t host_rmi_pdev_aux_count(u_register_t pdev_ptr, u_register_t *count)
+u_register_t host_rmi_pdev_create(u_register_t pdev_ptr,
+				  u_register_t params_ptr,
+				  u_register_t *handle,
+				  u_register_t *donate_req)
 {
 	smc_ret_values rets;
 
-	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_AUX_COUNT, pdev_ptr},
-				2U);
-	*count = rets.ret1;
-	return rets.ret0;
-}
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_CREATE, pdev_ptr,
+					     params_ptr, (u_register_t)&rets}, 4U);
 
-u_register_t host_rmi_pdev_create(u_register_t pdev_ptr, u_register_t params_ptr)
-{
-	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_CREATE, pdev_ptr,
-					     params_ptr}, 3U).ret0;
+	*handle = rets.ret1;
+	*donate_req = rets.ret2;
+	return rets.ret0;
 }
 
 u_register_t host_rmi_pdev_get_state(u_register_t pdev_ptr, u_register_t *state)
@@ -2297,22 +2308,55 @@ u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr)
 				2U).ret0;
 }
 
-u_register_t host_rmi_pdev_ide_key_refresh(u_register_t pdev_ptr, u_register_t event)
+u_register_t host_rmi_pdev_abort(u_register_t pdev_ptr)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_IDE_KEY_REFRESH, pdev_ptr,
-					     event}, 3U).ret0;
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_ABORT, pdev_ptr},
+				2U).ret0;
 }
 
-u_register_t host_rmi_pdev_ide_reset(u_register_t pdev_ptr)
+u_register_t host_rmi_pdev_stream_key_refresh(u_register_t pdev1_ptr,
+					      u_register_t pdev2_ptr,
+					      u_register_t handle)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_IDE_RESET, pdev_ptr},
-				2U).ret0;
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_KEY_REFRESH, pdev1_ptr, pdev2_ptr,
+					     handle}, 4U).ret0;
 }
 
 u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr)
 {
 	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_DESTROY, pdev_ptr},
 				2U).ret0;
+}
+
+u_register_t host_rmi_pdev_stream_connect(u_register_t stream_params_ptr, u_register_t *handle)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_CONNECT, stream_params_ptr},
+				2U);
+	*handle = rets.ret1;
+	return rets.ret0;
+}
+
+u_register_t host_rmi_pdev_stream_disconnect(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+				  u_register_t stream_handle)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_DISCONNECT, pdev1_ptr, pdev2_ptr,
+			stream_handle}, 4U).ret0;
+}
+
+u_register_t host_rmi_pdev_stream_complete(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+				  u_register_t stream_handle)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_COMPLETE, pdev1_ptr, pdev2_ptr,
+			stream_handle}, 4U).ret0;
+}
+
+u_register_t host_rmi_pdev_stream_key_purge(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+				  u_register_t stream_handle)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_KEY_PURGE, pdev1_ptr, pdev2_ptr,
+			stream_handle}, 4U).ret0;
 }
 
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
@@ -2336,23 +2380,32 @@ u_register_t host_rmi_vdev_get_interface_report(u_register_t rd_ptr, u_register_
 			vdev_ptr}, 4U).ret0;
 }
 
-u_register_t host_rmi_vdev_map(u_register_t rd_ptr, u_register_t vdev_ptr,
-			       u_register_t ipa, u_register_t level, u_register_t addr)
-{
-	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_MAP, rd_ptr, vdev_ptr,
-			ipa, level, addr}, 6U).ret0;
-}
 
-u_register_t host_rmi_vdev_unmap(u_register_t rd_ptr,
-			       u_register_t ipa, u_register_t level,
-			       u_register_t *pa, u_register_t *top)
+u_register_t host_rmi_rtt_dev_map(u_register_t rd_ptr, u_register_t vdev_ptr,
+			       u_register_t base, u_register_t top, u_register_t flags,
+			       u_register_t oaddr, u_register_t *out_top)
 {
 	smc_ret_values rets;
 
-	rets = host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_UNMAP, rd_ptr,
-			ipa, level}, 4U);
-	*pa = rets.ret1;
-	*top = rets.ret2;
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_DEV_MAP, rd_ptr, vdev_ptr,
+			base, top, flags, oaddr}, 7U);
+	*out_top = rets.ret1;
+	return rets.ret0;
+}
+
+u_register_t host_rmi_rtt_dev_unmap(u_register_t rd_ptr,
+			       u_register_t base, u_register_t top, u_register_t flags,
+			       u_register_t oaddr,
+			       u_register_t *out_top, u_register_t *out_range,
+			       u_register_t *out_count)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_DEV_UNMAP, rd_ptr,
+				base, top, flags, oaddr,}, 6U);
+	*out_top = rets.ret1;
+	*out_range = rets.ret2;
+	*out_count = rets.ret3;
 	return rets.ret0;
 }
 
@@ -2416,7 +2469,7 @@ u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,
 			pdev_ptr, vdev_ptr}, 4U).ret0;
 }
 
-u_register_t host_rmi_vdev_validate_mapping(u_register_t rd,
+u_register_t host_rmi_rtt_dev_validate(u_register_t rd,
 					    u_register_t rec_ptr,
 					    u_register_t pdev_ptr,
 					    u_register_t vdev_ptr,
@@ -2426,7 +2479,7 @@ u_register_t host_rmi_vdev_validate_mapping(u_register_t rd,
 {
 	smc_ret_values rets;
 
-	rets = host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_VALIDATE_MAPPING,
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_DEV_VALIDATE,
 				rd, rec_ptr, pdev_ptr, vdev_ptr, base, top}, 7U);
 	*out_top = rets.ret1;
 	return rets.ret0;

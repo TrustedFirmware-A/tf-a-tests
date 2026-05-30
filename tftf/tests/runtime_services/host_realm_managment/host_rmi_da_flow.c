@@ -257,7 +257,7 @@ test_result_t host_da_get_info_parameter_test(void)
 		goto undelegate_destroy;
 	}
 
-	rc = host_assign_vdev_to_realm(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->pdev);
+	rc = host_assign_vdev_to_realm(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->ep_pdev, NULL, 0);
 	if (rc != 0) {
 		ERROR("VDEV assign to realm failed\n");
 		goto disconnect_device;
@@ -333,14 +333,12 @@ test_result_t host_pdev_test_valid_state_transition(void)
 	const unsigned char pdev_valid_state_transition[][PDEV_STATE_TRANSITION_MAX] = {
 		{
 			RMI_PDEV_STATE_NEW,
-			RMI_PDEV_STATE_STOPPING,
 			RMI_PDEV_STATE_STOPPED,
 			-1
 		},
 		{
 			RMI_PDEV_STATE_NEW,
 			RMI_PDEV_STATE_NEEDS_KEY,
-			RMI_PDEV_STATE_STOPPING,
 			RMI_PDEV_STATE_STOPPED,
 			-1
 		},
@@ -348,7 +346,6 @@ test_result_t host_pdev_test_valid_state_transition(void)
 			RMI_PDEV_STATE_NEW,
 			RMI_PDEV_STATE_NEEDS_KEY,
 			RMI_PDEV_STATE_HAS_KEY,
-			RMI_PDEV_STATE_STOPPING,
 			RMI_PDEV_STATE_STOPPED,
 			-1
 		},
@@ -357,7 +354,6 @@ test_result_t host_pdev_test_valid_state_transition(void)
 			RMI_PDEV_STATE_NEEDS_KEY,
 			RMI_PDEV_STATE_HAS_KEY,
 			RMI_PDEV_STATE_READY,
-			RMI_PDEV_STATE_STOPPING,
 			RMI_PDEV_STATE_STOPPED,
 			-1
 		}
@@ -383,15 +379,16 @@ test_result_t host_pdev_test_valid_state_transition(void)
 		return TEST_RESULT_FAIL;
 	}
 
+	/* only test ep_pdev */
 	for (i = 0U; i < sizeof(pdev_valid_state_transition)/
-		     sizeof(pdev_valid_state_transition[0]); i++) {
+			sizeof(pdev_valid_state_transition[0]); i++) {
 		INFO("pdev_valid_state_transition sequence: %d\n", i);
-		rc = host_pdev_state_transition(h_pdev,
+		rc = host_pdev_state_transition(h_pdev, true,
 					pdev_valid_state_transition[i],
 					sizeof(pdev_valid_state_transition[i]));
 		if (rc != 0) {
-			ERROR("pdev_valid_state_transition failed at "
-			      "sequence index: %d\n", i);
+			ERROR("%s failed at sequence index: %d\n",
+				"pdev_valid_state_transition", i);
 			break;
 		}
 	}
@@ -447,7 +444,7 @@ test_result_t host_vdev_test_valid_state_transition(void)
 	tsm_connected = true;
 
 	rc = host_assign_vdev_to_realm(&realm, h_vdev,
-				       h_pdev->dev->bdf, h_pdev->pdev);
+				       h_pdev->dev->bdf, h_pdev->ep_pdev, NULL, 0);
 	if (rc != 0) {
 		ERROR("VDEV assign to realm failed\n");
 		return_error = true;
@@ -463,7 +460,7 @@ test_result_t host_vdev_test_valid_state_transition(void)
 
 	/* RMI_VDEV_LOCK from NEW must fail */
 	INFO("VDEV states: lock from NEW must fail\n");
-	ret = host_rmi_vdev_lock(realm.rd, (u_register_t)h_pdev->pdev,
+	ret = host_rmi_vdev_lock(realm.rd, (u_register_t)h_pdev->ep_pdev,
 				 (u_register_t)h_vdev->vdev_ptr);
 	if (ret != RMI_ERROR_DEVICE) {
 		ERROR("VDEV lock from NEW returned 0x%lx\n", ret);
@@ -493,7 +490,7 @@ test_result_t host_vdev_test_valid_state_transition(void)
 
 	/* RMI_VDEV_START/UNLOCK from UNLOCKED must fail */
 	INFO("VDEV states: start from UNLOCKED must fail\n");
-	ret = host_rmi_vdev_start(realm.rd, (u_register_t)h_pdev->pdev,
+	ret = host_rmi_vdev_start(realm.rd, (u_register_t)h_pdev->ep_pdev,
 				  (u_register_t)h_vdev->vdev_ptr);
 	if (ret != RMI_ERROR_DEVICE) {
 		ERROR("VDEV start from UNLOCKED returned 0x%lx\n", ret);
@@ -502,7 +499,7 @@ test_result_t host_vdev_test_valid_state_transition(void)
 	}
 
 	INFO("VDEV states: unlock from UNLOCKED must fail\n");
-	ret = host_rmi_vdev_unlock(realm.rd, (u_register_t)h_pdev->pdev,
+	ret = host_rmi_vdev_unlock(realm.rd, (u_register_t)h_pdev->ep_pdev,
 				   (u_register_t)h_vdev->vdev_ptr);
 	if (ret != RMI_ERROR_DEVICE) {
 		ERROR("VDEV unlock from UNLOCKED returned 0x%lx\n", ret);
@@ -609,12 +606,6 @@ test_result_t host_pdev_invoke_ide_refresh_reset(void)
 	u_register_t rmi_feat_reg0;
 	bool return_error = false;
 	int rc = 0;
-	const unsigned char pdev_ide_refresh_reset[] = {
-		RMI_PDEV_STATE_COMMUNICATING,
-		RMI_PDEV_STATE_READY,
-		RMI_PDEV_STATE_IDE_RESETTING,
-		RMI_PDEV_STATE_READY
-	};
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
@@ -642,11 +633,16 @@ test_result_t host_pdev_invoke_ide_refresh_reset(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	INFO("Invoke pdev_ide_refresh_reset sequence\n");
-	rc = host_pdev_state_transition(h_pdev, pdev_ide_refresh_reset,
-					sizeof(pdev_ide_refresh_reset));
+	INFO("Invoke pdev_ide_stream_key_refresh sequence\n");
+	rc = host_pdev_stream_key_refresh(h_pdev);
 	if (rc != 0) {
-		ERROR("pdev_ide_refresh_reset failed\n");
+		ERROR("pdev_ide_stream_key_refresh failed\n");
+		return_error = true;
+	}
+
+	rc = host_pdev_stream_complete(h_pdev);
+	if (rc != 0) {
+		ERROR("pdev_ide_stream_key_refresh stream complete failed\n");
 		return_error = true;
 	}
 
@@ -676,6 +672,8 @@ test_result_t host_pdev_invoke_ide_refresh_reset(void)
 test_result_t host_realm_test_root_port_key_management(void)
 {
 	u_register_t rmi_rc;
+	u_register_t create_handle;
+	u_register_t donate_req;
 	int ret;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
@@ -697,7 +695,18 @@ test_result_t host_realm_test_root_port_key_management(void)
 	 * Directly call host_rmi_pdev_create with invalid pdev, expect an error
 	 * to be returned from TRP.
 	 */
-	rmi_rc = host_rmi_pdev_create((u_register_t)0UL, (u_register_t)0UL);
+	rmi_rc = host_rmi_pdev_create((u_register_t)0UL, (u_register_t)0UL,
+		&create_handle,
+		&donate_req);
+
+	/*
+	 * Start the RSO flow for RMI_pdev_CREATE. It is expected
+	 * that the host will donate all the memory in one go.
+	 */
+	if (RMI_RETURN_STATUS(rmi_rc) == RMI_INCOMPLETE) {
+		rmi_rc = host_realm_sro_continue(ret, &create_handle, &donate_req, NULL);
+	}
+
 	if (rmi_rc != RMI_SUCCESS) {
 		return TEST_RESULT_SUCCESS;
 	}

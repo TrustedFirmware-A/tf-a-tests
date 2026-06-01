@@ -201,8 +201,6 @@ test_result_t host_test_realm_smmuv3(void)
 		 * Validate device memory mappings
 		 */
 		res = host_rmi_rtt_dev_validate(realm.rd, realm.rec[0],
-						(u_register_t)h_pdev,
-						(u_register_t)h_vdev,
 						run->exit.dev_mem_base,
 						run->exit.dev_mem_top,
 						&out_top);

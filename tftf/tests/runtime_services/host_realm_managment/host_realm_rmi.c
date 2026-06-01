@@ -2471,8 +2471,6 @@ u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,
 
 u_register_t host_rmi_rtt_dev_validate(u_register_t rd,
 					    u_register_t rec_ptr,
-					    u_register_t pdev_ptr,
-					    u_register_t vdev_ptr,
 					    u_register_t base,
 					    u_register_t top,
 					    u_register_t *out_top)
@@ -2480,7 +2478,7 @@ u_register_t host_rmi_rtt_dev_validate(u_register_t rd,
 	smc_ret_values rets;
 
 	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_DEV_VALIDATE,
-				rd, rec_ptr, pdev_ptr, vdev_ptr, base, top}, 7U);
+				rd, rec_ptr, base, top}, 5U);
 	*out_top = rets.ret1;
 	return rets.ret0;
 }

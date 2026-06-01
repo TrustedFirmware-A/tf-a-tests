@@ -2054,7 +2054,6 @@ u_register_t host_rmi_vdev_abort(u_register_t vdev_ptr);
 u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,
 				   u_register_t vdev_ptr);
 u_register_t host_rmi_rtt_dev_validate(u_register_t rd, u_register_t rec_ptr,
-				       u_register_t pdev_ptr, u_register_t vdev_ptr,
 				       u_register_t base, u_register_t top,
 				       u_register_t *out_top);
 u_register_t host_rmi_psmmu_activate(u_register_t psmmu_ptr, u_register_t params_ptr,

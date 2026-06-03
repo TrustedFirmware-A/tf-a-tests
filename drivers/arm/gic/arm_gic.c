@@ -19,6 +19,8 @@
 static unsigned int gicv3_detected;
 static unsigned int gicv5_detected;
 static bool gic_done_init;
+/* Single-frame GICv3 callers are wrapped into this 0-terminated list. */
+static uintptr_t gicr_single_frame[2];
 
 int arm_gic_get_version(void)
 {
@@ -270,8 +272,20 @@ void arm_gic_init(uintptr_t gicc_base,
 		uintptr_t gicd_base,
 		uintptr_t gicr_base)
 {
+	/* Wrap single-frame callers into a 0-terminated frame list. */
+	gicr_single_frame[0] = gicr_base;
+	gicr_single_frame[1] = 0U;
+
+	arm_gic_init_frames(gicc_base, gicd_base, gicr_single_frame);
+}
+
+void arm_gic_init_frames(uintptr_t gicc_base,
+			 uintptr_t gicd_base,
+			 const uintptr_t *gicr_frames)
+{
 	if (gicv3_detected) {
-		gicv3_init(gicr_base, gicd_base);
+		assert(gicr_frames);
+		gicv3_init(gicr_frames, gicd_base);
 	} else if (gicv5_detected) {
 		gicv5_init(gicd_base);
 	} else {

@@ -1,0 +1,15 @@
+#
+# Copyright (c) 2025-2026, Arm Limited. All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+
+Timer framework Validation
+PSCI Affinity Info/Affinity info level0 powerdown
+PSCI STAT
+PSCI System Suspend Validation
+CPU extensions/AMUv1 suspend/resume
+CPU extensions/Use trace buffer control Registers
+PSCI CPU Suspend
+FF-A Interrupt
+FF-A Notifications

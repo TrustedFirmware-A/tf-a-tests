@@ -15,8 +15,8 @@
 #include <mmio.h>
 #include <platform.h>
 
-/* Global variables to store the GIC base addresses */
-static uintptr_t gicr_base_addr;
+/* Global variables to store the GIC frame list and Distributor base address */
+static const uintptr_t *gicr_frames;
 static uintptr_t gicd_base_addr;
 
 #ifdef __aarch64__
@@ -447,10 +447,11 @@ void gicv3_probe_redistif_addr(void)
 {
 	unsigned long long typer_val;
 	uintptr_t rdistif_base;
+	const uintptr_t *frame;
 	unsigned long long affinity;
 	unsigned int core_pos = platform_get_core_pos(read_mpidr_el1());
 
-	assert(gicr_base_addr);
+	assert(gicr_frames);
 
 	/*
 	 * Return if the re-distributor base address is already populated
@@ -459,18 +460,24 @@ void gicv3_probe_redistif_addr(void)
 	if (rdist_pcpu_base[core_pos])
 		return;
 
-	/* Iterate over the GICR frames and find the matching frame*/
-	rdistif_base = gicr_base_addr;
-	affinity = gic_typer_affinity_from_mpidr(read_mpidr_el1() & MPIDR_AFFINITY_MASK);
-	do {
-		typer_val = gicr_read_typer(rdistif_base);
-		if (affinity == ((typer_val >> TYPER_AFF_VAL_SHIFT) & TYPER_AFF_VAL_MASK)) {
-			rdist_pcpu_base[core_pos] = rdistif_base;
-			mpidr_list[core_pos] = read_mpidr_el1() & MPIDR_AFFINITY_MASK;
-			return;
-		}
-		rdistif_base += (1 << GICR_PCPUBASE_SHIFT);
-	} while (!(typer_val & TYPER_LAST_BIT));
+	affinity = gic_typer_affinity_from_mpidr(read_mpidr_el1() &
+						 MPIDR_AFFINITY_MASK);
+
+	for (frame = gicr_frames; *frame != 0U; frame++) {
+		rdistif_base = *frame;
+		do {
+			typer_val = gicr_read_typer(rdistif_base);
+			if (affinity == ((typer_val >> TYPER_AFF_VAL_SHIFT) &
+					 TYPER_AFF_VAL_MASK)) {
+				rdist_pcpu_base[core_pos] = rdistif_base;
+				mpidr_list[core_pos] = read_mpidr_el1() &
+						       MPIDR_AFFINITY_MASK;
+				return;
+			}
+
+			rdistif_base += (1U << GICR_PCPUBASE_SHIFT);
+		} while ((typer_val & TYPER_LAST_BIT) == 0U);
+	}
 
 	ERROR("Re-distributor address not found for core %d\n", core_pos);
 	panic();
@@ -499,14 +506,13 @@ void gicv3_setup_distif(void)
 	gicd_write_ctlr(gicd_base_addr, gicd_ctlr);
 }
 
-void gicv3_init(uintptr_t gicr_base, uintptr_t gicd_base)
+void gicv3_init(const uintptr_t *gicr_frames_base, uintptr_t gicd_base)
 {
-	assert(gicr_base);
+	assert(gicr_frames_base);
 	assert(gicd_base);
 
-	gicr_base_addr = gicr_base;
+	gicr_frames = gicr_frames_base;
 	gicd_base_addr = gicd_base;
-
 	gicv2v3_irq_setup();
 }
 

@@ -213,12 +213,12 @@
 /******************************************************************************
  * GICv3 public driver API
  *****************************************************************************/
- /*
-  * Initialize the GICv3 driver. The base addresses of GIC Re-distributor
-  * interface `gicr_base` and the Distributor interface `gicd_base` must
-  * be provided as arguments.
-  */
-void gicv3_init(uintptr_t gicr_base, uintptr_t gicd_base);
+/*
+ * Initialize the GICv3 driver. `gicr_frames` must point to a 0-terminated
+ * list of Redistributor frame base addresses. `gicd_base` is the base
+ * address of the Distributor interface.
+ */
+void gicv3_init(const uintptr_t *gicr_frames, uintptr_t gicd_base);
 
 /*
  * Setup the GIC Distributor interface.

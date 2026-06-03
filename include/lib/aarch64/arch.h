@@ -1708,12 +1708,25 @@
 #define ERXMISC0_EL1		S3_0_C5_C5_0
 #define ERXMISC1_EL1		S3_0_C5_C5_1
 
-#define ERXCTLR_ED_BIT		(U(1) << 0)
-#define ERXCTLR_UE_BIT		(U(1) << 4)
+#define ERXSTATUS_DE_BIT	(U(1) << 23)
+#define ERXSTATUS_CE_BIT	(U(1) << 25)
+#define ERXSTATUS_V_BIT		(U(1) << 30)
 
+#define ERXCTLR_ED_BIT		(U(1) << 0)
+#define ERXCTLR_FI_BIT		(U(1) << 3)
+#define ERXCTLR_UE_BIT		(U(1) << 4)
+#define ERXCTLR_CFI_BIT		(U(1) << 8)
+#define ERXCTLR_TFPEN_BIT	(ULL(1) << 33)
+
+/* FEAT_RASv2 Error Pseudo-Fault Generation field definitions */
+#define ERXPFGCDN_CDN		U(0x1000)
 #define ERXPFGCTL_UC_BIT	(U(1) << 1)
 #define ERXPFGCTL_UEU_BIT	(U(1) << 2)
+#define ERXPFGCTL_DE_BIT	(U(1) << 5)
+#define ERXPFGCTL_CE_BIT	(U(1) << 6)
+#define ERXPFGCTL_R_BIT		(U(1) << 30)
 #define ERXPFGCTL_CDEN_BIT	(U(1) << 31)
+#define ERXPFGCTL_CDNEN_BIT	ERXPFGCTL_CDEN_BIT
 
 /*******************************************************************************
  * Armv8.1 Registers - Privileged Access Never Registers

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -100,7 +100,7 @@
 #define PLATFORM_NUM_AFFS		(TC_CLUSTER_COUNT + PLATFORM_CORE_COUNT)
 #define PLATFORM_MAX_AFFLVL		MPIDR_AFFLVL1
 
-#define PLAT_MAX_PWR_LEVEL		PLATFORM_MAX_AFFLVL
+#define PLAT_MAX_PWR_LEVEL		2
 #define PLAT_MAX_PWR_STATES_PER_LVL	2
 
 /* I/O Storage NOR flash device */

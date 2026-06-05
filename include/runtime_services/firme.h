@@ -24,8 +24,8 @@
 #define FIRME_ABORTED			-3
 #define FIRME_INCOMPLETE		-4
 #define FIRME_DENIED			-5
-#define FIRME_RETRY			-6
-#define FIRME_IN_PROGRESS		-7
+#define FIRME_BUSY			-6
+#define FIRME_OP_CONFLICT		-7
 #define FIRME_EXISTS			-8
 #define FIRME_NO_ENTRY			-9
 #define FIRME_NO_MEMORY			-10
@@ -59,9 +59,11 @@
 #define FIRME_BASE_SERVICE_LIST_SHIFT			U(16)
 #define FIRME_BASE_SERVICE_LIST_MASK			U(0xFFFF)
 #define FIRME_BASE_SERVICE_GRANULE_MGMT_BIT		BIT(16)
+#define FIRME_BASE_SERVICE_IDE_KM_BIT			BIT(17)
 
 #define FIRME_BASE_SERVICE_ID				U(0)
 #define FIRME_GM_SERVICE_ID				U(1)
+#define FIRME_IDE_KM_SERVICE_ID				U(2)
 
 #define FIRME_SERVICE_VERSION_FID			SMC64_FIRME_FID(0)
 #define FIRME_SERVICE_FEATURES_FID			SMC64_FIRME_FID(1)
@@ -79,4 +81,17 @@
 int32_t firme_version(uint8_t service_id);
 int32_t firme_features(uint8_t service_id, uint8_t reg_index, uint64_t *reg);
 
+/* IDE KM ABIs */
+int32_t firme_ide_km_keyset_prog(uint64_t ecam_address, uint64_t flags,
+				 uint64_t keyset_id, uint64_t KeyQW0,
+				 uint64_t KeyQW1, uint64_t KeyQW2,
+				 uint64_t KeyQW3, uint64_t handle);
+int32_t firme_ide_km_keyset_go(uint64_t ecam_address, uint64_t flags,
+			       uint64_t keyset_id, uint64_t handle);
+int32_t firme_ide_km_keyset_stop(uint64_t ecam_address, uint64_t flags,
+			       uint64_t keyset_id, uint64_t handle);
+int32_t firme_ide_km_keyset_poll(uint64_t ecam_address, uint64_t keyset_id,
+				 uint64_t *handle_ret);
+int32_t firme_ide_km_poll(uint64_t ecam_address, uint64_t *handle_ret,
+			  uint64_t *keyset_id_ret);
 #endif /* __FIRME_H__ */

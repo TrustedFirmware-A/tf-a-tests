@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2025, Arm Limited. All rights reserved.
+  Copyright (c) 2025-2026, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -17,6 +17,13 @@
     function="test_firme_base_features" />
     <testcase name="Test the FIRME Granule Management Service feature registers ABI"
     function="test_firme_granule_mgmt_features" />
+
+    <testcase name="Test the IDE KM feature registers ABI"
+    function="test_firme_ide_km_features" />
+    <testcase name="Secure PCIe IDE stream at RootPort"
+    function="test_firme_ide_km_secure_pcie_ide_stream" />
+    <testcase name="Verify FIRME IDE poll ABI for any pending keyset"
+    function="test_firme_ide_km_poll_any_keyset" />
   </testsuite>
 
 </testsuites>

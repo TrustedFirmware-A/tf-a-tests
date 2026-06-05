@@ -41,7 +41,7 @@ static unsigned short vmid;
 static spinlock_t pool_lock;
 static unsigned int pool_counter;
 
-static unsigned long list_buffer[PLATFORM_CORE_COUNT][PAGE_SIZE];
+static unsigned long list_buffer[PLATFORM_CORE_COUNT][PAGE_SIZE] __aligned(GRANULE_SIZE);
 
 #define SRO_LIST_ENTRIES		(GRANULE_SIZE/sizeof(unsigned long))
 
@@ -189,8 +189,8 @@ static inline u_register_t host_rmi_op_continue(u_register_t flags,
 						smc_ret_values *ret) {
 	smc_ret_values rets;
 
-	rets = host_rmi_handler(&(smc_args) {SMC_RMI_OP_CONTINUE, flags,
-					      *handle, (u_register_t)&rets}, 4U);
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_OP_CONTINUE, *handle, flags,
+					     (u_register_t)&rets}, 4U);
 
 	*handle = rets.ret1;
 	*mem_donate_req = rets.ret2;
@@ -1580,6 +1580,7 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 {
 	int res = 0;
 	unsigned int i = 0U;
+	smc_ret_values rets;
 	u_register_t category = RMI_MEM_CATEGORY_CONVENTIONAL;
 
 	/* Find out the type of memory the region belongs to */
@@ -1601,9 +1602,17 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 		}
 	} while (res != -1);
 
-	smc_ret_values ret = host_rmi_handler(&(smc_args) {SMC_RMI_GRANULE_TRACKING_SET,
-				base, category, tracking}, 4U);
-	return ret.ret0;
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_GRANULE_TRACKING_SET,
+				base, category, tracking, (u_register_t)&rets}, 5U);
+
+	if (RMI_RETURN_STATUS(rets.ret0) == RMI_INCOMPLETE) {
+		unsigned long tracking_handle = rets.ret1;
+		unsigned long donate_req = rets.ret2;
+
+		return host_realm_sro_continue(rets.ret0, &tracking_handle, &donate_req, NULL);
+	}
+
+	return rets.ret0;
 }
 
 u_register_t host_rmi_granule_delegate(u_register_t addr)

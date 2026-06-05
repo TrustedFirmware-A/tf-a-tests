@@ -17,6 +17,7 @@
 #endif
 #include <host_realm_helper.h>
 #include <heap/page_alloc.h>
+#include <host_realm_mem_layout.h>
 #include <lib/aarch64/arch_features.h>
 #include <test_helpers.h>
 #include <tftf_lib.h>
@@ -25,6 +26,8 @@
 #include <host_realm_mem_layout.h>
 #include <cactus_test_cmds.h>
 #include <ffa_endpoints.h>
+
+#include <heap/page_alloc.h>
 
 /*
  * Using "__aarch64__" here looks weird but its unavoidable because of following reason
@@ -129,6 +132,12 @@ test_result_t rl_memory_cannot_be_accessed_in_ns(void)
 	u_register_t retmm;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
+
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
 
 	sync_exception_triggered = false;
 	data_abort_triggered = false;
@@ -238,6 +247,12 @@ static test_result_t memory_cannot_be_accessed_in_rl(u_register_t params)
 	static char rd[GRANULE_SIZE] __aligned(GRANULE_SIZE);
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
 
 	/* Activate RMM */
 	if (!host_rmm_activate()) {

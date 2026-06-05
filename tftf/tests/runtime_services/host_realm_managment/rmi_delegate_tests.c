@@ -16,6 +16,8 @@
 #include "rmi_spm_tests.h"
 #include <test_helpers.h>
 
+#include <heap/page_alloc.h>
+
 static test_result_t host_realm_multi_cpu_payload_test(void);
 static test_result_t host_realm_multi_cpu_payload_del_undel(void);
 
@@ -143,6 +145,12 @@ test_result_t host_realm_delegate_undelegate(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
+
 	retrmm = host_rmi_granule_delegate((u_register_t)bufferdelegate);
 	if (retrmm != 0UL) {
 		tftf_testcase_printf("Delegate operation returns 0x%lx\n",
@@ -188,6 +196,12 @@ test_result_t host_realm_delundel_multi_cpu(void)
 	u_register_t retrmm;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
+
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
 
 	if (!host_rmm_activate()) {
 		return TEST_RESULT_FAIL;
@@ -293,6 +307,12 @@ test_result_t host_realm_fail_del(void)
 	u_register_t retrmm;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
 
 	retrmm = host_rmi_granule_delegate((u_register_t)&bufferdelegate[0]);
 	if (retrmm != 0UL) {

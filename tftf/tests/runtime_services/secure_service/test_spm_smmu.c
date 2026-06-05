@@ -8,10 +8,13 @@
 #include <debug.h>
 #include <ffa_endpoints.h>
 #include <host_realm_helper.h>
+#include <host_realm_mem_layout.h>
 #include <host_realm_rmi.h>
 #include <smccc.h>
 #include <spm_test_helpers.h>
 #include <test_helpers.h>
+
+#include <heap/page_alloc.h>
 
 #if PLAT_fvp || PLAT_tc
 #include <sp_platform_def.h>
@@ -137,6 +140,12 @@ test_result_t test_smmu_spm_invalid_access(void)
 	 * Check SPMC has ffa_version and expected FFA endpoints are deployed.
 	 **********************************************************************/
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
+
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
 
 	/* Activate RMM */
 	if (!host_rmm_activate()) {

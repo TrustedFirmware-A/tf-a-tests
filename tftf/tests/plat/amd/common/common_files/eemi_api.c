@@ -413,7 +413,8 @@ int xpm_pll_get_parameter(const uint32_t clock_id, const uint32_t param_id, uint
 	uint32_t ret_payload[PAYLOAD_ARG_CNT];
 	int ret;
 
-	ret = eemi_call(PM_PLL_GET_PARAMETER, clock_id, param_id, 0, 0, 0, 0, 0, ret_payload);
+	ret = eemi_call(PM_PLL_GET_PARAMETER, ((uint64_t)param_id << 32 | clock_id),
+			0, 0, 0, 0, 0, 0, ret_payload);
 	if (ret == PM_RET_SUCCESS)
 		*value = ret_payload[1];
 
@@ -464,7 +465,8 @@ int xpm_query_data(const uint32_t qid, const uint32_t arg1, const uint32_t arg2,
 	uint32_t ret_payload[PAYLOAD_ARG_CNT];
 	int32_t ret;
 
-	ret = eemi_call(PM_QUERY_DATA, qid, arg1, arg2, arg3, 0, 0, 0, ret_payload);
+	ret = eemi_call(PM_QUERY_DATA, ((uint64_t)arg1 << 32 | qid),
+			((uint64_t)arg3 << 32 | arg2), 0, 0, 0, 0, 0, ret_payload);
 	*output = ret_payload[1];
 
 	return ret;

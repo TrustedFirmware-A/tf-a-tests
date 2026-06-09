@@ -355,20 +355,21 @@ int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev)
 		/* Create EP pdev */
 		pdev_params->flags |=
 			INPLACE(RMI_PDEV_FLAGS_CATEGORY, RMI_PDEV_ENDPOINT_ACCEL_OFF_CHIP);
-		pdev_params->pdev_id = h_pdev->dev->ecam_base | h_pdev->dev->bdf;
+		pdev_params->hb_base = h_pdev->dev->ecam_base;
+		pdev_params->pdev_id = h_pdev->dev->bdf;
 		pdev = h_pdev->ep_pdev;
 	} else {
 		/* Create RP pdev */
 		pdev_params->flags |=
 			INPLACE(RMI_PDEV_FLAGS_CATEGORY, RMI_PDEV_ROOTPORT);
-		pdev_params->pdev_id = h_pdev->dev->ecam_base | h_pdev->dev->rp_dev->bdf;
+		pdev_params->hb_base = h_pdev->dev->ecam_base;
+		pdev_params->pdev_id = h_pdev->dev->rp_dev->bdf;
 		pdev = h_pdev->rp_pdev;
 	}
 
 	pdev_params->routing_id = 0;   /* Segment id is 0 in FVP */
 	pdev_params->id_index = h_pdev->cert_slot_id;
 	pdev_params->hash_algo = h_pdev->pdev_hash_algo;
-	pdev_params->max_vdevs_order = 2; // max 3 vdevs
 	pdev_params->rid_base = (unsigned int)h_pdev->dev->bdf;
 	pdev_params->rid_top = pdev_params->rid_base + 1U;
 

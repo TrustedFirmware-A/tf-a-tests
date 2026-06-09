@@ -64,6 +64,9 @@ void tftf_platform_end(void);
 void tftf_platform_watchdog_set(void);
 void tftf_platform_watchdog_reset(void);
 
+unsigned long long tftf_platform_get_cluster_id(int mpidr);
+unsigned long long tftf_platform_get_core_id(int mpidr);
+
 /* Helper that returns a linear core ID from a MPID */
 unsigned int platform_get_core_pos(u_register_t mpid);
 

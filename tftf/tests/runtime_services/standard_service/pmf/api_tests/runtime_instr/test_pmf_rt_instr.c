@@ -181,8 +181,8 @@ static int dump_suspend_stats(const char *func_name)
 		}
 
 		printf("<RT_INSTR:%s\t%llu\t%llu\t%02llu\t%02llu\t%02llu/>\n", func_name,
-		    (unsigned long long)MPIDR_AFF_ID(target_mpid, 1),
-		    (unsigned long long)MPIDR_AFF_ID(target_mpid, 0),
+		    tftf_platform_get_cluster_id(target_mpid),
+		    tftf_platform_get_core_id(target_mpid),
 		    (unsigned long long)period[0],
 		    (unsigned long long)period[1],
 		    (unsigned long long)period[2]);
@@ -216,8 +216,8 @@ static int dump_psci_version_stats(const char *func_name)
 		}
 
 		printf("<RT_INSTR:%s\t%llu\t%llu\t%02llu/>\n", func_name,
-		    (unsigned long long)MPIDR_AFF_ID(target_mpid, 1),
-		    (unsigned long long)MPIDR_AFF_ID(target_mpid, 0),
+		    tftf_platform_get_cluster_id(target_mpid),
+		    tftf_platform_get_core_id(target_mpid),
 		    (unsigned long long)period);
 	}
 

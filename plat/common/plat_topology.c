@@ -11,6 +11,9 @@
 #include <platform.h>
 #include <stdlib.h>
 
+#pragma weak tftf_platform_get_core_id
+#pragma weak tftf_platform_get_cluster_id
+
 #define CPU_INDEX_IS_VALID(_cpu_idx)	\
 	(((_cpu_idx) - tftf_pwr_domain_start_idx[0]) < PLATFORM_CORE_COUNT)
 
@@ -403,4 +406,22 @@ unsigned int tftf_find_random_cpu_other_than(unsigned int exclude_mpid)
 
 	return possible_cpus[rand() % possible_cpus_cnt];
 #endif
+}
+
+unsigned long long tftf_platform_get_cluster_id(int mpidr)
+{
+	if ((read_mpidr_el1() & MPIDR_MT_MASK) != 0) {
+		return (unsigned long long)MPIDR_AFF_ID(mpidr, 2);
+	}
+
+	return (unsigned long long)MPIDR_AFF_ID(mpidr, 1);
+}
+
+unsigned long long tftf_platform_get_core_id(int mpidr)
+{
+	if ((read_mpidr_el1() & MPIDR_MT_MASK) != 0) {
+		return (unsigned long long)MPIDR_AFF_ID(mpidr, 1);
+	}
+
+	return (unsigned long long)MPIDR_AFF_ID(mpidr, 0);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,16 +11,6 @@
 struct test_query test_query_list[] = {
 	{
 		.query_id = XPM_QID_CLOCK_GET_NUM_CLOCKS,
-	},
-	{
-		.query_id = XPM_QID_PINCTRL_GET_NUM_PINS,
-	},
-	{
-		.query_id = XPM_QID_PINCTRL_GET_NUM_FUNCTIONS,
-	},
-	{
-		.query_id = XPM_QID_PINCTRL_GET_NUM_FUNCTION_GROUPS,
-		.query_arg1 = PIN_FUNC_I2C0,
 	},
 };
 

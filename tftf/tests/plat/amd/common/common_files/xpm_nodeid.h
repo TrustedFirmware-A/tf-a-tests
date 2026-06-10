@@ -44,4 +44,16 @@
  */
 #define PM_RST_GEM_0            0xC104033U
 
+/*
+ * Force-powerdown target subsystem and RPU wake-up address.
+ *
+ * PM_SUBSYS_RPU selects the RPU subsystem the APU asks PLM to power down /
+ * wake up; RPU_WAKEUP_ADDR is the entry point the RPU resumes execution at
+ * (the start of TCM).  0x1C000005 decodes to a CDO-defined subsystem id
+ * (subsystem class, index 5), not a per-platform device id, so a single
+ * shared definition is correct for both Versal and Versal Gen 2.
+ */
+#define PM_SUBSYS_RPU		0x1C000005U
+#define RPU_WAKEUP_ADDR		0xFFE00000U
+
 #endif /* XPM_NODEID_H_ */

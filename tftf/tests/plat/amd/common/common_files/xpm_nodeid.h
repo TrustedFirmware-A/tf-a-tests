@@ -9,9 +9,11 @@
 
 /*
  * Device Nodes
+ *
+ * The primary APU/RPU core IDs differ between Versal and Versal Gen 2 and
+ * live in the per-platform $(PLAT)/xpm_nodeid_plat.h headers (selected via
+ * the portable PM_DEV_ACPU_CORE / PM_DEV_RPU_CORE aliases).
  */
-#define PM_DEV_ACPU_0           0x1810C003U
-#define PM_DEV_RPU0_0           0x18110005U
 #define PM_DEV_USB_0		0x18224018U
 #define PM_DEV_TTC_0            0x18224024U
 #define PM_DEV_GEM_0            0x18224019U

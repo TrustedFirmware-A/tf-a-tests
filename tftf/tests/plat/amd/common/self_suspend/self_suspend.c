@@ -1,13 +1,18 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "eemi_api.h"
-#include "xpm_nodeid.h"
+#include "xpm_nodeid_plat.h"
 
-#define PROC_DEV_ID             PM_DEV_ACPU_0
+/*
+ * On Versal Gen 2 the primary APU core is PM_DEV_ACPU_0_0 (cluster 0, core 0).
+ * The legacy PM_DEV_ACPU_0 (0x1810C003) is not registered in the Versal Gen 2
+ * device table; PM_DEV_ACPU_CORE selects the correct ID per platform.
+ */
+#define PROC_DEV_ID             PM_DEV_ACPU_CORE
 
 /* Extern Variable */
 extern void  __attribute__((weak)) *_vector_table;

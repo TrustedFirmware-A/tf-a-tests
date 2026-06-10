@@ -11,7 +11,7 @@
 #include <smccc.h>
 #include <tftf_lib.h>
 
-#define PM_SIP_SVC		0xC2000000U
+#define PM_SIP_SVC		0xc2000000U
 #define PAYLOAD_ARG_CNT		7U
 #define NOTIFIER_SGI		15U
 #define IRQ_PRIORITY		0U
@@ -21,7 +21,7 @@
 #define lower_32_bits(n)	((uint32_t)((n) & 0xffffffffU))
 
 #define VERSION_MAJOR(v)	((v) >> 16)
-#define VERSION_MINOR(v)	((v) & 0xFFFF)
+#define VERSION_MINOR(v)	((v) & 0xffff)
 
 #define PM_RET_SUCCESS		0U
 #define PM_RET_ERROR_ARGS	1U
@@ -39,7 +39,7 @@
 #define XPM_RPU_MODE_SPLIT      1U
 
 /* Requirement limits */
-#define XPM_MAX_LATENCY         0xFFFFU
+#define XPM_MAX_LATENCY         0xffffU
 
 /* SGI number used for Event management driver */
 #define XLNX_EVENT_SGI_NUM      (15)
@@ -59,7 +59,7 @@
  */
 #define PM_SUSPEND_STATE_CPU_IDLE               0x0U
 #define PM_SUSPEND_STATE_CPU_OFF                0x1U
-#define PM_SUSPEND_STATE_SUSPEND_TO_RAM         0xFU
+#define PM_SUSPEND_STATE_SUSPEND_TO_RAM         0xfU
 
 /* API IDs */
 enum pm_api_id {

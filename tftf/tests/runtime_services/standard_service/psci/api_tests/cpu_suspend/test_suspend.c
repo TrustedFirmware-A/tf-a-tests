@@ -714,6 +714,71 @@ test_result_t test_psci_suspend_invalid(void)
 }
 
 /*
+ * @Test_Aim@ Suspend to powerdown state targeted at affinity level 2, in
+ * OS-Initiated mode, with CPUs in other clusters having only requested
+ * core-level suspend (Level 0), so the suspend call should be denied.
+ *
+ * This test was added to catch a bug where TF-A incorrectly approved a
+ * suspend request for a high-level power domain even if a sibling
+ * domain at a lower level was not yet powered down. In OS-Initiated
+ * mode, if cores in other clusters have only requested a Level 0
+ * state, their parent cluster nodes remain ON, and any request from
+ * the lead core to suspend the System node (Level 2) must be rejected.
+ */
+test_result_t test_psci_suspend_incompatible_state(void)
+{
+	unsigned int lead_mpid = read_mpidr_el1() & MPID_MASK;
+	unsigned int lead_core_pos = platform_get_core_pos(lead_mpid);
+	unsigned int end_pwrlvl;
+	int32_t err;
+	test_result_t rc;
+
+#ifdef PLAT_MAX_CPU_SUSPEND_PWR_LEVEL
+	end_pwrlvl = PLAT_MAX_CPU_SUSPEND_PWR_LEVEL;
+#else
+	end_pwrlvl = PLAT_MAX_PWR_LEVEL;
+#endif
+
+	/*
+	 * This test requires at least two clusters and atleast power levels.
+	 */
+	if ((tftf_get_total_aff_count(PSTATE_AFF_LVL_0) < 2) || end_pwrlvl < PSTATE_AFF_LVL_2) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	err = check_osi_mode_support();
+	if (err != TEST_RESULT_SUCCESS) {
+		return err;
+	}
+
+	/*
+	 * Non-lead CPUs should be suspended to level 0, and the lead CPU should
+	 * attempt to suspend to level 2. As the siblings cluster nodes are still in
+	 * ON state, request from the lead CPU will be denied.
+	 */
+	rc = test_init(PSTATE_AFF_LVL_0, PSTATE_TYPE_POWERDOWN);
+	if (rc != TEST_RESULT_SUCCESS) {
+		return rc;
+	}
+
+	test_aff_level[lead_core_pos] = PSTATE_AFF_LVL_2;
+
+	err = tftf_psci_set_suspend_mode(PSCI_OS_INIT);
+	if (err != PSCI_E_SUCCESS) {
+		return TEST_RESULT_FAIL;
+	}
+
+	rc = test_psci_suspend(true);
+
+	err = tftf_psci_set_suspend_mode(PSCI_PLAT_COORD);
+	if (err != PSCI_E_SUCCESS) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return rc;
+}
+
+/*
  * @Test_Aim@ Suspend to powerdown state targeted at affinity level 2 in
  * OS-initiated mode
  */

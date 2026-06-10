@@ -22,4 +22,11 @@
 #define PM_DEV_ACPU_CORE        PM_DEV_ACPU_0_0
 #define PM_DEV_RPU_CORE         PM_DEV_RPU_A_0
 
+/*
+ * PGGS scratchpad regnode used by the Versal Gen 2 PGGS helpers.
+ * PM_REG_PGGS3 mirrors the standard XilPM register-node id (xpm_nodeid.h).
+ */
+#define PM_REG_PGGS3            0x30004003U
+#define PM_REG_PGGS             PM_REG_PGGS3
+
 #endif /* XPM_NODEID_PLAT_H_ */

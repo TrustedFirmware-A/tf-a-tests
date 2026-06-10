@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,7 +11,6 @@
  * Device Nodes
  */
 #define PM_DEV_ACPU_0           0x1810C003U
-#define PM_DEV_RPU0_0           0x18110005U
 #define PM_DEV_RPU0_0           0x18110005U
 #define PM_DEV_USB_0		0x18224018U
 #define PM_DEV_TTC_0            0x18224024U

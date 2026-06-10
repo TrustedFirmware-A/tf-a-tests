@@ -22,7 +22,6 @@ TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/clock_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/ioctl_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/node_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/op_characteristics/*.c)	\
-				$(wildcard tftf/tests/plat/amd/common/pin_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/pll_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/query_data/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/register_notifier_test/*.c) \
@@ -31,6 +30,12 @@ TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/clock_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/system_shutdown/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/tf_a_feature_check/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/tf_a_register_sgi/*.c)
+
+# pin_test references the pm_pin_fun_ids enum (PIN_FUNC_*) that lives
+# in versal/xpm_defs_plat.h only; only compile it on the Versal platform.
+ifeq ($(PLAT),versal)
+TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/pin_test/*.c)
+endif
 endif # PLAT in AMD_XILINX_TEST_ALLOWED_PLATS
 
 include tftf/tests/tests-standard.mk

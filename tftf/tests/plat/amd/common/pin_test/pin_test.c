@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "eemi_api.h"
 #include "xpm_defs.h"
+#include "xpm_defs_plat.h"
 #include "xpm_nodeid.h"
 
 struct test_pins {

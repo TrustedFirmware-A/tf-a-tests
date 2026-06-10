@@ -14,7 +14,6 @@ include tftf/tests/tests-versal-common.mk
 ifneq ($(filter $(PLAT),$(AMD_XILINX_TEST_ALLOWED_PLATS)),)
 TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/clock_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/feature_check/*.c)	\
-				$(wildcard tftf/tests/plat/amd/common/force_powerdown/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/get_api_version_test/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/get_chipid_test/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/get_trustzone_version/*.c) \

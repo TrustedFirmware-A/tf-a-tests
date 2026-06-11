@@ -33,14 +33,19 @@ test_result_t test_op_characteristics(void)
  * This function will request the power management controller to
  * return information about an operating characteristic of a component,
  * but with an invalid parameter to test error handling.
+ *
+ * An out-of-range characteristic type is used to force the error: the
+ * temperature type reports a SoC-wide value and ignores the device id on
+ * some platforms, so an invalid device id is not a portable way to make
+ * the call fail.
  */
 test_result_t test_op_characteristics_invalid_param(void)
 {
 	int32_t status;
 	uint32_t result;
-	uint32_t type = PM_OPCHAR_TYPE_TEMP;
+	uint32_t type = PM_OPCHAR_TYPE_LATENCY + 1U;
 
-	status = xpm_op_characteristics(PM_DEV_USB_0, type, &result);
+	status = xpm_op_characteristics(PM_DEV_SOC, type, &result);
 	if (status == PM_RET_SUCCESS) {
 		tftf_testcase_printf("%s ERROR getting op characteristics, type = %x, "
 				     "Status: 0x%x\n", __func__, type, status);

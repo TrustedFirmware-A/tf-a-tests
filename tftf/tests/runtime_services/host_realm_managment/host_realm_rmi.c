@@ -98,7 +98,8 @@ static smc_ret_values host_rmi_handler(smc_args *args, unsigned int in_reg)
 	 * as specified in the function definition.
 	 */
 	if ((regs[0] != SMC_RMI_RTT_READ_ENTRY) &&
-	    (regs[0] != SMC_RMI_RTT_AUX_MAP_PROTECTED)) {
+	    (regs[0] != SMC_RMI_RTT_AUX_MAP_PROTECTED) &&
+	    (regs[0] != SMC_RMI_RTT_DATA_UNMAP)) {
 		CHECK_RET(4);
 	}
 
@@ -1030,16 +1031,8 @@ return REALM_SUCCESS;
 
 err:
 while (size >= PAGE_SIZE) {
-	RmiAddrRangeDesc4KB oaddr_desc;
-
-	oaddr_desc.size = RMI_PAGE_L3;
-	oaddr_desc.count = 0;
-	oaddr_desc.addr = map_addr >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
-	oaddr_desc.reserved = 0;
-	oaddr_desc.state = RMI_OP_MEM_STATE_DELEGATED;
-
 	ret = host_rmi_rtt_data_unmap(rd, map_addr, map_addr + PAGE_SIZE,
-				       RMI_ADDR_TYPE_SINGLE, oaddr_desc.desc);
+				       RMI_ADDR_TYPE_SINGLE, 0U);
 		if (ret != RMI_SUCCESS) {
 			ERROR("%s() failed, addr=0x%lx ret=0x%lx\n",
 				"host_rmi_rtt_data_unmap", map_addr, ret);
@@ -1233,16 +1226,8 @@ static u_register_t host_realm_destroy_undelegate_range(struct realm *realm,
 	u_register_t ret;
 
 	while (size >= PAGE_SIZE) {
-		RmiAddrRangeDesc4KB oaddr_desc;
-
-		oaddr_desc.size = RMI_PAGE_L3;
-		oaddr_desc.count = 0;
-		oaddr_desc.addr = ipa >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
-		oaddr_desc.reserved = 0;
-		oaddr_desc.state = RMI_OP_MEM_STATE_DELEGATED;
-
 		ret = host_rmi_rtt_data_unmap(rd, ipa, ipa + PAGE_SIZE,
-					       RMI_ADDR_TYPE_SINGLE, oaddr_desc.desc);
+					       RMI_ADDR_TYPE_SINGLE, 0U);
 
 		if (ret == RMI_ERROR_RTT_AUX) {
 			/* Unmap from all Aux RTTs */

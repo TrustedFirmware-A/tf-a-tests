@@ -1339,7 +1339,6 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	long sl = RTT_MIN_LEVEL;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, base;
 	struct test_realm_params params = {0};
-	RmiAddrRangeDesc4KB desc = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -1396,14 +1395,9 @@ test_result_t host_realm_abort_unassigned_destroyed(void)
 	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base);
 	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base);
 
-	desc.size = RMI_PAGE_L3;
-	desc.count = 0U;
-	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
-	desc.reserved = 0U;
-	desc.state = RMI_OP_MEM_STATE_DELEGATED;
 	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
 			RMI_ADDR_TYPE_SINGLE,
-				desc.desc);
+				0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
@@ -1759,7 +1753,6 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 	u_register_t s2sz = MAX_IPA_BITS;
 	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE}, base;
 	struct test_realm_params params = {0};
-	RmiAddrRangeDesc4KB desc = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -1818,15 +1811,9 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 		goto destroy_realm;
 	}
 
-	desc.size = RMI_PAGE_L3;
-	desc.count = 0U;
-	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
-	desc.reserved = 0U;
-	desc.state = RMI_OP_MEM_STATE_DELEGATED;
-
 	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
 			RMI_ADDR_TYPE_SINGLE,
-				desc.desc);
+				0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto destroy_realm;
@@ -1946,7 +1933,7 @@ test_result_t host_realm_abort_assigned_destroyed(void)
 destroy_data:
 	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
 			RMI_ADDR_TYPE_SINGLE,
-				desc.desc);
+				0U);
 	ret = host_rmi_granule_undelegate(base);
 destroy_realm:
 	ret2 = host_destroy_realm(&realm);
@@ -2743,7 +2730,6 @@ test_result_t host_realm_pas_validation_new(void)
 	u_register_t s2sz = MAX_IPA_BITS;
 	long sl = RTT_MIN_LEVEL;
 	struct test_realm_params params = {0};
-	RmiAddrRangeDesc4KB desc = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
@@ -2795,16 +2781,10 @@ test_result_t host_realm_pas_validation_new(void)
 		goto undelegate_destroy;
 	}
 
-	desc.size = RMI_PAGE_L3;
-	desc.count = 0U;
-	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
-	desc.reserved = 0U;
-	desc.state = RMI_OP_MEM_STATE_DELEGATED;
-
 	/* 2a DATA_DESTROY */
 	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
 			RMI_ADDR_TYPE_SINGLE,
-				desc.desc);
+				0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
@@ -2835,7 +2815,7 @@ test_result_t host_realm_pas_validation_new(void)
 	/* 2c DATA_DESTROY */
 	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
 			RMI_ADDR_TYPE_SINGLE,
-				desc.desc);
+				0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
@@ -2864,10 +2844,9 @@ test_result_t host_realm_pas_validation_new(void)
 		goto undelegate_destroy;
 	}
 
-	desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
 	ret = host_rmi_rtt_data_unmap(realm.rd, base, base + PAGE_SIZE,
 			RMI_ADDR_TYPE_SINGLE,
-				desc.desc);
+				0U);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_rtt_data_unmap failed\n");
 		goto undelegate_destroy;
@@ -3500,7 +3479,7 @@ test_result_t host_test_rtt_fold_unfold_assigned_ns(void)
 
 	bool ret1;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, ns_ipa, base_pa, top;
+	u_register_t ret, ns_ipa, base_pa;
 	struct realm realm;
 	struct rtt_entry rtt;
 	u_register_t rec_flag[] = {RMI_RUNNABLE};
@@ -3595,9 +3574,9 @@ test_result_t host_test_rtt_fold_unfold_assigned_ns(void)
 	INFO("unmap\n\n");
 
 	/* unmap */
-	ret = host_rmi_rtt_unmap_unprotected(realm.rd, ns_ipa, 1L, &top);
+	ret = host_realm_unmap_unprotected(&realm, ns_ipa, 1L);
 	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_rtt_mapunprotected failed ret=0x%lx\n", ret);
+		ERROR("host_realm_unmap_unprotected failed ret=0x%lx\n", ret);
 	}
 
 destroy_realm:

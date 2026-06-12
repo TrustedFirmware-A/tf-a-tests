@@ -2368,13 +2368,6 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 				break;
 			}
 		}
-
-		if (run->exit.exit_reason == RMI_EXIT_VDEV_REQUEST) {
-			host_do_vdev_complete(realm->rec[rec_num],
-					      run->exit.vdev_id_1);
-			re_enter_rec = true;
-		}
-
 	} while (re_enter_rec);
 
 	*exit_reason = run->exit.exit_reason;
@@ -2483,12 +2476,6 @@ u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 {
 	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_CREATE, rd_ptr,
 			pdev_ptr, vdev_ptr, params_ptr}, 5U).ret0;
-}
-
-u_register_t host_rmi_vdev_complete(u_register_t rec_ptr, u_register_t vdev_ptr)
-{
-	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_COMPLETE, rec_ptr,
-			vdev_ptr}, 3U).ret0;
 }
 
 u_register_t host_rmi_vdev_get_interface_report(u_register_t rd_ptr, u_register_t pdev_ptr,

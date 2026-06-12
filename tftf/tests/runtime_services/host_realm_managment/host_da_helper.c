@@ -38,17 +38,6 @@ static const char * const vdev_state_str[] = {
 	"RMI_VDEV_ERROR"
 };
 
-static struct host_vdev *find_host_vdev_from_id(unsigned long vdev_id)
-{
-	struct host_vdev *h_vdev = &gbl_host_vdev;
-
-	if (h_vdev->vdev_id == vdev_id) {
-		return h_vdev;
-	}
-
-	return NULL;
-}
-
 static struct host_pdev *find_host_pdev_from_pdev_ptr(unsigned long pdev_ptr)
 {
 	struct host_pdev *h_pdev;
@@ -1460,24 +1449,6 @@ int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev)
 	}
 
 	return 0;
-}
-
-void host_do_vdev_complete(u_register_t rec_ptr, unsigned long vdev_id)
-{
-	struct host_vdev *h_vdev;
-	u_register_t ret;
-
-	h_vdev = find_host_vdev_from_id(vdev_id);
-	if (h_vdev == NULL) {
-		WARN("VDEV with provided vdev_id not found");
-		return;
-	}
-
-	/* Complete the VDEV request */
-	ret = host_rmi_vdev_complete(rec_ptr, (u_register_t)h_vdev->vdev_ptr);
-	if (ret != RMI_SUCCESS) {
-		ERROR("Handling VDEV request failed\n");
-	}
 }
 
 void host_do_vdev_communicate(struct realm *realm, u_register_t vdev_ptr)

@@ -53,14 +53,14 @@
 		rxbuffer: rx-buffer {
 			description = "rx-buffer";
 			pages-count = <1>;
-			base-address = <0x00000000 0x7300000>;
+			base-address = <0x00000000 0x7700000>;
 			attributes = <0x1>; /* read-only */
 		};
 
 		txbuffer: tx-buffer {
 			description = "tx-buffer";
 			pages-count = <1>;
-			base-address = <0x00000000 0x7301000>;
+			base-address = <0x00000000 0x7701000>;
 			attributes = <0x3>; /* read-write */
 		};
 
@@ -79,7 +79,7 @@
 		smmuv3-memcpy-src {
 			description = "smmuv3-memcpy-source";
 			pages-count = <4>;
-			base-address = <0x00000000 0x7400000>;
+			base-address = <0x00000000 0x7710000>;
 			attributes = <0x3>; /* read-write */
 			smmu-id = <0>;
 			stream-ids = <0x0 0x1>;
@@ -89,7 +89,7 @@
 		smmuv3-memcpy-dst {
 			description = "smmuv3-memcpy-destination";
 			pages-count = <4>;
-			base-address = <0x00000000 0x7404000>;
+			base-address = <0x00000000 0x7714000>;
 			attributes = <0x3>; /* read-write */
 			smmu-id = <0>;
 			stream-ids = <0x0 0x1>;

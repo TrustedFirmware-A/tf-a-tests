@@ -369,6 +369,8 @@ int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev)
 	pdev_params->id_index = h_pdev->cert_slot_id;
 	pdev_params->hash_algo = h_pdev->pdev_hash_algo;
 	pdev_params->max_vdevs_order = 2; // max 3 vdevs
+	pdev_params->rid_base = (unsigned int)h_pdev->dev->bdf;
+	pdev_params->rid_top = pdev_params->rid_base + 1U;
 
 	ret = host_rmi_pdev_create((u_register_t)pdev,
 				   (u_register_t)pdev_params,
@@ -1345,9 +1347,10 @@ err_undel_vdev:
 	return -1;
 }
 
-int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
-			      unsigned long tdi_id, void *pdev_ptr,
-			      struct rmi_address_range *addr_range, size_t num_address_range)
+static u_register_t host_create_vdev_with_ranges(struct realm *realm,
+			      struct host_vdev *h_vdev, unsigned long tdi_id,
+			      void *pdev_ptr, struct rmi_address_range *addr_range,
+			      size_t num_address_range)
 {
 	struct rmi_vdev_params *vdev_params;
 	u_register_t ret;
@@ -1355,7 +1358,7 @@ int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
 
 	rc = host_vdev_setup(h_vdev, tdi_id, pdev_ptr);
 	if (rc != 0) {
-		return rc;
+		return RMI_ERROR_INPUT;
 	}
 
 	/* Create vdev and bind it to the Realm */
@@ -1390,12 +1393,30 @@ int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
 	ret = host_rmi_vdev_create(realm->rd, (u_register_t)pdev_ptr,
 				  (u_register_t)h_vdev->vdev_ptr,
 				  (u_register_t)vdev_params);
+	page_free((u_register_t)vdev_params);
 	if (ret != RMI_SUCCESS) {
-		ERROR("VDEV create failed\n");
-		return -1;
+		ERROR("VDEV create failed: 0x%lx\n", ret);
+		host_rmi_granule_undelegate((u_register_t)h_vdev->vdev_ptr);
+		return ret;
 	}
 
-	return 0;
+	return RMI_SUCCESS;
+}
+
+u_register_t host_create_vdev(struct realm *realm, struct host_vdev *h_vdev,
+			      unsigned long tdi_id, void *pdev_ptr)
+{
+	return host_create_vdev_with_ranges(realm, h_vdev, tdi_id, pdev_ptr,
+					    NULL, 0U);
+}
+
+int host_assign_vdev_to_realm(struct realm *realm, struct host_vdev *h_vdev,
+			      unsigned long tdi_id, void *pdev_ptr,
+			      struct rmi_address_range *addr_range, size_t num_address_range)
+{
+	return (host_create_vdev_with_ranges(realm, h_vdev, tdi_id, pdev_ptr,
+					     addr_range, num_address_range) ==
+		RMI_SUCCESS) ? 0 : -1;
 }
 
 int host_unassign_vdev_from_realm(struct realm *realm, struct host_vdev *h_vdev)

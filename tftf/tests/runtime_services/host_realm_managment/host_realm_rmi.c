@@ -2433,10 +2433,24 @@ u_register_t host_rmi_pdev_stream_key_refresh(u_register_t pdev1_ptr,
 					     handle}, 4U).ret0;
 }
 
-u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr)
+u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr,
+				   u_register_t *handle,
+				   u_register_t *reclaim_req)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_DESTROY, pdev_ptr},
-				2U).ret0;
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_DESTROY, pdev_ptr,
+					     (u_register_t)&rets}, 3U);
+
+	if (handle != NULL) {
+		*handle = rets.ret1;
+	}
+
+	if (reclaim_req != NULL) {
+		*reclaim_req = rets.ret2;
+	}
+
+	return rets.ret0;
 }
 
 u_register_t host_rmi_pdev_stream_connect(u_register_t stream_params_ptr, u_register_t *handle)

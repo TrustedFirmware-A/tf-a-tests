@@ -2051,7 +2051,9 @@ u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr);
 u_register_t host_rmi_pdev_abort(u_register_t pdev_ptr);
 u_register_t host_rmi_pdev_stream_key_refresh(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
 					      u_register_t handle);
-u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr);
+u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr,
+				   u_register_t *handle,
+				   u_register_t *reclaim_req);
 u_register_t host_rmi_pdev_stream_connect(u_register_t stream_params_ptr, u_register_t *handle);
 u_register_t host_rmi_pdev_stream_disconnect(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
 				  u_register_t stream_handle);

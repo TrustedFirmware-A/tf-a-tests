@@ -479,12 +479,13 @@ static int host_pdev_destroy(struct host_pdev *h_pdev, bool ep_pdev)
 	u_register_t ret;
 	int rc = 0;
 	u_register_t destroy_handle = 0UL;
-	u_register_t donate_req = 0UL;
+	u_register_t reclaim_req = 0UL;
 
 	pdev = ep_pdev ? &h_pdev->ep_pdev : &h_pdev->rp_pdev;
-	ret = host_rmi_pdev_destroy((u_register_t)*pdev);
+	ret = host_rmi_pdev_destroy((u_register_t)*pdev, &destroy_handle,
+					    &reclaim_req);
 	if (RMI_RETURN_STATUS(ret) == RMI_INCOMPLETE) {
-		ret = host_realm_sro_continue(ret, &destroy_handle, &donate_req, NULL);
+		ret = host_realm_sro_continue(ret, &destroy_handle, &reclaim_req, NULL);
 	}
 	if (ret != RMI_SUCCESS) {
 		return -1;

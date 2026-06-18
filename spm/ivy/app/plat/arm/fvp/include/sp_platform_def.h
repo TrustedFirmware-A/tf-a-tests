@@ -13,6 +13,6 @@
 #ifndef SP_PLATFORM_DEF_H
 #define SP_PLATFORM_DEF_H
 
-#define PLAT_SP_RX_BASE		ULL(0x7300000)
+#define PLAT_SP_RX_BASE		ULL(0x7700000)
 
 #endif /* SP_PLATFORM_DEF_H */

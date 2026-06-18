@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2023-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -452,26 +452,28 @@ void sve_p_regs_write_rand(sve_p_regs_t *p_regs)
 }
 
 /*
- * Generate random values and write it to 'ffr_regs', then write it to SVE FFR
- * registers for Normal SVE or Streaming SVE mode.
+ * Generate random monotonic predicate values and write it to
+ * 'ffr_regs', then write it to SVE FFR registers for Normal SVE
+ * or Streaming SVE mode.
  */
 void sve_ffr_regs_write_rand(sve_ffr_regs_t *ffr_regs)
 {
 	uint32_t ffr_size;
-	uint8_t *ffr_reg;
-	uint32_t rval;
+	uint8_t *ffr_bytes;
+	uint32_t total_bits;
+	uint32_t ones_bits;
 	unsigned long flags;
 
 	sve_traps_save_disable(flags);
 
 	ffr_size = (uint32_t)sve_rdvl_1() / 8;
+	total_bits = ffr_size * 8U * SVE_NUM_FFR_REGS;
+	ones_bits = (uint32_t)(rand() % (total_bits + 1U));
 
-	rval = rand();
 	memset((void *)ffr_regs, 0, sizeof(sve_ffr_regs_t));
-	for (uint32_t i = 0U; i < SVE_NUM_FFR_REGS; i++) {
-		ffr_reg = (uint8_t *)ffr_regs + (i * ffr_size);
-
-		memset((void *)ffr_reg, rval * (i + 1), ffr_size);
+	ffr_bytes = *ffr_regs;
+	for (uint32_t bit = 0U; bit < ones_bits; bit++) {
+		ffr_bytes[bit / 8U] |= (1U << (bit % 8U));
 	}
 	ffr_regs_write(ffr_regs);
 

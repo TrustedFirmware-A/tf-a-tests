@@ -852,6 +852,11 @@ static int host_dev_communicate(struct realm *realm,
 			}
 		}
 
+		if (dcomm_exit->timeout != 0) {
+			VERBOSE("timeout: %ld in ms\n", dcomm_exit->timeout);
+			waitms(dcomm_exit->timeout);
+		}
+
 		/* Send request to PDEV's DOE and get response */
 		if (EXTRACT(RMI_DEV_COMM_EXIT_FLAGS_SEND, dcomm_exit->flags)) {
 			rc = host_pdev_doe_communicate(h_pdev, ep_pdev, dcomm_enter,

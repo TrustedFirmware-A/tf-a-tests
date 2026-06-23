@@ -617,6 +617,12 @@ static inline bool is_feat_step2_supported(void)
 		ID_AA64DFR2_STEP_MASK) >= ID_AA64DFR2_STEP_SUPPORTED);
 }
 
+static inline bool is_feat_srmask_supported(void)
+{
+	return EXTRACT(ID_AA64MMFR4_EL1_SRMASK, read_id_aa64mmfr4_el1())
+			>= ID_AA64MMFR4_EL1_SRMASK_SUPPORTED;
+}
+
 static inline bool is_feat_hdbss_supported(void)
 {
 	return EXTRACT(ID_AA64MMFR1_EL1_HAFDBS, read_id_aa64mmfr1_el1())

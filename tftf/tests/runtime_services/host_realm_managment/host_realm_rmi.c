@@ -421,11 +421,10 @@ bool host_rmi_get_cmp_result(void)
 	return rmi_cmp_result;
 }
 
-u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t target_rec,
-		unsigned long status)
+u_register_t host_rmi_psci_complete(u_register_t calling_rec, unsigned long status)
 {
 	return (host_rmi_handler(&(smc_args) {SMC_RMI_PSCI_COMPLETE, calling_rec,
-				target_rec, status}, 4U)).ret0;
+				status}, 3U)).ret0;
 }
 
 u_register_t host_rmi_rtt_data_map_init(u_register_t rd,

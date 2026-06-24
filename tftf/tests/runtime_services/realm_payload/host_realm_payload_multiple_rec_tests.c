@@ -152,7 +152,7 @@ test_result_t host_realm_multi_rec_psci_denied(void)
 		goto destroy_realm;
 	}
 	INFO("Requesting PSCI Complete Status Denied REC %d\n", rec_num);
-	ret = host_rmi_psci_complete(realm.rec[0], realm.rec[rec_num],
+	ret = host_rmi_psci_complete(realm.rec[0],
 			(unsigned long)PSCI_E_DENIED);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_psci_complete failed\n");
@@ -169,30 +169,6 @@ test_result_t host_realm_multi_rec_psci_denied(void)
 	}
 	ret = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 0U);
 
-	if (run->exit.gprs[0] != SMC_PSCI_AFFINITY_INFO_AARCH64) {
-		ERROR("Host did not receive PSCI_AFFINITY_INFO request\n");
-		ret1 = false;
-		goto destroy_realm;
-	}
-	rec_num = host_realm_find_rec_by_mpidr(run->exit.gprs[1], &realm);
-	if (rec_num != 1U) {
-		ERROR("Invalid mpidr requested\n");
-		goto destroy_realm;
-	}
-
-	INFO("Requesting PSCI Complete Affinity Info REC %d\n", rec_num);
-	ret = host_rmi_psci_complete(realm.rec[0], realm.rec[rec_num],
-			(unsigned long)PSCI_E_SUCCESS);
-	if (ret != RMI_SUCCESS) {
-		ERROR("host_rmi_psci_complete failed\n");
-		ret1 = false;
-		goto destroy_realm;
-	}
-
-	/* Re-enter REC0 complete PSCI_AFFINITY_INFO */
-	ret = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 0U);
-
-
 	if (run->exit.gprs[0] != SMC_PSCI_CPU_ON_AARCH64) {
 		ERROR("Host did not receive CPU ON request\n");
 		ret1 = false;
@@ -207,7 +183,7 @@ test_result_t host_realm_multi_rec_psci_denied(void)
 
 	INFO("Requesting PSCI Complete Status Denied REC %d\n", rec_num);
 	/* PSCI_DENIED should fail as rec2 is RMI_RUNNABLE */
-	ret = host_rmi_psci_complete(realm.rec[0], realm.rec[rec_num],
+	ret = host_rmi_psci_complete(realm.rec[0],
 			(unsigned long)PSCI_E_DENIED);
 	if (ret == RMI_SUCCESS) {
 		ret1 = false;
@@ -458,7 +434,7 @@ test_result_t host_realm_multi_planes_multi_rec_multiple_cpu(void)
 			ERROR("Invalid mpidr requested\n");
 			goto destroy_realm;
 		}
-		ret = host_rmi_psci_complete(realm.rec[0], realm.rec[rec_num],
+		ret = host_rmi_psci_complete(realm.rec[0],
 				(unsigned long)PSCI_E_SUCCESS);
 		if (ret == RMI_SUCCESS) {
 			/* Re-enter REC0 complete CPU_ON */
@@ -513,7 +489,7 @@ test_result_t host_realm_multi_planes_multi_rec_multiple_cpu(void)
 			ERROR("Invalid mpidr requested\n");
 			goto destroy_realm;
 		}
-		ret = host_rmi_psci_complete(realm.rec[0], realm.rec[rec_num],
+		ret = host_rmi_psci_complete(realm.rec[0],
 				(unsigned long)PSCI_E_SUCCESS);
 
 		if (ret != RMI_SUCCESS) {
@@ -634,7 +610,7 @@ test_result_t host_realm_multi_rec_multiple_cpu(void)
 			ERROR("Invalid mpidr requested\n");
 			goto destroy_realm;
 		}
-		ret = host_rmi_psci_complete(realm.rec[0], realm.rec[rec_num],
+		ret = host_rmi_psci_complete(realm.rec[0],
 				(unsigned long)PSCI_E_SUCCESS);
 		if (ret == RMI_SUCCESS) {
 			/* Re-enter REC0 complete CPU_ON */
@@ -689,7 +665,7 @@ test_result_t host_realm_multi_rec_multiple_cpu(void)
 			ERROR("Invalid mpidr requested\n");
 			goto destroy_realm;
 		}
-		ret = host_rmi_psci_complete(realm.rec[0], realm.rec[rec_num],
+		ret = host_rmi_psci_complete(realm.rec[0],
 				(unsigned long)PSCI_E_SUCCESS);
 
 		if (ret != RMI_SUCCESS) {
@@ -792,25 +768,7 @@ test_result_t host_realm_multi_rec_multiple_cpu2(void)
 		goto destroy_realm;
 	}
 
-	/* pass wrong target_rec, expect error */
-	ret = host_rmi_psci_complete(realm.rec[0], realm.rec[rec_num + 1U],
-		(unsigned long)PSCI_E_SUCCESS);
-	if (ret == RMI_SUCCESS) {
-		ERROR("host_rmi_psci_complete wrong target_rec didn't fail ret=%x\n",
-				ret);
-		goto destroy_realm;
-	}
-
-	/* pass wrong target_rec from different realm, expect error */
-	ret = host_rmi_psci_complete(realm.rec[0], realm2.rec[0U],
-		(unsigned long)PSCI_E_SUCCESS);
-	if (ret == RMI_SUCCESS) {
-		ERROR("host_rmi_psci_complete wrong target_rec didn't fail ret=%x\n",
-				ret);
-		goto destroy_realm;
-	}
-
-	ret = host_rmi_psci_complete(realm.rec[0], realm.rec[rec_num],
+	ret = host_rmi_psci_complete(realm.rec[0],
 			(unsigned long)PSCI_E_SUCCESS);
 
 	/* Try to run Rec3(CPU OFF/NOT_RUNNABLE), expect error */

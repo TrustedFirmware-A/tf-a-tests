@@ -2002,8 +2002,7 @@ u_register_t host_rmi_rtt_set_s2ap(u_register_t rd,
 				   u_register_t end,
 				   u_register_t *top,
 				   u_register_t *rtt_tree);
-u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t target_rec,
-				    unsigned long status);
+u_register_t host_rmi_psci_complete(u_register_t calling_rec, unsigned long status);
 void host_rmi_init_cmp_result(void);
 bool host_rmi_get_cmp_result(void);
 

@@ -10,8 +10,8 @@
   <testsuites>
 
     <testsuite name="Force Powerdown tests" description="AMD-Xilinx Force Powerdown platform tests">
-      <testcase name="Force Powerdown" function="test_force_powerdown" />
-      <testcase name="Request Wakeup" function="test_request_wake_up" />
+      <testcase name="Force Powerdown with ack and Wakeup" function="test_force_powerdown_ack" />
+      <testcase name="Force Powerdown without ack and Wakeup" function="test_force_powerdown_no_ack" />
     </testsuite>
 
   </testsuites>

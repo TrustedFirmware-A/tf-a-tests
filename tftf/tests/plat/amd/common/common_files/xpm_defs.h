@@ -147,6 +147,10 @@ enum pm_api_id {
 #define        PM_CAP_ACCESS            1U
 #define        PM_CAP_CONTEXT           2U
 
+/* IPI acknowledgment mode (mirrors TF-A plat/xilinx/common pm_ipi.h) */
+#define IPI_BLOCKING		1U
+#define IPI_NON_BLOCKING	0U
+
 /*
  * PM notify events
  */

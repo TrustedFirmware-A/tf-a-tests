@@ -17,6 +17,11 @@ TESTS_SOURCES	+=							\
 		host_realm_helper.c					\
 	)
 
+TESTS_SOURCES	+=							\
+	$(addprefix lib/heap/,						\
+		page_alloc.c						\
+	)
+
 endif
 
 TESTS_SOURCES	+=							\

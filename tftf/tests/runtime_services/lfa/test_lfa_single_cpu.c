@@ -6,14 +6,36 @@
 
 #include <debug.h>
 #include <lfa.h>
+#include <lfa_test_helpers.h>
 #include <test_helpers.h>
 #include <tftf_lib.h>
 
-#define LFA_GET_INVENTORY_RESP_X1	UL(0x4698fe4c6d08d447)
-#define LFA_GET_INVENTORY_RESP_X2	UL(0x005abdcb5029959b)
-
 static uint64_t num_components;
-static uint64_t fw_id;
+static struct lfa_test_inventory_entry rmm_component;
+static struct lfa_test_inventory_entry bl31_component;
+
+static test_result_t test_lfa_component_cmd(const struct lfa_test_target *target,
+					    const struct lfa_test_inventory_entry *component,
+					    uint32_t fid,
+					    const char *operation)
+{
+	smc_args args;
+	smc_ret_values ret;
+
+	if (!component->present) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	args = lfa_test_init_fw_args(fid, component->fw_id);
+	ret = tftf_smc(&args);
+	if (ret.ret0 != SMC_OK) {
+		tftf_testcase_printf("%s: Unexpected error for %s %s: 0x%08lx\n",
+				     __func__, target->name, operation, ret.ret0);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
 
 /*
  * @Test_Aim@ Simple surface tests for Live Firmware Activation.
@@ -122,78 +144,54 @@ test_result_t test_lfa_get_inventory(void)
 			return TEST_RESULT_FAIL;
 		}
 
-		if ((ret.ret1 == LFA_GET_INVENTORY_RESP_X1) &&
-		    (ret.ret2 == LFA_GET_INVENTORY_RESP_X2)) {
-			fw_id = i;
-		}
+		lfa_test_record_inventory_entry(&lfa_test_rmm, i, &ret, &rmm_component);
+		lfa_test_record_inventory_entry(&lfa_test_bl31, i, &ret, &bl31_component);
 	}
 
 	return TEST_RESULT_SUCCESS;
 }
 
 /*
- * @Test_Aim@ Test for LFA_PRIME.
+ * @Test_Aim@ Test for LFA_PRIME for RMM.
  */
-test_result_t test_lfa_prime(void)
+test_result_t test_lfa_prime_rmm(void)
 {
-	smc_args args = { .fid = LFA_PRIME, .arg1 = fw_id };
-	smc_ret_values ret = tftf_smc(&args);
-
-	if (ret.ret0 == SMC_OK) {
-		/*
-		 * TODO: currently expected to be failed as BL31 prime
-		 * is not present. This is added to exercise negative
-		 * scenario.
-		 */
-		tftf_testcase_printf("%s: Unexpected error: 0x%08lx\n",
-				     __func__, ret.ret0);
-		return TEST_RESULT_FAIL;
-	}
-
-	return TEST_RESULT_SUCCESS;
+	return test_lfa_component_cmd(&lfa_test_rmm, &rmm_component, LFA_PRIME,
+				      "PRIME");
 }
 
 /*
- * @Test_Aim@ Test for LFA_ACTIVATE.
+ * @Test_Aim@ Test for LFA_PRIME for BL31.
  */
-test_result_t test_lfa_activate(void)
+test_result_t test_lfa_prime_bl31(void)
 {
-	smc_args args = { .fid = LFA_ACTIVATE, .arg1 = fw_id };
-	smc_ret_values ret = tftf_smc(&args);
-
-	if (ret.ret0 == SMC_OK) {
-		/*
-		 * TODO: currently expected to be failed as BL31 activate
-		 * is not present. This is added to exercise negative
-		 * scenario.
-		 */
-		tftf_testcase_printf("%s: Unexpected error: 0x%08lx\n",
-				     __func__, ret.ret0);
-		return TEST_RESULT_FAIL;
-	}
-
-	return TEST_RESULT_SUCCESS;
+	return test_lfa_component_cmd(&lfa_test_bl31, &bl31_component, LFA_PRIME,
+				      "PRIME");
 }
 
 /*
- * @Test_Aim@ Test for LFA_CANCEL.
+ * @Test_Aim@ Test for LFA_ACTIVATE for RMM.
  */
-test_result_t test_lfa_cancel(void)
+test_result_t test_lfa_activate_rmm(void)
 {
-	smc_args args = { .fid = LFA_CANCEL, .arg1 = fw_id };
-	smc_ret_values ret;
+	return test_lfa_component_cmd(&lfa_test_rmm, &rmm_component,
+				      LFA_ACTIVATE, "ACTIVATE");
+}
 
-	ret = tftf_smc(&args);
-	/*
-	 * TODO: currently expected to be failed as BL31 cancel
-	 * is not present. This is added to exercise negative
-	 * scenario.
-	 */
-	if (ret.ret0 == SMC_OK) {
-		tftf_testcase_printf("%s: Unexpected error: 0x%08lx\n",
-				     __func__, ret.ret0);
-		return TEST_RESULT_FAIL;
-	}
+/*
+ * @Test_Aim@ Test for LFA_CANCEL for RMM.
+ */
+test_result_t test_lfa_cancel_rmm(void)
+{
+	return test_lfa_component_cmd(&lfa_test_rmm, &rmm_component, LFA_CANCEL,
+				      "CANCEL");
+}
 
-	return TEST_RESULT_SUCCESS;
+/*
+ * @Test_Aim@ Test for LFA_CANCEL for BL31.
+ */
+test_result_t test_lfa_cancel_bl31(void)
+{
+	return test_lfa_component_cmd(&lfa_test_bl31, &bl31_component, LFA_CANCEL,
+				      "CANCEL");
 }

@@ -27,6 +27,19 @@
 #define LFA_PRIME			U(0xC40002E4)
 #define LFA_ACTIVATE			U(0xC40002E5)
 #define LFA_CANCEL			U(0xC40002E6)
-#define LFA_INVALID			LFA_CANCEL + 1U
+#define LFA_INVALID			(LFA_CANCEL + 1U)
+
+#define RMM_X1				UL(0x564bf212a662076c)
+#define RMM_X2				UL(0xd90636638fbacb92)
+#define BL31_X1				UL(0x4698fe4c6d08d447)
+#define BL31_X2				UL(0x005abdcb5029959b)
+
+#define NUM_CTX_REGISTERS		U(30)
+
+/* Assembly helper function prototypes. */
+uint64_t set_ns_ep_context(uint32_t context_id);
+void get_ns_ep_context(uint32_t context_id);
+void atomic_add(int *ptr, int value);
+int atomic_read(int *ptr);
 
 #endif /* LFA_H */

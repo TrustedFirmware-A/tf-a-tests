@@ -331,8 +331,9 @@ unmap_memory:
 				unsigned long base = map_addr[i][j] + (GRANULE_SIZE * k);
 				unsigned long top = map_addr[i][j] + (GRANULE_SIZE * (k + 1));
 
+				/* SINGLE: oaddr is SBZ */
 				res = host_rmi_rtt_dev_unmap(realm.rd, base, top,
-					RMI_ADDR_TYPE_SINGLE, mem_info[i].base_pa,
+					RMI_ADDR_TYPE_SINGLE, 0UL,
 					&out_top, &out_range, &out_count);
 
 				if (out_top != top) {

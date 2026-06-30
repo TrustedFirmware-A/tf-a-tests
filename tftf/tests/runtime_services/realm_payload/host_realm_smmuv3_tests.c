@@ -235,8 +235,9 @@ unmap_memory:
 			u_register_t out_top, out_range, out_count;
 
 
+			/* SINGLE: oaddr is SBZ */
 			res = host_rmi_rtt_dev_unmap(realm.rd, addr, addr + GRANULE_SIZE,
-						     RMI_ADDR_TYPE_SINGLE, addr, &out_top,
+						     RMI_ADDR_TYPE_SINGLE, 0UL, &out_top,
 						     &out_range, &out_count);
 			if (res != REALM_SUCCESS) {
 				ERROR("%s() for 0x%lx failed, %lu\n",

@@ -18,24 +18,6 @@
 extern void  __attribute__((weak)) *_vector_table;
 
 /*
- * This function is used by a CPU to set wakeup source.
- */
-test_result_t test_set_wakeup_source(void)
-{
-	int32_t status;
-
-	status = xpm_set_wakeup_source(PROC_DEV_ID, PM_DEV_TTC_0, 1);
-	if (status != PM_RET_SUCCESS) {
-		tftf_testcase_printf("%s ERROR Set WakeUp Source: 0x%x, Status: 0x%x\n",
-				     __func__, PM_DEV_TTC_0, status);
-
-		return TEST_RESULT_FAIL;
-	}
-
-	return TEST_RESULT_SUCCESS;
-}
-
-/*
  * This function is used by a CPU to declare that it is about to
  * suspend itself.
  */

@@ -537,6 +537,7 @@ test_result_t host_test_realm_create_enter(void)
 		unsigned int run_num = (unsigned int)rand() % MAX_REC_COUNT;
 
 		if (!host_create_activate_realm_payload(&realm, &params)) {
+			return TEST_RESULT_FAIL;
 		}
 
 		host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, run_num,

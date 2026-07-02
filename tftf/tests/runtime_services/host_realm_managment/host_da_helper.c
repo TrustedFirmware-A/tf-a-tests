@@ -1511,6 +1511,7 @@ u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev,
 	u_register_t out_top;
 	size_t granule_count = RTT_MAP_SIZE(map_level) / GRANULE_SIZE;
 	size_t i = 0;
+	RmiAddrRangeDesc4KB oaddr_desc;
 
 	*dev_ipa = 0UL;
 
@@ -1518,7 +1519,14 @@ u_register_t host_dev_mem_map(struct realm *realm, struct host_vdev *h_vdev,
 		unsigned long base = map_addr + (GRANULE_SIZE * i);
 		unsigned long top = map_addr + (GRANULE_SIZE * (i + 1));
 
-		ret = host_rtt_dev_map(realm, h_vdev, base, top, RMI_ADDR_TYPE_SINGLE, base,
+		oaddr_desc.size = RMI_PAGE_L3;
+		oaddr_desc.count = 1;
+		oaddr_desc.addr = base >> RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
+		oaddr_desc.reserved = 0;
+		oaddr_desc.state = RMI_OP_MEM_STATE_DELEGATED;
+
+		ret = host_rtt_dev_map(realm, h_vdev, base, top,
+				RMI_ADDR_TYPE_SINGLE, oaddr_desc.desc,
 				&out_top);
 
 		if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {

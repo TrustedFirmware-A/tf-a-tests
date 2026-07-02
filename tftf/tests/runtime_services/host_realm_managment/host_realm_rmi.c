@@ -1162,8 +1162,9 @@ u_register_t host_realm_unmap_unprotected(struct realm *realm,
 	u_register_t flags;
 	u_register_t unmap_top = map_addr + RTT_MAP_SIZE(level);
 
-	flags = INPLACE(RMI_UNPROT_UNMAP_FLAGS_OADDR_TYPE, RMI_ADDR_TYPE_NONE) |
-		INPLACE(RMI_UNPROT_UNMAP_FLAGS_LIST_COUNT, 1U);
+	/* SINGLE: list_count and oaddr are SBZ. */
+	flags = INPLACE(RMI_UNPROT_UNMAP_FLAGS_OADDR_TYPE, RMI_ADDR_TYPE_SINGLE) |
+		INPLACE(RMI_UNPROT_UNMAP_FLAGS_LIST_COUNT, 0U);
 
 	ret = host_rmi_rtt_unmap_unprotected(realm->rd, map_addr, unmap_top,
 					     flags, 0UL,

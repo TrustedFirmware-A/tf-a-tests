@@ -15,6 +15,29 @@
 #include <xlat_tables_v2.h>
 #include "../xlat_tables_private.h"
 
+static bool xlat_regime_is_dual(int xlat_regime)
+{
+	if (xlat_regime == EL1_EL0_REGIME) {
+		return true;
+
+	}
+
+	if (xlat_regime == EL2_REGIME) {
+		/*
+		 * Host operating kernel can be also running in EL2 if
+		 * Virtualization Host Extensions (VHE) is enabled. In this mode
+		 * XLAT table will be similar to the EL1 kernel and support
+		 * dual lower and higher VA ranges(user space and kernel space).
+		 */
+		const u_register_t host_mode = read_hcr_el2() & HCR_E2H_BIT;
+
+		return  host_mode != 0;
+	}
+	assert(xlat_regime == EL3_REGIME);
+
+	return false;
+}
+
 /*
  * Returns true if the provided granule size is supported, false otherwise.
  */
@@ -146,13 +169,10 @@ bool is_dcache_enabled(void)
 
 uint64_t xlat_arch_regime_get_xn_desc(int xlat_regime)
 {
-	if (xlat_regime == EL1_EL0_REGIME) {
-		return UPPER_ATTRS(UXN) | UPPER_ATTRS(PXN);
-	} else {
-		assert((xlat_regime == EL2_REGIME) ||
-		       (xlat_regime == EL3_REGIME));
-		return UPPER_ATTRS(XN);
-	}
+	const bool dual_va_range = xlat_regime_is_dual(xlat_regime);
+
+	return dual_va_range ? UPPER_ATTRS(UXN) | UPPER_ATTRS(PXN) :
+			       UPPER_ATTRS(XN);
 }
 
 void xlat_arch_tlbi_va(uintptr_t va, int xlat_regime)
@@ -268,7 +288,7 @@ void setup_mmu_cfg(uint64_t *params, unsigned int flags,
 	 */
 	unsigned long long tcr_ps_bits = tcr_physical_addr_size_bits(max_pa);
 
-	if (xlat_regime == EL1_EL0_REGIME) {
+	if (xlat_regime_is_dual(xlat_regime)) {
 		/*
 		 * TCR_EL1.EPD1: Disable translation table walk for addresses
 		 * that are translated using TTBR1_EL1.

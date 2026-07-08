@@ -6,7 +6,7 @@
 
 TC_CACTUS_BASE		= spm/cactus/plat/arm/tc
 
-PLAT_INCLUDES		+= -I${TC_CACTUS_BASE}/include/
+CACTUS_PLAT_INCLUDES		+= -I${TC_CACTUS_BASE}/include/
 
 # Add the FDT source
 CACTUS_DTS		= ${TC_CACTUS_BASE}/fdts/cactus.dts

@@ -135,8 +135,8 @@ test_result_t test_ffa_features_rxtx_map(void)
 	};
 	struct ffa_value ret;
 	uint32_t param;
-	const uint32_t expected_param = (FFA_RXTX_MAP_MIN_BUF_4K << 0) |
-					(FFA_RXTX_MAP_MAX_BUF_PAGE_COUNT << 16);
+	uint32_t max_buf_size;
+	const uint32_t expected_min_buf_size = FFA_RXTX_MAP_MIN_BUF_4K;
 
 	SKIP_TEST_IF_FFA_VERSION_LESS_THAN(1, 2);
 
@@ -147,10 +147,22 @@ test_result_t test_ffa_features_rxtx_map(void)
 		return TEST_RESULT_FAIL;
 	}
 
+	/*
+	 * The maximum buffer size is implementation-defined (in pages) and
+	 * may vary depending on the SPMC's build-time configuration, so only
+	 * validate that it reports a sane, non-zero page count rather than an
+	 * exact value. The lower 16 bits (min_buf_size plus the reserved MBZ
+	 * bits) are still checked against a fixed value.
+	 */
 	param = ret.arg2;
-	if (param != expected_param) {
-		ERROR("Unexpected param (expected %d, got %d)\n",
-		      expected_param, param);
+	max_buf_size = (param >> 16) & 0xFFFFU;
+	if ((param & 0xFFFFU) != expected_min_buf_size ||
+	    max_buf_size < FFA_RXTX_MAP_MAX_BUF_PAGE_COUNT) {
+		ERROR("Unexpected param (expected low 16 bits %d and "
+		      "max_buf_size >= %d, got low 16 bits %d and "
+		      "max_buf_size %d)\n",
+		      expected_min_buf_size, FFA_RXTX_MAP_MAX_BUF_PAGE_COUNT,
+		      param & 0xFFFFU, max_buf_size);
 		return TEST_RESULT_FAIL;
 	}
 

@@ -123,6 +123,11 @@
 
 /* Per-CPU Hypervisor Timer Interrupt ID */
 #define IRQ_PCPU_HP_TIMER			U(29)
+/*
+ * Per-CPU Non-Secure Physical Timer interrupt.
+ * PPI 14 corresponds to GIC interrupt ID 30 (16 + 14).
+ */
+#define IRQ_PCPU_NS_TIMER			U(30)
 /* Datasheet: TIME00 event*/
 #define IRQ_CNTPSIRQ1				U(29)
 

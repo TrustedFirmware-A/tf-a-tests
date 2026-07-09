@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -54,11 +54,12 @@ func __tftf_suspend
 endfunc __tftf_suspend
 
 func __tftf_save_arch_context
-#if ENABLE_PAUTH
+	is_armv8_3_pauth_present_asm	x1, x2
+	beq	1f
 	mrs     x1, APIAKeyLo_EL1
 	mrs     x2, APIAKeyHi_EL1
 	stp	x1, x2, [x0, #SUSPEND_CTX_APIAKEY_OFFSET]
-#endif
+	1:
 	JUMP_EL1_OR_EL2 x1, 1f, 2f, dead
 1:	mrs	x1, mair_el1
 	mrs	x2, cpacr_el1
@@ -154,12 +155,13 @@ func __tftf_cpu_resume_ep
 	isb
 
 restore_callee_regs:
-#if ENABLE_PAUTH
+	is_armv8_3_pauth_present_asm	x1, x2
+	beq	1f
 	ldp	x1, x2, [x0, #SUSPEND_CTX_APIAKEY_OFFSET]
 	msr     APIAKeyLo_EL1, x1
 	msr     APIAKeyHi_EL1, x2
 	isb
-#endif
+	1:
 	ldr	x2, [x0, #SUSPEND_CTX_SP_OFFSET]
 	mov	sp, x2
 	ldr	w1, [x0, #SUSPEND_CTX_SAVE_SYSTEM_CTX_OFFSET]

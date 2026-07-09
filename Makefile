@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2026, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -122,12 +122,6 @@ msg_start:
 	@echo "Building ${PLAT}"
 	@echo "Selected set of tests: ${TESTS}"
 
-# Set flags for Realm Payload Tests
-ifeq (${ENABLE_REALM_PAYLOAD_TESTS},1)
-ARM_ARCH_MINOR := 5
-BRANCH_PROTECTION := 2
-endif
-
 # Include test images makefiles.
 include tftf/framework/framework.mk
 include tftf/tests/tests.mk
@@ -170,7 +164,6 @@ $(eval $(call assert_boolean,FIRMWARE_UPDATE))
 $(eval $(call assert_boolean,FWU_BL_TEST))
 $(eval $(call assert_boolean,NEW_TEST_SESSION))
 $(eval $(call assert_boolean,USE_NVM))
-$(eval $(call assert_numeric,BRANCH_PROTECTION))
 $(eval $(call assert_boolean,ENABLE_REALM_PAYLOAD_TESTS))
 $(eval $(call assert_boolean,TRANSFER_LIST))
 $(eval $(call assert_boolean,SPMC_AT_EL3))
@@ -179,10 +172,6 @@ $(eval $(call assert_boolean,CACTUS_PWR_MGMT_SUPPORT))
 ################################################################################
 # Process build options
 ################################################################################
-
-# Process BRANCH_PROTECTION value and set
-# Pointer Authentication and Branch Target Identification flags
-include branch_protection.mk
 
 ################################################################################
 # Add definitions to the cpp preprocessor based on the current build options.
@@ -193,8 +182,6 @@ $(eval $(call add_define,TFTF_DEFINES,ARM_ARCH_MAJOR))
 $(eval $(call add_define,TFTF_DEFINES,ARM_ARCH_MINOR))
 $(eval $(call add_define,TFTF_DEFINES,DEBUG))
 $(eval $(call add_define,TFTF_DEFINES,ENABLE_ASSERTIONS))
-$(eval $(call add_define,TFTF_DEFINES,ENABLE_BTI))
-$(eval $(call add_define,TFTF_DEFINES,ENABLE_PAUTH))
 $(eval $(call add_define,TFTF_DEFINES,LOG_LEVEL))
 $(eval $(call add_define,TFTF_DEFINES,NEW_TEST_SESSION))
 $(eval $(call add_define,TFTF_DEFINES,PLAT_${PLAT}))
@@ -313,14 +300,14 @@ TFTF_ASFLAGS		+= ${COMMON_ASFLAGS}
 TFTF_LDFLAGS		+= ${COMMON_LDFLAGS}
 TFTF_EXTRA_OBJS 	:=
 
-ifneq (${BP_OPTION},none)
-TFTF_CFLAGS		+= -mbranch-protection=${BP_OPTION}
-NS_BL1U_CFLAGS		+= -mbranch-protection=${BP_OPTION}
-NS_BL2U_CFLAGS		+= -mbranch-protection=${BP_OPTION}
-CACTUS_MM_CFLAGS	+= -mbranch-protection=${BP_OPTION}
-CACTUS_CFLAGS		+= -mbranch-protection=${BP_OPTION}
-IVY_CFLAGS		+= -mbranch-protection=${BP_OPTION}
-REALM_CFLAGS		+= -mbranch-protection=${BP_OPTION}
+ifeq (${ARCH},aarch64)
+TFTF_CFLAGS		+= -mbranch-protection=standard
+NS_BL1U_CFLAGS		+= -mbranch-protection=standard
+NS_BL2U_CFLAGS		+= -mbranch-protection=standard
+CACTUS_MM_CFLAGS	+= -mbranch-protection=standard
+CACTUS_CFLAGS		+= -mbranch-protection=standard
+IVY_CFLAGS		+= -mbranch-protection=standard
+REALM_CFLAGS		+= -mbranch-protection=standard
 endif
 
 ifeq ($(SMC_FUZZING), 1)

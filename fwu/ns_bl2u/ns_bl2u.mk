@@ -1,10 +1,9 @@
 #
-# Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+# Copyright (c) 2018-2026, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-include branch_protection.mk
 include lib/xlat_tables_v2/xlat_tables.mk
 include lib/compiler-rt/compiler-rt.mk
 
@@ -49,8 +48,7 @@ NS_BL2U_SOURCES	+=	fwu/ns_bl2u/${ARCH}/ns_bl2u_entrypoint.S	\
 
 NS_BL2U_SOURCES	+=	${COMPILER_RT_SRCS}
 
-ifeq (${ENABLE_PAUTH},1)
-# ARMv8.3 Pointer Authentication support files
+ifeq (${ARCH},aarch64)
 NS_BL2U_SOURCES	+=	lib/extensions/pauth/aarch64/pauth.c		\
 			lib/extensions/pauth/aarch64/pauth_helpers.S
 endif
@@ -64,8 +62,6 @@ $(eval $(call add_define,NS_BL2U_DEFINES,ARM_ARCH_MAJOR))
 $(eval $(call add_define,NS_BL2U_DEFINES,ARM_ARCH_MINOR))
 $(eval $(call add_define,NS_BL2U_DEFINES,DEBUG))
 $(eval $(call add_define,NS_BL2U_DEFINES,ENABLE_ASSERTIONS))
-$(eval $(call add_define,NS_BL2U_DEFINES,ENABLE_BTI))
-$(eval $(call add_define,NS_BL2U_DEFINES,ENABLE_PAUTH))
 $(eval $(call add_define,NS_BL2U_DEFINES,FWU_BL_TEST))
 $(eval $(call add_define,NS_BL2U_DEFINES,LOG_LEVEL))
 $(eval $(call add_define,NS_BL2U_DEFINES,PLAT_${PLAT}))

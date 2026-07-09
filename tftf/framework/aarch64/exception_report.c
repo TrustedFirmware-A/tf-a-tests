@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2019-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include <arch_helpers.h>
+#include <arch_features.h>
 #include <debug.h>
 #include <platform.h>
 #include <utils_def.h>
@@ -40,11 +41,11 @@ void __dead2 print_exception(const struct cpu_context *ctx)
 	 */
 	isb();
 
-#if ENABLE_PAUTH
 	/* If PAUTH enabled then remove PAC from ELR and LR with xpaci. */
-	xpaci(elr);
-	xpaci(lr);
-#endif /* ENABLE_PAUTH */
+	if (is_armv8_3_pauth_present()) {
+		xpaci(elr);
+		xpaci(lr);
+	}
 
 	printf("Unhandled exception on CPU%u.\n", platform_get_core_pos(mpid));
 

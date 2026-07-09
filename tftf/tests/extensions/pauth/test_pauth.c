@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2019-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -57,18 +57,12 @@ test_result_t test_pauth_instructions(void)
 #ifdef __aarch64__
 	SKIP_TEST_IF_PAUTH_NOT_SUPPORTED();
 
-#if ARM_ARCH_AT_LEAST(8, 3)
 	u_register_t reg = 42;
 
 	/* Pointer authentication instructions */
-	__asm__ volatile ("pacdza %0\n" : "+r"(reg));
+	__asm__ volatile (".arch_extension pauth\n"
+			  "pacdza %0\n" : "+r"(reg));
 	return TEST_RESULT_SUCCESS;
-#else
-	tftf_testcase_printf("Pointer Authentication instructions "
-				"are not supported on ARMv%u.%u\n",
-				ARM_ARCH_MAJOR, ARM_ARCH_MINOR);
-	return TEST_RESULT_SKIPPED;
-#endif	/* ARM_ARCH_AT_LEAST(8, 3) */
 #endif	/* __aarch64__ */
 }
 

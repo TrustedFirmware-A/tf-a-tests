@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -101,7 +101,7 @@ test_result_t test_fgt_enabled(void)
 	CHECK_FEAT_TRAP_INITIALIZED(hfgrtr_el2, HFGRTR_EL2,		\
 		is_feat_lor_present, LOR)
 	CHECK_FEAT_TRAP_INITIALIZED(hfgrtr_el2, HFGRTR_EL2,		\
-		is_armv8_3_pauth_apa_api_apa3_present, PAUTH)
+		is_armv8_3_pauth_present, PAUTH)
 	if (is_init_val_set(hfgrtr_el2, HFGRTR_EL2_INIT_VAL,
 		HFGRTR_EL2_NON_FEAT_DEPENDENT_MASK) == 0) {
 		return TEST_RESULT_FAIL;
@@ -123,7 +123,7 @@ test_result_t test_fgt_enabled(void)
 	CHECK_FEAT_TRAP_INITIALIZED(hfgwtr_el2, HFGWTR_EL2,		\
 		is_feat_lor_present, LOR)
 	CHECK_FEAT_TRAP_INITIALIZED(hfgwtr_el2, HFGWTR_EL2,		\
-		is_armv8_3_pauth_apa_api_apa3_present, PAUTH)
+		is_armv8_3_pauth_present, PAUTH)
 	if (is_init_val_set(hfgwtr_el2, HFGWTR_EL2_INIT_VAL,		\
 		HFGWTR_EL2_NON_FEAT_DEPENDENT_MASK) == 0) {
 		return TEST_RESULT_FAIL;

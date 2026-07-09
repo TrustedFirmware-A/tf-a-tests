@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -35,10 +35,8 @@ static el1_ctx_regs_t el1_ctx_after = {0};
 static el2_sysregs_t el2_ctx_before = {0};
 static el2_sysregs_t el2_ctx_after = {0};
 
-#if ENABLE_PAUTH
 static uint128_t pauth_keys_before[NUM_KEYS];
 static uint128_t pauth_keys_after[NUM_KEYS];
-#endif
 
 /* EL1 Virtual Timer IRQ */
 #define EL1_VIRT_TIMER_IRQ	27U
@@ -608,9 +606,6 @@ test_result_t host_test_realm_rsi_version(void)
  */
 test_result_t host_realm_enable_pauth(void)
 {
-#if ENABLE_PAUTH == 0
-	return TEST_RESULT_SKIPPED;
-#else
 	bool ret1, ret2;
 	u_register_t rec_flag[MAX_REC_COUNT];
 	struct realm realm;
@@ -620,6 +615,7 @@ test_result_t host_realm_enable_pauth(void)
 	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+	SKIP_TEST_IF_PAUTH_NOT_SUPPORTED();
 
 	if (is_feat_52b_on_4k_2_supported()) {
 		lpa2 = true;
@@ -676,7 +672,6 @@ test_result_t host_realm_enable_pauth(void)
 	}
 
 	return host_cmp_result();
-#endif
 }
 
 /*
@@ -684,9 +679,6 @@ test_result_t host_realm_enable_pauth(void)
  */
 test_result_t host_realm_pauth_fault(void)
 {
-#if ENABLE_PAUTH == 0
-	return TEST_RESULT_SKIPPED;
-#else
 	bool ret1, ret2;
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 	struct realm realm;
@@ -701,6 +693,7 @@ test_result_t host_realm_pauth_fault(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
+	SKIP_TEST_IF_PAUTH_NOT_SUPPORTED();
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
@@ -724,7 +717,6 @@ test_result_t host_realm_pauth_fault(void)
 	}
 
 	return host_cmp_result();
-#endif
 }
 
 

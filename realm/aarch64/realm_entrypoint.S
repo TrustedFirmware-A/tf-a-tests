@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -73,9 +73,11 @@ pie_fixup:
 
 	/* Initialize architectural state */
 	bl	arch_init
-#if ENABLE_PAUTH
+	is_armv8_3_pauth_present_asm	x0, x1
+	beq	1f
 	bl	pauth_init_enable
-#endif
+	1:
+
 	/*
 	 * Update cold boot flag to indicate cold boot is done
 	 */
@@ -91,9 +93,10 @@ loop:
 realm_warmboot_endpoint:
 	/* Initialize architectural state */
 	bl	arch_init
-#if ENABLE_PAUTH
+	is_armv8_3_pauth_present_asm	x0, x1
+	beq	1f
 	bl	pauth_init_enable
-#endif
+	1:
 	bl	realm_plane_init
 	mov	x0, x20
 	b	realm_secondary_entrypoint

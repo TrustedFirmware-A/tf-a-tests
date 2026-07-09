@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch_helpers.h>
+#include <arch_features.h>
 #include <assert.h>
 #include <cdefs.h>		/* For __dead2 */
 #include <debug.h>
@@ -289,14 +290,14 @@ void __dead2 tftf_warm_boot_main(void)
 	/* Initialise the CPU */
 	tftf_arch_setup();
 
-#if ENABLE_PAUTH
 	/*
 	 * Program APIAKey_EL1 key and enable ARMv8.3-PAuth here as this
 	 * function doesn't return, and RETAA instuction won't be executed,
 	 * what would cause translation fault otherwise.
 	 */
-	pauth_init_enable();
-#endif /* ENABLE_PAUTH */
+	if (is_armv8_3_pauth_present()) {
+		pauth_init_enable();
+	}
 
 	arm_gic_setup_local();
 

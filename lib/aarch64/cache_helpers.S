@@ -93,9 +93,7 @@ func do_dcsw_op
 	ubfx	x12, x12, #ID_AA64MMFR2_EL1_CCIDX_SHIFT, #ID_AA64MMFR2_EL1_CCIDX_WIDTH
 	adr	x14, dcsw_loop_table	// compute inner loop address
 	add	x14, x14, x0, lsl #5	// inner loop is 8x32-bit instructions
-#if ENABLE_BTI
 	add	x14, x14, x0, lsl #2	// inner loop is + "bti j" instruction
-#endif
 	mov	x0, x9
 	mov	w8, #1
 loop1:
@@ -134,9 +132,7 @@ loop1:
 	br	x14			// jump to DC operation specific loop
 
 	.macro	dcsw_loop _op
-#if ENABLE_BTI
-	bti	j
-#endif
+	BTI	j
 loop2_\_op:
 	lsl	w7, w6, w2		// w7 = aligned max set number
 

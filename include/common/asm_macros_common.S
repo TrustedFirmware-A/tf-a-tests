@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,9 +9,19 @@
 
 #include <lib/utils_def.h>
 
-#if ENABLE_BTI && !ARM_ARCH_AT_LEAST(8, 5)
-#error Branch Target Identification requires ARM_ARCH_MINOR >= 5
-#endif
+	/*
+	 * Provide a wrapper for the "bti" instructions using the more
+	 * compatible "hint" encoding, otherwise older toolchains would reject
+	 * this when not compiled for a BTI capable machine (-march=armv8.5-a).
+	 */
+	.macro	BTI _targets
+	.ifc	\_targets, j
+	hint	#36
+	.endif
+	.ifc	\_targets, jc
+	hint	#38
+	.endif
+	.endm
 
 	/*
 	 * This macro is used to create a function label and place the

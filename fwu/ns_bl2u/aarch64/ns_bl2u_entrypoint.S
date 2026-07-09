@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -64,13 +64,14 @@ func ns_bl2u_entrypoint
 	bl	tftf_early_platform_setup
 	bl	tftf_plat_arch_setup
 
-#if ENABLE_PAUTH
 	/* ---------------------------------------------------------------------
 	 * Program APIAKey_EL1 and enable pointer authentication.
 	 * ---------------------------------------------------------------------
 	 */
+	is_armv8_3_pauth_present_asm	x0, x1
+	beq	1f
 	bl	pauth_init_enable
-#endif /* ENABLE_PAUTH */
+	1:
 
 	/* ---------------------------------------------------------------------
 	 * Jump to main function.

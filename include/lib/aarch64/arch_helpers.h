@@ -280,7 +280,14 @@ DEFINE_SYSOP_FUNC(isb)
 DEFINE_SYSREG_ACCESS_FUNC(wfit, S0_3_C1_C0_1)
 DEFINE_SYSREG_ACCESS_FUNC(wfet, S0_3_C1_C0_0)
 
-DEFINE_SYSOP_PARAM_FUNC(xpaci)
+static inline u_register_t xpaci(u_register_t arg)
+{
+	__asm__ (".arch armv8.3-a\n"
+		 "xpaci %0\n"
+		 : "+r" (arg));
+
+	return arg;
+}
 
 DEFINE_RENAME_SYSREG_RW_FUNCS(sys_accdata_el1, SYS_ACCDATA_EL1)
 

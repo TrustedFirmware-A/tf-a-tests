@@ -16,9 +16,9 @@ ARCH			:= aarch64
 # ARM Architecture feature modifiers: none by default
 ARM_ARCH_FEATURE	:= none
 
-# ARM Architecture major and minor versions: 8.0 by default.
+# ARM Architecture major and minor versions: 8.1 by default.
 ARM_ARCH_MAJOR		:= 8
-ARM_ARCH_MINOR		:= 0
+ARM_ARCH_MINOR		:= 1
 
 # Base commit to perform code check on
 BASE_COMMIT		:= origin/master

@@ -80,6 +80,7 @@
 /* APIs wrapping FIRME ABIs */
 int32_t firme_version(uint8_t service_id);
 int32_t firme_features(uint8_t service_id, uint8_t reg_index, uint64_t *reg);
+const char *firme_status_to_str(int firme_rc);
 
 /* IDE KM ABIs */
 int32_t firme_ide_km_keyset_prog(uint64_t ecam_address, uint64_t flags,

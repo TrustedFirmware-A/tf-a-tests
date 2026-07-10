@@ -10,6 +10,7 @@
 #include <firme.h>
 #include <pcie.h>
 #include <pcie_spec.h>
+#include <platform_pcie.h>
 #include <test_helpers.h>
 #include <tftf_lib.h>
 
@@ -42,11 +43,7 @@
 #define IDE_KM_KEY_DIRECTION_TX				0
 #define IDE_KM_KEY_DIRECTION_RX				1
 
-/* Default busy abd poll timeout in milliseconds  */
-#define DEFAULT_BUSY_TIMEOUT				(5)
-#define DEFAULT_POLL_TIMEOUT				(10)
-
-#define FIRME_RETRY_MAX					U(20)
+#define FIRME_RETRY_MAX					U(5)
 
 /* Construct Keyset ID from key set, key direction, key substream, stream id */
 #define FIRME_IDE_MAKE_KEYSET_ID(_kset, _dir, _substream, _stream, _rp, _seg) \
@@ -178,21 +175,23 @@ static int do_firme_ide_km_keyset_poll(unsigned long ecam_base,
 	int rc;
 	int retry = 0;
 
+	rc = FIRME_INCOMPLETE;
 	INFO("FIRME IDE KM poll for keyset: 0x%llx\n", keyset_id);
 	do {
-		rc = firme_ide_km_keyset_poll(ecam_base, keyset_id, handle_ret);
-
-		INFO("do_firme_ide_km_keyset_poll rc: %d\n", rc);
 		if (rc == FIRME_INCOMPLETE) {
-			VERBOSE("FIRME_INCOMPLETE: delay %dms\n",
-				DEFAULT_POLL_TIMEOUT);
-			waitms(DEFAULT_POLL_TIMEOUT);
+			INFO("FIRME_INCOMPLETE: delay %dms\n",
+			     PLAT_IDE_KM_POLL_TIMEOUT_MS);
+			waitms(PLAT_IDE_KM_POLL_TIMEOUT_MS);
 		}
 
+		rc = firme_ide_km_keyset_poll(ecam_base, keyset_id, handle_ret);
+		INFO("do_firme_ide_km_keyset_poll rc: %s\n",
+		     firme_status_to_str(rc));
+
 		if (rc == FIRME_BUSY) {
-			VERBOSE("FIRME_BUSY: delay %dms\n",
-				DEFAULT_BUSY_TIMEOUT);
-			waitms(DEFAULT_BUSY_TIMEOUT);
+			INFO("FIRME_BUSY: delay %dms\n",
+			     PLAT_IDE_KM_BUSY_TIMEOUT_MS);
+			waitms(PLAT_IDE_KM_BUSY_TIMEOUT_MS);
 		}
 	} while ((++retry < FIRME_RETRY_MAX) && ((rc == FIRME_INCOMPLETE) ||
 						 (rc == FIRME_BUSY)));
@@ -206,20 +205,22 @@ static int do_firme_ide_km_poll(unsigned long ecam_base, uint64_t *handle_ret,
 	int rc;
 	int retry = 0;
 
+	rc = FIRME_INCOMPLETE;
 	INFO("FIRME IDE KM poll for any keyset\n");
 	do {
-		rc = firme_ide_km_poll(ecam_base, handle_ret, keyset_id_ret);
-
 		if (rc == FIRME_INCOMPLETE) {
-			VERBOSE("FIRME_INCOMPLETE: delay %dms\n",
-				DEFAULT_POLL_TIMEOUT);
-			waitms(DEFAULT_POLL_TIMEOUT);
+			INFO("FIRME_INCOMPLETE: delay %dms\n",
+			     PLAT_IDE_KM_POLL_TIMEOUT_MS);
+			waitms(PLAT_IDE_KM_POLL_TIMEOUT_MS);
 		}
 
+		rc = firme_ide_km_poll(ecam_base, handle_ret, keyset_id_ret);
+		INFO("do_firme_ide_km_poll rc: %s\n", firme_status_to_str(rc));
+
 		if (rc == FIRME_BUSY) {
-			VERBOSE("FIRME_BUSY: delay %dms\n",
-				DEFAULT_BUSY_TIMEOUT);
-			waitms(DEFAULT_BUSY_TIMEOUT);
+			INFO("FIRME_BUSY: delay %dms\n",
+			     PLAT_IDE_KM_BUSY_TIMEOUT_MS);
+			waitms(PLAT_IDE_KM_BUSY_TIMEOUT_MS);
 		}
 	} while ((++retry < FIRME_RETRY_MAX) && ((rc == FIRME_INCOMPLETE) ||
 						 (rc == FIRME_BUSY)));
@@ -244,9 +245,9 @@ static int do_firme_ide_km_prog(pcie_dev_t *rp_dev, struct ide_key *key,
 					      key->KeyQW[1], key->KeyQW[2],
 					      key->KeyQW[3], handle);
 		if (rc == FIRME_BUSY) {
-			VERBOSE("ide_km_prog: FIRME_BUSY: delay %dms\n",
-				DEFAULT_BUSY_TIMEOUT);
-			waitms(DEFAULT_BUSY_TIMEOUT);
+			INFO("ide_km_prog: FIRME_BUSY: delay %dms\n",
+			     PLAT_IDE_KM_BUSY_TIMEOUT_MS);
+			waitms(PLAT_IDE_KM_BUSY_TIMEOUT_MS);
 		}
 	} while ((++retry < FIRME_RETRY_MAX) && (rc == FIRME_BUSY));
 
@@ -277,9 +278,9 @@ static int do_firme_ide_km_go(pcie_dev_t *rp_dev, int kslot, int sid, int ssid,
 		rc = firme_ide_km_keyset_go(rp_dev->ecam_base, 0x0, keyset_id,
 					    handle);
 		if (rc == FIRME_BUSY) {
-			VERBOSE("ide_km_go: FIRME_BUSY: delay %dms\n",
-				DEFAULT_BUSY_TIMEOUT);
-			waitms(DEFAULT_BUSY_TIMEOUT);
+			INFO("ide_km_go: FIRME_BUSY: delay %dms\n",
+			     PLAT_IDE_KM_BUSY_TIMEOUT_MS);
+			waitms(PLAT_IDE_KM_BUSY_TIMEOUT_MS);
 		}
 	} while ((++retry < FIRME_RETRY_MAX) && (rc == FIRME_BUSY));
 
@@ -310,9 +311,9 @@ static int do_firme_ide_km_stop(pcie_dev_t *rp_dev, int kslot, int sid, int ssid
 		rc = firme_ide_km_keyset_stop(rp_dev->ecam_base, 0x0, keyset_id,
 					      handle);
 		if (rc == FIRME_BUSY) {
-			VERBOSE("ide_km_stop: FIRME_BUSY: delay %dms\n",
-				DEFAULT_BUSY_TIMEOUT);
-			waitms(DEFAULT_BUSY_TIMEOUT);
+			INFO("ide_km_stop: FIRME_BUSY: delay %dms\n",
+			     PLAT_IDE_KM_BUSY_TIMEOUT_MS);
+			waitms(PLAT_IDE_KM_BUSY_TIMEOUT_MS);
 		}
 	} while ((++retry < FIRME_RETRY_MAX) && (rc == FIRME_BUSY));
 
@@ -573,9 +574,9 @@ test_result_t test_firme_ide_km_poll_any_keyset(void)
 						      rand64(), rand64(),
 						      rand64(), handle);
 			if (rc == FIRME_BUSY) {
-				VERBOSE("ide_km_prog: FIRME_BUSY: delay %dms\n",
-					DEFAULT_BUSY_TIMEOUT);
-				waitms(DEFAULT_BUSY_TIMEOUT);
+				INFO("ide_km_prog: FIRME_BUSY: delay %dms\n",
+				     PLAT_IDE_KM_BUSY_TIMEOUT_MS);
+				waitms(PLAT_IDE_KM_BUSY_TIMEOUT_MS);
 			}
 		} while ((++retry < FIRME_RETRY_MAX) && (rc == FIRME_BUSY));
 

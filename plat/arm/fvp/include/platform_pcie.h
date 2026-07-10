@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -25,5 +25,9 @@
 #define PLATFORM_OVERRIDE_PCIE_BAR32NP_VALUE	0x50000000
 #define PLATFORM_OVERRIDE_PCIE_BAR32P_VALUE	0x50600000
 #define PLATOFRM_OVERRIDE_RP_BAR32_VALUE	0x50850000
+
+/* Default timeout value for PCIe IDE Key management operations */
+#define PLAT_IDE_KM_BUSY_TIMEOUT_MS		(5)
+#define PLAT_IDE_KM_POLL_TIMEOUT_MS		(5)
 
 #endif	/* PLATFORM_PCIE_H */

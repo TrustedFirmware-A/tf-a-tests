@@ -82,6 +82,8 @@
 
 /* Per-CPU Hypervisor Timer Interrupt ID */
 #define IRQ_PCPU_HP_TIMER		26
+/* Per-CPU Non-Secure Timer Interrupt ID */
+#define IRQ_PCPU_NS_TIMER		30
 /* Datasheet: TIME00 event*/
 #define IRQ_CNTPSIRQ1			80
 

@@ -137,6 +137,8 @@
 
 /* Per-CPU Hypervisor Timer Interrupt ID */
 #define IRQ_PCPU_HP_TIMER		26
+/* Per-CPU Non-Secure Timer Interrupt ID */
+#define IRQ_PCPU_NS_TIMER		30
 
 /* Times(in ms) used by test code for completion of different events */
 #define PLAT_SUSPEND_ENTRY_TIME		15

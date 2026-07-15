@@ -81,6 +81,8 @@
 #define IRQ_PCPU_HP_TIMER		(10 + 16)
 /* Per-CPU Physical Timer Interrupt ID */
 #define IRQ_PCPU_EL1_TIMER		(14 + 16)
+/* Per-CPU Non-Secure Timer Interrupt ID */
+#define IRQ_PCPU_NS_TIMER		IRQ_PCPU_EL1_TIMER
 
 #define PLAT_MAX_SPI_OFFSET_ID		256
 
@@ -119,4 +121,3 @@
 #define IRQ_TWDOG_INTID			56
 
 #endif /* PLATFORM_DEF_H */
-

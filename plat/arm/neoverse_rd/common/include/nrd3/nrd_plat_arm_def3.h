@@ -77,6 +77,8 @@
 
 /* Per-CPU Hypervisor Timer Interrupt ID */
 #define IRQ_PCPU_HP_TIMER		U(26)
+/* Per-CPU Non-Secure Timer Interrupt ID */
+#define IRQ_PCPU_NS_TIMER		U(30)
 
 /* Memory mapped Generic timer interfaces */
 #define SYS_CNT_BASE1			NRD_CSS_NSEC_CNT_BASE1

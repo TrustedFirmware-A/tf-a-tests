@@ -2231,6 +2231,12 @@ u_register_t host_realm_create(struct realm *realm)
 					  RMI_MEC_POLICY_PRIVATE);
 	}
 
+	/* LFA policy: allow LFA unless disallowed explicitly */
+	if (!realm->lfa_disallowed) {
+		params->flags0 |= INPLACE(RMI_REALM_FLAGS0_LFA_POLICY,
+					  RMI_LFA_POLICY_ALLOW);
+	}
+
 	params->rtt_level_start = realm->start_level;
 	params->algorithm = RMI_HASH_SHA_256;
 	params->rtt_base = realm->rtt_addr;

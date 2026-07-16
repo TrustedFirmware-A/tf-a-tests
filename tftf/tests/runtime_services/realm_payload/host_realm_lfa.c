@@ -77,3 +77,77 @@ cleanup:
 
 	return (ret1 && ret2) ? host_cmp_result() : TEST_RESULT_FAIL;
 }
+
+test_result_t host_test_realm_rsi_with_lfa_policy(void)
+{
+	test_result_t lfa_ret;
+	bool lfa_failed = true;
+	u_register_t rec_flag[] = {RMI_RUNNABLE};
+	struct realm realm;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
+	long sl = RTT_MIN_LEVEL;
+	bool ret1, ret2;
+	struct test_realm_params params = {0};
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	lfa_ret = test_lfa_version();
+	if (lfa_ret != TEST_RESULT_SUCCESS) {
+		ERROR("%s(): LFA is not supported=%d\n", __func__, lfa_ret);
+		return TEST_RESULT_SKIPPED;
+	}
+
+	if (is_feat_52b_on_4k_2_supported()) {
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+	params.lfa_disallowed = true;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	ret1 = host_enter_realm_execute(&realm, REALM_GET_RSI_VERSION, RMI_EXIT_HOST_CALL, 0U);
+	if (!ret1) {
+		ERROR("%s(): Initial enter failed\n", __func__);
+		goto cleanup;
+	}
+
+	/*
+	 * Test RMM activation. Should fail due to Realm's LFA disallow policy.
+	 * Test will return TEST_RESULT_SUCCESS if activation fails.
+	 */
+	lfa_ret = test_lfa_activate_rmm_failure_multiple_cpu();
+	if (lfa_ret != TEST_RESULT_SUCCESS) {
+		ERROR("%s(): LFA of RMM should not have passed (%d) due to "
+			"Realm LFA policy.\n", __func__, lfa_ret);
+		lfa_failed = false;
+	}
+
+	/*
+	 * Execute REALM_GET_RSI_VERSION command from Realm. Should succeed as
+	 * the original RMM image should continue running after LFA fails.
+	 *
+	 */
+	ret1 = host_enter_realm_execute(&realm, REALM_GET_RSI_VERSION, RMI_EXIT_HOST_CALL, 0U);
+	if (!ret1) {
+		ERROR("%s(): Enter Realm with original RMM failed\n", __func__);
+	}
+
+cleanup:
+	ret2 = host_destroy_realm(&realm);
+	if (!ret2) {
+		ERROR("%s(): Realm destroy failed\n", __func__);
+	}
+
+	return (lfa_failed && ret1 && ret2) ? host_cmp_result() : TEST_RESULT_FAIL;
+}

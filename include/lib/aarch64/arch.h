@@ -389,6 +389,9 @@
 #define ID_AA64DFR2_STEP_SHIFT			U(0)
 #define ID_AA64DFR2_STEP_MASK			ULL(0xf)
 #define ID_AA64DFR2_STEP_SUPPORTED		ULL(1)
+#define ID_AA64DFR2_TRBE_EXC_SHIFT		U(24)
+#define ID_AA64DFR2_TRBE_EXC_MASK		ULL(0xf)
+#define ID_AA64DFR2_TRBE_EXC_SUPPORTED		ULL(1)
 
 /* ID_AA64ISAR0_EL1 definitions */
 #define ID_AA64ISAR0_EL1			S3_0_C0_C6_0
@@ -838,6 +841,8 @@
 #define SCR_RESET_VAL		SCR_RES1_BITS
 
 /* MDCR_EL3 definitions */
+#define MDCR_TRBEE_EL3_BIT	(ULL(1) << 54)
+#define MDCR_TRBEE_EN_BIT	(ULL(1) << 53)
 #define MDCR_EnSTEPOP_BIT	(ULL(1) << 50)
 #define MDCR_ETBAD(x)		((x) << 48)
 #define MDCR_EnITE_BIT		(ULL(1) << 47)
@@ -888,6 +893,7 @@
 #define MDCR_EL3_RESET_VAL	ULL(0x0)
 
 /* MDCR_EL2 definitions */
+#define MDCR_EL2_E2TB(x)	((x) << 24)
 #define MDCR_EL2_TPMS		(U(1) << 14)
 #define MDCR_EL2_E2PB(x)	((x) << 12)
 #define MDCR_EL2_E2PB_EL1	U(0x3)
@@ -1252,6 +1258,7 @@
 #define EC_AARCH32_FP			U(0x28)
 #define EC_AARCH64_FP			U(0x2c)
 #define EC_SERROR			U(0x2f)
+#define EC_PROFILING			U(0x3d)
 
 /* ESR ISS encoding for system register traps (EC_AARCH64_SYS) */
 #define ISS_SYSREG_DIRECTION_SHIFT	U(0)
@@ -1839,9 +1846,16 @@
  * Armv9.0 - Trace Buffer Extension System Registers
  ******************************************************************************/
 #define TRBLIMITR_EL1	S3_0_C9_C11_0
+
+#define TRBLIMITR_EL1_LIMIT(x)	(ULL(x) << 12)
+#define TRBLIMITR_EL1_XE_BIT	(UL(1) << 6)
+#define TRBLIMITR_EL1_E_BIT	(UL(1) << 0)
+
 #define TRBPTR_EL1	S3_0_C9_C11_1
 #define TRBBASER_EL1	S3_0_C9_C11_2
 #define TRBSR_EL1	S3_0_C9_C11_3
+#define TRBSR_EL2	S3_4_C9_C11_3
+#define TRBSR_IRQ_BIT	(U(1) << 22)
 #define TRBMAR_EL1	S3_0_C9_C11_4
 #define TRBTRG_EL1	S3_0_C9_C11_6
 #define TRBIDR_EL1	S3_0_C9_C11_7
@@ -1873,8 +1887,11 @@
 /*******************************************************************************
  * Armv8.4 - Trace Filter System Registers
  ******************************************************************************/
-#define TRFCR_EL1	S3_0_C1_C2_1
-#define TRFCR_EL2	S3_4_C1_C2_1
+#define TRFCR_EL1		S3_0_C1_C2_1
+#define TRFCR_EL2		S3_4_C1_C2_1
+#define TRFCR_EL2_KE_BIT	(UL(1) << 10)
+#define TRFCR_EL2_EE(x)		((x) << 8)
+#define TRFCR_EL2_EE_TRAP_ALL	UL(0x3)
 
 /*******************************************************************************
  * FEAT_STEP2 - Step2 registers

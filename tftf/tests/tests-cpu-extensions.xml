@@ -29,6 +29,7 @@
     <testcase name="Use FPMR Register" function="test_fpmr_enabled" />
     <testcase name="Use ECV Registers" function="test_ecv_enabled" />
     <testcase name="Use trace buffer control Registers" function="test_trbe_enabled" />
+    <testcase name="Test trace buffer management profiling exceptions" function="test_trbe_exc_enabled" />
     <testcase name="Use branch record buffer control registers" function="test_brbe_enabled" />
     <testcase name="Use trace filter control Registers" function="test_trf_enabled" />
     <testcase name="Use trace system Registers" function="test_sys_reg_trace_enabled" />

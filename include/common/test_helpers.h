@@ -246,6 +246,14 @@ typedef test_result_t (*test_function_arg_t)(void *arg);
 		}								\
 	} while (false)
 
+#define SKIP_TEST_IF_TRBE_EXC_NOT_SUPPORTED()					\
+	do {									\
+		if (!is_feat_trbe_exc_present()) {				\
+			tftf_testcase_printf("TRBE_EXC not supported\n");	\
+			return TEST_RESULT_SKIPPED;				\
+		}								\
+	} while (false)
+
 #define SKIP_TEST_IF_TRF_NOT_SUPPORTED()					\
 	do {									\
 		if (!get_armv8_4_trf_support()) {				\

@@ -20,7 +20,6 @@
 
 static unsigned char attest_token_buffer[REALM_TOKEN_BUF_SIZE]
 	__aligned(GRANULE_SIZE);
-static uint64_t attest_token_offset;
 
 bool test_realm_attestation(void)
 {
@@ -55,30 +54,45 @@ bool test_realm_attestation(void)
 		return false;
 	}
 
-	do {
-		rsi_ret = rsi_attest_token_continue(
-					(u_register_t)attest_token_buffer,
-					attest_token_offset,
-					REALM_TOKEN_BUF_SIZE,
-					&bytes_copied);
+	u_register_t granule = (u_register_t)attest_token_buffer;
+	const u_register_t buf_end = (u_register_t)attest_token_buffer + token_upper_bound;
 
-		if ((rsi_ret != RSI_SUCCESS) && (rsi_ret != RSI_INCOMPLETE)) {
-			realm_printf("RSI_ATTEST_TOKEN_CONTINUE"
-				     " returned with code %lu\n", rsi_ret);
-			return false;
+	do {
+		u_register_t attest_token_offset = 0;
+
+		do {
+			const u_register_t chunk_size = GRANULE_SIZE - attest_token_offset;
+
+			rsi_ret = rsi_attest_token_continue(
+						granule,
+						attest_token_offset,
+						chunk_size,
+						&bytes_copied);
+
+			if ((rsi_ret != RSI_SUCCESS) && (rsi_ret != RSI_INCOMPLETE)) {
+				realm_printf("RSI_ATTEST_TOKEN_CONTINUE returned with code %lu\n",
+					     rsi_ret);
+				return false;
+			}
+
+			attest_token_offset += bytes_copied;
+
+		} while ((rsi_ret == RSI_INCOMPLETE) && (attest_token_offset < GRANULE_SIZE));
+
+		if (rsi_ret == RSI_INCOMPLETE) {
+			granule += GRANULE_SIZE;
 		}
 
-		attest_token_offset += bytes_copied;
+	} while ((rsi_ret == RSI_INCOMPLETE) && (granule < buf_end));
 
-	} while (rsi_ret != RSI_SUCCESS);
-
-	return true;
+	return rsi_ret == RSI_SUCCESS;
 }
 
 bool test_realm_attestation_fault(void)
 {
 	u_register_t rsi_ret;
 	u_register_t bytes_copied;
+	u_register_t attest_token_offset = 0;
 
 	/*
 	 * This RSI call will fail as RSI_ATTEST_TOKEN_INIT has to be invoked
@@ -87,7 +101,7 @@ bool test_realm_attestation_fault(void)
 	rsi_ret = rsi_attest_token_continue(
 				(u_register_t)attest_token_buffer,
 				attest_token_offset,
-				REALM_TOKEN_BUF_SIZE,
+				GRANULE_SIZE,
 				&bytes_copied);
 
 	if ((rsi_ret == RSI_SUCCESS) || (rsi_ret == RSI_INCOMPLETE)) {

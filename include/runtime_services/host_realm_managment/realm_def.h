@@ -127,7 +127,7 @@
 		(((idx) & ~MASK(RMI_MPIDR_AFF0)) << 	\
 		(RMI_MPIDR_AFF1_SHIFT - RMI_MPIDR_AFF0_WIDTH)));
 
-#define REALM_TOKEN_BUF_SIZE		GRANULE_SIZE
+#define REALM_TOKEN_BUF_SIZE		(2 * GRANULE_SIZE)
 
 #define DEFAULT_MECID			(unsigned short)0
 

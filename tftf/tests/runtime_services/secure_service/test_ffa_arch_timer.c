@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -87,6 +87,22 @@ static uint64_t ms_to_ticks(uint64_t ms)
 	return (ms * read_cntfrq_el0()) / 1000;
 }
 
+static void arch_timer_test_cleanup(unsigned int core_pos)
+{
+	/* Stop the NWd timer source and tear down the handler if still present. */
+	nwd_arch_timer_disable();
+	tftf_irq_disable(EL1_PHYS_TIMER_IRQ);
+	tftf_irq_unregister_handler(EL1_PHYS_TIMER_IRQ);
+
+	/*
+	 * If the SP timer was armed, wait for its deadline to pass and then
+	 * resume the SP so it can drain any pending timer interrupt before the
+	 * next test starts.
+	 */
+	waitms(SLEEP_TIME);
+	ffa_run(RECEIVER, core_pos);
+}
+
 /**
  * The aim is this test is to ensure that the functionality of arch (EL1
  * physical) timer configured by NWd endpoint, such as an hypervisor, is not
@@ -124,11 +140,13 @@ test_result_t test_ffa_physical_arch_timer_nwd_set_swd_preempt(void)
 
 	if (ffa_func_id(ret_values) != FFA_INTERRUPT) {
 		ERROR("Expected FFA_INTERRUPT as return.\n");
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 
 	if (!check_arch_timer_handled()) {
 		ERROR("Normal world timer interrupt hasn't actually been handled.\n");
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 
@@ -147,10 +165,12 @@ test_result_t test_ffa_physical_arch_timer_nwd_set_swd_preempt(void)
 	ret_values = ffa_run(RECEIVER, core_pos);
 
 	if (!is_ffa_direct_response(ret_values)) {
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 
 	if (cactus_get_response(ret_values) == CACTUS_ERROR) {
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 
@@ -160,12 +180,14 @@ test_result_t test_ffa_physical_arch_timer_nwd_set_swd_preempt(void)
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for last serviced interrupt"
 			" command\n");
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 
 	/* Make sure arch timer interrupt was serviced. */
 	if (cactus_get_response(ret_values) != TIMER_VIRTUAL_INTID) {
 		ERROR("Trusted watchdog timer interrupt not serviced by SP\n");
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 

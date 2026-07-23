@@ -34,6 +34,12 @@ static inline bool is_armv8_1_vhe_present(void)
 		ID_AA64MMFR1_EL1_VHE_MASK) == 1U;
 }
 
+static inline bool is_feat_e2h0_present(void)
+{
+	return EXTRACT(ID_AA64MMFR4_EL1_E2H0, read_id_aa64mmfr4_el1()) ==
+		ID_AA64MMFR4_EL1_E2H0_IMPLEMENTED;
+}
+
 static inline bool is_armv8_2_pan2_present(void)
 {
 	u_register_t id_aa64mmfr1_pan =

@@ -91,6 +91,12 @@ bool reset_tftf_mailbox(void);
  */
 bool get_tftf_mailbox(struct mailbox_buffers *mb);
 
+/*
+ * Call FFA_VERSION and check that it returns the expected version.
+ */
+test_result_t expect_ffa_version(uint32_t input_version,
+				 uint32_t expected_return);
+
 test_result_t check_spmc_testing_set_up(uint32_t ffa_version_major,
         uint32_t ffa_version_minor, const struct ffa_uuid *ffa_uuids,
         size_t ffa_uuids_size);

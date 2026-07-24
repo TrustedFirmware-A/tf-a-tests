@@ -15,6 +15,7 @@ TESTS_SOURCES	+=							\
 ifeq (${ARCH},aarch64)
 TESTS_SOURCES   +=                                                      \
         $(addprefix tftf/tests/runtime_services/secure_service/,        \
+	  test_el3_spmc_setup_and_discovery.c			\
 	  test_ffa_setup_and_discovery.c			\
 	  test_spm_simd.c					\
 	 )

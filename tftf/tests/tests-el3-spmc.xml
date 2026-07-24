@@ -10,6 +10,8 @@
 
   <testsuite name="FF-A Setup and Discovery"
              description="Test EL3 SPMC FF-A setup and discovery interfaces" >
+     <testcase name="EL3 SPMC FF-A v1.2 version negotiation"
+               function="test_el3_spmc_nwd_ffa_version" />
      <testcase name="Setting bit 31 in input version"
                function="test_ffa_version_bit31" />
      <testcase name="Test FFA_SPM_ID_GET"

@@ -6,7 +6,7 @@
 
 TC_IVY_BASE		= spm/ivy/app/plat/arm/tc
 
-PLAT_INCLUDES		+= -I${TC_IVY_BASE}/include/
+IVY_PLAT_INCLUDES		+= -I${TC_IVY_BASE}/include/
 
 # Add the FDT source
 ifeq ($(IVY_SHIM),0)

@@ -6,7 +6,7 @@
 
 FVP_IVY_BASE		= spm/ivy/app/plat/arm/fvp
 
-PLAT_INCLUDES		+= -I${FVP_IVY_BASE}/include/
+IVY_PLAT_INCLUDES		+= -I${FVP_IVY_BASE}/include/
 
 # Add the FDT source
 ifeq ($(IVY_SHIM),0)

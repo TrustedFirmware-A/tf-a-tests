@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -14,10 +14,12 @@
 #include <test_helpers.h>
 #include <timer.h>
 
+#include <platform_def.h>
+
 #define SLEEP_TIME	100U
 #define SENDER		HYP_ID
 #define RECEIVER	SP_ID(2)
-#define EL1_PHYS_TIMER_IRQ 30
+#define EL1_PHYS_TIMER_IRQ IRQ_PCPU_NS_TIMER
 
 static const struct ffa_uuid expected_sp_uuids[] = {
 		{PRIMARY_UUID}, {SECONDARY_UUID}
@@ -25,12 +27,46 @@ static const struct ffa_uuid expected_sp_uuids[] = {
 
 static volatile int arch_timer_received;
 
+static bool is_vhe_host_mode(void)
+{
+	u_register_t hcr_el2;
+	if (!IS_IN_EL2()) {
+		return false;
+	}
+
+	hcr_el2 = read_hcr_el2();
+	return ((hcr_el2 & HCR_E2H_BIT) != 0U) &&
+			((hcr_el2 & HCR_TGE_BIT) != 0U);
+}
+
+static void nwd_arch_timer_disable(void)
+{
+	if (is_vhe_host_mode()) {
+		write_cntp_ctl_el02(0);
+	} else {
+		write_cntp_ctl_el0(0);
+	}
+}
+
+static void nwd_arch_timer_program(uint64_t ticks)
+{
+	nwd_arch_timer_disable();
+
+	if (is_vhe_host_mode()) {
+		write_cntp_tval_el02(ticks);
+		write_cntp_ctl_el02(1);
+	} else {
+		write_cntp_tval_el0(ticks);
+		write_cntp_ctl_el0(1);
+	}
+}
+
 static int arch_timer_handler(void *data)
 {
 	INFO("Nwd irq handler executed\n");
 
 	/* Stop the timer now. */
-	write_cntp_ctl_el0(0);
+	nwd_arch_timer_disable();
 
 	/* Disable the EL1 physical timer interrupt and unregister the handler. */
 	tftf_irq_disable(EL1_PHYS_TIMER_IRQ);
@@ -49,6 +85,22 @@ static bool check_arch_timer_handled(void)
 static uint64_t ms_to_ticks(uint64_t ms)
 {
 	return (ms * read_cntfrq_el0()) / 1000;
+}
+
+static void arch_timer_test_cleanup(unsigned int core_pos)
+{
+	/* Stop the NWd timer source and tear down the handler if still present. */
+	nwd_arch_timer_disable();
+	tftf_irq_disable(EL1_PHYS_TIMER_IRQ);
+	tftf_irq_unregister_handler(EL1_PHYS_TIMER_IRQ);
+
+	/*
+	 * If the SP timer was armed, wait for its deadline to pass and then
+	 * resume the SP so it can drain any pending timer interrupt before the
+	 * next test starts.
+	 */
+	waitms(SLEEP_TIME);
+	ffa_run(RECEIVER, core_pos);
 }
 
 /**
@@ -77,9 +129,7 @@ test_result_t test_ffa_physical_arch_timer_nwd_set_swd_preempt(void)
 	tftf_irq_enable(EL1_PHYS_TIMER_IRQ, GIC_HIGHEST_NS_PRIORITY);
 
 	/* Configure the EL1 physical timer to expire in 20ms. */
-	write_cntp_ctl_el0(0);
-	write_cntp_tval_el0(ms_to_ticks(20));
-	write_cntp_ctl_el0(1);
+	nwd_arch_timer_program(ms_to_ticks(20));
 
 	/*
 	 * Send a command to SP requesting it to setup its arch timer. SP shall
@@ -90,11 +140,13 @@ test_result_t test_ffa_physical_arch_timer_nwd_set_swd_preempt(void)
 
 	if (ffa_func_id(ret_values) != FFA_INTERRUPT) {
 		ERROR("Expected FFA_INTERRUPT as return.\n");
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 
 	if (!check_arch_timer_handled()) {
 		ERROR("Normal world timer interrupt hasn't actually been handled.\n");
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 
@@ -113,10 +165,12 @@ test_result_t test_ffa_physical_arch_timer_nwd_set_swd_preempt(void)
 	ret_values = ffa_run(RECEIVER, core_pos);
 
 	if (!is_ffa_direct_response(ret_values)) {
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 
 	if (cactus_get_response(ret_values) == CACTUS_ERROR) {
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 
@@ -126,12 +180,14 @@ test_result_t test_ffa_physical_arch_timer_nwd_set_swd_preempt(void)
 	if (!is_ffa_direct_response(ret_values)) {
 		ERROR("Expected a direct response for last serviced interrupt"
 			" command\n");
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 
 	/* Make sure arch timer interrupt was serviced. */
 	if (cactus_get_response(ret_values) != TIMER_VIRTUAL_INTID) {
 		ERROR("Trusted watchdog timer interrupt not serviced by SP\n");
+		arch_timer_test_cleanup(core_pos);
 		return TEST_RESULT_FAIL;
 	}
 

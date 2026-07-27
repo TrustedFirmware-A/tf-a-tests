@@ -20,30 +20,46 @@ static void save_el1_ctx_common_regs(const el1_ctx_regs_t *ctx)
 {
 	el1_common_regs_t *el1_common = get_el1_common_regs_ctx(ctx);
 
-	write_el1_ctx_reg(el1_common, spsr_el1, "spsr_el1", read_spsr_el1());
-	write_el1_ctx_reg(el1_common, elr_el1, "elr_el1", read_elr_el1());
-	write_el1_ctx_reg(el1_common, sctlr_el1, "sctlr_el1", read_sctlr_el1());
-	write_el1_ctx_reg(el1_common, tcr_el1, "tcr_el1", read_tcr_el1());
-	write_el1_ctx_reg(el1_common, cpacr_el1, "cpacr_el1", read_cpacr_el1());
 	write_el1_ctx_reg(el1_common, csselr_el1, "csselr_el1", read_csselr_el1());
 	write_el1_ctx_reg(el1_common, sp_el1, "sp_el1", read_sp_el1());
-	write_el1_ctx_reg(el1_common, esr_el1, "esr_el1", read_esr_el1());
-	write_el1_ctx_reg(el1_common, ttbr0_el1, "ttbr0_el1", read_ttbr0_el1());
-	write_el1_ctx_reg(el1_common, ttbr1_el1, "ttbr1_el1", read_ttbr1_el1());
-	write_el1_ctx_reg(el1_common, mair_el1, "mair_el1", read_mair_el1());
-	write_el1_ctx_reg(el1_common, amair_el1, "amair_el1", read_amair_el1());
 	write_el1_ctx_reg(el1_common, actlr_el1, "actlr_el1", read_actlr_el1());
 	write_el1_ctx_reg(el1_common, tpidr_el1, "tpidr_el1", read_tpidr_el1());
 	write_el1_ctx_reg(el1_common, tpidr_el0, "tpidr_el0", read_tpidr_el0());
 	write_el1_ctx_reg(el1_common, tpidrro_el0, "tpidrro_el0", read_tpidrro_el0());
 	write_el1_ctx_reg(el1_common, par_el1, "par_el1", read_par_el1());
-	write_el1_ctx_reg(el1_common, far_el1, "far_el1", read_far_el1());
-	write_el1_ctx_reg(el1_common, afsr0_el1, "afsr0_el1", read_afsr0_el1());
-	write_el1_ctx_reg(el1_common, afsr1_el1, "afsr1_el1", read_afsr1_el1());
-	write_el1_ctx_reg(el1_common, contextidr_el1, "contextidr_el1", read_contextidr_el1());
-	write_el1_ctx_reg(el1_common, vbar_el1, "vbar_el1", read_vbar_el1());
 	write_el1_ctx_reg(el1_common, mdccint_el1, "mdccint_el1", read_mdccint_el1());
 	write_el1_ctx_reg(el1_common, mdscr_el1, "mdscr_el1", read_mdscr_el1());
+
+	write_el1_ctx_reg(el1_common, ttbr0_el1, "ttbr0_el1",
+		EL2_IS_IN_HOST() ? read_ttbr0_el12() : read_ttbr0_el1());
+	write_el1_ctx_reg(el1_common, ttbr1_el1, "ttbr1_el1",
+		EL2_IS_IN_HOST() ? read_ttbr1_el12() : read_ttbr1_el1());
+	write_el1_ctx_reg(el1_common, vbar_el1, "vbar_el1",
+		EL2_IS_IN_HOST() ? read_vbar_el12() : read_vbar_el1());
+	write_el1_ctx_reg(el1_common, tcr_el1, "tcr_el1",
+		EL2_IS_IN_HOST() ? read_tcr_el12() : read_tcr_el1());
+	write_el1_ctx_reg(el1_common, sctlr_el1, "sctlr_el1",
+		EL2_IS_IN_HOST() ? read_sctlr_el12() : read_sctlr_el1());
+	write_el1_ctx_reg(el1_common, far_el1, "far_el1",
+		EL2_IS_IN_HOST() ? read_far_el12() : read_far_el1());
+	write_el1_ctx_reg(el1_common, mair_el1, "mair_el1",
+		EL2_IS_IN_HOST() ? read_mair_el12() : read_mair_el1());
+	write_el1_ctx_reg(el1_common, cpacr_el1, "cpacr_el1",
+		EL2_IS_IN_HOST() ? read_cpacr_el12() : read_cpacr_el1());
+	write_el1_ctx_reg(el1_common, contextidr_el1, "contextidr_el1",
+		EL2_IS_IN_HOST() ? read_contextidr_el12() : read_contextidr_el1());
+	write_el1_ctx_reg(el1_common, esr_el1, "esr_el1",
+		EL2_IS_IN_HOST() ? read_esr_el12() : read_esr_el1());
+	write_el1_ctx_reg(el1_common, amair_el1, "amair_el1",
+		EL2_IS_IN_HOST() ? read_amair_el12() : read_amair_el1());
+	write_el1_ctx_reg(el1_common, afsr0_el1, "afsr0_el1",
+		EL2_IS_IN_HOST() ? read_afsr0_el12() : read_afsr0_el1());
+	write_el1_ctx_reg(el1_common, afsr1_el1, "afsr1_el1",
+		EL2_IS_IN_HOST() ? read_afsr1_el12() : read_afsr1_el1());
+	write_el1_ctx_reg(el1_common, elr_el1, "elr_el1",
+		EL2_IS_IN_HOST() ? read_elr_el12() : read_elr_el1());
+	write_el1_ctx_reg(el1_common, spsr_el1, "spsr_el1",
+		EL2_IS_IN_HOST() ? read_spsr_el12() : read_spsr_el1());
 }
 
 static void save_el1_ctx_aarch32_regs(const el1_ctx_regs_t *ctx)
@@ -68,7 +84,9 @@ static void save_el1_ctx_timer_regs(const el1_ctx_regs_t *ctx)
 	write_el1_ctx_reg(el1_arch_timer, cntp_cval_el0, "cntp_cval_el0", read_cntp_cval_el0());
 	write_el1_ctx_reg(el1_arch_timer, cntv_ctl_el0, "cntv_ctl_el0", read_cntv_ctl_el0());
 	write_el1_ctx_reg(el1_arch_timer, cntv_cval_el0, "cntv_cval_el0", read_cntv_cval_el0());
-	write_el1_ctx_reg(el1_arch_timer, cntkctl_el1, "cntkctl_el1", read_cntkctl_el1());
+
+	write_el1_ctx_reg(el1_arch_timer, cntkctl_el1, "cntkctl_el1",
+		EL2_IS_IN_HOST() ? read_cntkctl_el12() : read_cntkctl_el1());
 }
 
 static void save_el1_ctx_mte2_regs(const el1_ctx_regs_t *ctx)
@@ -168,30 +186,49 @@ static void write_el1_ctx_common_regs(const el1_ctx_regs_t *ctx, uint64_t reg_ma
 {
 	el1_common_regs_t *el1_common = get_el1_common_regs_ctx(ctx);
 
-	write_spsr_el1((el1_common->spsr_el1.reg_value) | reg_mask);
-	write_elr_el1((el1_common->elr_el1.reg_value) | reg_mask);
-	write_sctlr_el1((el1_common->sctlr_el1.reg_value) | reg_mask);
-	write_tcr_el1((el1_common->tcr_el1.reg_value) | reg_mask);
-	write_cpacr_el1((el1_common->cpacr_el1.reg_value) | reg_mask);
 	write_csselr_el1((el1_common->csselr_el1.reg_value) | reg_mask);
 	write_sp_el1((el1_common->sp_el1.reg_value) | reg_mask);
-	write_esr_el1((el1_common->esr_el1.reg_value) | reg_mask);
-	write_ttbr0_el1((el1_common->ttbr0_el1.reg_value) | reg_mask);
-	write_ttbr1_el1((el1_common->ttbr1_el1.reg_value) | reg_mask);
-	write_mair_el1((el1_common->mair_el1.reg_value) | reg_mask);
-	write_amair_el1((el1_common->amair_el1.reg_value) | reg_mask);
 	write_actlr_el1((el1_common->actlr_el1.reg_value) | reg_mask);
 	write_tpidr_el1((el1_common->tpidr_el1.reg_value) | reg_mask);
 	write_tpidr_el0((el1_common->tpidr_el0.reg_value) | reg_mask);
 	write_tpidrro_el0((el1_common->tpidrro_el0.reg_value) | reg_mask);
 	write_par_el1((el1_common->par_el1.reg_value) | reg_mask);
-	write_far_el1((el1_common->far_el1.reg_value) | reg_mask);
-	write_afsr0_el1((el1_common->afsr0_el1.reg_value) | reg_mask);
-	write_afsr1_el1((el1_common->afsr1_el1.reg_value) | reg_mask);
-	write_contextidr_el1((el1_common->contextidr_el1.reg_value) | reg_mask);
-	write_vbar_el1((el1_common->vbar_el1.reg_value) | reg_mask);
 	write_mdccint_el1((el1_common->mdccint_el1.reg_value) | reg_mask);
 	write_mdscr_el1((el1_common->mdscr_el1.reg_value) | reg_mask);
+
+	if (EL2_IS_IN_HOST()) {
+		write_ttbr0_el12((el1_common->ttbr0_el1.reg_value) | reg_mask);
+		write_ttbr1_el12((el1_common->ttbr1_el1.reg_value) | reg_mask);
+		write_vbar_el12((el1_common->vbar_el1.reg_value) | reg_mask);
+		write_tcr_el12((el1_common->tcr_el1.reg_value) | reg_mask);
+		write_sctlr_el12((el1_common->sctlr_el1.reg_value) | reg_mask);
+		write_far_el12((el1_common->far_el1.reg_value) | reg_mask);
+		write_mair_el12((el1_common->mair_el1.reg_value) | reg_mask);
+		write_cpacr_el12((el1_common->cpacr_el1.reg_value) | reg_mask);
+		write_contextidr_el12((el1_common->contextidr_el1.reg_value) | reg_mask);
+		write_esr_el12((el1_common->esr_el1.reg_value) | reg_mask);
+		write_amair_el12((el1_common->amair_el1.reg_value) | reg_mask);
+		write_afsr0_el12((el1_common->afsr0_el1.reg_value) | reg_mask);
+		write_afsr1_el12((el1_common->afsr1_el1.reg_value) | reg_mask);
+		write_elr_el12((el1_common->elr_el1.reg_value) | reg_mask);
+		write_spsr_el12((el1_common->spsr_el1.reg_value) | reg_mask);
+	} else {
+		write_ttbr0_el1((el1_common->ttbr0_el1.reg_value) | reg_mask);
+		write_ttbr1_el1((el1_common->ttbr1_el1.reg_value) | reg_mask);
+		write_vbar_el1((el1_common->vbar_el1.reg_value) | reg_mask);
+		write_tcr_el1((el1_common->tcr_el1.reg_value) | reg_mask);
+		write_sctlr_el1((el1_common->sctlr_el1.reg_value) | reg_mask);
+		write_far_el1((el1_common->far_el1.reg_value) | reg_mask);
+		write_mair_el1((el1_common->mair_el1.reg_value) | reg_mask);
+		write_cpacr_el1((el1_common->cpacr_el1.reg_value) | reg_mask);
+		write_contextidr_el1((el1_common->contextidr_el1.reg_value) | reg_mask);
+		write_esr_el1((el1_common->esr_el1.reg_value) | reg_mask);
+		write_amair_el1((el1_common->amair_el1.reg_value) | reg_mask);
+		write_afsr0_el1((el1_common->afsr0_el1.reg_value) | reg_mask);
+		write_afsr1_el1((el1_common->afsr1_el1.reg_value) | reg_mask);
+		write_elr_el1((el1_common->elr_el1.reg_value) | reg_mask);
+		write_spsr_el1((el1_common->spsr_el1.reg_value) | reg_mask);
+	}
 }
 
 static void write_el1_ctx_aarch32_regs(const el1_ctx_regs_t *ctx, uint64_t reg_mask)
@@ -216,7 +253,11 @@ static void write_el1_ctx_timer_regs(const el1_ctx_regs_t *ctx, uint64_t reg_mas
 	write_cntp_cval_el0((el1_arch_timer->cntp_cval_el0.reg_value) | reg_mask);
 	write_cntv_ctl_el0((el1_arch_timer->cntv_ctl_el0.reg_value) | reg_mask);
 	write_cntv_cval_el0((el1_arch_timer->cntv_cval_el0.reg_value) | reg_mask);
-	write_cntkctl_el1((el1_arch_timer->cntkctl_el1.reg_value) | reg_mask);
+	if (EL2_IS_IN_HOST()) {
+		write_cntkctl_el12((el1_arch_timer->cntkctl_el1.reg_value) | reg_mask);
+	} else {
+		write_cntkctl_el1((el1_arch_timer->cntkctl_el1.reg_value) | reg_mask);
+	}
 }
 
 static void write_el1_ctx_mte2_regs(const el1_ctx_regs_t *ctx, uint64_t reg_mask)

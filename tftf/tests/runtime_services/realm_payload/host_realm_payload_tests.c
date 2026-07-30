@@ -40,6 +40,8 @@ static uint128_t pauth_keys_after[NUM_KEYS];
 
 /* EL1 Virtual Timer IRQ */
 #define EL1_VIRT_TIMER_IRQ	27U
+#define ESR_ISS_DABORT_WNR_BIT	U(6)
+#define ESR_ISS_DABORT_ISV_BIT	U(24)
 
 static unsigned int tftf_get_pmu_irq(void)
 {
@@ -2486,7 +2488,7 @@ destroy_realm:
 /*
  * Test aims to generate SEA in Realm by
  * executing instructions in unprotected IPA - Rec0
- * In Rec 1 , when HIPAS=UNASSIGNED_NS, we expect to get a Data abort.
+ * In Rec 1/2, when HIPAS=UNASSIGNED_NS, we expect to get Data aborts.
  * Then Host will inject SEA to realm.
  * Realm exception handler runs and returns ESR back to Host
  * Host validates ESR
@@ -2500,7 +2502,7 @@ test_result_t host_realm_sea_unprotected(void)
 
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, base, base_ipa, esr, hpfar;
+	u_register_t ret, base, base_ipa, esr, far;
 	unsigned int host_call_result;
 	u_register_t exit_reason;
 	struct realm realm;
@@ -2510,7 +2512,8 @@ test_result_t host_realm_sea_unprotected(void)
 	u_register_t num_aux_planes = 0U;
 	long sl = RTT_MIN_LEVEL;
 	u_register_t s2sz = MAX_IPA_BITS;
-	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
+	u_register_t rec_flag[] = {RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE,
+				   RMI_RUNNABLE, RMI_RUNNABLE, RMI_RUNNABLE};
 	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
@@ -2538,7 +2541,7 @@ test_result_t host_realm_sea_unprotected(void)
 	params.rtt_s2ap_encoding_indirect = rtt_s2ap_encoding_indirect;
 	params.sl = sl;
 	params.rec_flag = rec_flag;
-	params.rec_count = 4U;
+	params.rec_count = 6U;
 	params.num_aux_planes = num_aux_planes;
 
 	if (!host_create_activate_realm_payload(&realm, &params)) {
@@ -2559,6 +2562,7 @@ test_result_t host_realm_sea_unprotected(void)
 	run = (struct rmi_rec_run *)realm.run[0];
 	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U, HOST_ARG3_INDEX, base_ipa);
 	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 1U, HOST_ARG3_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 2U, HOST_ARG3_INDEX, base_ipa);
 
 	/* Rec0 expect SEA in realm due to IA unprotected IPA page */
 	ret1 = host_enter_realm_execute(&realm, REALM_INSTR_FETCH_CMD,
@@ -2579,13 +2583,15 @@ test_result_t host_realm_sea_unprotected(void)
 	run = (struct rmi_rec_run *)realm.run[1U];
 
 	/* Rec1 expect rec exit due to DA unprotected IPA page when HIPAS is UNASSIGNED_NS */
-	ret1 = host_enter_realm_execute(&realm, REALM_DATA_ACCESS_CMD,
+	ret1 = host_enter_realm_execute(&realm, REALM_DATA_PAIR_ACCESS_CMD,
 			RMI_EXIT_SYNC, 1U);
 
 	if (!ret1 || (run->exit.hpfar >> 4U) != (base_ipa >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
 		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
 		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & (1UL << ESR_ISS_DABORT_WNR_BIT)) != 0U)
+		|| ((run->exit.esr & (1UL << ESR_ISS_DABORT_ISV_BIT)) != 0U)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
 		ERROR("Rec1 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
 				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
@@ -2611,6 +2617,44 @@ test_result_t host_realm_sea_unprotected(void)
 		goto destroy_realm;
 	}
 	INFO("Rec1 ESR=0x%lx\n", esr);
+
+	run = (struct rmi_rec_run *)realm.run[2U];
+
+	/* Rec2 expect rec exit due to DA unprotected IPA page when HIPAS is UNASSIGNED_NS */
+	ret1 = host_enter_realm_execute(&realm, REALM_DATA_PAIR_STORE_CMD,
+			RMI_EXIT_SYNC, 2U);
+
+	if (!ret1 || (run->exit.hpfar >> 4U) != (base_ipa >> PAGE_SIZE_SHIFT)
+		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & (1UL << ESR_ISS_DABORT_WNR_BIT)) == 0U)
+		|| ((run->exit.esr & (1UL << ESR_ISS_DABORT_ISV_BIT)) != 0U)
+		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
+		ERROR("Rec2 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
+				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
+		goto destroy_realm;
+	}
+	INFO("Host DA FAR=0x%lx, HPFAR=0x%lx\n", run->exit.far, run->exit.hpfar);
+	INFO("Injecting SEA to Realm\n");
+
+	/* Inject SEA back to Realm */
+	run->entry.flags = REC_ENTRY_FLAG_INJECT_SEA;
+
+	/* Rec2 re-entry expect exception handler to run, return ESR */
+	ret = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 2U);
+	if (ret != RMI_SUCCESS || exit_reason != RMI_EXIT_HOST_CALL) {
+		ERROR("rec2 failed ret=0x%lx exit_reason=0x%lx", ret, run->exit.exit_reason);
+		goto destroy_realm;
+	}
+
+	/* get ESR set by Realm exception handler */
+	esr = host_shared_data_get_realm_val(&realm, PRIMARY_PLANE_ID, 2U, HOST_ARG2_INDEX);
+	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_DABORT_CUR_EL)) {
+		ERROR("Rec2 incorrect ESR=0x%lx\n", esr);
+		goto destroy_realm;
+	}
+	INFO("Rec2 ESR=0x%lx\n", esr);
 	res = host_call_result;
 
 	if (num_aux_planes == 0U) {
@@ -2619,81 +2663,123 @@ test_result_t host_realm_sea_unprotected(void)
 
 	INFO("Running test on Plane 1\n");
 
-	run = (struct rmi_rec_run *)realm.run[2U];
-
-	/*
-	 * Arg for Plane0 instruction to enter Plane1 on Rec 2,3
-	 */
-	host_realm_set_aux_plane_args(&realm, 1U, 2U);
-	host_realm_set_aux_plane_args(&realm, 1U, 3U);
-
-
-	/* Test cmd for Plane 1 Rec 2/3 */
-	host_shared_data_set_realm_cmd(&realm, REALM_INSTR_FETCH_CMD, 1U, 2U);
-	host_shared_data_set_realm_cmd(&realm, REALM_DATA_ACCESS_CMD, 1U, 3U);
-
-	/*
-	 * Args for Plane1, Rec 2/3
-	 * Executing base_ipa from plane 1 rec 2, causes plane exit to P0
-	 * Data access from plane 1 rec 3, causes rec exit, host injects SEA
-	 */
-	host_shared_data_set_host_val(&realm, 1U, 2U, HOST_ARG3_INDEX, base_ipa);
-	host_shared_data_set_host_val(&realm, 1U, 3U, HOST_ARG3_INDEX, base_ipa);
-
-	/* Rec2 expect plane exit to P0 due to IA unprotected IPA page */
-	ret1 = host_enter_realm_execute(&realm, REALM_PLANE_N_EXCEPTION_CMD,
-			RMI_EXIT_HOST_CALL, 2U);
-	if (!ret1) {
-		ERROR("Rec2 did not fault\n");
-		goto destroy_realm;
-	}
-
-	/* Get ESR and HPFAR set by P0. */
-	esr = host_shared_data_get_realm_val(&realm, 0U, 2U, HOST_ARG2_INDEX);
-	hpfar = host_shared_data_get_realm_val(&realm, 0U, 2U, HOST_ARG3_INDEX);
-
-	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) ||
-	    ((hpfar >> HPFAR_EL2_FIPA_SHIFT) != (base_ipa >> PAGE_SIZE_SHIFT))) {
-		ERROR("Rec2 incorrect ESR=0x%lx HPFAR=0x%lx\n", esr, hpfar);
-		goto destroy_realm;
-	}
-	INFO("Rec2 ESR=0x%lx\n", esr);
-
 	run = (struct rmi_rec_run *)realm.run[3U];
 
-	/* Rec3 expect rec exit due to DA unprotected IPA page when HIPAS is UNASSIGNED_NS */
+	/*
+	 * Arg for Plane0 instruction to enter Plane1 on Rec 3,4,5
+	 */
+	host_realm_set_aux_plane_args(&realm, 1U, 3U);
+	host_realm_set_aux_plane_args(&realm, 1U, 4U);
+	host_realm_set_aux_plane_args(&realm, 1U, 5U);
+
+
+	/* Test cmd for Plane 1 Rec 3/4/5 */
+	host_shared_data_set_realm_cmd(&realm, REALM_INSTR_FETCH_CMD, 1U, 3U);
+	host_shared_data_set_realm_cmd(&realm, REALM_DATA_PAIR_ACCESS_CMD, 1U, 4U);
+	host_shared_data_set_realm_cmd(&realm, REALM_DATA_PAIR_STORE_CMD, 1U, 5U);
+
+	/*
+	 * Args for Plane1, Rec 3/4/5
+	 * Executing base_ipa from plane 1 rec 3 causes plane exit to P0.
+	 * Data access from plane 1 rec 4/5 causes rec exit, host injects SEA.
+	 */
+	host_shared_data_set_host_val(&realm, 1U, 3U, HOST_ARG3_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, 1U, 4U, HOST_ARG3_INDEX, base_ipa);
+	host_shared_data_set_host_val(&realm, 1U, 5U, HOST_ARG3_INDEX, base_ipa);
+
+	/* Rec3 expect plane exit to P0 due to IA unprotected IPA page */
+	ret1 = host_enter_realm_execute(&realm, REALM_PLANE_N_EXCEPTION_CMD,
+			RMI_EXIT_HOST_CALL, 3U);
+	if (!ret1) {
+		ERROR("Rec3 did not fault\n");
+		goto destroy_realm;
+	}
+
+	/* get ESR/FAR set by P0 */
+	esr = host_shared_data_get_realm_val(&realm, 0U, 3U, HOST_ARG2_INDEX);
+	far = host_shared_data_get_realm_val(&realm, 0U, 3U, HOST_ARG3_INDEX);
+
+	if (((EC_BITS(esr) != EC_IABORT_LOWER_EL) || (far != base_ipa))) {
+		ERROR("Rec3 incorrect ESR=0x%lx far=0x%lx\n", esr, far);
+		goto destroy_realm;
+	}
+	INFO("Rec3 ESR=0x%lx\n", esr);
+
+	run = (struct rmi_rec_run *)realm.run[4U];
+
+	/* Rec4 expect rec exit due to DA unprotected IPA page when HIPAS is UNASSIGNED_NS */
 	ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
-			RMI_EXIT_SYNC, 3U);
+			RMI_EXIT_SYNC, 4U);
 
 	if (!ret1 || (run->exit.hpfar >> 4U) != (base_ipa >> PAGE_SIZE_SHIFT)
 		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
 		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
 		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & (1UL << ESR_ISS_DABORT_WNR_BIT)) != 0U)
+		|| ((run->exit.esr & (1UL << ESR_ISS_DABORT_ISV_BIT)) != 0U)
 		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
-		ERROR("Rec3 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
+		ERROR("Rec4 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
 				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
 		goto destroy_realm;
 	}
 	INFO("Host DA FAR=0x%lx, HPFAR=0x%lx\n", run->exit.far, run->exit.hpfar);
-	INFO("Injecting SEA to Realm PN Rec3\n");
+	INFO("Injecting SEA to Realm PN Rec4\n");
 
-	/* Inject SEA back to Realm P1 Rec3 */
+	/* Inject SEA back to Realm P1 Rec4 */
 	run->entry.flags = REC_ENTRY_FLAG_INJECT_SEA;
 
-	/* Rec1 re-entry expect exception handler to run, return ESR */
-	ret = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 3U);
+	/* Rec4 re-entry expect exception handler to run, return ESR */
+	ret = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 4U);
 	if (ret != RMI_SUCCESS || exit_reason != RMI_EXIT_HOST_CALL) {
-		ERROR("rec3 failed ret=0x%lx exit_reason=0x%lx", ret, run->exit.exit_reason);
+		ERROR("rec4 failed ret=0x%lx exit_reason=0x%lx", ret, run->exit.exit_reason);
 		goto destroy_realm;
 	}
 
 	/* get ESR/FAR set by Realm PN exception handler */
-	esr = host_shared_data_get_realm_val(&realm, 1U, 3U, HOST_ARG2_INDEX);
+	esr = host_shared_data_get_realm_val(&realm, 1U, 4U, HOST_ARG2_INDEX);
 	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_DABORT_CUR_EL)) {
-		ERROR("Rec3 incorrect ESR=0x%lx\n", esr);
+		ERROR("Rec4 incorrect ESR=0x%lx\n", esr);
 		goto destroy_realm;
 	}
-	INFO("Rec3 ESR=0x%lx\n", esr);
+	INFO("Rec4 ESR=0x%lx\n", esr);
+
+	run = (struct rmi_rec_run *)realm.run[5U];
+
+	/* Rec5 expect rec exit due to DA unprotected IPA page when HIPAS is UNASSIGNED_NS */
+	ret1 = host_enter_realm_execute(&realm, REALM_ENTER_PLANE_N_CMD,
+			RMI_EXIT_SYNC, 5U);
+
+	if (!ret1 || (run->exit.hpfar >> 4U) != (base_ipa >> PAGE_SIZE_SHIFT)
+		|| (EC_BITS(run->exit.esr) != EC_DABORT_LOWER_EL)
+		|| ((run->exit.esr & ISS_DFSC_MASK) < FSC_L0_TRANS_FAULT)
+		|| ((run->exit.esr & ISS_DFSC_MASK) > FSC_L3_TRANS_FAULT)
+		|| ((run->exit.esr & (1UL << ESR_ISS_DABORT_WNR_BIT)) == 0U)
+		|| ((run->exit.esr & (1UL << ESR_ISS_DABORT_ISV_BIT)) != 0U)
+		|| ((run->exit.esr & (1UL << ESR_ISS_EABORT_EA_BIT)) != 0U)) {
+		ERROR("Rec5 did not fault exit=0x%lx ret1=%d HPFAR=0x%lx esr=0x%lx\n",
+				run->exit.exit_reason, ret1, run->exit.hpfar, run->exit.esr);
+		goto destroy_realm;
+	}
+	INFO("Host DA FAR=0x%lx, HPFAR=0x%lx\n", run->exit.far, run->exit.hpfar);
+	INFO("Injecting SEA to Realm PN Rec5\n");
+
+	/* Inject SEA back to Realm P1 Rec5 */
+	run->entry.flags = REC_ENTRY_FLAG_INJECT_SEA;
+
+	/* Rec5 re-entry expect exception handler to run, return ESR */
+	ret = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 5U);
+	if (ret != RMI_SUCCESS || exit_reason != RMI_EXIT_HOST_CALL) {
+		ERROR("rec5 failed ret=0x%lx exit_reason=0x%lx", ret, run->exit.exit_reason);
+		goto destroy_realm;
+	}
+
+	/* get ESR/FAR set by Realm PN exception handler */
+	esr = host_shared_data_get_realm_val(&realm, 1U, 5U, HOST_ARG2_INDEX);
+	if (((esr & ISS_DFSC_MASK) != DFSC_NO_WALK_SEA) || (EC_BITS(esr) != EC_DABORT_CUR_EL)) {
+		ERROR("Rec5 incorrect ESR=0x%lx\n", esr);
+		goto destroy_realm;
+	}
+	INFO("Rec5 ESR=0x%lx\n", esr);
 	res = host_call_result;
 
 destroy_realm:

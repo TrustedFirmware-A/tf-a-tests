@@ -1,12 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2024, Arm Limited. All rights reserved.
+  Copyright (c) 2024-2026, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
 
 <testsuites>
+
+  <testsuite name="FF-A Setup and Discovery"
+             description="Test EL3 SPMC FF-A setup and discovery interfaces" >
+     <testcase name="EL3 SPMC FF-A v1.2 version negotiation"
+               function="test_el3_spmc_nwd_ffa_version" />
+     <testcase name="Setting bit 31 in input version"
+               function="test_ffa_version_bit31" />
+     <testcase name="Test FFA_SPM_ID_GET"
+               function="test_ffa_spm_id_get" />
+     <testcase name="FF-A RXTX Map API success"
+               function="test_ffa_rxtx_map_success" />
+     <testcase name="FF-A RXTX Map API consecutive"
+               function="test_ffa_rxtx_map_fail" />
+     <testcase name="FF-A RXTX Unmap API success"
+               function="test_ffa_rxtx_unmap_success" />
+     <testcase name="FF-A RXTX Unmap API consecutive"
+               function="test_ffa_rxtx_unmap_fail" />
+     <testcase name="FF-A RXTX remap unmapped region success"
+               function="test_ffa_rxtx_map_unmapped_success" />
+  </testsuite>
 
   <testsuite name="SIMD,SVE Registers context"
              description="Validate context switch between NWd and SWd" >

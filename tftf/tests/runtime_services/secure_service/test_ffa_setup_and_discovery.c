@@ -182,18 +182,7 @@ static test_result_t test_ffa_version(uint32_t input_version,
 	if (should_skip_version_test)
 		return TEST_RESULT_SKIPPED;
 
-	struct ffa_value ret_values = ffa_version(input_version);
-
-	uint32_t spm_version = (uint32_t)(0xFFFFFFFF & ret_values.fid);
-
-	if (spm_version == expected_return)
-		return TEST_RESULT_SUCCESS;
-
-	tftf_testcase_printf("Input Version: 0x%x\n"
-			     "Return: 0x%x\nExpected: 0x%x\n",
-			      input_version, spm_version, expected_return);
-
-	return TEST_RESULT_FAIL;
+	return expect_ffa_version(input_version, expected_return);
 }
 
 /*

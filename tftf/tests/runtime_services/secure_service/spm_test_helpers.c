@@ -41,6 +41,23 @@ bool get_tftf_mailbox(struct mailbox_buffers *mb)
 	return true;
 }
 
+test_result_t expect_ffa_version(uint32_t input_version,
+				 uint32_t expected_return)
+{
+	struct ffa_value ret = ffa_version(input_version);
+	uint32_t spm_version = (uint32_t)ret.fid;
+
+	if (spm_version == expected_return) {
+		return TEST_RESULT_SUCCESS;
+	}
+
+	tftf_testcase_printf("Input Version: 0x%x\n"
+			     "Return: 0x%x\nExpected: 0x%x\n",
+			     input_version, spm_version, expected_return);
+
+	return TEST_RESULT_FAIL;
+}
+
 test_result_t check_spmc_testing_set_up(
 	uint32_t ffa_version_major, uint32_t ffa_version_minor,
 	const struct ffa_uuid *ffa_uuids, size_t ffa_uuids_size)

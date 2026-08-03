@@ -281,9 +281,8 @@ static test_result_t host_realm_multi_cpu_payload_del_undel(void)
 }
 
 /*
- * Fail testing of delegation process. The first is an error expected
- * for processing the same granule twice and the second is submission of
- * a misaligned address
+ * Test delegation of an already delegated range and a misaligned undelegate.
+ * The range operation skips granules already in the target state.
  */
 test_result_t host_realm_fail_del(void)
 {
@@ -294,15 +293,15 @@ test_result_t host_realm_fail_del(void)
 	retrmm = host_rmi_granule_delegate((u_register_t)&bufferdelegate[0]);
 	if (retrmm != 0UL) {
 		tftf_testcase_printf
-			("Delegate operation does not pass as expected for double delegation, %lx\n",
+			("Delegate operation does not pass as expected, %lx\n",
 			retrmm);
 		return TEST_RESULT_FAIL;
 	}
 
 	retrmm = host_rmi_granule_delegate((u_register_t)&bufferdelegate[0]);
-	if (retrmm == 0UL) {
+	if (retrmm != 0UL) {
 		tftf_testcase_printf
-			("Delegate operation does not fail as expected for double delegation, %lx\n",
+			("Delegate operation does not skip double delegation, %lx\n",
 			retrmm);
 		return TEST_RESULT_FAIL;
 	}

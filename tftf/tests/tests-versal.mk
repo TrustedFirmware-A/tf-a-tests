@@ -37,5 +37,10 @@ TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/pin_test/*.c)
 endif
 endif # PLAT in AMD_XILINX_TEST_ALLOWED_PLATS
 
+# The general-storage and invalid-id IOCTL cases need ZynqMP firmware.
+ifeq ($(PLAT),zynqmp)
+TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/ioctl_storage_test/*.c)
+endif
+
 include tftf/tests/tests-standard.mk
 TESTS_SOURCES := $(sort ${TESTS_SOURCES})

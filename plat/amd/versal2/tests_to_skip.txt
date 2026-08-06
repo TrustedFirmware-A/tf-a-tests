@@ -68,3 +68,7 @@ Query runtime services/Probe PMF Version
 
 #TESTS: el3-power-state
 EL3 power state parser validation
+
+#TESTS: general-storage and invalid-id IOCTL cases need ZynqMP firmware
+AMD-Xilinx tests/Ioctl general storage
+AMD-Xilinx tests/Ioctl invalid id

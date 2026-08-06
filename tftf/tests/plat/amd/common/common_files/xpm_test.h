@@ -35,6 +35,9 @@ extern const uint32_t test_clock_list_size;
 extern const struct test_pins test_pin_list[];
 extern const uint32_t test_pin_list_size;
 
+extern const struct test_pll_api test_pll_list[];
+extern const uint32_t test_pll_list_size;
+
 /* Whether the status is correct for re-requesting an already owned node. */
 bool pm_is_valid_repeat_request_status(int32_t status);
 

@@ -74,6 +74,11 @@ enum pm_pin_fun_ids {
 /* The firmware returns the status directly, so no acknowledge is asked for. */
 #define PM_REQ_ACK_DEFAULT      0U
 
+/* Values the PLL set cases pass, rejected without touching live hardware. */
+#define PM_PLL_TEST_SET_MODE            PM_PLL_MODE_RESET
+#define PM_PLL_TEST_SET_PARAM           PM_PLL_PARAM_ID_FBDIV
+#define PM_PLL_TEST_SET_PARAM_VALUE     10U
+
 /* The divider is a plain value, returned unchanged. */
 #define PM_CLK_TEST_PARENT              1U
 

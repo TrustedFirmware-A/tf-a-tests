@@ -15,6 +15,11 @@
 #define PM_REQ_ACK_BLOCKING		2U
 #define PM_REQ_ACK_DEFAULT		PM_REQ_ACK_BLOCKING
 
+/* Out-of-range values, rejected before they can reconfigure a live PLL. */
+#define PM_PLL_TEST_SET_MODE		0xFFU
+#define PM_PLL_TEST_SET_PARAM		0xFFU
+#define PM_PLL_TEST_SET_PARAM_VALUE	0U
+
 /* Setting a divider needs a sentinel selecting DIV0; reading returns both. */
 #define CLK_USB0_BUS_REF		32U
 

@@ -18,6 +18,7 @@
 
 /* Peripheral nodes */
 #define NODE_USB_0		22U
+#define NODE_APLL		50U
 #define NODE_RTC		61U
 
 /* Replace the Versal PM_DEV_* values from xpm_nodeid.h. */

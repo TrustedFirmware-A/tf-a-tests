@@ -27,6 +27,14 @@ const struct test_clocks test_clock_list[] = {
 
 const uint32_t test_clock_list_size = ARRAY_SIZE(test_clock_list);
 
+const struct test_pll_api test_pll_list[] = {
+	{
+		.clock_id = PM_CLK_RPU_PLL,
+	},
+};
+
+const uint32_t test_pll_list_size = ARRAY_SIZE(test_pll_list);
+
 bool pm_is_valid_repeat_request_status(int32_t status)
 {
 	/* The firmware accepts a repeat request. */

@@ -34,6 +34,14 @@ const struct test_pins test_pin_list[] = {
 
 const uint32_t test_pin_list_size = ARRAY_SIZE(test_pin_list);
 
+const struct test_pll_api test_pll_list[] = {
+	{
+		.clock_id = NODE_APLL,
+	},
+};
+
+const uint32_t test_pll_list_size = ARRAY_SIZE(test_pll_list);
+
 bool pm_is_valid_repeat_request_status(int32_t status)
 {
 	/* The firmware rejects a repeat request. */

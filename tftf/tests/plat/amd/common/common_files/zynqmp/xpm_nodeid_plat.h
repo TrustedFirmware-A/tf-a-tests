@@ -33,6 +33,12 @@
 #endif
 #define PM_DEV_RTC		NODE_RTC
 
+/* Reset IDs are PM_RESET_BASE (1000) plus the line number. */
+#ifdef PM_RST_GEM_0
+#undef PM_RST_GEM_0
+#endif
+#define PM_RST_GEM_0		1029U
+
 /* Portable aliases for tests that use PM_DEV_* style names. */
 #define PM_DEV_ACPU_CORE	NODE_APU_0
 #define PM_DEV_RPU_CORE		NODE_RPU_0

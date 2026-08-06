@@ -5,7 +5,7 @@
 #
 
 # Platforms that build the AMD-Xilinx tests; others get standard tests only.
-AMD_XILINX_TEST_ALLOWED_PLATS	:= versal versal2
+AMD_XILINX_TEST_ALLOWED_PLATS	:= versal versal2 zynqmp
 
 include tftf/tests/tests-versal-common.mk
 

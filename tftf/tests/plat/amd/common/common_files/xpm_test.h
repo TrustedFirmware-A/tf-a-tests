@@ -21,8 +21,19 @@ struct test_clocks {
 	uint32_t device_id;             /**< Device that owns the clock */
 };
 
+/* Pin exercised by the pin tests, with its owning device and function. */
+struct test_pins {
+	uint32_t node_id;               /**< Device that owns the pin */
+	uint32_t pin_id;                /**< Pin ID */
+	uint32_t function_id;           /**< Function selected on the pin */
+	uint32_t reset_id;              /**< Reset line of the owning device */
+};
+
 extern const struct test_clocks test_clock_list[];
 extern const uint32_t test_clock_list_size;
+
+extern const struct test_pins test_pin_list[];
+extern const uint32_t test_pin_list_size;
 
 /* Whether the status is correct for re-requesting an already owned node. */
 bool pm_is_valid_repeat_request_status(int32_t status);

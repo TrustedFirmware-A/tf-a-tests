@@ -30,9 +30,8 @@ TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/clock_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/tf_a_feature_check/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/tf_a_register_sgi/*.c)
 
-# pin_test references the pm_pin_fun_ids enum (PIN_FUNC_*) that lives
-# in versal/xpm_defs_plat.h only; only compile it on the Versal platform.
-ifeq ($(PLAT),versal)
+# pin_test needs a per-platform pin table.
+ifneq ($(filter $(PLAT),versal zynqmp),)
 TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/pin_test/*.c)
 endif
 endif # PLAT in AMD_XILINX_TEST_ALLOWED_PLATS

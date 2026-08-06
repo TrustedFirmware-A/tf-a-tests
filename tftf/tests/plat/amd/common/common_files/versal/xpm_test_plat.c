@@ -26,6 +26,17 @@ const struct test_clocks test_clock_list[] = {
 
 const uint32_t test_clock_list_size = ARRAY_SIZE(test_clock_list);
 
+const struct test_pins test_pin_list[] = {
+	{
+		.node_id = PM_DEV_GEM_0,
+		.pin_id = PM_STMIC_LMIO_0,
+		.function_id = PIN_FUNC_GEM0,
+		.reset_id = PM_RST_GEM_0,
+	},
+};
+
+const uint32_t test_pin_list_size = ARRAY_SIZE(test_pin_list);
+
 bool pm_is_valid_repeat_request_status(int32_t status)
 {
 	/* The firmware accepts a repeat request. */

@@ -8,20 +8,8 @@
 #include "xpm_defs.h"
 #include "xpm_defs_plat.h"
 #include "xpm_nodeid.h"
-
-struct test_pins {
-	uint32_t node_id;
-	uint32_t pin_id;
-	uint32_t function_id;
-};
-
-struct test_pins test_pin_list[] = {
-	{
-		.node_id = PM_DEV_GEM_0,
-		.pin_id = PM_STMIC_LMIO_0,
-		.function_id = PIN_FUNC_GEM0,
-	},
-};
+#include "xpm_nodeid_plat.h"
+#include "xpm_test.h"
 
 /*
  * This function iterates through a list of test pins, requests the associated
@@ -32,12 +20,12 @@ struct test_pins test_pin_list[] = {
  */
 test_result_t test_set_pin_parameter_of_unrequested_pin(void)
 {
-	int32_t test_pin_num = ARRAY_SIZE(test_pin_list);
+	int32_t test_pin_num = (int32_t)test_pin_list_size;
 	uint32_t capabilities = PM_CAP_ACCESS;
 	uint32_t param_id = PINCTRL_CONFIG_SLEW_RATE;
 	uint32_t set_param_val = 0U;
 	uint32_t get_param_val = 0U;
-	uint32_t ack = 0U;
+	uint32_t ack = PM_REQ_ACK_DEFAULT;
 	int32_t status, i;
 
 	for (i = 0; i < test_pin_num; i++) {
@@ -97,10 +85,10 @@ test_result_t test_set_pin_parameter_of_unrequested_pin(void)
  */
 test_result_t test_set_pin_function_of_unrequested_pin(void)
 {
-	int32_t test_pin_num = ARRAY_SIZE(test_pin_list);
+	int32_t test_pin_num = (int32_t)test_pin_list_size;
 	uint32_t capabilities = PM_CAP_ACCESS;
 	uint32_t get_function_id = 0U;
-	uint32_t ack = 0U;
+	uint32_t ack = PM_REQ_ACK_DEFAULT;
 	int32_t status, i;
 
 	for (i = 0; i < test_pin_num; i++) {
@@ -156,12 +144,12 @@ test_result_t test_set_pin_function_of_unrequested_pin(void)
  */
 test_result_t test_set_pin_config_param(void)
 {
-	int32_t test_pin_num = ARRAY_SIZE(test_pin_list);
+	int32_t test_pin_num = (int32_t)test_pin_list_size;
 	uint32_t param_id = PINCTRL_CONFIG_SLEW_RATE;
 	uint32_t capabilities = PM_CAP_ACCESS;
 	uint32_t set_param_val = 0U;
 	uint32_t get_param_val = 0U;
-	uint32_t ack = 0U;
+	uint32_t ack = PM_REQ_ACK_DEFAULT;
 	int32_t status, i;
 
 	for (i = 0; i < test_pin_num; i++) {
@@ -183,7 +171,7 @@ test_result_t test_set_pin_config_param(void)
 			return TEST_RESULT_FAIL;
 		}
 
-		status = xpm_reset_assert(PM_RST_GEM_0, PM_RESET_ACTION_PULSE);
+		status = xpm_reset_assert(test_pin_list[i].reset_id, PM_RESET_ACTION_PULSE);
 		if (status != PM_RET_SUCCESS) {
 			tftf_testcase_printf("%s ERROR to reset assert\n", __func__);
 			return TEST_RESULT_FAIL;
@@ -279,10 +267,10 @@ test_result_t test_set_pin_config_param(void)
  */
 test_result_t test_set_pin_function(void)
 {
-	int32_t test_pin_num = ARRAY_SIZE(test_pin_list);
+	int32_t test_pin_num = (int32_t)test_pin_list_size;
 	uint32_t capabilities = PM_CAP_ACCESS;
 	uint32_t get_function_id = 0U;
-	uint32_t ack = 0U;
+	uint32_t ack = PM_REQ_ACK_DEFAULT;
 	int32_t status, i;
 
 	for (i = 0; i < test_pin_num; i++) {
@@ -304,7 +292,7 @@ test_result_t test_set_pin_function(void)
 			return TEST_RESULT_FAIL;
 		}
 
-		status = xpm_reset_assert(PM_RST_GEM_0, PM_RESET_ACTION_PULSE);
+		status = xpm_reset_assert(test_pin_list[i].reset_id, PM_RESET_ACTION_PULSE);
 		if (status != PM_RET_SUCCESS) {
 			tftf_testcase_printf("%s ERROR to reset assert\n", __func__);
 			return TEST_RESULT_FAIL;

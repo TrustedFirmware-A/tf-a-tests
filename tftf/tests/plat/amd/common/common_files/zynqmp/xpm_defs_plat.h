@@ -27,4 +27,11 @@
 #define PM_CLK_SET_DIVIDER(val)		(PM_CLK_DIV0_SELECT | \
 					 ((val) & PM_CLK_DIVIDER_MASK))
 
+/* MIO52 in the USB0 group, whose node the APU can request. */
+#define ZYNQMP_PIN_USB0			52U	/* MIO52, USB0 group */
+#define ZYNQMP_PINCTRL_FUNC_USB0	43U
+
+/* Core reset of the USB controller that owns the pin. */
+#define ZYNQMP_RST_USB0			1059U
+
 #endif /* XPM_DEFS_PLAT_H_ */

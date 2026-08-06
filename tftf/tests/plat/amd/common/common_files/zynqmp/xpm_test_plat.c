@@ -23,6 +23,17 @@ const struct test_clocks test_clock_list[] = {
 
 const uint32_t test_clock_list_size = ARRAY_SIZE(test_clock_list);
 
+const struct test_pins test_pin_list[] = {
+	{
+		.node_id = NODE_USB_0,
+		.pin_id = ZYNQMP_PIN_USB0,
+		.function_id = ZYNQMP_PINCTRL_FUNC_USB0,
+		.reset_id = ZYNQMP_RST_USB0,
+	},
+};
+
+const uint32_t test_pin_list_size = ARRAY_SIZE(test_pin_list);
+
 bool pm_is_valid_repeat_request_status(int32_t status)
 {
 	/* The firmware rejects a repeat request. */

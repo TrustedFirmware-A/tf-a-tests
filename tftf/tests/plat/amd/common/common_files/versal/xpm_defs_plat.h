@@ -9,6 +9,8 @@
 #ifndef XPM_DEFS_PLAT_H_
 #define XPM_DEFS_PLAT_H_
 
+#include "xpm_nodeid_plat.h"
+
 /* Versal pin function IDs as defined in xilpm/xpm_defs.h (auto-numbered) */
 enum pm_pin_fun_ids {
 	PIN_FUNC_SPI0,			/**< Pin function ID of SPI0 */
@@ -68,5 +70,8 @@ enum pm_pin_fun_ids {
 	PIN_FUNC_TAMPER_TRIGGER,	/**< Pin function ID of TAMPER_TRIGGER */
 	MAX_FUNCTION,			/**< Max Pin function */
 };
+
+/* The firmware returns the status directly, so no acknowledge is asked for. */
+#define PM_REQ_ACK_DEFAULT      0U
 
 #endif /* XPM_DEFS_PLAT_H_ */

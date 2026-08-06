@@ -9,6 +9,8 @@
 #ifndef XPM_DEFS_PLAT_H_
 #define XPM_DEFS_PLAT_H_
 
+#include "xpm_nodeid_plat.h"
+
 /*
  * Versal Gen 2 SMC dispatch constants.
  *
@@ -30,5 +32,8 @@
  */
 #define PACK_PM_PAIR(hi, lo) \
 	(((uint64_t)(uint32_t)(hi) << 32U) | (uint64_t)(uint32_t)(lo))
+
+/* The firmware returns the status directly, so no acknowledge is asked for. */
+#define PM_REQ_ACK_DEFAULT      0U
 
 #endif /* XPM_DEFS_PLAT_H_ */

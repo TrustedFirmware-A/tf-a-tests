@@ -1,12 +1,15 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "eemi_api.h"
 #include "xpm_defs.h"
+#include "xpm_defs_plat.h"
 #include "xpm_nodeid.h"
+#include "xpm_nodeid_plat.h"
+#include "xpm_test.h"
 
 uint32_t test_node_list[] = {
 	PM_DEV_USB_0,
@@ -25,7 +28,7 @@ test_result_t test_release_already_released_node(void)
 	int32_t test_node_num = ARRAY_SIZE(test_node_list);
 	uint32_t capabilities = PM_CAP_ACCESS;
 	xpm_node_status node_status = {0U};
-	uint32_t ack = 0U;
+	uint32_t ack = PM_REQ_ACK_DEFAULT;
 	int32_t status, i;
 
 	for (i = 0; i < test_node_num; i++) {
@@ -81,7 +84,7 @@ test_result_t test_request_already_requested_node(void)
 	int32_t test_node_num = ARRAY_SIZE(test_node_list);
 	uint32_t capabilities = PM_CAP_ACCESS;
 	xpm_node_status node_status = {0U};
-	uint32_t ack = 0U;
+	uint32_t ack = PM_REQ_ACK_DEFAULT;
 	int32_t status, i;
 
 	for (i = 0; i < test_node_num; i++) {
@@ -109,9 +112,10 @@ test_result_t test_request_already_requested_node(void)
 		}
 
 		status = xpm_request_node(node_id, capabilities, PM_MAX_QOS, ack);
-		if (status != PM_RET_SUCCESS) {
-			tftf_testcase_printf("%s ERROR to request already request 0x%x node, "
-					     "Status: 0x%x\n", __func__, node_id, status);
+		if (!pm_is_valid_repeat_request_status(status)) {
+			tftf_testcase_printf("%s ERROR unexpected result requesting already "
+					     "requested 0x%x node, Status: 0x%x\n",
+					     __func__, node_id, status);
 			return TEST_RESULT_FAIL;
 		}
 
@@ -137,7 +141,7 @@ test_result_t test_set_max_latency(void)
 	int32_t test_node_num = ARRAY_SIZE(test_node_list);
 	uint32_t capabilities = PM_CAP_ACCESS;
 	uint32_t max_latency = XPM_MAX_LATENCY;
-	uint32_t ack = 0U;
+	uint32_t ack = PM_REQ_ACK_DEFAULT;
 	int32_t status, i;
 
 	for (i = 0; i < test_node_num; i++) {
@@ -180,7 +184,7 @@ test_result_t test_set_requirement(void)
 	uint32_t capabilities = PM_CAP_ACCESS;
 	uint32_t capabilities2 = PM_CAP_CONTEXT;
 	xpm_node_status node_status = {0U};
-	uint32_t ack = 0U;
+	uint32_t ack = PM_REQ_ACK_DEFAULT;
 	int32_t status, i;
 
 	for (i = 0; i < test_node_num; i++) {
@@ -235,7 +239,7 @@ test_result_t test_get_node_status(void)
 	int32_t test_node_num = ARRAY_SIZE(test_node_list);
 	xpm_node_status node_status = {0U};
 	uint32_t capabilities = PM_CAP_ACCESS;
-	uint32_t ack = 0U;
+	uint32_t ack = PM_REQ_ACK_DEFAULT;
 	int32_t status, i;
 
 	for (i = 0; i < test_node_num; i++) {

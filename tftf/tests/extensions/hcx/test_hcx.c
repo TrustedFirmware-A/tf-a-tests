@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,7 +16,7 @@ test_result_t test_feat_hcx_enabled(void)
 	u_register_t hcrx_el2;
 
 	/* Make sure FEAT_HCX is supported. */
-	if (!get_feat_hcx_support()) {
+	if (!get_feat_hcx_support() || !IS_IN_EL2()) {
 		return TEST_RESULT_SKIPPED;
 	}
 

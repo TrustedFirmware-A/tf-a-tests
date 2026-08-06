@@ -74,4 +74,10 @@ enum pm_pin_fun_ids {
 /* The firmware returns the status directly, so no acknowledge is asked for. */
 #define PM_REQ_ACK_DEFAULT      0U
 
+/* The divider is a plain value, returned unchanged. */
+#define PM_CLK_TEST_PARENT              1U
+
+#define PM_CLK_SET_DIVIDER(val)         (val)
+#define PM_CLK_DIVIDER_MASK             0xFFFFFFFFU
+
 #endif /* XPM_DEFS_PLAT_H_ */

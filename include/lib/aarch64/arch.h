@@ -618,6 +618,10 @@
 #define ID_AA64MMFR4_EL1_HACDBS_MASK            ULL(0xf)
 #define ID_AA64MMFR4_EL1_HACDBS_SUPPORTED       ULL(0x1)
 
+#define ID_AA64MMFR4_EL1_SRMASK_SHIFT           U(44)
+#define ID_AA64MMFR4_EL1_SRMASK_WIDTH           U(4)
+#define ID_AA64MMFR4_EL1_SRMASK_SUPPORTED       ULL(0x1)
+
 /* ID_AA64PFR1_EL1 definitions */
 #define ID_AA64PFR1_EL1_PFAR_SHIFT		U(60)
 #define ID_AA64PFR1_EL1_PFAR_MASK		ULL(0xf)
@@ -783,6 +787,7 @@
 #define SCR_FGTEN2_BIT		(UL(1) << 59)
 #define SCR_NSE_BIT		(ULL(1) << SCR_NSE_SHIFT)
 #define SCR_EnIDCP128_BIT	(UL(1) << 55)
+#define SCR_SRMASKEn_BIT	(UL(1) << 54)
 #define SCR_PFAREn_BIT		(UL(1) << 53)
 #define SCR_TWERR_BIT		(UL(1) << 52)
 #define SCR_TMEA_BIT		(UL(1) << 51)
@@ -2017,6 +2022,11 @@
 #define GCSCRE0_EL1		S3_0_C2_C5_2
 #define GCSPR_EL1		S3_0_C2_C5_1
 #define GCSPR_EL0		S3_3_C2_C5_1
+
+/*******************************************************************************
+ * FEAT_SRMASK - Alias and Bitmask Registers
+ ******************************************************************************/
+#define SCTLRMASK_EL1		S3_0_C1_C4_0
 
 /*******************************************************************************
  * Realm management extension register definitions

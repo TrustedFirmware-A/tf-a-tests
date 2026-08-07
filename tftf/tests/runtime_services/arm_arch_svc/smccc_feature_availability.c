@@ -141,6 +141,7 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(get_feat_pmuv3_supported,			MDCR_TPM_BIT);
 	CHECK_BIT_SET(is_feat_ebep_supported,			MDCR_PMEE(1));
 	CHECK_BIT_SET(is_feat_step2_supported,			MDCR_EnSTEPOP_BIT);
+	CHECK_BIT_SET(is_feat_trbe_exc_present,			MDCR_TRBEE_EN_BIT);
 	CHECK_NO_BITS_SET(MDCR_EL3);
 
 	reg = get_feature_for_reg(MPAM3_EL3_OPCODE);

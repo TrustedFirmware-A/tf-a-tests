@@ -503,6 +503,12 @@ static inline bool is_feat_trbe_present(void)
 		>= ID_AA64DFR0_TRACEBUFFER_SUPPORTED;
 }
 
+static inline bool is_feat_trbe_exc_present(void)
+{
+	return (((read_id_aa64dfr2_el1() >> ID_AA64DFR2_TRBE_EXC_SHIFT) &
+		ID_AA64DFR2_TRBE_EXC_MASK) >= ID_AA64DFR2_TRBE_EXC_SUPPORTED);
+}
+
 static inline bool is_feat_gcs_present(void)
 {
 	return EXTRACT(ID_AA64PFR1_EL1_GCS, read_id_aa64pfr1_el1())

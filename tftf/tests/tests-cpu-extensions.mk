@@ -30,6 +30,7 @@ TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	extensions/sys_reg_trace/test_sys_reg_trace.c			\
 	extensions/the/test_the.c					\
 	extensions/trbe/test_trbe.c					\
+	extensions/trbe/test_trbe_exc.c					\
 	extensions/trf/test_trf.c					\
 	extensions/wfxt/test_wfxt.c					\
 	extensions/step2/test_step2.c					\

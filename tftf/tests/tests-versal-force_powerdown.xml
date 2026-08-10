@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Copyright (c) 2026, Advanced Micro Devices, Inc. All rights reserved.
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<document>
+  <testsuites>
+
+    <testsuite name="Force Powerdown tests" description="AMD-Xilinx Force Powerdown platform tests">
+      <testcase name="Force Powerdown" function="test_force_powerdown" />
+      <testcase name="Request Wakeup" function="test_request_wake_up" />
+    </testsuite>
+
+  </testsuites>
+</document>

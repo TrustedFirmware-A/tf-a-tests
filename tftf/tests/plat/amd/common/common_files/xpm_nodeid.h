@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,10 +9,11 @@
 
 /*
  * Device Nodes
+ *
+ * The primary APU/RPU core IDs differ between Versal and Versal Gen 2 and
+ * live in the per-platform $(PLAT)/xpm_nodeid_plat.h headers (selected via
+ * the portable PM_DEV_ACPU_CORE / PM_DEV_RPU_CORE aliases).
  */
-#define PM_DEV_ACPU_0           0x1810C003U
-#define PM_DEV_RPU0_0           0x18110005U
-#define PM_DEV_RPU0_0           0x18110005U
 #define PM_DEV_USB_0		0x18224018U
 #define PM_DEV_TTC_0            0x18224024U
 #define PM_DEV_GEM_0            0x18224019U
@@ -42,5 +43,17 @@
  * Reset Nodes
  */
 #define PM_RST_GEM_0            0xC104033U
+
+/*
+ * Force-powerdown target subsystem and RPU wake-up address.
+ *
+ * PM_SUBSYS_RPU selects the RPU subsystem the APU asks PLM to power down /
+ * wake up; RPU_WAKEUP_ADDR is the entry point the RPU resumes execution at
+ * (the start of TCM).  0x1C000005 decodes to a CDO-defined subsystem id
+ * (subsystem class, index 5), not a per-platform device id, so a single
+ * shared definition is correct for both Versal and Versal Gen 2.
+ */
+#define PM_SUBSYS_RPU		0x1C000005U
+#define RPU_WAKEUP_ADDR		0xFFE00000U
 
 #endif /* XPM_NODEID_H_ */

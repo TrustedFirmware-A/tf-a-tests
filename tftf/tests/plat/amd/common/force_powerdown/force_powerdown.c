@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,10 +8,8 @@
 #include "xpm_defs.h"
 #include "xpm_nodeid.h"
 
-#define PM_SUBSYS_RPU0_0	0x1C000005
-#define TARGET_SUBSYSTEM	PM_SUBSYS_RPU0_0
-#define TARGET_DEVICEID		PM_DEV_RPU0_0
-#define WAKEUP_ADDR		0xFFE00000U
+#define TARGET_SUBSYSTEM	PM_SUBSYS_RPU
+#define WAKEUP_ADDR		RPU_WAKEUP_ADDR
 
 /*
  * This function is used to force power down the subsystem if the

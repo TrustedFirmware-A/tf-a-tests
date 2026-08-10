@@ -1,28 +1,28 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "eemi_api.h"
 #include "xpm_defs.h"
-#include "xpm_nodeid.h"
+#include "xpm_nodeid_plat.h"
 
 struct test_ioctl test_ioctl_list[] = {
 	{
-		.node_id = PM_DEV_RPU0_0,
+		.node_id = PM_DEV_RPU_CORE,
 		.ioctl_id = IOCTL_GET_RPU_OPER_MODE,
 		.ioctl_arg1 = 0U,
 		.ioctl_arg2 = 0U,
 	},
 	{
-		.node_id = PM_DEV_RPU0_0,
+		.node_id = PM_DEV_RPU_CORE,
 		.ioctl_id = IOCTL_SET_RPU_OPER_MODE,
 		.ioctl_arg1 = XPM_RPU_MODE_SPLIT,
 		.ioctl_arg2 = 0U,
 	},
 	{
-		.node_id = PM_DEV_RPU0_0,
+		.node_id = PM_DEV_RPU_CORE,
 		.ioctl_id = IOCTL_GET_RPU_OPER_MODE,
 		.ioctl_arg1 = 0U,
 		.ioctl_arg2 = 0U,

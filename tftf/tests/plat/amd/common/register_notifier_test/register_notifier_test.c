@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,7 +16,12 @@ static void test_notify_cb(xpm_notifier *notifier);
 xpm_notifier notifier = {
 	.callback = test_notify_cb,
 	.node = PM_DEV_USB_0,
-	.event = EVENT_STATE_CHANGE,
+	/*
+	 * EVENT_ZERO_USERS fires when xpm_release_node() drops the device's
+	 * user count to zero, and is supported on all platforms currently
+	 * exercised by this test.
+	 */
+	.event = EVENT_ZERO_USERS,
 	.flags = 0,
 };
 
@@ -30,8 +35,9 @@ void test_notify_cb(xpm_notifier *notifier)
 }
 
 /*
- * This function is used to register a notification with change state
- * mode and change the requirements of the particular node.
+ * Register a notifier for PM_DEV_USB_0 and release the node to trigger
+ * EVENT_ZERO_USERS.  The node is released here, so the unregister path must
+ * not release it again.
  */
 static int test_register_notifier(void)
 {
@@ -48,38 +54,40 @@ static int test_register_notifier(void)
 	if (status != PM_RET_SUCCESS) {
 		tftf_testcase_printf("%s ERROR to register the notifier, Status: 0x%x\n",
 				     __func__, status);
+		(void)xpm_release_node(notifier.node);
 		return status;
 	}
 
 	/*
-	 * Setting the requirement to 0 after registering the notifier triggers the
-	 * EVENT_STATE_CHANGE event for the PM_DEV_USB_0 node.
+	 * The node is released here to trigger EVENT_ZERO_USERS.  If the
+	 * release fails, unregister the notifier first so we do not leave it
+	 * registered with the firmware on the failure path.
 	 */
-	status = xpm_set_requirement(notifier.node, 0, 0, 0);
-	if (status != PM_RET_SUCCESS)
-		tftf_testcase_printf("%s ERROR to set the requirement for Node Id: 0x%x, "
-				     "Status: 0x%x\n", __func__, notifier.node, status);
+	status = xpm_release_node(notifier.node);
+	if (status != PM_RET_SUCCESS) {
+		tftf_testcase_printf("%s ERROR to release Node Id: 0x%x, Status: 0x%x\n",
+				     __func__, notifier.node, status);
+		(void)xpm_unregister_notifier(&notifier);
+	}
 
 	return status;
 }
 
 /*
- * This function is used to unregister the notifier.
+ * Unregister the notifier.  The node was already released in
+ * test_register_notifier() to trigger EVENT_ZERO_USERS.
  */
 static int test_unregister_notifier(void)
 {
 	int32_t status;
 
+	/*
+	 * If xpm_unregister_notifier() fails, the notifier remains
+	 * registered with the firmware until the platform is reset.
+	 */
 	status = xpm_unregister_notifier(&notifier);
 	if (status != PM_RET_SUCCESS)
 		tftf_testcase_printf("%s ERROR to unregister the notifier\n", __func__);
-
-	status = xpm_release_node(notifier.node);
-	if (status != PM_RET_SUCCESS) {
-		tftf_testcase_printf("%s ERROR to release 0x%x node, "
-				     "Status: 0x%x\n", __func__, notifier.node, status);
-		return TEST_RESULT_FAIL;
-	}
 
 	return status;
 }

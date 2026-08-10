@@ -8,6 +8,9 @@
 ################################################################################
 # Disable the listed tests for zynqmp platform
 ################################################################################
+#TESTS: AMD-Xilinx tests
+AMD-Xilinx tests
+
 #TESTS: tftf-validation
 Framework Validation/IRQ handling
 Framework Validation/Events API

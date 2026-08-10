@@ -228,6 +228,28 @@
 #define VSESR_EL2		S3_4_C5_C2_3
 #define VTCR_EL2		S3_4_C2_C1_2
 
+/* EL1 register aliases accessed from EL2 in VHE host mode. */
+#define SCTLR_EL12		S3_5_C1_C0_0
+#define CPACR_EL12		S3_5_C1_C0_2
+#define TTBR0_EL12		S3_5_C2_C0_0
+#define TTBR1_EL12		S3_5_C2_C0_1
+#define TCR_EL12		S3_5_C2_C0_2
+#define SPSR_EL12		S3_5_C4_C0_0
+#define ELR_EL12		S3_5_C4_C0_1
+#define AFSR0_EL12		S3_5_C5_C1_0
+#define AFSR1_EL12		S3_5_C5_C1_1
+#define ESR_EL12		S3_5_C5_C2_0
+#define FAR_EL12		S3_5_C6_C0_0
+#define MAIR_EL12		S3_5_C10_C2_0
+#define AMAIR_EL12		S3_5_C10_C3_0
+#define VBAR_EL12		S3_5_C12_C0_0
+#define CONTEXTIDR_EL12		S3_5_C13_C0_1
+#define TPIDR_EL02		S3_5_C13_C0_2
+#define TPIDRRO_EL02		S3_5_C13_C0_3
+#define TPIDR_EL12		S3_5_C13_C0_4
+#define CNTKCTL_EL12		S3_5_C14_C1_0
+#define TCR2_EL12		S3_5_C2_C0_3
+
 /*******************************************************************************
  * Generic timer memory mapped registers & offsets
  ******************************************************************************/
@@ -620,6 +642,10 @@
 #define ID_AA64MMFR4_EL1_HACDBS_WIDTH           U(4)
 #define ID_AA64MMFR4_EL1_HACDBS_MASK            ULL(0xf)
 #define ID_AA64MMFR4_EL1_HACDBS_SUPPORTED       ULL(0x1)
+#define ID_AA64MMFR4_EL1_E2H0_SHIFT            U(24)
+#define ID_AA64MMFR4_EL1_E2H0_MASK             ULL(0xf)
+#define ID_AA64MMFR4_EL1_E2H0_WIDTH            U(4)
+#define ID_AA64MMFR4_EL1_E2H0_IMPLEMENTED      ULL(0x0)
 
 #define ID_AA64MMFR4_EL1_SRMASK_SHIFT           U(44)
 #define ID_AA64MMFR4_EL1_SRMASK_WIDTH           U(4)
@@ -781,6 +807,10 @@
 #define CPACR_EL1_SMEN_TRAP_EL0	U(0x1)
 #define CPACR_EL1_SMEN_TRAP_ALL	U(0x2)
 #define CPACR_EL1_SMEN_TRAP_NONE U(0x3)
+
+#define CPACR_EL1_RESET_VAL	(CPACR_EL1_FPEN(CPACR_EL1_FP_TRAP_NONE) |     \
+				 CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE) |     \
+				 CPACR_EL1_SMEN(CPACR_EL1_SMEN_TRAP_NONE))
 
 /* SCR definitions */
 #define SCR_RES1_BITS		((U(1) << 4) | (U(1) << 5))

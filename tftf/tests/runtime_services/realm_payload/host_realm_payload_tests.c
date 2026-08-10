@@ -4060,7 +4060,11 @@ test_result_t host_realm_feat_tcr2(void)
 		 * it is safe to set those bits here.
 		 */
 		tcr2_el1_val = ((1UL << 1U) | (1UL << 2U));
-		write_tcr2_el1(tcr2_el1_val);
+		if (EL2_IS_IN_HOST()) {
+			write_tcr2_el12(tcr2_el1_val);
+		} else  {
+			write_tcr2_el1(tcr2_el1_val);
+		}
 	}
 
 	for (unsigned int i = 0; i < 2; i++) {
@@ -4074,12 +4078,17 @@ test_result_t host_realm_feat_tcr2(void)
 	ret2 = host_destroy_realm(&realm);
 
 	if (is_feat_tcr2_supported()) {
-		if (read_tcr2_el1() != tcr2_el1_val) {
+		u_register_t tcr2 = EL2_IS_IN_HOST() ? read_tcr2_el12() : read_tcr2_el1();
+		if (tcr2 != tcr2_el1_val) {
 			ERROR("Host TCR2_EL1 not preserved\n");
 			return TEST_RESULT_FAIL;
 		}
 
-		write_tcr2_el1(0UL);
+		if (EL2_IS_IN_HOST()) {
+			write_tcr2_el12(0UL);
+		} else {
+			write_tcr2_el1(0UL);
+		}
 	}
 
 	if (!ret1 || !ret2) {

@@ -14,28 +14,37 @@
 
 static uint8_t zero_mem[512];
 
-#define sve_traps_save_disable(flags)						\
-	do {									\
-		if (IS_IN_EL2()) {						\
-			flags = read_cptr_el2();				\
-			write_cptr_el2(flags & ~(CPTR_EL2_TZ_BIT));		\
-		} else {							\
-			flags = read_cpacr_el1();				\
-			write_cpacr_el1(flags |					\
-					CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE));\
-		}								\
-		isb();								\
-	} while (false)
+static unsigned long sve_traps_save_disable(void)
+{
+	unsigned long flags;
 
-#define sve_traps_restore(flags)						\
-	do {									\
-		if (IS_IN_EL2()) {						\
-			write_cptr_el2(flags);					\
-		} else {							\
-			write_cpacr_el1(flags);					\
-		}								\
-		isb();								\
-	} while (false)
+	if (IS_IN_EL2()) {
+		flags = read_cptr_el2();
+		if (EL2_IS_IN_HOST()) {
+			write_cptr_el2(flags |
+				CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE));
+		} else {
+			write_cptr_el2(flags & ~(CPTR_EL2_TZ_BIT));
+		}
+	} else {
+		flags = read_cpacr_el1();
+		write_cpacr_el1(flags |
+				CPACR_EL1_ZEN(CPACR_EL1_ZEN_TRAP_NONE));
+	}
+	isb();
+
+	return flags;
+}
+
+static void sve_traps_restore(unsigned long flags)
+{
+	if (IS_IN_EL2()) {
+		write_cptr_el2(flags);
+	} else {
+		write_cpacr_el1(flags);
+	}
+	isb();
+}
 
 static void config_vq(uint8_t sve_vq)
 {
@@ -59,9 +68,7 @@ static void config_vq(uint8_t sve_vq)
 uint64_t sve_rdvl_1(void)
 {
 	uint64_t vl;
-	unsigned long flags;
-
-	sve_traps_save_disable(flags);
+	unsigned long flags = sve_traps_save_disable();
 
 	__asm__ volatile(
 		".arch_extension sve\n"
@@ -76,10 +83,9 @@ uint64_t sve_rdvl_1(void)
 
 uint64_t sve_read_zcr_elx(void)
 {
-	unsigned long flags;
+	unsigned long flags = sve_traps_save_disable();
 	uint64_t rval;
 
-	sve_traps_save_disable(flags);
 
 	if (IS_IN_EL2()) {
 		rval = read_zcr_el2();
@@ -94,9 +100,7 @@ uint64_t sve_read_zcr_elx(void)
 
 void sve_write_zcr_elx(uint64_t rval)
 {
-	unsigned long flags;
-
-	sve_traps_save_disable(flags);
+	unsigned long flags = sve_traps_save_disable();
 
 	if (IS_IN_EL2()) {
 		write_zcr_el2(rval);
@@ -113,10 +117,9 @@ void sve_write_zcr_elx(uint64_t rval)
 /* Set the SVE vector length in the current EL's ZCR_ELx register */
 void sve_config_vq(uint8_t sve_vq)
 {
-	unsigned long flags;
+	unsigned long flags = sve_traps_save_disable();
 
 	assert(is_armv8_2_sve_present());
-	sve_traps_save_disable(flags);
 
 	/* cap vq to arch supported max value */
 	if (sve_vq > SVE_VQ_ARCH_MAX) {
@@ -139,9 +142,7 @@ uint32_t sve_probe_vl(uint8_t sve_max_vq)
 {
 	uint32_t vl_bitmap = 0;
 	uint8_t vq, rdvl_vq;
-	unsigned long flags;
-
-	sve_traps_save_disable(flags);
+	unsigned long flags = sve_traps_save_disable();
 
 	/* cap vq to arch supported max value */
 	if (sve_max_vq > SVE_VQ_ARCH_MAX) {
@@ -212,9 +213,8 @@ static void z_regs_write(const sve_z_regs_t *z_regs)
  */
 void sve_z_regs_write(const sve_z_regs_t *z_regs)
 {
-	unsigned long flags;
+	unsigned long flags = sve_traps_save_disable();
 
-	sve_traps_save_disable(flags);
 	z_regs_write(z_regs);
 	sve_traps_restore(flags);
 }
@@ -224,9 +224,7 @@ void sve_z_regs_write(const sve_z_regs_t *z_regs)
  */
 void sve_z_regs_read(sve_z_regs_t *z_regs)
 {
-	unsigned long flags;
-
-	sve_traps_save_disable(flags);
+	unsigned long flags = sve_traps_save_disable();
 
 	__asm__ volatile(
 		".arch_extension sve\n"
@@ -298,9 +296,8 @@ static void p_regs_write(const sve_p_regs_t *p_regs)
  */
 void sve_p_regs_write(const sve_p_regs_t *p_regs)
 {
-	unsigned long flags;
+	unsigned long flags = sve_traps_save_disable();
 
-	sve_traps_save_disable(flags);
 	p_regs_write(p_regs);
 	sve_traps_restore(flags);
 }
@@ -311,9 +308,7 @@ void sve_p_regs_write(const sve_p_regs_t *p_regs)
  */
 void sve_p_regs_read(sve_p_regs_t *p_regs)
 {
-	unsigned long flags;
-
-	sve_traps_save_disable(flags);
+	unsigned long flags = sve_traps_save_disable();
 
 	__asm__ volatile(
 		".arch_extension sve\n"
@@ -362,9 +357,8 @@ static void ffr_regs_write(const sve_ffr_regs_t *ffr_regs)
  */
 void sve_ffr_regs_write(const sve_ffr_regs_t *ffr_regs)
 {
-	unsigned long flags;
+	unsigned long flags = sve_traps_save_disable();
 
-	sve_traps_save_disable(flags);
 	ffr_regs_write(ffr_regs);
 	sve_traps_restore(flags);
 }
@@ -376,9 +370,7 @@ void sve_ffr_regs_write(const sve_ffr_regs_t *ffr_regs)
 void sve_ffr_regs_read(sve_ffr_regs_t *ffr_regs)
 {
 	uint8_t sve_p_reg[SVE_P_REG_LEN_BYTES];
-	unsigned long flags;
-
-	sve_traps_save_disable(flags);
+	unsigned long flags = sve_traps_save_disable();
 
 	/* Save p0. Read FFR to p0 and save p0 (ffr) to 'ffr_regs'. Restore p0 */
 	__asm__ volatile(
@@ -404,9 +396,7 @@ void sve_z_regs_write_rand(sve_z_regs_t *z_regs)
 	uint32_t rval;
 	uint32_t z_size;
 	uint8_t *z_reg;
-	unsigned long flags;
-
-	sve_traps_save_disable(flags);
+	unsigned long flags = sve_traps_save_disable();
 
 	z_size = (uint32_t)sve_rdvl_1();
 
@@ -432,9 +422,7 @@ void sve_p_regs_write_rand(sve_p_regs_t *p_regs)
 	uint32_t p_size;
 	uint8_t *p_reg;
 	uint32_t rval;
-	unsigned long flags;
-
-	sve_traps_save_disable(flags);
+	unsigned long flags = sve_traps_save_disable();
 
 	p_size = (uint32_t)sve_rdvl_1() / 8;
 
@@ -462,9 +450,7 @@ void sve_ffr_regs_write_rand(sve_ffr_regs_t *ffr_regs)
 	uint8_t *ffr_bytes;
 	uint32_t total_bits;
 	uint32_t ones_bits;
-	unsigned long flags;
-
-	sve_traps_save_disable(flags);
+	unsigned long flags = sve_traps_save_disable();
 
 	ffr_size = (uint32_t)sve_rdvl_1() / 8;
 	total_bits = ffr_size * 8U * SVE_NUM_FFR_REGS;

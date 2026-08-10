@@ -89,4 +89,7 @@ enum pm_pin_fun_ids {
 #define PM_CLK_SET_DIVIDER(val)         (val)
 #define PM_CLK_DIVIDER_MASK             0xFFFFFFFFU
 
+/** Settling time, in milliseconds, before a restart test resets the platform. */
+#define PM_RESTART_SETTLE_MS		0U
+
 #endif /* XPM_DEFS_PLAT_H_ */

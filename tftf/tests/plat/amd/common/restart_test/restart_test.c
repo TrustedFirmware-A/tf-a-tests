@@ -6,6 +6,7 @@
 
 #include "eemi_api.h"
 #include "xpm_defs.h"
+#include "xpm_defs_plat.h"
 #include "xpm_pggs.h"
 
 #include <events.h>
@@ -193,6 +194,8 @@ static test_result_t do_restart_test(uint32_t shutdown_subtype)
 				     status);
 		return TEST_RESULT_FAIL;
 	}
+
+	waitms(PM_RESTART_SETTLE_MS);
 
 	psci_system_reset();
 

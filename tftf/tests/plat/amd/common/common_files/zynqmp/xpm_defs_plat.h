@@ -43,4 +43,15 @@
 /* Core reset of the USB controller that owns the pin. */
 #define ZYNQMP_RST_USB0			1059U
 
+/**
+ * Settling time, in milliseconds, before a restart test resets the platform.
+ *
+ * The reset is issued as soon as the secondary cores report PSCI_STATE_OFF.
+ * With an external debugger attached that is too early: the debugger holds
+ * the APU in reset catch and the board fails to reboot. Delaying the reset
+ * lets the debug connection drop first. A target running without a debugger
+ * does not need the wait.
+ */
+#define PM_RESTART_SETTLE_MS		2000U
+
 #endif /* XPM_DEFS_PLAT_H_ */

@@ -73,6 +73,11 @@ struct host_pdev {
 	unsigned long pdev_stream_handle;
 	bool has_ide;
 	struct rmi_dev_comm_data *dev_comm_data;
+	/*
+	 * Whether to corrupt the device response on DOE communicate.
+	 * Set to false when the response is corrupted.
+	 */
+	bool corrupt_device_response;
 
 	/* Algorithm used to generate device digests */
 	uint8_t pdev_hash_algo;
@@ -152,6 +157,8 @@ int host_pdev_state_transition(struct host_pdev *h_pdev,
 int host_pdev_transition(struct host_pdev *h_pdev, bool ep_pdev, unsigned char to_state);
 int host_pdev_reclaim(struct host_pdev *h_pdev);
 int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_stop_from_error(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_stop_from_stopped(struct host_pdev *h_pdev, bool ep_pdev);
 int host_pdev_stream_connect(struct host_pdev *h_pdev);
 int host_pdev_stream_complete(struct host_pdev *h_pdev);
 int host_pdev_stream_disconnect(struct host_pdev *h_pdev);

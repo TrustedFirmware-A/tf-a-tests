@@ -190,6 +190,7 @@ static int host_pdev_setup(struct host_pdev *h_pdev, bool ep_pdev)
 	}
 
 	memset(h_pdev->dev_comm_data, 0, sizeof(struct rmi_dev_comm_data));
+	h_pdev->corrupt_device_response = false;
 
 	h_pdev->dev_comm_data->enter.req_addr = (unsigned long)
 		page_alloc(PAGE_SIZE);
@@ -750,6 +751,12 @@ static int host_pdev_doe_communicate(struct host_pdev *h_pdev,
 					  (void *)dcomm_enter->resp_addr, &resp_len);
 	}
 
+	if (h_pdev->corrupt_device_response) {
+		memset((void *)dcomm_enter->resp_addr, 0, 128);
+		resp_len = 128;
+		h_pdev->corrupt_device_response = false;
+	}
+
 	/*
 	 * Set IoEnter args for next pdev_communicate. Upon
 	 * success or error call pdev_communicate
@@ -775,7 +782,8 @@ static int host_dev_communicate(struct realm *realm,
 				bool ep_pdev,
 				struct host_vdev *h_vdev,
 				unsigned char target_state,
-				bool go_until_wait_flag_set)
+				bool go_until_wait_flag_set,
+				bool allow_intermediate_error_state)
 {
 	int rc;
 	u_register_t state;
@@ -873,7 +881,9 @@ static int host_dev_communicate(struct realm *realm,
 			} else {
 				stop = dcomm_exit->flags == 0;
 			}
-		} else if (state == error_state) {
+		} else if ((state == error_state) &&
+			   (!allow_intermediate_error_state ||
+			    (dcomm_exit->flags == 0U))) {
 			ERROR("Failed to reach target_state: %lu instead of %u\n",
 			      state, (unsigned int)target_state);
 			rc = -1;
@@ -902,13 +912,14 @@ int host_pdev_transition(struct host_pdev *h_pdev, bool ep_pdev, unsigned char t
 		h_pdev->cert_chain_len = 0UL;
 		h_pdev->vca_len = 0UL;
 		rc = host_dev_communicate(NULL, h_pdev, ep_pdev, NULL,
-					  RMI_PDEV_STATE_NEEDS_KEY, false);
+					  RMI_PDEV_STATE_NEEDS_KEY, false, false);
 		break;
 	case RMI_PDEV_STATE_HAS_KEY:
 		rc = host_pdev_set_pubkey(h_pdev, ep_pdev);
 		break;
 	case RMI_PDEV_STATE_READY:
-		rc = host_dev_communicate(NULL, h_pdev, ep_pdev, NULL, RMI_PDEV_STATE_READY, false);
+		rc = host_dev_communicate(NULL, h_pdev, ep_pdev, NULL,
+					  RMI_PDEV_STATE_READY, false, false);
 		break;
 	case RMI_PDEV_STATE_STOPPED:
 		/* Abort communication in case the device's comm state is not idle */
@@ -920,7 +931,13 @@ int host_pdev_transition(struct host_pdev *h_pdev, bool ep_pdev, unsigned char t
 			break;
 		}
 		rc = host_dev_communicate(NULL, h_pdev, ep_pdev,
-					  NULL, RMI_PDEV_STATE_STOPPED, false);
+					  NULL, RMI_PDEV_STATE_STOPPED, false, false);
+		break;
+	case RMI_PDEV_STATE_ERROR:
+		/* Trigger communication error by corrupting the device response */
+		h_pdev->corrupt_device_response = true;
+		rc = host_dev_communicate(NULL, h_pdev, ep_pdev, NULL,
+					  RMI_PDEV_STATE_ERROR, false, false);
 		break;
 	default:
 		ERROR("pdev_state_transition: Unhandled state\n");
@@ -949,6 +966,87 @@ int host_pdev_transition(struct host_pdev *h_pdev, bool ep_pdev, unsigned char t
 	return rc;
 }
 
+int host_pdev_stop_from_error(struct host_pdev *h_pdev, bool ep_pdev)
+{
+	u_register_t state;
+	int rc;
+
+	rc = host_pdev_get_state(h_pdev, ep_pdev, &state);
+	if ((rc != 0) || (state != RMI_PDEV_STATE_ERROR)) {
+		ERROR("%s: PDEV not in error state\n", __func__);
+		return -1;
+	}
+
+	/*
+	 * Stopping from error state still requires device communication to be
+	 * idle. Abort the failed communication first to clear the comm state.
+	 */
+	INFO("Abort communication, may return RMI_RMI_ERROR_DEVICE\n");
+	(void)host_pdev_abort(h_pdev, ep_pdev);
+
+	rc = host_pdev_stop(h_pdev, ep_pdev);
+	if (rc != 0) {
+		ERROR("%s: pdev_stop failed\n", __func__);
+		return -1;
+	}
+
+	rc = host_dev_communicate(NULL, h_pdev, ep_pdev, NULL,
+				  RMI_PDEV_STATE_STOPPED, false, true);
+	if (rc != 0) {
+		ERROR("%s: host_dev_communicate failed\n", __func__);
+		return -1;
+	}
+
+	rc = host_pdev_destroy(h_pdev, ep_pdev);
+	if (rc != 0) {
+		ERROR("%s: pdev_destroy failed\n", __func__);
+	}
+
+	return rc;
+}
+
+int host_pdev_stop_from_stopped(struct host_pdev *h_pdev, bool ep_pdev)
+{
+	u_register_t state;
+	u_register_t ret;
+	int rc;
+
+	/* Abort communication in case the device's comm state is not idle */
+	INFO("Abort communication, may return RMI_RMI_ERROR_DEVICE\n");
+	(void)host_pdev_abort(h_pdev, ep_pdev);
+
+	rc = host_pdev_stop(h_pdev, ep_pdev);
+	if (rc != 0) {
+		ERROR("%s: PDEV stop failed\n", __func__);
+		return -1;
+	}
+	rc = host_dev_communicate(NULL, h_pdev, ep_pdev,
+					NULL, RMI_PDEV_STATE_STOPPED, false, false);
+	if (rc != 0) {
+		ERROR("%s: PDEV stop communicate failed\n", __func__);
+		return -1;
+	}
+
+	rc = host_pdev_get_state(h_pdev, ep_pdev, &state);
+	if ((rc != 0) || (state != RMI_PDEV_STATE_STOPPED)) {
+		ERROR("%s: PDEV not in stopped state\n", __func__);
+		return -1;
+	}
+
+	ret = host_rmi_pdev_stop((u_register_t)h_pdev->ep_pdev);
+	if (ret != RMI_ERROR_DEVICE) {
+		ERROR("%s: host_rmi_pdev_stop returned %lu\n", __func__, ret);
+		return -1;
+	}
+
+	rc = host_pdev_destroy(h_pdev, ep_pdev);
+	if (rc != 0) {
+		ERROR("%s: pdev_destroy failed\n", __func__);
+	}
+
+	return rc;
+}
+
 static int host_pdev_communicate_till_wait(struct host_pdev *h_pdev, bool ep_pdev)
 {
 	int rc;
@@ -959,7 +1057,7 @@ static int host_pdev_communicate_till_wait(struct host_pdev *h_pdev, bool ep_pde
 		return rc;
 	}
 
-	rc = host_dev_communicate(NULL, h_pdev, ep_pdev, NULL, state, true);
+	rc = host_dev_communicate(NULL, h_pdev, ep_pdev, NULL, state, true, false);
 	if (rc != 0) {
 		ERROR("pdev_state_transition: failed\n");
 	}
@@ -1040,7 +1138,7 @@ int host_pdev_state_transition(struct host_pdev *h_pdev,
 			break;
 		}
 
-		if (pdev_states[i] > RMI_PDEV_STATE_STOPPED) {
+		if (pdev_states[i] > RMI_PDEV_STATE_ERROR) {
 			ERROR("Invalid %sPDEV state: %d\n", prefix,
 			      pdev_states[i]);
 			rc = -1;
@@ -1102,7 +1200,7 @@ int host_vdev_get_interface_report(struct realm *realm,
 	if (rc != 0) {
 		return rc;
 	}
-	rc = host_dev_communicate(realm, h_pdev, true, h_vdev, target_state, false);
+	rc = host_dev_communicate(realm, h_pdev, true, h_vdev, target_state, false, false);
 
 	return rc;
 }
@@ -1167,7 +1265,7 @@ int host_vdev_get_measurements(struct realm *realm,
 	if (rc != 0) {
 		return rc;
 	}
-	return host_dev_communicate(realm, h_pdev, true, h_vdev, target_state, false);
+	return host_dev_communicate(realm, h_pdev, true, h_vdev, target_state, false, false);
 }
 
 /*
@@ -1189,7 +1287,7 @@ int host_vdev_transition(struct realm *realm,
 	switch (to_state) {
 	case RMI_VDEV_STATE_UNLOCKED:
 		rc = host_dev_communicate(realm, h_pdev, true, h_vdev,
-					  RMI_VDEV_STATE_UNLOCKED, false);
+					  RMI_VDEV_STATE_UNLOCKED, false, false);
 		break;
 	case RMI_VDEV_STATE_LOCKED:
 		rc = host_rmi_vdev_lock(realm->rd, (u_register_t)h_pdev->ep_pdev,
@@ -1198,7 +1296,7 @@ int host_vdev_transition(struct realm *realm,
 			break;
 		}
 		rc = host_dev_communicate(realm, h_pdev, true, h_vdev,
-					  RMI_VDEV_STATE_LOCKED, false);
+					  RMI_VDEV_STATE_LOCKED, false, false);
 		break;
 	case RMI_VDEV_STATE_STARTED:
 		rc = host_rmi_vdev_start(realm->rd, (u_register_t)h_pdev->ep_pdev,
@@ -1207,7 +1305,7 @@ int host_vdev_transition(struct realm *realm,
 			break;
 		}
 		rc = host_dev_communicate(realm, h_pdev, true, h_vdev,
-					  RMI_VDEV_STATE_STARTED, false);
+					  RMI_VDEV_STATE_STARTED, false, false);
 		break;
 
 	default:
@@ -1465,7 +1563,8 @@ void host_do_vdev_communicate(struct realm *realm, u_register_t vdev_ptr)
 		return;
 	}
 
-	rc = host_dev_communicate(realm, h_pdev, true, h_vdev, RMI_VDEV_STATE_NEW, false);
+	rc = host_dev_communicate(realm, h_pdev, true, h_vdev,
+				  RMI_VDEV_STATE_NEW, false, false);
 	if (rc != 0) {
 		ERROR("Handling VDEV communicate failed\n");
 	}

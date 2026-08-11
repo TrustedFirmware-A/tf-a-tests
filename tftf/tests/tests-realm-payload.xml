@@ -202,6 +202,8 @@
 	  <!-- Invoke all possible PDEV state transitions -->
 	  <testcase name="PDEV test valid state transitions"
 	  function="host_pdev_test_valid_state_transition" />
+	  <testcase name="PDEV stop from different states"
+	  function="host_pdev_test_stop_from_different_states" />
 	  <!-- Invoke all possible VDEV state transitions -->
 	  <testcase name="VDEV test valid state transitions"
 	  function="host_vdev_test_valid_state_transition" />

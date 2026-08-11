@@ -415,19 +415,7 @@ test_result_t host_pdev_test_valid_state_transition(void)
 	const unsigned char pdev_valid_state_transition[][PDEV_STATE_TRANSITION_MAX] = {
 		{
 			RMI_PDEV_STATE_NEW,
-			RMI_PDEV_STATE_STOPPED,
-			-1
-		},
-		{
-			RMI_PDEV_STATE_NEW,
 			RMI_PDEV_STATE_NEEDS_KEY,
-			RMI_PDEV_STATE_STOPPED,
-			-1
-		},
-		{
-			RMI_PDEV_STATE_NEW,
-			RMI_PDEV_STATE_NEEDS_KEY,
-			RMI_PDEV_STATE_HAS_KEY,
 			RMI_PDEV_STATE_STOPPED,
 			-1
 		},
@@ -463,6 +451,77 @@ test_result_t host_pdev_test_valid_state_transition(void)
 	}
 
 	return (rc == 0) ? TEST_RESULT_SUCCESS : TEST_RESULT_FAIL;
+}
+
+test_result_t host_pdev_test_stop_from_different_states(void)
+{
+	int rc = 0;
+	struct host_pdev *h_pdev;
+	u_register_t rmi_feat_reg0;
+
+	const unsigned char pdev_to_error_transition[] = {
+		RMI_PDEV_STATE_NEW,
+		RMI_PDEV_STATE_NEEDS_KEY,
+		RMI_PDEV_STATE_HAS_KEY,
+		RMI_PDEV_STATE_ERROR,
+		-1
+	};
+
+	const unsigned char pdev_to_stopped_transition[] = {
+		RMI_PDEV_STATE_NEW,
+		RMI_PDEV_STATE_NEEDS_KEY,
+		-1
+	};
+
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
+
+	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
+	if (h_pdev == NULL) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	rc = page_pool_init((u_register_t)PAGE_POOL_BASE,
+			    (u_register_t)PAGE_POOL_MAX_SIZE);
+	if (rc != HEAP_INIT_SUCCESS) {
+		ERROR("Failed to init heap pool %d\n", rc);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Test calling RMI_PDEV_STOP in ERROR state */
+
+	rc = host_pdev_state_transition(h_pdev, true, pdev_to_error_transition,
+					sizeof(pdev_to_error_transition));
+	if (rc != 0) {
+		ERROR("Failed to reach error state\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	rc = host_pdev_stop_from_error(h_pdev, true);
+	if (rc != 0) {
+		ERROR("Failed to stop from error state\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Test calling RMI_PDEV_STOP in STOPPED state */
+
+	rc = host_pdev_state_transition(h_pdev, true, pdev_to_stopped_transition,
+					sizeof(pdev_to_stopped_transition));
+	if (rc != 0) {
+		ERROR("Failed to reach error state\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	rc = host_pdev_stop_from_stopped(h_pdev, true);
+	if (rc != 0) {
+		ERROR("Failed to stop from stopped state\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }
 
 /*

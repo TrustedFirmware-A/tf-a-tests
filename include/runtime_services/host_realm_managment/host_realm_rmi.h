@@ -1002,14 +1002,17 @@
 #define RMI_FEATURE_REGISTER_2_ATS_SHIFT		UL(3)
 #define RMI_FEATURE_REGISTER_2_ATS_WIDTH		UL(1)
 
-#define RMI_FEATURE_REGISTER_2_MAX_VDEVS_ORDER_SHIFT	UL(4)
-#define RMI_FEATURE_REGISTER_2_MAX_VDEVS_ORDER_WIDTH	UL(4)
+#define RMI_FEATURE_REGISTER_2_PDEV_MAX_VDEVS_ORDER_SHIFT	UL(4)
+#define RMI_FEATURE_REGISTER_2_PDEV_MAX_VDEVS_ORDER_WIDTH	UL(4)
 
 #define RMI_FEATURE_REGISTER_2_VDEV_KROU_SHIFT		UL(8)
 #define RMI_FEATURE_REGISTER_2_VDEV_KROU_WIDTH		UL(1)
 
 #define RMI_FEATURE_REGISTER_2_NON_TEE_STREAM_SHIFT	UL(9)
 #define RMI_FEATURE_REGISTER_2_NON_TEE_STREAM_WIDTH	UL(1)
+
+#define RMI_FEATURE_REGISTER_2_REALM_MAX_VDEVS_ORDER_SHIFT	UL(10)
+#define RMI_FEATURE_REGISTER_2_REALM_MAX_VDEVS_ORDER_WIDTH	UL(5)
 
 /* RmiFeatureRegister3 */
 #define RMI_FEATURE_REGISTER_3_INDEX			UL(3)
@@ -1319,7 +1322,9 @@ struct rmi_realm_params {
 			unsigned int rtt_num_start;			/* 0x818 */
 		   }, 0x808, 0x820);
 	/* Flags */
-	SET_MEMBER(unsigned long flags1, 0x820, 0xf80);			/* 0x820 */
+	SET_MEMBER(unsigned long flags1, 0x820, 0x828);			/* 0x820 */
+	/* Maximum number of VDEVs which can be associated with the Realm. */
+	SET_MEMBER(unsigned long max_num_vdevs, 0x828, 0xf80);		/* 0x828 */
 	/* Base address of auxiliary RTTs */
 	SET_MEMBER(unsigned long aux_rtt_base[3], 0xf80, 0x1000);	/* 0xf80 */
 };
@@ -1918,6 +1923,8 @@ struct realm {
 	bool             sve_enabled;
 	bool             pmu_enabled;
 	bool             da_enabled;
+	u_register_t     max_num_vdevs;
+	u_register_t     last_host_rmi_ret;
 	bool             payload_created;
 	bool             shared_mem_created;
 	bool             rtt_tree_single;

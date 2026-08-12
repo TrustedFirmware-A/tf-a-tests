@@ -151,6 +151,131 @@ out_destroy_realm:
 	return result;
 }
 
+test_result_t host_vdev_create_rejects_realm_vdev_limit(void)
+{
+	test_result_t result = TEST_RESULT_SUCCESS;
+	bool return_error = false;
+	int rc;
+	u_register_t ret;
+	u_register_t rmi_feat_reg0;
+	struct realm realm;
+	struct host_pdev *h_pdev = NULL;
+	struct host_vdev *h_vdev = &gbl_host_vdev;
+
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+
+	rc = page_pool_init((u_register_t)PAGE_POOL_BASE,
+			    (u_register_t)PAGE_POOL_MAX_SIZE);
+	if (rc != HEAP_INIT_SUCCESS) {
+		ERROR("Failed to init heap pool %d\n", rc);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = host_create_realm_with_feat_da_vdev_limit(&realm, true, 0UL);
+	if (ret != 0UL) {
+		ERROR("Realm create with feat_da and max_num_vdevs=0 failed\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
+	if (h_pdev == NULL) {
+		result = TEST_RESULT_SKIPPED;
+		goto out_destroy_realm;
+	}
+
+	if (tsm_connect_device(h_pdev) != 0) {
+		ERROR("TSM connect failed for device 0x%x\n", h_pdev->dev->bdf);
+		return_error = true;
+		goto out_destroy_realm;
+	}
+
+	ret = host_create_vdev(&realm, h_vdev, h_pdev->dev->bdf, h_pdev->ep_pdev);
+	if (ret != RMI_ERROR_DEVICE) {
+		ERROR("RMI_VDEV_CREATE with realm max_num_vdevs=0 returned 0x%lx\n", ret);
+		return_error = true;
+
+		if ((ret == RMI_SUCCESS) &&
+		    (host_unassign_vdev_from_realm(&realm, h_vdev) != 0)) {
+			ERROR("VDEV cleanup failed after unexpected create success\n");
+		}
+	}
+
+	if (tsm_disconnect_device(h_pdev) != 0) {
+		ERROR("TSM disconnect failed for device 0x%x\n", h_pdev->dev->bdf);
+		return_error = true;
+	}
+
+out_destroy_realm:
+	if (!destroy_psmmu_realm(&realm)) {
+		return_error = true;
+	}
+
+	if (return_error) {
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+test_result_t host_realm_create_rejects_out_of_range_vdev_limit(void)
+{
+	struct realm realm;
+	struct test_realm_params params = {0};
+	u_register_t feat_reg2;
+	u_register_t rec_flag[1] = {RMI_RUNNABLE};
+	u_register_t max_num_vdevs;
+	u_register_t s2sz = MAX_IPA_BITS;
+	long sl = RTT_MIN_LEVEL;
+	bool lpa2 = false;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (host_rmi_features(RMI_FEATURE_REGISTER_2_INDEX, &feat_reg2) !=
+	    REALM_SUCCESS) {
+		ERROR("Failed to get RMI feat_reg2\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	if ((feat_reg2 & RMI_FEATURE_REGISTER_2_DA_EN) == 0UL) {
+		WARN("DA not in RMI features, skipping\n");
+		return TEST_RESULT_SKIPPED;
+	}
+
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	max_num_vdevs = (1UL << EXTRACT(RMI_FEATURE_REGISTER_2_REALM_MAX_VDEVS_ORDER,
+					feat_reg2)) + 1UL;
+
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.lpa2 = lpa2;
+	params.da = true;
+	params.set_max_num_vdevs = true;
+	params.max_num_vdevs = max_num_vdevs;
+
+	if (host_create_realm_payload(&realm, &params)) {
+		ERROR("Realm create unexpectedly accepted max_num_vdevs=%lu\n",
+		      max_num_vdevs);
+		host_destroy_realm(&realm);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (RMI_RETURN_STATUS(realm.last_host_rmi_ret) != RMI_ERROR_INPUT) {
+		ERROR("Realm create with max_num_vdevs=%lu returned 0x%lx\n",
+		      max_num_vdevs, realm.last_host_rmi_ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
 /*
  * Iterate through all host_pdevs and do
  * TSM connect

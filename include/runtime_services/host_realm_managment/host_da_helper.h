@@ -165,6 +165,8 @@ int host_pdev_stream_disconnect(struct host_pdev *h_pdev);
 int host_pdev_stream_key_refresh(struct host_pdev *h_pdev);
 
 int host_create_realm_with_feat_da(struct realm *realm, bool activate);
+int host_create_realm_with_feat_da_vdev_limit(struct realm *realm, bool activate,
+					      u_register_t max_num_vdevs);
 int host_vdev_transition(struct realm *realm, struct host_vdev *h_vdev,
 			 unsigned char to_state);
 int host_vdev_get_interface_report(struct realm *realm,

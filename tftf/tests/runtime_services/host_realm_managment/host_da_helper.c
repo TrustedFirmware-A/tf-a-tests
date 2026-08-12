@@ -1326,7 +1326,8 @@ int host_vdev_transition(struct realm *realm,
 	return 0;
 }
 
-int host_create_realm_with_feat_da(struct realm *realm, bool activate)
+int host_create_realm_with_feat_da_vdev_limit(struct realm *realm, bool activate,
+					      u_register_t max_num_vdevs)
 {
 	bool lpa2 = false;
 	u_register_t s2sz = MAX_IPA_BITS;
@@ -1349,6 +1350,8 @@ int host_create_realm_with_feat_da(struct realm *realm, bool activate)
 		.sl = sl,
 		.lpa2 = lpa2,
 		.da = true,
+		.set_max_num_vdevs = true,
+		.max_num_vdevs = max_num_vdevs,
 	};
 
 	if (activate) {
@@ -1362,6 +1365,23 @@ int host_create_realm_with_feat_da(struct realm *realm, bool activate)
 	}
 
 	return 0;
+}
+
+int host_create_realm_with_feat_da(struct realm *realm, bool activate)
+{
+	u_register_t feat_reg2;
+	u_register_t max_num_vdevs;
+
+	if (host_rmi_features(RMI_FEATURE_REGISTER_2_INDEX, &feat_reg2) !=
+	    REALM_SUCCESS) {
+		return -1;
+	}
+
+	max_num_vdevs = 1UL << EXTRACT(RMI_FEATURE_REGISTER_2_REALM_MAX_VDEVS_ORDER,
+				       feat_reg2);
+
+	return host_create_realm_with_feat_da_vdev_limit(realm, activate,
+							 max_num_vdevs);
 }
 
 /*

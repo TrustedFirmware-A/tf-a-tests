@@ -210,6 +210,12 @@
 	  <!-- Reject out-of-range TDI IDs during VDEV create -->
 	  <testcase name="VDEV create rejects out-of-range tdi_id"
 	  function="host_vdev_create_rejects_out_of_range_tdi_id" />
+	  <!-- Reject VDEV create when the Realm allows zero VDEVs -->
+	  <testcase name="VDEV create rejects Realm vdev limit of zero"
+	  function="host_vdev_create_rejects_realm_vdev_limit" />
+	  <!-- Reject out-of-range Realm max_num_vdevs during realm create -->
+	  <testcase name="Realm create rejects out-of-range max_num_vdevs"
+	  function="host_realm_create_rejects_out_of_range_vdev_limit" />
 	  <!-- Invoke IDE refresh and reset on PDEV -->
 	  <testcase name="Invoke IDE refresh and reset on PDEV"
 	  function="host_pdev_invoke_ide_refresh_reset" />

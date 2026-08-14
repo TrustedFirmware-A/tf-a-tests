@@ -454,16 +454,52 @@ static inline u_register_t host_rmi_realm_activate(u_register_t rd)
 					     rd}, 2U).ret0;
 }
 
+static inline u_register_t host_rmi_realm_create_sro(u_register_t rd,
+						     u_register_t params_ptr,
+						     u_register_t *handle,
+						     u_register_t *donate_req)
+{
+	smc_ret_values rets;
+
+	assert(handle != NULL);
+	assert(donate_req != NULL);
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_REALM_CREATE,
+					     rd, params_ptr}, 3U);
+	*handle = rets.ret1;
+	*donate_req = rets.ret2;
+	return rets.ret0;
+}
+
 u_register_t host_rmi_realm_create(u_register_t rd, u_register_t params_ptr)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_REALM_CREATE, rd, params_ptr},
-						3U).ret0;
+	u_register_t handle;
+	u_register_t donate_req;
+
+	return host_rmi_realm_create_sro(rd, params_ptr, &handle, &donate_req);
+}
+
+static inline u_register_t host_rmi_realm_destroy_sro(u_register_t rd,
+						      u_register_t *handle,
+						      u_register_t *donate_req)
+{
+	smc_ret_values rets;
+
+	assert(handle != NULL);
+	assert(donate_req != NULL);
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_REALM_DESTROY, rd}, 2U);
+	*handle = rets.ret1;
+	*donate_req = rets.ret2;
+	return rets.ret0;
 }
 
 u_register_t host_rmi_realm_destroy(u_register_t rd)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_REALM_DESTROY, rd},
-				2U).ret0;
+	u_register_t handle;
+	u_register_t donate_req;
+
+	return host_rmi_realm_destroy_sro(rd, &handle, &donate_req);
 }
 
 u_register_t host_rmi_realm_terminate(u_register_t rd)
@@ -1504,6 +1540,8 @@ u_register_t host_realm_create(struct realm *realm)
 {
 	struct rmi_realm_params *params;
 	u_register_t ret;
+	u_register_t create_handle = 0UL;
+	u_register_t donate_req = 0UL;
 	unsigned int count, rtt_page_count = 0U;
 
 	realm->par_size = REALM_MAX_LOAD_IMG_SIZE;
@@ -1659,8 +1697,13 @@ u_register_t host_realm_create(struct realm *realm)
 	params->ats_plane = realm->ats_plane;
 
 	/* Create Realm */
-	ret = host_rmi_realm_create(realm->rd, (u_register_t)params);
-	if (ret != RMI_SUCCESS) {
+	ret = host_rmi_realm_create_sro(realm->rd, (u_register_t)params,
+					&create_handle, &donate_req);
+	if (RMI_RETURN_STATUS(ret) == RMI_INCOMPLETE) {
+		ret = host_realm_sro_continue(ret, &create_handle, &donate_req, NULL);
+	}
+
+	if (RMI_RETURN_STATUS(ret) != RMI_SUCCESS) {
 		ERROR("%s() failed, rd=0x%lx ret=0x%lx\n",
 			"host_rmi_realm_create", realm->rd, ret);
 		goto err_free_vmid;
@@ -1979,6 +2022,8 @@ u_register_t host_realm_terminate(struct realm *realm)
 u_register_t host_realm_destroy(struct realm *realm)
 {
 	u_register_t ret;
+	u_register_t destroy_handle = 0UL;
+	u_register_t donate_req = 0UL;
 	unsigned int rtt_page_count;
 	long rtt_start_level = realm->start_level;
 
@@ -2061,8 +2106,12 @@ u_register_t host_realm_destroy(struct realm *realm)
 	 * RTT(L0) undelegate and free
 	 * PAR free
 	 */
-	ret = host_rmi_realm_destroy(realm->rd);
-	if (ret != RMI_SUCCESS) {
+	ret = host_rmi_realm_destroy_sro(realm->rd, &destroy_handle, &donate_req);
+	if (RMI_RETURN_STATUS(ret) == RMI_INCOMPLETE) {
+		ret = host_realm_sro_continue(ret, &destroy_handle, &donate_req, NULL);
+	}
+
+	if (RMI_RETURN_STATUS(ret) != RMI_SUCCESS) {
 		ERROR("%s() failed, rd=0x%lx ret=0x%lx\n",
 			"host_rmi_realm_destroy", realm->rd, ret);
 		return REALM_ERROR;

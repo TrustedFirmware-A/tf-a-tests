@@ -14,18 +14,21 @@ struct test_ioctl test_ioctl_list[] = {
 		.ioctl_id = IOCTL_GET_RPU_OPER_MODE,
 		.ioctl_arg1 = 0U,
 		.ioctl_arg2 = 0U,
+		.ioctl_arg3 = 0U,
 	},
 	{
 		.node_id = PM_DEV_RPU_CORE,
 		.ioctl_id = IOCTL_SET_RPU_OPER_MODE,
 		.ioctl_arg1 = XPM_RPU_MODE_SPLIT,
 		.ioctl_arg2 = 0U,
+		.ioctl_arg3 = 0U,
 	},
 	{
 		.node_id = PM_DEV_RPU_CORE,
 		.ioctl_id = IOCTL_GET_RPU_OPER_MODE,
 		.ioctl_arg1 = 0U,
 		.ioctl_arg2 = 0U,
+		.ioctl_arg3 = 0U,
 	},
 };
 
@@ -43,6 +46,7 @@ test_result_t test_ioctl_api(void)
 				   test_ioctl_list[i].ioctl_id,
 				   test_ioctl_list[i].ioctl_arg1,
 				   test_ioctl_list[i].ioctl_arg2,
+				   test_ioctl_list[i].ioctl_arg3,
 				   &ioctl_response);
 		if (status != PM_RET_SUCCESS) {
 			tftf_testcase_printf("%s ERROR Fails for IOCTL Id: %u, Status: 0x%x",

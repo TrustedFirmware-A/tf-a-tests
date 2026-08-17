@@ -49,6 +49,7 @@
  */
 #define PM_SHUTDOWN_TYPE_SHUTDOWN               (0U)
 #define PM_SHUTDOWN_TYPE_RESET                  (1U)
+#define PM_SHUTDOWN_TYPE_SETSCOPE_ONLY          (2U)
 
 #define PM_SHUTDOWN_SUBTYPE_RST_SUBSYSTEM       (0U)
 #define PM_SHUTDOWN_SUBTYPE_RST_PS_ONLY         (1U)
@@ -168,6 +169,10 @@ enum pm_api_cb_id {
 typedef enum {
 	IOCTL_GET_RPU_OPER_MODE = 0,                    /**< Get RPU mode */
 	IOCTL_SET_RPU_OPER_MODE = 1,                    /**< Set RPU mode */
+	IOCTL_WRITE_PGGS = 14,                          /**< Write PGGS */
+	IOCTL_READ_PGGS = 15,                           /**< Read PGGS */
+	IOCTL_READ_REG = 28,                            /**< Read a 32-bit register */
+	IOCTL_MASK_WRITE_REG = 29,                      /**< RMW a 32-bit register */
 } pm_ioctl_id;
 
 /*

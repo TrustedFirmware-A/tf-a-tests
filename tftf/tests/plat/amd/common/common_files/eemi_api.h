@@ -25,6 +25,7 @@ struct test_ioctl {
 	uint32_t ioctl_id;      /**<  Ioctl ID */
 	uint32_t ioctl_arg1;     /**<  Arg1 for Ioctl-ID if required */
 	uint32_t ioctl_arg2;     /**<  Arg2 for Ioctl-ID if required */
+	uint32_t ioctl_arg3;     /**<  Arg3 for Ioctl-ID if required */
 };
 
 typedef struct xpm_ndstatus {
@@ -36,11 +37,6 @@ typedef struct xpm_ndstatus {
 struct register_sgi {
 	uint32_t sgi_num;               /**< SGI number to be used for communication */
 	uint32_t reset;                 /**<  Reset to invalid SGI when reset=1 */
-};
-
-struct sys_shutdown {
-	uint32_t shutdown_type;         /**< Shutdown type (shutdown/restart) */
-	uint32_t shutdown_subtype;      /**< Shutdown subtype (subsystem-only/PU-only/system) */
 };
 
 struct test_pll_api {
@@ -65,7 +61,7 @@ int xpm_set_requirement(const uint32_t device_id, const uint32_t capabilities,
 int xpm_register_notifier(xpm_notifier * const notifier);
 int xpm_unregister_notifier(xpm_notifier * const notifier);
 int xpm_ioctl(const uint32_t node_id, const uint32_t ioctl_id, const uint32_t arg1,
-	      const uint32_t arg2, uint32_t *const response);
+	      const uint32_t arg2, const uint32_t arg3, uint32_t *const response);
 int xpm_set_max_latency(const uint32_t device_id, const uint32_t latency);
 int xpm_get_node_status(const uint32_t device_id, xpm_node_status * const node_status);
 int xpm_clock_get_status(const uint32_t clock_id, uint32_t *const state);

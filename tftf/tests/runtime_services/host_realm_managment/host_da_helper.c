@@ -250,11 +250,23 @@ err_undelegate_pdev:
 
 int host_pdev_stream_connect(struct host_pdev *h_pdev)
 {
+	return host_pdev_stream_connect_with_ranges(h_pdev, NULL, 0U);
+}
+
+int host_pdev_stream_connect_with_ranges(struct host_pdev *h_pdev,
+					 const struct rmi_address_range *addr_range,
+					 size_t num_addr_range)
+{
 	struct rmi_pdev_stream_params *stream_params;
 	u_register_t ret;
 	u_register_t handle;
+	size_t stream_range_count;
 
 	assert(!h_pdev->pdev_stream_handle_valid);
+
+	if ((addr_range == NULL) && (num_addr_range != 0U)) {
+		return -1;
+	}
 
 	stream_params = (struct rmi_pdev_stream_params *)page_alloc(PAGE_SIZE);
 	memset(stream_params, 0, GRANULE_SIZE);
@@ -262,6 +274,25 @@ int host_pdev_stream_connect(struct host_pdev *h_pdev)
 	stream_params->stream_type = RMI_PDEV_STREAM_NCOH;
 	stream_params->pdev_1 = (unsigned long)h_pdev->ep_pdev;
 	stream_params->pdev_2 = (unsigned long)h_pdev->rp_pdev;
+
+	stream_range_count = h_pdev->ncoh_num_addr_range + num_addr_range;
+	if (stream_range_count > RMI_PDEV_STREAM_ADDR_RANGE_CNT) {
+		page_free((u_register_t)stream_params);
+		return -1;
+	}
+
+	if (h_pdev->ncoh_num_addr_range > 0U) {
+		memcpy(stream_params->addr_range, h_pdev->ncoh_addr_range,
+		       h_pdev->ncoh_num_addr_range *
+		       sizeof(stream_params->addr_range[0]));
+	}
+
+	if (num_addr_range > 0U) {
+		memcpy(&stream_params->addr_range[h_pdev->ncoh_num_addr_range],
+		       addr_range,
+		       num_addr_range * sizeof(stream_params->addr_range[0]));
+	}
+	stream_params->num_addr_range = stream_range_count;
 
 	ret = host_rmi_pdev_stream_connect((u_register_t)stream_params, &handle);
 

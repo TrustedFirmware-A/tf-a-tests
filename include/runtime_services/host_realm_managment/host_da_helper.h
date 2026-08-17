@@ -160,6 +160,9 @@ int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev);
 int host_pdev_stop_from_error(struct host_pdev *h_pdev, bool ep_pdev);
 int host_pdev_stop_from_stopped(struct host_pdev *h_pdev, bool ep_pdev);
 int host_pdev_stream_connect(struct host_pdev *h_pdev);
+int host_pdev_stream_connect_with_ranges(struct host_pdev *h_pdev,
+					 const struct rmi_address_range *addr_range,
+					 size_t num_addr_range);
 int host_pdev_stream_complete(struct host_pdev *h_pdev);
 int host_pdev_stream_disconnect(struct host_pdev *h_pdev);
 int host_pdev_stream_key_refresh(struct host_pdev *h_pdev);

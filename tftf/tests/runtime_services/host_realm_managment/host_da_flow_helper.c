@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include <host_da_flow_helper.h>
 #include <host_da_helper.h>
 #include <host_realm_helper.h>
 #include <host_shared_data.h>
@@ -151,6 +152,13 @@ int tsm_disconnect_device(struct host_pdev *h_pdev)
  */
 int tsm_connect_device(struct host_pdev *h_pdev)
 {
+	return tsm_connect_device_with_ranges(h_pdev, NULL, 0U);
+}
+
+int tsm_connect_device_with_ranges(struct host_pdev *h_pdev,
+				   const struct rmi_address_range *addr_range,
+				   size_t num_addr_range)
+{
 	const unsigned char tsm_connect_ep_flow[] = {
 		RMI_PDEV_STATE_NEW,
 		RMI_PDEV_STATE_NEEDS_KEY,
@@ -210,7 +218,8 @@ int tsm_connect_device(struct host_pdev *h_pdev)
 	}
 
 	/* Add stream to connect ep and rp pdev */
-	rc = host_pdev_stream_connect(h_pdev);
+	rc = host_pdev_stream_connect_with_ranges(h_pdev, addr_range,
+						      num_addr_range);
 	if (rc != 0) {
 		ERROR("PDEV TSM connect stream connect: failed\n");
 		return rc;

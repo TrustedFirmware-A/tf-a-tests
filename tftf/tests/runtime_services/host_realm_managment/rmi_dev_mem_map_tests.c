@@ -195,6 +195,18 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 		mem_info[2].base_pa += offset * RTT_L2_BLOCK_SIZE;
 	}
 
+	num_address_range = 0U;
+	for (i = 0U; i < ARRAY_SIZE(mem_info); ++i) {
+		if (mem_info[i].base_pa == 0UL) {
+			continue;
+		}
+
+		addr_range[num_address_range].base = mem_info[i].base_pa;
+		addr_range[num_address_range].top = mem_info[i].base_pa +
+			(mem_info[i].num_regions * RTT_MAP_SIZE(mem_info[i].map_level));
+		++num_address_range;
+	}
+
 	/* Delegate device granules */
 	for (i = 0U; i < NUM_INFO_TESTS; i++) {
 		unsigned int num_granules;	/* number of granules */
@@ -229,20 +241,10 @@ test_result_t host_realm_dev_mem_map_unmap(void)
 	}
 
 	/* Connect device with TSM */
-	rc = tsm_connect_device(h_pdev);
+	rc = tsm_connect_device_with_ranges(h_pdev, addr_range, num_address_range);
 	if (rc != 0) {
 		ERROR("TSM connect failed for device 0x%x\n", h_pdev->dev->bdf);
 		goto undelegate_granules;
-	}
-
-	num_address_range = 0;
-	for (i = 0U; i < ARRAY_SIZE(mem_info); ++i) {
-		if (mem_info[i].base_pa != 0UL) {
-			addr_range[num_address_range].base = mem_info[i].base_pa;
-			addr_range[num_address_range].top = mem_info[i].base_pa +
-				((mem_info[i].num_regions * RTT_MAP_SIZE(mem_info[i].map_level)));
-			++num_address_range;
-		}
 	}
 
 	h_vdev = &gbl_host_vdev;

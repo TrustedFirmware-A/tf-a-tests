@@ -37,6 +37,7 @@ TESTS_SOURCES	+=	$(addprefix tftf/tests/,			\
 	extensions/hdbss/test_hdbss.c					\
 	extensions/hacdbs/test_hacdbs.c					\
 	extensions/srmask/test_srmask.c					\
+	extensions/hcx/test_hcx.c					\
 	runtime_services/arm_arch_svc/smccc_arch_soc_id.c		\
 	runtime_services/arm_arch_svc/smccc_arch_workaround_1.c		\
 	runtime_services/arm_arch_svc/smccc_arch_workaround_2.c		\

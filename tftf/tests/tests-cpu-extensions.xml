@@ -55,6 +55,7 @@
     <testcase name="STEP2 support" function="test_step2_support" />
     <testcase name="HDBSS support" function="test_hdbss_support" />
     <testcase name="HACDBS support" function="test_hacdbs_support" />
+    <testcase name="Test access to HCRX_EL2" function="test_feat_hcx_enabled" />
   </testsuite>
 
   <testsuite name="ARM_ARCH_SVC" description="Arm Architecture Service tests">

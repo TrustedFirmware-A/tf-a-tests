@@ -135,6 +135,8 @@ test_result_t test_smccc_arch_feature_availability(void)
 	CHECK_BIT_SET(is_feat_trbe_present,			MDCR_NSTB(1));
 	CHECK_BIT_SET(get_armv8_4_trf_support,			MDCR_TTRF_BIT);
 	CHECK_BIT_SET(is_feat_spe_supported,			MDCR_NSPB(1));
+	CHECK_BIT_SET(is_feat_spe_exc_supported,		MDCR_PMSEE_EN_BIT);
+	CHECK_BIT_SET(is_feat_spe_nvm_supported,		MDCR_EnPMS4_BIT);
 	CHECK_BIT_SET(always_present, 				MDCR_EnPM2_BIT);
 	CHECK_BIT_SET(is_feat_doublelock_present,		MDCR_TDOSA_BIT);
 	CHECK_BIT_SET(always_present,				MDCR_TDA_BIT);

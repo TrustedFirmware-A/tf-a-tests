@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,19 +8,12 @@
 
 test_result_t test_spe_support(void)
 {
-	/* SPE is an AArch64-only feature.*/
 	SKIP_TEST_IF_AARCH32();
 
 #ifdef __aarch64__
 	unsigned int spe_ver = spe_get_version();
 
-	if (spe_ver > ID_AA64DFR0_SPE_V1P4) {
-		WARN("Detected SPE version %d, please update test.\n", spe_ver);
-	}
-
-	if (spe_ver == ID_AA64DFR0_SPE_NOT_SUPPORTED) {
-		return TEST_RESULT_SKIPPED;
-	}
+	SKIP_TEST_IF_SPE_NOT_SUPPORTED();
 
 	/*
 	 * If runtime-EL3 does not enable access to SPE system
@@ -43,6 +36,35 @@ test_result_t test_spe_support(void)
 	if (spe_ver == ID_AA64DFR0_SPE_V1P2) {
 		read_pmsnevfr_el1();
 	}
+
+	return TEST_RESULT_SUCCESS;
+#endif /* __aarch64__ */
+}
+
+test_result_t test_spe_exc_support(void)
+{
+	SKIP_TEST_IF_AARCH32();
+
+#ifdef __aarch64__
+	SKIP_TEST_IF_SPE_EXC_NOT_SUPPORTED();
+
+	/* EL1 register doesn't trap to EL3. No other way to check directly. */
+	if (IS_IN_EL2()) {
+		read_pmbsr_el2();
+	}
+
+	return TEST_RESULT_SUCCESS;
+#endif /* __aarch64__ */
+}
+
+test_result_t test_spe_nvm_support(void)
+{
+	SKIP_TEST_IF_AARCH32();
+
+#ifdef __aarch64__
+	SKIP_TEST_IF_SPE_NVM_NOT_SUPPORTED();
+
+	read_pmbmar_el1();
 
 	return TEST_RESULT_SUCCESS;
 #endif /* __aarch64__ */

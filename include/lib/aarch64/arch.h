@@ -414,6 +414,12 @@
 #define ID_AA64DFR2_TRBE_EXC_SHIFT		U(24)
 #define ID_AA64DFR2_TRBE_EXC_MASK		ULL(0xf)
 #define ID_AA64DFR2_TRBE_EXC_SUPPORTED		ULL(1)
+#define ID_AA64DFR2_SPE_EXC_SHIFT		U(16)
+#define ID_AA64DFR2_SPE_EXC_MASK		ULL(0xf)
+#define ID_AA64DFR2_SPE_EXC_SUPPORTED		ULL(1)
+#define ID_AA64DFR2_SPE_NVM_SHIFT		U(20)
+#define ID_AA64DFR2_SPE_NVM_MASK		ULL(0xf)
+#define ID_AA64DFR2_SPE_NVM_SUPPORTED		ULL(1)
 
 /* ID_AA64ISAR0_EL1 definitions */
 #define ID_AA64ISAR0_EL1			S3_0_C0_C6_0
@@ -876,8 +882,10 @@
 #define SCR_RESET_VAL		SCR_RES1_BITS
 
 /* MDCR_EL3 definitions */
+#define MDCR_EnPMS4_BIT		(ULL(1) << 55)
 #define MDCR_TRBEE_EL3_BIT	(ULL(1) << 54)
 #define MDCR_TRBEE_EN_BIT	(ULL(1) << 53)
+#define MDCR_PMSEE_EN_BIT	(ULL(1) << 51)
 #define MDCR_EnSTEPOP_BIT	(ULL(1) << 50)
 #define MDCR_ETBAD(x)		((x) << 48)
 #define MDCR_EnITE_BIT		(ULL(1) << 47)
@@ -1589,6 +1597,12 @@
 #define PMBPTR_EL1		S3_0_C9_C10_1
 #define PMBSR_EL1		S3_0_C9_C10_3
 #define PMSCR_EL2		S3_4_C9_C9_0
+
+/* FEAT_SPE_EXC */
+#define PMBSR_EL2		S3_4_C9_C10_3
+
+/* FEAT_SPE_nVM */
+#define PMBMAR_EL1		S3_0_C9_C10_5
 
 /*******************************************************************************
  * Definitions for system register interface to MPAM

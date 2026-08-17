@@ -260,6 +260,18 @@ static inline bool is_feat_spe_supported(void)
 	return spe_get_version() >= ID_AA64DFR0_SPE;
 }
 
+static inline bool is_feat_spe_exc_supported(void)
+{
+	return (((read_id_aa64dfr2_el1() >> ID_AA64DFR2_SPE_EXC_SHIFT) &
+		ID_AA64DFR2_SPE_EXC_MASK) >= ID_AA64DFR2_SPE_EXC_SUPPORTED);
+}
+
+static inline bool is_feat_spe_nvm_supported(void)
+{
+	return (((read_id_aa64dfr2_el1() >> ID_AA64DFR2_SPE_NVM_SHIFT) &
+		ID_AA64DFR2_SPE_NVM_MASK) >= ID_AA64DFR2_SPE_NVM_SUPPORTED);
+}
+
 static inline bool is_feat_tcr2_supported(void)
 {
 	return (((read_id_aa64mmfr3_el1() >> ID_AA64MMFR3_EL1_TCRX_SHIFT) &

@@ -474,8 +474,14 @@ u_register_t host_rmi_realm_create(u_register_t rd, u_register_t params_ptr)
 {
 	u_register_t handle;
 	u_register_t donate_req;
+	u_register_t ret;
 
-	return host_rmi_realm_create_sro(rd, params_ptr, &handle, &donate_req);
+	ret = host_rmi_realm_create_sro(rd, params_ptr, &handle, &donate_req);
+	if (RMI_RETURN_STATUS(ret) == RMI_INCOMPLETE) {
+		ret = host_realm_sro_continue(ret, &handle, &donate_req, NULL);
+	}
+
+	return ret;
 }
 
 static inline u_register_t host_rmi_realm_destroy_sro(u_register_t rd,
@@ -497,8 +503,14 @@ u_register_t host_rmi_realm_destroy(u_register_t rd)
 {
 	u_register_t handle;
 	u_register_t donate_req;
+	u_register_t ret;
 
-	return host_rmi_realm_destroy_sro(rd, &handle, &donate_req);
+	ret = host_rmi_realm_destroy_sro(rd, &handle, &donate_req);
+	if (RMI_RETURN_STATUS(ret) == RMI_INCOMPLETE) {
+		ret = host_realm_sro_continue(ret, &handle, &donate_req, NULL);
+	}
+
+	return ret;
 }
 
 u_register_t host_rmi_realm_terminate(u_register_t rd)

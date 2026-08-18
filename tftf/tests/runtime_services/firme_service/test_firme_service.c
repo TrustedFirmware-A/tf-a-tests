@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2025-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -12,6 +12,32 @@
 #include <tftf_lib.h>
 
 static uint64_t expected_feature_reg[2] = { 0, 0 };
+
+static const char * const firme_status_str[] = {
+	"FIRME_SUCCESS",
+	"FIRME_NOT_SUPPORTED",
+	"FIRME_INVALID_PARAMETERS",
+	"FIRME_ABORTED",
+	"FIRME_INCOMPLETE",
+	"FIRME_DENIED",
+	"FIRME_BUSY",
+	"FIRME_OP_CONFLICT",
+	"FIRME_EXISTS",
+	"FIRME_NO_ENTRY",
+	"FIRME_NO_MEMORY",
+	"FIRME_BAD_DATA"
+};
+
+const char *firme_status_to_str(int firme_rc)
+{
+	uint32_t idx = (uint32_t)((~firme_rc) + 1U);
+
+	if (idx >= ARRAY_SIZE(firme_status_str)) {
+		return "FIRME_UNKNOWN_STATUS";
+	}
+
+	return firme_status_str[idx];
+}
 
 test_result_t test_firme_base_version(void)
 {

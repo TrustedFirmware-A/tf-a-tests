@@ -592,9 +592,8 @@
 #define SMC_RMI_MEC_SET_PRIVATE			SMC64_RMI_FID(U(0x3D))
 
 /*
- * FID: 0xC400018E
+ * FID: 0xC400018E is not used.
  */
-#define SMC_RMI_VDEV_COMPLETE			SMC64_RMI_FID(U(0x3E))
 
 /*
  * FID: 0xC40001E1
@@ -890,9 +889,9 @@
 #define RMI_EXIT_HOST_CALL		U(5)
 #define RMI_EXIT_SERROR			U(6)
 #define RMI_EXIT_S2AP_CHANGE		U(7)
-#define RMI_EXIT_VDEV_REQUEST		U(8)
-#define RMI_EXIT_VDEV_MAP		U(9)
-#define RMI_EXIT_VDEV_P2P_BINDING	U(10)
+#define RMI_EXIT_VDEV_MAP		U(8)
+#define RMI_EXIT_VSMMU_COMMAND		U(10)
+#define RMI_EXIT_VDEV_P2P_BINDING	U(11)
 #define RMI_EXIT_INVALID		(RMI_EXIT_VDEV_P2P_BINDING + 1U)
 
 /* RmiRecRunnable types */
@@ -2003,8 +2002,7 @@ u_register_t host_rmi_rtt_set_s2ap(u_register_t rd,
 				   u_register_t end,
 				   u_register_t *top,
 				   u_register_t *rtt_tree);
-u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t target_rec,
-				    unsigned long status);
+u_register_t host_rmi_psci_complete(u_register_t calling_rec, unsigned long status);
 void host_rmi_init_cmp_result(void);
 bool host_rmi_get_cmp_result(void);
 
@@ -2052,7 +2050,9 @@ u_register_t host_rmi_pdev_stop(u_register_t pdev_ptr);
 u_register_t host_rmi_pdev_abort(u_register_t pdev_ptr);
 u_register_t host_rmi_pdev_stream_key_refresh(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
 					      u_register_t handle);
-u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr);
+u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr,
+				   u_register_t *handle,
+				   u_register_t *reclaim_req);
 u_register_t host_rmi_pdev_stream_connect(u_register_t stream_params_ptr, u_register_t *handle);
 u_register_t host_rmi_pdev_stream_disconnect(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
 				  u_register_t stream_handle);
@@ -2063,7 +2063,6 @@ u_register_t host_rmi_pdev_stream_key_purge(u_register_t pdev1_ptr, u_register_t
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 				  u_register_t vdev_ptr,
 				  u_register_t params_ptr);
-u_register_t host_rmi_vdev_complete(u_register_t rec_ptr, u_register_t vdev_ptr);
 u_register_t host_rmi_vdev_get_interface_report(u_register_t rd_ptr, u_register_t pdev_ptr,
 						u_register_t vdev_ptr);
 u_register_t host_rmi_rtt_dev_map(u_register_t rd_ptr, u_register_t vdev_ptr,

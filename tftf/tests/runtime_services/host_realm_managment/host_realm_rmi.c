@@ -421,11 +421,10 @@ bool host_rmi_get_cmp_result(void)
 	return rmi_cmp_result;
 }
 
-u_register_t host_rmi_psci_complete(u_register_t calling_rec, u_register_t target_rec,
-		unsigned long status)
+u_register_t host_rmi_psci_complete(u_register_t calling_rec, unsigned long status)
 {
 	return (host_rmi_handler(&(smc_args) {SMC_RMI_PSCI_COMPLETE, calling_rec,
-				target_rec, status}, 4U)).ret0;
+				status}, 3U)).ret0;
 }
 
 u_register_t host_rmi_rtt_data_map_init(u_register_t rd,
@@ -475,8 +474,14 @@ u_register_t host_rmi_realm_create(u_register_t rd, u_register_t params_ptr)
 {
 	u_register_t handle;
 	u_register_t donate_req;
+	u_register_t ret;
 
-	return host_rmi_realm_create_sro(rd, params_ptr, &handle, &donate_req);
+	ret = host_rmi_realm_create_sro(rd, params_ptr, &handle, &donate_req);
+	if (RMI_RETURN_STATUS(ret) == RMI_INCOMPLETE) {
+		ret = host_realm_sro_continue(ret, &handle, &donate_req, NULL);
+	}
+
+	return ret;
 }
 
 static inline u_register_t host_rmi_realm_destroy_sro(u_register_t rd,
@@ -498,8 +503,14 @@ u_register_t host_rmi_realm_destroy(u_register_t rd)
 {
 	u_register_t handle;
 	u_register_t donate_req;
+	u_register_t ret;
 
-	return host_rmi_realm_destroy_sro(rd, &handle, &donate_req);
+	ret = host_rmi_realm_destroy_sro(rd, &handle, &donate_req);
+	if (RMI_RETURN_STATUS(ret) == RMI_INCOMPLETE) {
+		ret = host_realm_sro_continue(ret, &handle, &donate_req, NULL);
+	}
+
+	return ret;
 }
 
 u_register_t host_rmi_realm_terminate(u_register_t rd)
@@ -2368,13 +2379,6 @@ u_register_t host_realm_rec_enter(struct realm *realm,
 				break;
 			}
 		}
-
-		if (run->exit.exit_reason == RMI_EXIT_VDEV_REQUEST) {
-			host_do_vdev_complete(realm->rec[rec_num],
-					      run->exit.vdev_id_1);
-			re_enter_rec = true;
-		}
-
 	} while (re_enter_rec);
 
 	*exit_reason = run->exit.exit_reason;
@@ -2440,10 +2444,24 @@ u_register_t host_rmi_pdev_stream_key_refresh(u_register_t pdev1_ptr,
 					     handle}, 4U).ret0;
 }
 
-u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr)
+u_register_t host_rmi_pdev_destroy(u_register_t pdev_ptr,
+				   u_register_t *handle,
+				   u_register_t *reclaim_req)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_DESTROY, pdev_ptr},
-				2U).ret0;
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_DESTROY, pdev_ptr,
+					     (u_register_t)&rets}, 3U);
+
+	if (handle != NULL) {
+		*handle = rets.ret1;
+	}
+
+	if (reclaim_req != NULL) {
+		*reclaim_req = rets.ret2;
+	}
+
+	return rets.ret0;
 }
 
 u_register_t host_rmi_pdev_stream_connect(u_register_t stream_params_ptr, u_register_t *handle)
@@ -2483,12 +2501,6 @@ u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 {
 	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_CREATE, rd_ptr,
 			pdev_ptr, vdev_ptr, params_ptr}, 5U).ret0;
-}
-
-u_register_t host_rmi_vdev_complete(u_register_t rec_ptr, u_register_t vdev_ptr)
-{
-	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_COMPLETE, rec_ptr,
-			vdev_ptr}, 3U).ret0;
 }
 
 u_register_t host_rmi_vdev_get_interface_report(u_register_t rd_ptr, u_register_t pdev_ptr,

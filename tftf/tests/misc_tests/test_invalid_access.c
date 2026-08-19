@@ -16,11 +16,13 @@
 #include <sync.h>
 #endif
 #include <host_realm_helper.h>
+#include <heap/page_alloc.h>
 #include <lib/aarch64/arch_features.h>
 #include <test_helpers.h>
 #include <tftf_lib.h>
 #include <xlat_tables_v2.h>
 #include <platform_def.h>
+#include <host_realm_mem_layout.h>
 #include <cactus_test_cmds.h>
 #include <ffa_endpoints.h>
 
@@ -242,11 +244,17 @@ static test_result_t memory_cannot_be_accessed_in_rl(u_register_t params)
 		return TEST_RESULT_FAIL;
 	}
 
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE) !=
+	    HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
+
 	retrmm = host_rmi_granule_delegate((u_register_t)&rd[0]);
 	if (retrmm != 0UL) {
 		ERROR("%s() failed, ret=0x%lx\n", "host_rmi_granule_delegate",
 			retrmm);
-		return TEST_RESULT_FAIL;
+		goto out_reset_pool;
 	}
 
 	/* Create a realm using a parameter in a secure physical address space should fail. */
@@ -267,14 +275,17 @@ static test_result_t memory_cannot_be_accessed_in_rl(u_register_t params)
 	retrmm = host_rmi_granule_undelegate((u_register_t)&rd[0]);
 	if (retrmm != 0UL) {
 		INFO("Undelegate operation returns 0x%lx\n", retrmm);
-		return TEST_RESULT_FAIL;
+		result = TEST_RESULT_FAIL;
+		goto out_reset_pool;
 	}
 
 	if (result == TEST_RESULT_SUCCESS) {
-		return host_cmp_result();
+		result = host_cmp_result();
 	}
 
-	return TEST_RESULT_FAIL;
+out_reset_pool:
+	page_pool_reset();
+	return result;
 }
 
 /**

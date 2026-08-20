@@ -159,12 +159,27 @@ static bool host_create_shared_mem(struct realm *realm_ptr)
 	return true;
 }
 
+static bool realm_s2sz_needs_lpa2(u_register_t s2sz)
+{
+	return s2sz > MAX_IPA_BITS;
+}
+
+static u_register_t default_realm_s2sz(bool lpa2, u_register_t max_s2sz)
+{
+	if (lpa2) {
+		return max_s2sz;
+	}
+
+	return (max_s2sz > MAX_IPA_BITS) ? MAX_IPA_BITS : max_s2sz;
+}
+
 static bool validate_realm_params(struct realm *realm_ptr,
 				   struct test_realm_params *params,
 				   u_register_t feat_reg0,
 				   u_register_t feat_reg3)
 {
 	long sl;
+	bool lpa2;
 
 	/* Zero out realm_ptr in the beginning */
 	(void)memset((char *)realm_ptr, 0U, sizeof(struct realm));
@@ -205,16 +220,11 @@ static bool validate_realm_params(struct realm *realm_ptr,
 		}
 	}
 
-	/* Set default s2sz if not specified */
+	/* Set default s2sz if not specified. */
 	if (params->s2sz == 0U) {
-		unsigned int s2sz = EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feat_reg0);
+		u_register_t s2sz = EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feat_reg0);
 
-		if (!(params->lpa2)) {
-			params->s2sz =
-				(s2sz >= MAX_IPA_BITS ? MAX_IPA_BITS : s2sz);
-		} else {
-			params->s2sz = s2sz;
-		}
+		params->s2sz = default_realm_s2sz(params->lpa2, s2sz);
 	}
 
 	/* Fail if IPA bits > implemented size */
@@ -223,13 +233,15 @@ static bool validate_realm_params(struct realm *realm_ptr,
 		return false;
 	}
 
+	lpa2 = realm_s2sz_needs_lpa2(params->s2sz);
+
 	/* Validate and set start_level */
 	sl = params->sl;
 	if (sl == 0L) {
-		sl = params->lpa2 ? RTT_MIN_LEVEL_LPA2 : RTT_MIN_LEVEL;
+		sl = lpa2 ? RTT_MIN_LEVEL_LPA2 : RTT_MIN_LEVEL;
 	}
 
-	if (params->lpa2) {
+	if (lpa2) {
 		if (sl < RTT_MIN_LEVEL_LPA2 || sl > RTT_MAX_LEVEL) {
 			ERROR("Invalid start_level: %ld\n", sl);
 			return false;
@@ -288,8 +300,8 @@ static bool validate_realm_params(struct realm *realm_ptr,
 		realm_ptr->rec_flag[i] = params->rec_flag[i];
 	}
 
-	/* Store FEAT_LPA2 configuration */
-	realm_ptr->lpa2 = params->lpa2;
+	/* Store FEAT_LPA2 configuration inferred from the Realm IPA size. */
+	realm_ptr->lpa2 = lpa2;
 
 	/* Store FEAT_DA configuration */
 	realm_ptr->da_enabled = params->da;

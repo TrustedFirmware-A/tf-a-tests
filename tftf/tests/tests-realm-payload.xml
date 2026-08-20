@@ -141,11 +141,11 @@
 	  <!-- Test case related to FEAT_LPA2 -->
 	  <testcase name="Test realm creation with no FEAT_LPA2 and -1 RTT starting level"
 	  function="host_test_realm_no_lpa2_invalid_sl" />
-	  <testcase name="Test realm creation with no FEAT_LPA2 and S2SZ > 48 bits"
+	  <testcase name="Test realm creation with FEAT_LPA2 absent and S2SZ > 48 bits"
 	  function="host_test_realm_no_lpa2_invalid_s2sz" />
-	  <testcase name="Test Realm creation with LPA2 disabled but FEAT_LPA2 present on platform"
+	  <testcase name="Test Realm creation with S2SZ below LPA2 threshold on FEAT_LPA2 platform"
 	  function="host_test_non_lpa2_realm_on_lpa2plat" />
-	  <testcase name="Test Data bound with LPA2 disabled but FEAT_LPA2 present on platform"
+	  <testcase name="Test data PA bound with S2SZ below LPA2 threshold on FEAT_LPA2 platform"
 	  function="host_test_data_bound_non_lpa2_realm_on_lpa2plat" />
 	  <testcase name="Test Realm creation with LPA2 enabled but FEAT_LPA2 absent on platform"
 	  function="host_test_lpa2_realm_on_non_lpa2plat" />

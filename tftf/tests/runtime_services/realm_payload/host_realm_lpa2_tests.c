@@ -36,7 +36,7 @@ test_result_t host_test_realm_no_lpa2_invalid_sl(void)
 }
 
 /*
- * @Test_Aim@ Test realm creation with no LPA2 and S2SZ > 48 bits
+ * @Test_Aim@ Test realm creation with FEAT_LPA2 absent and S2SZ > 48 bits
  */
 test_result_t host_test_realm_no_lpa2_invalid_s2sz(void)
 {
@@ -44,6 +44,10 @@ test_result_t host_test_realm_no_lpa2_invalid_s2sz(void)
 	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		return TEST_RESULT_SKIPPED;
+	}
 
 	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
 	params.s2sz = 50UL;
@@ -60,8 +64,8 @@ test_result_t host_test_realm_no_lpa2_invalid_s2sz(void)
 }
 
 /*
- * @Test_Aim@ Test creating a Realm with LPA2 disabled but FEAT_LPA2 present
- * on the platform.
+ * @Test_Aim@ Test creating a Realm that does not require LPA2 on a platform
+ * where FEAT_LPA2 is present.
  * The Realm creation should succeed.
  */
 test_result_t host_test_non_lpa2_realm_on_lpa2plat(void)
@@ -77,7 +81,7 @@ test_result_t host_test_non_lpa2_realm_on_lpa2plat(void)
 	}
 
 	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
-	params.s2sz = 48UL;
+	params.s2sz = MAX_IPA_BITS;
 	params.sl = RTT_MIN_LEVEL;
 	params.rec_flag = rec_flag;
 	params.rec_count = 1U;
@@ -95,9 +99,9 @@ test_result_t host_test_non_lpa2_realm_on_lpa2plat(void)
 }
 
 /*
- * @Test_Aim@ Create a Realm with LPA2 disabled but FEAT_LPA2 present
- * on the platform.
- * Test that RMI_RTT_MAP_UNPROTECTED and RMI_RTT_CREATE commands fails if PA >= 48 bits
+ * @Test_Aim@ Create a Realm that does not require LPA2 on a platform where
+ * FEAT_LPA2 is present. Test that RMI_RTT_MAP_UNPROTECTED and RMI_RTT_CREATE
+ * commands fail if PA >= 48 bits.
  */
 test_result_t host_test_data_bound_non_lpa2_realm_on_lpa2plat(void)
 {
@@ -114,7 +118,7 @@ test_result_t host_test_data_bound_non_lpa2_realm_on_lpa2plat(void)
 	}
 
 	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
-	params.s2sz = 48UL;
+	params.s2sz = MAX_IPA_BITS;
 	params.sl = RTT_MIN_LEVEL;
 	params.rec_flag = rec_flag;
 	params.rec_count = 1U;
@@ -163,20 +167,16 @@ test_result_t host_test_lpa2_realm_on_non_lpa2plat(void)
 {
 	u_register_t rec_flag[1] = {RMI_RUNNABLE};
 	struct realm realm;
-	bool lpa2 = false;
-	u_register_t s2sz = MAX_IPA_BITS;
+	u_register_t s2sz = MAX_IPA_BITS + 1UL;
 	struct test_realm_params params = {0};
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	if (is_feat_52b_on_4k_2_supported() == true) {
 		return TEST_RESULT_SKIPPED;
-	} else {
-		lpa2 = true;
 	}
 
 	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
-	params.lpa2 = lpa2;
 	params.s2sz = s2sz;
 	params.sl = RTT_MIN_LEVEL;
 	params.rec_flag = rec_flag;

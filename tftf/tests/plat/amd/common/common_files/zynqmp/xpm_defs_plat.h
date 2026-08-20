@@ -15,6 +15,10 @@
 #define PM_REQ_ACK_BLOCKING		2U
 #define PM_REQ_ACK_DEFAULT		PM_REQ_ACK_BLOCKING
 
+/* Temperature is not implemented; power is read from the always-on APU. */
+#define PM_OPCHAR_TEST_DEV		NODE_APU
+#define PM_OPCHAR_TEST_TYPE		PM_OPCHAR_TYPE_POWER
+
 /* Out-of-range values, rejected before they can reconfigure a live PLL. */
 #define PM_PLL_TEST_SET_MODE		0xFFU
 #define PM_PLL_TEST_SET_PARAM		0xFFU

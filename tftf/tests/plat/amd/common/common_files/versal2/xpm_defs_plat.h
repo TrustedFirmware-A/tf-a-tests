@@ -36,6 +36,10 @@
 /* The firmware returns the status directly, so no acknowledge is asked for. */
 #define PM_REQ_ACK_DEFAULT      0U
 
+/* Device and characteristic the supported case reads. */
+#define PM_OPCHAR_TEST_DEV              PM_DEV_SOC
+#define PM_OPCHAR_TEST_TYPE             PM_OPCHAR_TYPE_TEMP
+
 /* Values the PLL set cases pass, rejected without touching live hardware. */
 #define PM_PLL_TEST_SET_MODE            PM_PLL_MODE_RESET
 #define PM_PLL_TEST_SET_PARAM           PM_PLL_PARAM_ID_FBDIV

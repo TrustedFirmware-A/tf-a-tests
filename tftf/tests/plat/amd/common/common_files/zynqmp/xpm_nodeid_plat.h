@@ -13,6 +13,7 @@
 #include "xpm_nodeid.h"
 
 /* Processor nodes */
+#define NODE_APU		1U
 #define NODE_APU_0		2U
 #define NODE_RPU_0		7U
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -1168,4 +1168,85 @@ test_result_t test_ffa_notifications_sp_signals_sp_delayed_sri(void)
 	schedule_receiver_interrupt_deinit();
 
 	return result;
+}
+
+/**
+ * Validate notification-count discovery at the Non-secure physical FF-A
+ * interface.
+ *
+ * The TFTF image runs at NS-EL2 and queries the SPMC through the SPMD. The VM
+ * notification-count field is MBZ at this interface, while the SP count
+ * encodes 384 implemented notification IDs as 320 IDs above the legacy base
+ * of 64.
+ */
+test_result_t test_ffa_notifications_count_at_ns_physical_interface(void)
+{
+	const uint32_t expected_notification_count = 384U;
+	const uint32_t expected_encoded_count =
+		expected_notification_count - FFA_NOTIFICATION_COUNT_BASE;
+	const uint32_t count_fields =
+		(FFA_NOTIFY_COUNT_VM_MASK << FFA_NOTIFY_COUNT_VM_SHIFT) |
+		(FFA_NOTIFY_COUNT_SP_MASK << FFA_NOTIFY_COUNT_SP_SHIFT);
+	const uint32_t supported_fields = FFA_NOTIFY_FEAT_NO_PER_VCPU_VM |
+				FFA_NOTIFY_FEAT_NO_PER_VCPU_SP |
+				count_fields;
+
+	struct ffa_value ret;
+	uint32_t features;
+	uint32_t vm_count;
+	uint32_t sp_count;
+
+	SKIP_TEST_IF_FFA_VERSION_LESS_THAN(1, 3);
+
+	/* FFA_FEATURES is not currently supported by OP-TEE as the SPMC. */
+	if (check_spmc_execution_level()) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	ret = ffa_features(FFA_FEATURE_NOTIFICATION);
+	if (!is_expected_ffa_return(ret, FFA_SUCCESS_SMC32)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	features = (uint32_t)ret.arg2;
+
+	/*
+	* This implementation does not support per-vCPU notifications for either
+	* endpoint type.
+	*/
+	if ((features & FFA_NOTIFY_FEAT_NO_PER_VCPU_VM) == 0U ||
+		(features & FFA_NOTIFY_FEAT_NO_PER_VCPU_SP) == 0U) {
+		ERROR("Unexpected per-vCPU notification support: %#x\n",
+			features);
+		return TEST_RESULT_FAIL;
+	}
+
+	vm_count = (features >> FFA_NOTIFY_COUNT_VM_SHIFT) &
+		FFA_NOTIFY_COUNT_VM_MASK;
+	sp_count = (features >> FFA_NOTIFY_COUNT_SP_SHIFT) &
+		FFA_NOTIFY_COUNT_SP_MASK;
+
+	VERBOSE("VM notification count: %u\n", vm_count);
+	VERBOSE("SP notification count: %u\n", sp_count);
+
+	/* The VM notification-count field is MBZ at the NS physical interface. */
+	if (vm_count != 0U) {
+		ERROR("VM notification count must be zero: %u\n", vm_count);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* The SP count is encoded as the implemented count minus the base 64. */
+	if (sp_count != expected_encoded_count ||
+		sp_count + FFA_NOTIFICATION_COUNT_BASE !=
+			expected_notification_count) {
+		ERROR("Unexpected SP notification count: %u\n", sp_count);
+		return TEST_RESULT_FAIL;
+	}
+
+	if ((features & ~supported_fields) != 0U) {
+		ERROR("Reserved notification feature bits are non-zero: %#x\n",
+			features & ~supported_fields);
+		return TEST_RESULT_FAIL;
+	}
+	return TEST_RESULT_SUCCESS;
 }

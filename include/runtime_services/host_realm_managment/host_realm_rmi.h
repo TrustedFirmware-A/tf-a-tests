@@ -1183,8 +1183,8 @@ typedef enum {
 #define RMI_ADDR_RDESC_4K_CNT_WIDTH	(10)
 #define RMI_ADDR_RDESC_4K_ADDR_SHIFT	(12UL)
 #define RMI_ADDR_RDESC_4K_ADDR_WIDTH	(40)
-#define RMI_ADDR_RDESC_4K_ST_SHIFT	(63UL)
-#define RMI_ADDR_RDESC_4K_ST_WIDTH	(1)
+#define RMI_ADDR_RDESC_4K_ST_SHIFT	(62UL)
+#define RMI_ADDR_RDESC_4K_ST_WIDTH	(2)
 
 #define RMI_ADDR_RDESC_4K_GET_ADDR(x)				\
 		(EXTRACT(RMI_ADDR_RDESC_4K_ADDR, (x)) << L3_XLAT_ADDRESS_SHIFT)
@@ -1201,8 +1201,8 @@ typedef struct {
 			u_register_t size : 2;      /* Bits 1:0 - Block size */
 			u_register_t count : 10;    /* Bits 11:2 - Block count */
 			u_register_t addr : 40;     /* Bits 51:12 - Base address */
-			u_register_t reserved : 11; /* Bits 62:52 - Reserved (must be zero) */
-			u_register_t state : 1;     /* Bit 63 - State of memory (RmiOpMemState) */
+			u_register_t reserved : 10; /* Bits 61:52 - Reserved (must be zero) */
+			u_register_t state : 2;     /* Bits 63:62 - State of memory (RmiOpMemState) */
 		};
 		u_register_t desc;
 	};
@@ -1230,8 +1230,8 @@ typedef struct {
 #define RMI_ADDR_RDESC_4K_CNT_WIDTH	(10)
 #define RMI_ADDR_RDESC_4K_ADDR_SHIFT	(12UL)
 #define RMI_ADDR_RDESC_4K_ADDR_WIDTH	(40)
-#define RMI_ADDR_RDESC_4K_ST_SHIFT	(63UL)
-#define RMI_ADDR_RDESC_4K_ST_WIDTH	(1)
+#define RMI_ADDR_RDESC_4K_ST_SHIFT	(62UL)
+#define RMI_ADDR_RDESC_4K_ST_WIDTH	(2)
 
 #define RMI_ADDR_RDESC_4K_GET_ADDR(x)				\
 		(EXTRACT(RMI_ADDR_RDESC_4K_ADDR, (x)) << L3_XLAT_ADDRESS_SHIFT)

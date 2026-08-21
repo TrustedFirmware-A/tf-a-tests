@@ -215,5 +215,8 @@
 	  <!-- Test case for GIC trap in Realm -->
 	  <testcase name="Test GIC trap handling in Realm"
 	  function="host_test_realm_gic_trap" />
+	  <!-- Test case for S2AP changes for RIPAS_EMPTY pages -->
+	  <testcase name="Realm S2AP changes for EMPTY and RAM RIPAS"
+	  function="host_test_realm_set_s2ap_ripas" />
   </testsuite>
 </testsuites>

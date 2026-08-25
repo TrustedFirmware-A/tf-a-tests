@@ -134,6 +134,76 @@ test_result_t host_test_realm_create_planes_register_rw(void)
 }
 
 /*
+ * @Test_Aim@ Test direct stage 2 instruction permission fault in Plane N
+ */
+test_result_t host_test_realm_plane_n_direct_s2_perm_fault(void)
+{
+	bool ret1, ret2;
+	u_register_t rec_flag[MAX_REC_COUNT];
+	struct realm realm;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
+	long sl = RTT_MIN_LEVEL;
+	struct rmi_rec_run *run;
+	struct test_realm_params params = {0};
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (!are_planes_supported()) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	if (is_feat_52b_on_4k_2_supported() == true) {
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	for (unsigned int i = 0U; i < MAX_REC_COUNT; i++) {
+		rec_flag[i] = RMI_RUNNABLE;
+	}
+
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+	params.num_aux_planes = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Run the fault test command in both Plane 0 and Plane N */
+	host_shared_data_set_realm_cmd(&realm,
+					REALM_PLANE_N_DIRECT_S2_PERM_FAULT_CMD, 1U, 0U);
+
+	run = (struct rmi_rec_run *)realm.run[0U];
+
+	host_realm_set_aux_plane_args(&realm, 1U, 0U);
+	ret1 = host_enter_realm_execute(&realm,
+					REALM_PLANE_N_DIRECT_S2_PERM_FAULT_CMD,
+					RMI_EXIT_HOST_CALL, 0U);
+
+	if (run->exit.exit_reason != RMI_EXIT_HOST_CALL) {
+		ERROR("Rec0 error exit=0x%lx ret1=%d HPFAR=0x%lx \
+				esr=0x%lx far=0x%lx\n",
+				run->exit.exit_reason, ret1,
+				run->exit.hpfar,
+				run->exit.esr, run->exit.far);
+	}
+	ret2 = host_destroy_realm(&realm);
+
+	if (!ret1 || !ret2) {
+		ERROR("%s(): enter=%d destroy=%d\n",
+		__func__, ret1, ret2);
+		return TEST_RESULT_FAIL;
+	}
+	return host_cmp_result();
+}
+
+/*
  * @Test_Aim@ Test realm payload creation with 3 Aux Planes, enter all Planes
  * Host cannot enter Aux Planes directly,
  * Host will enter P0, P0 will enter aux plane

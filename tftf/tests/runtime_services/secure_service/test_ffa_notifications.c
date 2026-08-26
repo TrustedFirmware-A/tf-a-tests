@@ -140,6 +140,48 @@ test_result_t test_ffa_notifications_destroy_not_created(void)
 }
 
 /**
+ * Validate that FFA_NOTIFICATION_GET rejects an unrecognized Normal World VM ID.
+ *
+ * TFTF invokes FF-A interfaces at the physical FF-A instance and is therefore
+ * treated as the Normal World Hypervisor. This allows it to request
+ * notifications on behalf of a Normal World VM without requiring that VM to
+ * exist.
+ *
+ * Deliberately do not call FFA_NOTIFICATION_BITMAP_CREATE for
+ * `unknown_vm_id`. Consequently, the SPMC must not have a notification state
+ * or Normal World VM-table entry associated with this ID.
+ *
+ * The SPMC is expected to reject FFA_NOTIFICATION_GET with
+ * FFA_ERROR_INVALID_PARAMETER.
+ * In particular, it must handle the case where the receiver cannot be found.
+ */
+test_result_t test_ffa_notifications_get_unknown_vm(void)
+{
+	/* Highest valid VM ID below the reserved invalid ID 0x7FFF. */
+	const ffa_id_t unknown_vm_id = VM_ID(0x7FFE);
+	struct ffa_value ret;
+
+	SKIP_TEST_IF_FFA_VERSION_LESS_THAN(1, 1);
+
+	if (check_spmc_execution_level()) {
+		VERBOSE("OPTEE as SPMC at S-EL1. Skipping test!\n");
+		return TEST_RESULT_SKIPPED;
+	}
+
+	ret = ffa_notification_get(unknown_vm_id, 0,
+				FFA_NOTIFICATIONS_FLAG_BITMAP_SP);
+
+	if (!is_expected_ffa_error(ret, FFA_ERROR_INVALID_PARAMETER)) {
+		ERROR("FFA_NOTIFICATION_GET did not reject unknown VM ID %x\n",
+			unknown_vm_id);
+		dump_ffa_value(ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/**
  * Test attempt to create notifications bitmap for NWd VM if it had been
  * already created.
  */

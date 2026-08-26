@@ -203,6 +203,8 @@
                function="test_ffa_notifications_bitmap_create_destroy" />
      <testcase name="Notifications bitmap destroy not created"
                function="test_ffa_notifications_destroy_not_created" />
+     <testcase name="Notifications get rejects unknown VM"
+               function="test_ffa_notifications_get_unknown_vm" />
      <testcase name="Notifications bitmap create after create"
                function="test_ffa_notifications_create_after_create" />
      <testcase name="SP Notifications bind and unbind"

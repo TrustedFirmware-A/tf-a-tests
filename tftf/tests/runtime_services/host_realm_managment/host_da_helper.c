@@ -425,19 +425,16 @@ static int host_pdev_set_pubkey(struct host_pdev *h_pdev, bool ep_pdev)
 
 
 	pubkey_params = (struct rmi_public_key_params *)page_alloc(PAGE_SIZE);
-	memset(pubkey_params, 0, GRANULE_SIZE);
+	(void)memset(pubkey_params, 0, GRANULE_SIZE);
 
-	memcpy(pubkey_params->key, h_pdev->public_key, h_pdev->public_key_len);
-	memcpy(pubkey_params->metadata, h_pdev->public_key_metadata,
-	       h_pdev->public_key_metadata_len);
+	pubkey_params->key_addr = (uintptr_t)h_pdev->public_key;
+	pubkey_params->metadata_addr = (uintptr_t)h_pdev->public_key_metadata;
 	pubkey_params->key_len = h_pdev->public_key_len;
 	pubkey_params->metadata_len = h_pdev->public_key_metadata_len;
-	pubkey_params->algo = h_pdev->public_key_sig_algo;
 
 	pdev = ep_pdev ? h_pdev->ep_pdev : h_pdev->rp_pdev;
 	ret = host_rmi_pdev_set_pubkey((u_register_t)pdev,
 				       (u_register_t)pubkey_params);
-
 	if (ret != RMI_SUCCESS) {
 		return -1;
 	}

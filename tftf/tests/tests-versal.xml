@@ -39,7 +39,7 @@
       <testcase name="Set PLL parameter " function="test_pll_set_parameter" />
       <testcase name="Get PLL parameter " function="test_pll_get_parameter" />
       <testcase name="Set Wake Up Source" function="test_set_wakeup_source" />
-      <testcase name="Self Suspend" function="test_self_suspend" />
+      <testcase name="CPU suspend to powerdown at level 0 (secondary)" function="test_psci_suspend_powerdown_level0_secondary" />
       <testcase name="Query Data" function="test_query_data" />
       <testcase name="Get Reset Status" function="test_reset_get_status" />
 

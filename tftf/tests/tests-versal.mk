@@ -26,6 +26,7 @@ TESTS_SOURCES		+=	$(wildcard tftf/tests/plat/amd/common/clock_test/*.c)		\
 				$(wildcard tftf/tests/plat/amd/common/register_notifier_test/*.c) \
 				$(wildcard tftf/tests/plat/amd/common/reset_get_status/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/self_suspend/*.c)		\
+				$(wildcard tftf/tests/plat/amd/common/set_wakeup_source/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/tf_a_feature_check/*.c)	\
 				$(wildcard tftf/tests/plat/amd/common/tf_a_register_sgi/*.c)
 

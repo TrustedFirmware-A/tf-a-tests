@@ -11,6 +11,12 @@
 #define TARGET_SUBSYSTEM	PM_SUBSYS_RPU
 #define WAKEUP_ADDR		RPU_WAKEUP_ADDR
 
+/* set_address argument: 1 = pass the resume address, 0 = ignore it */
+#define SET_ADDRESS		1U
+
+/* Delay between force power down and wake-up of the target (milliseconds) */
+#define WAKEUP_DELAY_MS		10000U
+
 /*
  * This function is used to force power down the subsystem if the
  * subsystem is unresponsive and by calling this API all the resources of
@@ -28,33 +34,26 @@
  * the RPU subsystem can be added with only a NOP CDO (which contains only a
  * single "nop" instruction). This allows the force power down feature to be
  * tested without requiring an actual executable partition for the RPU.
+ *
+ * The ack_type argument selects the acknowledgment mode (IPI_BLOCKING or
+ * IPI_NON_BLOCKING) passed to the force power down EEMI API.
  */
-test_result_t test_force_powerdown(void)
+static test_result_t force_powerdown_and_wake_up(uint32_t ack_type)
 {
 	int32_t status;
 
-	status = xpm_force_powerdown(TARGET_SUBSYSTEM, 1);
+	status = xpm_force_powerdown(TARGET_SUBSYSTEM, ack_type);
 	if (status != PM_RET_SUCCESS) {
 		tftf_testcase_printf("%s ERROR force powering down system: 0x%x, "
 				     "Status: 0x%x\n", __func__, TARGET_SUBSYSTEM, status);
 		return TEST_RESULT_FAIL;
 	}
 
-	tftf_testcase_printf("Waiting for 10 seconds before waking up the target\n\r");
-	waitms(10000);
+	tftf_testcase_printf("Waiting before waking up the target\n\r");
+	waitms(WAKEUP_DELAY_MS);
 
-	return TEST_RESULT_SUCCESS;
-}
-
-/*
- * This function can be used to request power up of a CPU node
- * within the same PU, or to power up another PU.
- */
-test_result_t test_request_wake_up(void)
-{
-	int32_t status;
-
-	status = xpm_request_wakeup(TARGET_SUBSYSTEM, 1, WAKEUP_ADDR, 0);
+	status = xpm_request_wakeup(TARGET_SUBSYSTEM, SET_ADDRESS, WAKEUP_ADDR,
+				    IPI_NON_BLOCKING);
 	if (status != PM_RET_SUCCESS) {
 		tftf_testcase_printf("%s ERROR requesting wake-up for %x, "
 				     "Status: 0x%x\n", __func__, TARGET_SUBSYSTEM, status);
@@ -62,4 +61,14 @@ test_result_t test_request_wake_up(void)
 	}
 
 	return TEST_RESULT_SUCCESS;
+}
+
+test_result_t test_force_powerdown_ack(void)
+{
+	return force_powerdown_and_wake_up(IPI_BLOCKING);
+}
+
+test_result_t test_force_powerdown_no_ack(void)
+{
+	return force_powerdown_and_wake_up(IPI_NON_BLOCKING);
 }

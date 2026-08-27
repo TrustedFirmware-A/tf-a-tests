@@ -44,6 +44,7 @@ static unsigned int pool_counter;
 static unsigned long list_buffer[PLATFORM_CORE_COUNT][PAGE_SIZE] __aligned(GRANULE_SIZE);
 
 #define SRO_LIST_ENTRIES		(GRANULE_SIZE/sizeof(unsigned long))
+#define GRANULE_TRACKING_REGION_SIZE	(1UL << 30)
 
 /*
  * Return an IPA mask @level
@@ -260,8 +261,7 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
 	u_register_t size = XLAT_BLOCK_SIZE(XLAT_TABLE_LEVEL_MAX -
 					    EXTRACT(RMI_ADDR_BLK_SIZE, *donate_req));
 	u_register_t n_blocks = EXTRACT(RMI_COUNT, *donate_req);
-	u_register_t state = (*donate_req & RMI_OP_DONATE_MEM_STATE) ?
-					RMI_OP_MEM_UNDELEGATE : RMI_OP_MEM_DELEGATE;
+	u_register_t state = EXTRACT(RMI_OP_DONATE_MEM_STATE, *donate_req);
 	u_register_t contig = (*donate_req & RMI_OP_DONATE_MEM_CONTIG) ?
 					RMI_OP_MEM_CONTIG : RMI_OP_MEM_NON_CONTIG;
 	u_register_t retval;
@@ -269,6 +269,15 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
 	unsigned long *list_addr, list_count;
 	unsigned long consumed_granules, blocks_per_entry, delegation_per_entry;
 	unsigned long allocation_size, alignment;
+
+	/*
+	 * A conditional donation can use an undelegated metadata page from the
+	 * tracking region being converted.  Supplying it undelegated avoids a
+	 * recursive delegate while that region has no fine descriptors.
+	 */
+	if (state == RMI_OP_MEM_CONDITIONAL) {
+		state = RMI_OP_MEM_UNDELEGATE;
+	}
 
 	/*
 	 * If the memory is contiguous, donate all of it on a single entry,
@@ -1519,7 +1528,7 @@ static u_register_t host_rmi_granule_delegate_range(u_register_t base,
 	res_top = ret.ret1;
 
 	if (err_code != RMI_SUCCESS) {
-		if (err_code == RMI_ERROR_TRACKING) {
+		if (RMI_RETURN_STATUS(err_code) == RMI_ERROR_TRACKING) {
 			assert(top != res_top);
 
 			/*
@@ -1528,13 +1537,14 @@ static u_register_t host_rmi_granule_delegate_range(u_register_t base,
 			 * size and align the res_top accordingly.
 			 */
 			INFO("Setting fine tracking for 0x%lx. Range starts from 0x%llx\n",
-			     res_top, ALIGN_DOWN(res_top, 1UL << 30));
+			     res_top, ALIGN_DOWN(res_top, GRANULE_TRACKING_REGION_SIZE));
 
 			/*
 			 * Invoke RMI_GRANULE_TRACKING_SET to set fine tracking
 			 * and retry delegation. Align the base to tracking granule size
 			 */
-			err_code = host_rmi_granule_tracking_set(ALIGN_DOWN(base, 1UL << 30),
+			err_code = host_rmi_granule_tracking_set(ALIGN_DOWN(res_top,
+								     GRANULE_TRACKING_REGION_SIZE),
 								 RMI_TRACKING_FINE);
 
 			if (err_code == RMI_SUCCESS) {
@@ -1567,11 +1577,14 @@ static u_register_t host_rmi_granule_undelegate_range(u_register_t base,
 	}
 
 	/*
-	 * Try to set the tracking to coarse for the undelegated range.
-	 * Note that this can fail if the whole range is not undelegated.
+	 * A tracking region can become coarse only after it has been entirely
+	 * undelegated.  Single-granule callers cannot meet that condition and
+	 * would otherwise generate one expected RMI_ERROR_INPUT per page.
 	 */
-	(void)host_rmi_granule_tracking_set(ALIGN_DOWN(base, 1UL << 30),
-					    RMI_TRACKING_COARSE);
+	if (IS_ALIGNED(base, GRANULE_TRACKING_REGION_SIZE) &&
+	    ((top - base) == GRANULE_TRACKING_REGION_SIZE)) {
+		(void)host_rmi_granule_tracking_set(base, RMI_TRACKING_COARSE);
+	}
 
 	return err_code;
 }
@@ -1595,7 +1608,8 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 		 * Aling mem_region to the granule tracking size
 		 * and check if the base falls within the region.
 		 */
-		if ((res == 0) && ((base >= ALIGN_DOWN(mem_region, 1UL << 30)) &&
+		if ((res == 0) && ((base >= ALIGN_DOWN(mem_region,
+								     GRANULE_TRACKING_REGION_SIZE)) &&
 				   (base < (mem_region + mem_region_size)))) {
 			category = RMI_MEM_CATEGORY_DEV_NCOH;
 			break;

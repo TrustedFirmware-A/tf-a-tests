@@ -604,8 +604,9 @@ ifeq (${ENABLE_REALM_PAYLOAD_TESTS},1)
 
 tftf: realm
 	@echo "  PACK REALM PAYLOAD"
+	$(shell truncate --size %4096 $(BUILD_PLAT)/tftf.bin)
 	$(shell dd if=$(BUILD_PLAT)/realm.bin of=$(BUILD_PLAT)/tftf.bin obs=1 \
-	oflag=append conv=notrunc)
+		oflag=append conv=notrunc)
 endif
 
 ifeq (${ARCH}-${PLAT},aarch64-tc)

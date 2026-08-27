@@ -331,8 +331,8 @@ test_result_t host_fail_dev_mem_del(void)
 		retrmm = host_rmi_granule_delegate((u_register_t)&bufferdelegate[0]);
 		if (retrmm != RMI_SUCCESS) {
 			tftf_testcase_printf(
-				"Delegate operation does not skip double "
-				"delegation, 0x%lx\n",
+				"Repeated delegate operation does not "
+				"succeed, 0x%lx\n",
 				retrmm);
 			return TEST_RESULT_FAIL;
 		}

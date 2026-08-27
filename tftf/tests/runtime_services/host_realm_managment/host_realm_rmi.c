@@ -46,6 +46,29 @@ static unsigned long list_buffer[PLATFORM_CORE_COUNT][PAGE_SIZE] __aligned(GRANU
 #define SRO_LIST_ENTRIES		(GRANULE_SIZE/sizeof(unsigned long))
 #define GRANULE_TRACKING_REGION_SIZE	(1UL << 30)
 
+/* Address range whose pages are self-describing for a conditional donation. */
+struct sro_donation_range {
+	u_register_t base;
+	u_register_t top;
+};
+
+/*
+ * Initialize the Realm allocation pool. Any memory retained for tracking SRO
+ * metadata remains reserved when the pool is reinitialized.
+ */
+static bool host_realm_pool_init(void)
+{
+	int ret;
+
+	ret = page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE);
+	if (ret != HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return false;
+	}
+
+	return true;
+}
+
 /*
  * Return an IPA mask @level
  */
@@ -256,12 +279,14 @@ static inline u_register_t reclaim_mem(u_register_t handle)
 /*
  * At the moment, only 4KB Granularity size is supported.
  */
-static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_req)
+static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_req,
+				      const struct sro_donation_range *donation_range)
 {
 	u_register_t size = XLAT_BLOCK_SIZE(XLAT_TABLE_LEVEL_MAX -
 					    EXTRACT(RMI_ADDR_BLK_SIZE, *donate_req));
 	u_register_t n_blocks = EXTRACT(RMI_COUNT, *donate_req);
-	u_register_t state = EXTRACT(RMI_OP_DONATE_MEM_STATE, *donate_req);
+	u_register_t requested_state = EXTRACT(RMI_OP_DONATE_MEM_STATE, *donate_req);
+	u_register_t state;
 	u_register_t contig = (*donate_req & RMI_OP_DONATE_MEM_CONTIG) ?
 					RMI_OP_MEM_CONTIG : RMI_OP_MEM_NON_CONTIG;
 	u_register_t retval;
@@ -270,14 +295,7 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
 	unsigned long consumed_granules, blocks_per_entry, delegation_per_entry;
 	unsigned long allocation_size, alignment;
 
-	/*
-	 * A conditional donation can use an undelegated metadata page from the
-	 * tracking region being converted.  Supplying it undelegated avoids a
-	 * recursive delegate while that region has no fine descriptors.
-	 */
-	if (state == RMI_OP_MEM_CONDITIONAL) {
-		state = RMI_OP_MEM_UNDELEGATE;
-	}
+	assert(donation_range != NULL);
 
 	/*
 	 * If the memory is contiguous, donate all of it on a single entry,
@@ -323,6 +341,20 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
 			(u_register_t)page_alloc_aligned(allocation_size, alignment);
 
 		assert(mem_ptr != 0UL);
+		state = requested_state;
+		if (state == RMI_OP_MEM_CONDITIONAL) {
+			/*
+			 * Conditional donation state is selected from the supplied
+			 * address. Only a self-describing page can be undelegated.
+			 */
+			if ((mem_ptr >= donation_range->base) &&
+			    (mem_ptr < donation_range->top) &&
+			    (allocation_size <= (donation_range->top - mem_ptr))) {
+				state = RMI_OP_MEM_UNDELEGATE;
+			} else {
+				state = RMI_OP_MEM_DELEGATE;
+			}
+		}
 
 		/* Need to delegate the memory? */
 		if (state == RMI_OP_MEM_DELEGATE) {
@@ -369,13 +401,16 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
  *   - rets: Pointer to a smc_ret_values structure containing the final return
  *	     values that the initiating RMI would have had upon completion. This
  *	     pointer is allowed to be NULL.
+ *   - donation_range: The self-describing address range for a conditional
+ *		     memory donation. A supplied page outside this range is
+ *		     provided in the delegated state.
  *
  * - Return: An rmi_result OP code with the outcome of the SRO flow.
  */
-u_register_t host_realm_sro_continue(u_register_t status,
-				     u_register_t *op_handle,
-				     u_register_t *donate_req,
-				     smc_ret_values *ret)
+static u_register_t host_realm_sro_continue_with_donation_range(
+				u_register_t status, u_register_t *op_handle,
+				u_register_t *donate_req, smc_ret_values *ret,
+				const struct sro_donation_range *donation_range)
 {
 	u_register_t cmd_status;
 	u_register_t ret_status;
@@ -397,7 +432,8 @@ u_register_t host_realm_sro_continue(u_register_t status,
 			} else {
 				if (mem_req != RMI_OP_MEM_REQ_NONE) {
 					if (mem_req == RMI_OP_MEM_REQ_DONATE) {
-						ret_status = donate_mem(*op_handle, donate_req);
+						ret_status = donate_mem(*op_handle, donate_req,
+									donation_range);
 					} else if (mem_req == RMI_OP_MEM_REQ_RECLAIM) {
 						ret_status = reclaim_mem(*op_handle);
 					}
@@ -431,6 +467,20 @@ u_register_t host_realm_sro_continue(u_register_t status,
 	}
 
 	return cmd_status;
+}
+
+u_register_t host_realm_sro_continue(u_register_t status,
+				     u_register_t *op_handle,
+				     u_register_t *donate_req,
+				     smc_ret_values *ret)
+{
+	static const struct sro_donation_range donation_range = {
+		.base = 0UL,
+		.top = 0UL
+	};
+
+	return host_realm_sro_continue_with_donation_range(status, op_handle,
+			donate_req, ret, &donation_range);
 }
 
 void host_rmi_init_cmp_result(void)
@@ -1622,8 +1672,24 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 	if (RMI_RETURN_STATUS(rets.ret0) == RMI_INCOMPLETE) {
 		unsigned long tracking_handle = rets.ret1;
 		unsigned long donate_req = rets.ret2;
+		struct sro_donation_range donation_range = {
+			.base = base,
+			.top = base
+		};
 
-		return host_realm_sro_continue(rets.ret0, &tracking_handle, &donate_req, NULL);
+		u_register_t ret;
+
+		if (category == RMI_MEM_CATEGORY_CONVENTIONAL) {
+			donation_range.top += GRANULE_TRACKING_REGION_SIZE;
+		}
+		ret = host_realm_sro_continue_with_donation_range(rets.ret0,
+				&tracking_handle, &donate_req, NULL, &donation_range);
+		if (ret == RMI_SUCCESS) {
+			/* Fine-tracking descriptors remain owned by the RMM. */
+			page_pool_reserve();
+		}
+
+		return ret;
 	}
 
 	return rets.ret0;
@@ -1687,12 +1753,11 @@ u_register_t host_realm_create(struct realm *realm)
 	pool_counter++;
 	spin_unlock(&pool_lock);
 
-	if (count == 0U) {
-		if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
-			!= HEAP_INIT_SUCCESS) {
-			ERROR("%s() failed\n", "page_pool_init");
-			return REALM_ERROR;
-		}
+	if ((count == 0U) && !host_realm_pool_init()) {
+		spin_lock(&pool_lock);
+		pool_counter--;
+		spin_unlock(&pool_lock);
+		return REALM_ERROR;
 	}
 
 	assert(realm->num_aux_planes <= MAX_AUX_PLANE_COUNT);
@@ -2825,8 +2890,30 @@ u_register_t host_rmi_granule_tracking_get(u_register_t base,
 u_register_t host_rmi_rmm_activate(void)
 {
 	smc_ret_values rets;
+	u_register_t donate_req;
+	u_register_t handle;
 
 	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RMM_ACTIVATE}, 1U);
+
+	if (RMI_RETURN_STATUS(rets.ret0) == RMI_INCOMPLETE) {
+		u_register_t ret;
+
+		if (!host_realm_pool_init()) {
+			return REALM_ERROR;
+		}
+
+		handle = rets.ret1;
+		donate_req = rets.ret2;
+		ret = host_realm_sro_continue(rets.ret0, &handle,
+					     &donate_req, NULL);
+
+		if (ret == RMI_SUCCESS) {
+			/* The tracking-region array remains owned by the RMM. */
+			page_pool_reserve();
+		}
+
+		return ret;
+	}
 
 	return rets.ret0;
 }

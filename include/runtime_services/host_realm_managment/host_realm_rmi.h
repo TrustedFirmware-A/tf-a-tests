@@ -1695,17 +1695,14 @@ struct rmi_pdev_params {
  * Width: 4096 (0x1000) bytes.
  */
 struct rmi_public_key_params {
-	/* Bits8: Key data */
-	SET_MEMBER_RMI(unsigned char key[PUBKEY_PARAM_KEY_LEN_MAX], 0x0, 0x400);
-	/* Bits8: Key metadata */
-	SET_MEMBER_RMI(unsigned char metadata[PUBKEY_PARAM_METADATA_LEN_MAX],
-		       0x400, 0x800);
-	/* UInt64: Length of key data in bytes */
+	/* Address of public key data */
+	SET_MEMBER_RMI(unsigned long key_addr, 0x0, 0x400);
+	/* Address of key metadata */
+	SET_MEMBER_RMI(unsigned long metadata_addr, 0x400, 0x800);
+	/* Length of key data in bytes */
 	SET_MEMBER_RMI(unsigned long key_len, 0x800, 0x808);
-	/* UInt64: Length of metadata in bytes */
-	SET_MEMBER_RMI(unsigned long metadata_len, 0x808, 0x810);
-	/* RmiSignatureAlgorithm: Signature algorithm */
-	SET_MEMBER_RMI(unsigned char algo, 0x810, 0x1000);
+	/* Length of key metadata in bytes */
+	SET_MEMBER_RMI(unsigned long metadata_len, 0x808, 0x1000);
 };
 
 /*

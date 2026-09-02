@@ -28,7 +28,9 @@ test_result_t host_test_realm_smmuv3(void)
 {
 	struct realm realm;
 	u_register_t rmi_feat_reg0;
-	u_register_t res, exit_reason, out_top = 0UL;
+	u_register_t res, exit_reason;
+	u_register_t base, top, flags;
+	u_register_t out_top = 0UL, out_range, out_count;
 	u_register_t *map_addr;
 	struct host_pdev *h_pdev;
 	struct host_vdev *h_vdev;
@@ -37,10 +39,12 @@ test_result_t host_test_realm_smmuv3(void)
 	pci_tdisp_mmio_range_t *mmio_range;
 	struct rmi_address_range addr_range[MAX_ADDR_RANGE_NUM];
 	unsigned int num_dlg[MAX_ADDR_RANGE_NUM] = {0U};
+	unsigned int num_map[MAX_ADDR_RANGE_NUM] = {0U};
 	unsigned int host_call_result = TEST_RESULT_FAIL;
-	unsigned int num_gran = 0U, num_map = 0U;
+	unsigned int num_gran = 0U;
 	unsigned int range_count;
 	test_result_t result = TEST_RESULT_SUCCESS;
+	RmiAddrRangeDesc4KB oaddr_desc[MAX_ADDR_RANGE_NUM];
 	bool return_error = false;
 	bool bar64_warkound;
 	int rc;
@@ -162,20 +166,20 @@ test_result_t host_test_realm_smmuv3(void)
 				ERROR("%s() for 0x%lx failed, %lu\n",
 					"host_rmi_granule_delegate", addr, res);
 				return_error = true;
-				goto unmap_memory;
+				goto unmap_dev_memory;
 			}
 			++num_dlg[i];	/* number of granules delegated */
 
 			res = host_dev_mem_map(&realm, h_vdev, addr, RTT_MAX_LEVEL,
-					&map_addr[num_map]);
+					&map_addr[num_map[i]]);
 			if (res != REALM_SUCCESS) {
 				ERROR("%s() for 0x%lx failed, %lu\n",
 					"host_dev_mem_map", addr, res);
 				return_error = true;
-				goto unmap_memory;
+				goto unmap_dev_memory;
 			}
 
-			++num_map;	/* number of granules mapped */
+			++num_map[i];	/* number of granules mapped */
 			addr += GRANULE_SIZE;
 		}
 	}
@@ -187,7 +191,7 @@ test_result_t host_test_realm_smmuv3(void)
 	if (!host_enter_realm_execute(&realm, REALM_SMMU, RMI_EXIT_VDEV_MAP, 0U)) {
 		ERROR("Realm SMMUv3 test failed\n");
 		return_error = true;
-		goto unmap_memory;
+		goto unmap_dev_memory;
 	}
 
 	run = (struct rmi_rec_run *)realm.run[0];
@@ -227,34 +231,45 @@ test_result_t host_test_realm_smmuv3(void)
 		return_error = true;
 	}
 
-unmap_memory:
+unmap_dev_memory:
+	/* Fill RMI Address Range List */
 	for (unsigned int i = 0U; i < range_count; i++) {
-		u_register_t addr = addr_range[i].base;
+		oaddr_desc[i].size = RMI_PAGE_L3;
+		oaddr_desc[i].count = num_map[i];
+		oaddr_desc[i].addr = addr_range[i].base >>
+					RMI_ADDR_RANGE_DESC_ADDR_SHIFT;
+		oaddr_desc[i].reserved = 0;
+		oaddr_desc[i].state = RMI_OP_MEM_STATE_DELEGATED;
+	}
 
-		while (addr < addr_range[i].top) {
-			u_register_t out_top, out_range, out_count;
+	base = addr_range[0].base;
+	top = addr_range[range_count - 1U].top;
 
+	flags = RMI_ADDR_TYPE_LIST |
+		(range_count << RMI_UNPROT_MAP_FLAGS_LIST_COUNT_SHIFT);
 
-			/* SINGLE: oaddr is SBZ */
-			res = host_rmi_rtt_dev_unmap(realm.rd, addr, addr + GRANULE_SIZE,
-						     RMI_ADDR_TYPE_SINGLE, 0UL, &out_top,
-						     &out_range, &out_count);
-			if (res != REALM_SUCCESS) {
-				ERROR("%s() for 0x%lx failed, %lu\n",
-					"host_dev_mem_map", addr, res);
-				return_error = true;
-				goto unmap_memory;
-			}
-			--num_map;	/* number of granules mapped */
+	res = host_rmi_rtt_dev_unmap(realm.rd, base, top,
+				     flags, (u_register_t)&oaddr_desc,
+				     &out_top, &out_range, &out_count);
+	if (res != REALM_SUCCESS) {
+		ERROR("%s() for 0x%lx-0x%lx failed, %lu\n",
+			"host_rmi_rtt_dev_unmap", base, top, res);
+		return_error = true;
+	}
 
-			res = host_rmi_granule_undelegate(addr);
+	for (unsigned int i = 0U; i < range_count; i++) {
+		base = addr_range[i].base;
+
+		while (num_dlg[i] != 0U) {
+			res = host_rmi_granule_undelegate(base);
 			if (res != RMI_SUCCESS) {
 				ERROR("%s() for 0x%lx failed, %lu\n",
-					"host_rmi_granule_undelegate", addr, res);
+					"host_rmi_granule_undelegate", base, res);
 				return_error = true;
+				goto unassign_vdev;
 			}
-			--num_dlg[i];	/* number of granules delegated */
-			addr += GRANULE_SIZE;
+			base += GRANULE_SIZE;
+			num_dlg[i]--;
 		}
 	}
 
@@ -264,7 +279,6 @@ unassign_vdev:
 		ERROR("Destroying VDEV failed\n");
 		return_error = true;
 	}
-
 
 destroy_pdev:
 	/* Destroy PDEV */

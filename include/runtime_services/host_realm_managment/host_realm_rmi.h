@@ -849,7 +849,6 @@
 #define RMI_FEATURE_TRUE		1U
 
 /* RmiRealmFlags0 format */
-#define RMI_REALM_FLAGS0_LPA2			BIT(0)
 #define RMI_REALM_FLAGS0_SVE			BIT(1)
 #define RMI_REALM_FLAGS0_PMU			BIT(2)
 #define RMI_REALM_FLAGS0_DA			BIT(3)

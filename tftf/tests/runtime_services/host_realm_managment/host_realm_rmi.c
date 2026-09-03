@@ -60,6 +60,19 @@ static unsigned long tte_ipa_lvl_mask(long level, bool lpa2)
 	return mask;
 }
 
+static unsigned int root_rtt_count(unsigned int ipa_bits, long level)
+{
+	unsigned int levels = (unsigned int)((long)TT_PAGE_LEVEL - level);
+	unsigned int sl_ipa_bits;
+
+	sl_ipa_bits = (levels * TTE_STRIDE) + GRANULE_SHIFT + TTE_STRIDE;
+	if (sl_ipa_bits >= ipa_bits) {
+		return 1U;
+	}
+
+	return 1U << (ipa_bits - sl_ipa_bits);
+}
+
 static smc_ret_values host_rmi_handler(smc_args *args, unsigned int in_reg)
 {
 	u_register_t regs[8];
@@ -1554,6 +1567,7 @@ u_register_t host_realm_create(struct realm *realm)
 	u_register_t create_handle = 0UL;
 	u_register_t donate_req = 0UL;
 	unsigned int count, rtt_page_count = 0U;
+	unsigned int rtt_tree_count, root_rtts;
 
 	realm->par_size = REALM_MAX_LOAD_IMG_SIZE;
 
@@ -1619,11 +1633,13 @@ u_register_t host_realm_create(struct realm *realm)
 
 	/* Allocate and delegate RTT */
 	if (realm->rtt_tree_single) {
-		rtt_page_count = 1U;
+		rtt_tree_count = 1U;
 	} else {
 		/* Primary + AUX RTT Tree */
-		rtt_page_count = (realm->num_aux_planes + 1U);
+		rtt_tree_count = (realm->num_aux_planes + 1U);
 	}
+	root_rtts = root_rtt_count((unsigned int)realm->s2sz, realm->start_level);
+	rtt_page_count = rtt_tree_count * root_rtts;
 
 	realm->rtt_addr = (u_register_t)page_alloc(rtt_page_count * PAGE_SIZE);
 
@@ -1646,9 +1662,12 @@ u_register_t host_realm_create(struct realm *realm)
 				goto err_free_rtt;
 			}
 
-			if (i > 0U && !realm->rtt_tree_single) {
-				realm->aux_rtt_addr[i - 1] = realm->rtt_addr + (i * PAGE_SIZE);
-				params->aux_rtt_base[i - 1] = realm->rtt_addr + (i * PAGE_SIZE);
+			if (((i % root_rtts) == 0U) && (i > 0U)) {
+				unsigned int tree_idx = i / root_rtts;
+				u_register_t tree_base = realm->rtt_addr + (i * PAGE_SIZE);
+
+				realm->aux_rtt_addr[tree_idx - 1U] = tree_base;
+				params->aux_rtt_base[tree_idx - 1U] = tree_base;
 			}
 		}
 	}
@@ -1675,11 +1694,6 @@ u_register_t host_realm_create(struct realm *realm)
 		params->pmu_num_ctrs = 0U;
 	}
 
-	/* LPA2 enable */
-	if (realm->lpa2) {
-		params->flags0 |= RMI_REALM_FLAGS0_LPA2;
-	}
-
 	/* Enabled RMI FEAT_DA */
 	if (realm->da_enabled) {
 		params->flags0 |= RMI_REALM_FLAGS0_DA;
@@ -1694,7 +1708,7 @@ u_register_t host_realm_create(struct realm *realm)
 	params->rtt_level_start = realm->start_level;
 	params->algorithm = RMI_HASH_SHA_256;
 	params->rtt_base = realm->rtt_addr;
-	params->rtt_num_start = 1U;
+	params->rtt_num_start = root_rtts;
 
 	if (!realm->rtt_tree_single) {
 		params->flags1 |= RMI_REALM_FLAGS1_RTT_TREE_PP;
@@ -2036,6 +2050,7 @@ u_register_t host_realm_destroy(struct realm *realm)
 	u_register_t destroy_handle = 0UL;
 	u_register_t donate_req = 0UL;
 	unsigned int rtt_page_count;
+	unsigned int rtt_tree_count;
 	long rtt_start_level = realm->start_level;
 
 	if (realm->state == REALM_STATE_NULL) {
@@ -2136,10 +2151,12 @@ u_register_t host_realm_destroy(struct realm *realm)
 	}
 
 	if (realm->rtt_tree_single) {
-		rtt_page_count = 1U;
+		rtt_tree_count = 1U;
 	} else {
-		rtt_page_count = realm->num_aux_planes + 1U;
+		rtt_tree_count = realm->num_aux_planes + 1U;
 	}
+	rtt_page_count = rtt_tree_count *
+		root_rtt_count((unsigned int)realm->s2sz, realm->start_level);
 
 	for (unsigned int i = 0U; i < rtt_page_count; i++) {
 		ret = host_rmi_granule_undelegate(realm->rtt_addr + (i * PAGE_SIZE));

@@ -1377,6 +1377,92 @@ destroy_realm:
 }
 
 /*
+ * @Test_Aim@ Verify that RSI_MEM_SET_PERM_INDEX rejects RIPAS_EMPTY memory
+ * and accepts RIPAS_RAM memory.
+ *
+ * Sequence:
+ * 1. Create and activate a realm with one REC and one auxiliary plane.
+ * 2. Map a protected page without initialising it, leaving its RIPAS as EMPTY.
+ * 3. Select a page from the auxiliary plane payload, whose RIPAS is RAM.
+ * 4. Pass both page addresses to plane 0 and enter the Realm.
+ * 5. Verify that changing the S2AP index fails with RSI_ERROR_INPUT for the
+ *    RIPAS_EMPTY page and succeeds for the RIPAS_RAM page.
+ */
+test_result_t host_test_realm_set_s2ap_ripas(void)
+{
+	bool ret1 = false, ret2 = false;
+	u_register_t ret;
+	struct realm realm;
+	u_register_t rec_flag[1] = {RMI_RUNNABLE}, empty_base, ram_base;
+	bool lpa2 = false;
+	u_register_t s2sz = MAX_IPA_BITS;
+	long sl = RTT_MIN_LEVEL;
+	struct test_realm_params params = {0};
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (!are_planes_supported()) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	if (is_feat_52b_on_4k_2_supported()) {
+		lpa2 = true;
+		s2sz = MAX_IPA_BITS_LPA2;
+		sl = RTT_MIN_LEVEL_LPA2;
+	}
+
+	params.rec_count = 1U;
+	params.num_aux_planes = 1U;
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.lpa2 = lpa2;
+	params.s2sz = s2sz;
+	params.sl = sl;
+	params.rec_flag = rec_flag;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	empty_base = (u_register_t)page_alloc(PAGE_SIZE);
+
+	ret = host_realm_delegate_map_protected_data(
+		false, &realm, empty_base, PAGE_SIZE, empty_base);
+
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_realm_delegate_map_protected_data failed\n");
+		goto destroy_realm;
+	}
+
+	/* Plane 1's payload provides an existing RIPAS_RAM mapping. */
+	ram_base = realm.par_base + realm.par_size;
+
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U,
+					HOST_ARG1_INDEX, empty_base);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U,
+					HOST_ARG2_INDEX, ram_base);
+
+	ret1 = host_enter_realm_execute(&realm, REALM_SET_S2AP_RIPAS_CMD,
+							RMI_EXIT_HOST_CALL, 0U);
+
+destroy_realm:
+	ret2 = host_destroy_realm(&realm);
+	if (!ret2) {
+		ERROR("%s(): destroy=%d\n", __func__, ret2);
+		return TEST_RESULT_FAIL;
+	}
+
+	page_free(empty_base);
+
+	if (!ret1) {
+		ERROR("%s(): enter=%d\n", __func__, ret1);
+		return TEST_RESULT_FAIL;
+	}
+
+	return host_cmp_result();
+
+}
+
+/*
  * Test aims to generate REALM Exit due to abort
  * when access page with RIPAS=DESTOYED HIPAS=ASSIGNED
  * Host maps a protected page (calls data_create) when realm is in new state

@@ -39,13 +39,13 @@ typedef struct host_shared_data {
 
 	/* Buffer to save Realm command results */
 	uint8_t realm_cmd_output_buffer[REALM_CMD_BUFFER_SIZE];
-	
+
 	/* Number MMIO regions */
 	uint32_t mmio_range_count;
 
 	/* Array of MMIO address ranges */
 	struct rmi_address_range mmio_range[MAX_ADDR_RANGE_NUM];
-	
+
 } host_shared_data_t;
 
 typedef host_shared_data_t (*host_shared_data_arr_t)[MAX_PLANE_COUNT][MAX_REC_COUNT];
@@ -103,7 +103,8 @@ enum realm_cmd {
 	REALM_FEAT_MOPS,
 	REALM_EL1_TIMER_CMD,
 	REALM_GIC_TRAP_CMD,
-	REALM_PLANE_N_DIRECT_S2_PERM_FAULT_CMD
+	REALM_PLANE_N_DIRECT_S2_PERM_FAULT_CMD,
+	REALM_SET_S2AP_RIPAS_CMD
 };
 
 /*

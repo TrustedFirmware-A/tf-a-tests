@@ -577,6 +577,59 @@ static bool test_realm_feat_tcr2(void)
 	return (realm_get_undef_abort_count() != 0UL);
 }
 
+static bool test_realm_set_s2ap_ripas(void)
+{
+	u_register_t empty_base, empty_top, ram_base, ram_top;
+	u_register_t ret, new_base, new_top, s2ap_response, new_cookie;
+	rsi_ripas_type ripas;
+
+	empty_base = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	ram_base = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
+	empty_top = empty_base + PAGE_SIZE;
+	ram_top = ram_base + PAGE_SIZE;
+
+	/* Verifies that the page is EMPTY */
+	ret = rsi_ipa_state_get(empty_base, empty_top, &new_top, &ripas);
+	if ((ret != RSI_SUCCESS) || (ripas != RSI_EMPTY) ||
+		(new_top != empty_top)) {
+			realm_printf("Test page is not EMPTY\n");
+			return false;
+	}
+
+	ret = rsi_mem_set_perm_index(empty_base, empty_top, 1UL, 0UL,
+		&new_base, &s2ap_response, &new_cookie);
+
+	/* S2AP changes must be rejected for RIPAS_EMPTY */
+	if (ret != RSI_ERROR_INPUT) {
+		realm_printf("S2AP change on RIPAS_EMPTY returned 0x%lx\n", ret);
+		return false;
+	}
+
+	/* Verifies that the page is RIPAS_RAM */
+	ret = rsi_ipa_state_get(ram_base, ram_top, &new_top, &ripas);
+	if ((ret != RSI_SUCCESS) || (ripas != RSI_RAM) ||
+		(new_top != ram_top)) {
+			realm_printf("Test page is not RIPAS_RAM\n");
+			return false;
+	}
+
+	/* This is to check that the equivalent request succeeds for RIPAS_RAM */
+	new_base = ram_base;
+	new_cookie = 0UL;
+
+	while (new_base != ram_top) {
+		ret = rsi_mem_set_perm_index(new_base, ram_top, 1UL, new_cookie,
+									&new_base, &s2ap_response, &new_cookie);
+
+		if ((ret != RSI_SUCCESS) || (s2ap_response != RSI_ACCEPT)) {
+			realm_printf("S2AP change on RIPAS_RAM failed 0x%lx\n", ret);
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /*
  * Deny instruction access to Plane N's entry page. Then, Plane 0
  * handles the resulting direct stage 2 permission fault and resumes
@@ -814,6 +867,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_PLANE_N_DIRECT_S2_PERM_FAULT_CMD:
 			test_succeed = test_realm_plane_n_direct_s2_perm_fault();
+			break;
+		case REALM_SET_S2AP_RIPAS_CMD:
+			test_succeed = test_realm_set_s2ap_ripas();
 			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);

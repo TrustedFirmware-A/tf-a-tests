@@ -3100,10 +3100,11 @@ u_register_t host_rmi_vdev_get_state(u_register_t vdev_ptr, u_register_t *state)
 	return rets.ret0;
 }
 
-u_register_t host_rmi_vdev_abort(u_register_t vdev_ptr)
+u_register_t host_rmi_vdev_abort(u_register_t rd_ptr, u_register_t pdev_ptr,
+				  u_register_t vdev_ptr)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_ABORT, vdev_ptr},
-				2U).ret0;
+	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_ABORT, rd_ptr,
+			pdev_ptr, vdev_ptr}, 4U).ret0;
 }
 
 u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,

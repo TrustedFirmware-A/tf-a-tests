@@ -1250,11 +1250,17 @@ int host_vdev_unlock(struct realm *realm,
 {
 	int rc;
 	struct host_pdev *h_pdev;
+	u_register_t initial_state;
 
 	h_pdev = find_host_pdev_from_vdev_ptr((unsigned long)h_vdev->vdev_ptr);
 	if (h_pdev == NULL) {
 		ERROR("Failed to look up pdev for vdev\n");
 		return -1;
+	}
+
+	rc = host_vdev_get_state(h_vdev, &initial_state);
+	if (rc != 0) {
+		return rc;
 	}
 
 	rc = host_rmi_vdev_unlock(realm->rd, (u_register_t)h_pdev->ep_pdev,
@@ -1263,8 +1269,9 @@ int host_vdev_unlock(struct realm *realm,
 		return rc;
 	}
 
-	rc = host_vdev_transition(realm, h_vdev, RMI_VDEV_STATE_UNLOCKED);
-	return rc;
+	return host_dev_communicate(realm, h_pdev, true, h_vdev, target_state,
+				    false,
+				    initial_state == RMI_VDEV_STATE_ERROR);
 }
 
 int host_vdev_get_measurements(struct realm *realm,
@@ -1338,7 +1345,6 @@ int host_vdev_transition(struct realm *realm,
 		rc = host_dev_communicate(realm, h_pdev, true, h_vdev,
 					  RMI_VDEV_STATE_STARTED, false, false);
 		break;
-
 	default:
 		ERROR("Unknown target state\n");
 		rc = -1;

@@ -2130,7 +2130,8 @@ u_register_t host_rmi_vdev_communicate(u_register_t rd_ptr,
 				       u_register_t vdev_ptr,
 				       u_register_t dev_comm_data_ptr);
 u_register_t host_rmi_vdev_get_state(u_register_t vdev_ptr, u_register_t *state);
-u_register_t host_rmi_vdev_abort(u_register_t vdev_ptr);
+u_register_t host_rmi_vdev_abort(u_register_t rd_ptr, u_register_t pdev_ptr,
+				  u_register_t vdev_ptr);
 u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,
 				   u_register_t vdev_ptr);
 u_register_t host_rmi_rtt_dev_validate(u_register_t rd, u_register_t rec_ptr,

@@ -703,7 +703,17 @@ test_result_t host_vdev_test_valid_state_transition(void)
 		goto out_unassign_vdev;
 	}
 
-	/* RMI_VDEV_LOCK from NEW must fail */
+	/* RMI_VDEV_DESTROY from NEW must fail. */
+	INFO("VDEV states: destroy from NEW must fail\n");
+	ret = host_rmi_vdev_destroy(realm.rd, (u_register_t)h_pdev->ep_pdev,
+				    (u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_ERROR_DEVICE) {
+		ERROR("VDEV destroy from NEW returned 0x%lx\n", ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* RMI_VDEV_LOCK from NEW must fail. */
 	INFO("VDEV states: lock from NEW must fail\n");
 	ret = host_rmi_vdev_lock(realm.rd, (u_register_t)h_pdev->ep_pdev,
 				 (u_register_t)h_vdev->vdev_ptr);
@@ -719,11 +729,65 @@ test_result_t host_vdev_test_valid_state_transition(void)
 		goto out_unassign_vdev;
 	}
 
-	/* NEW -> UNLOCKED via RMI_VDEV_COMMUNICATE */
+	/* Complete the implicit unlock operation started by VDEV_CREATE. */
 	INFO("VDEV states: NEW -> UNLOCKED\n");
 	rc = host_vdev_transition(&realm, h_vdev, RMI_VDEV_STATE_UNLOCKED);
 	if (rc != 0) {
 		ERROR("Transition to UNLOCKED failed\n");
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* Start a lock operation, leave its communication pending and verify
+	 * that destroy still fails.
+	 */
+	INFO("VDEV states: destroy with pending communication must fail\n");
+	ret = host_rmi_vdev_lock(realm.rd, (u_register_t)h_pdev->ep_pdev,
+				 (u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_SUCCESS) {
+		ERROR("VDEV lock from UNLOCKED returned 0x%lx\n", ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	ret = host_rmi_vdev_destroy(realm.rd, (u_register_t)h_pdev->ep_pdev,
+				    (u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_ERROR_DEVICE) {
+		ERROR("VDEV destroy with pending communication returned 0x%lx\n",
+		      ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* Abort the pending operation, moving the VDEV to ERROR. */
+	INFO("VDEV states: abort pending communication -> ERROR\n");
+	ret = host_rmi_vdev_abort(realm.rd,
+				  (u_register_t)h_pdev->ep_pdev,
+				  (u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_SUCCESS) {
+		ERROR("VDEV abort returned 0x%lx\n", ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+	if (host_vdev_expect_state(h_vdev, RMI_VDEV_STATE_ERROR) != 0) {
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	INFO("VDEV states: destroy from ERROR must fail\n");
+	ret = host_rmi_vdev_destroy(realm.rd, (u_register_t)h_pdev->ep_pdev,
+				    (u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_ERROR_DEVICE) {
+		ERROR("VDEV destroy from ERROR returned 0x%lx\n", ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	/* ERROR -> UNLOCKED via RMI_VDEV_UNLOCK + COMMUNICATE. */
+	INFO("VDEV states: ERROR -> UNLOCKED\n");
+	rc = host_vdev_unlock(&realm, h_vdev, RMI_VDEV_STATE_UNLOCKED);
+	if (rc != 0) {
+		ERROR("Unlock from ERROR failed\n");
 		return_error = true;
 		goto out_unassign_vdev;
 	}
@@ -814,6 +878,24 @@ test_result_t host_vdev_test_valid_state_transition(void)
 	if (host_vdev_expect_state(h_vdev, RMI_VDEV_STATE_UNLOCKED) != 0) {
 		return_error = true;
 	}
+
+	/* RMI_VDEV_DESTROY succeeds only from UNLOCKED. */
+	INFO("VDEV states: destroy from UNLOCKED must succeed\n");
+	ret = host_rmi_vdev_destroy(realm.rd, (u_register_t)h_pdev->ep_pdev,
+				    (u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_SUCCESS) {
+		ERROR("VDEV destroy from UNLOCKED returned 0x%lx\n", ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
+	ret = host_rmi_granule_undelegate((u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_SUCCESS) {
+		ERROR("VDEV undelegate after destroy returned 0x%lx\n", ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+	vdev_assigned = false;
 
 out_unassign_vdev:
 	if (vdev_assigned) {

@@ -63,6 +63,23 @@ static bool test_realm_enter_plane_n(void)
 	return realm_plane_enter(plane_index, perm_index, flags, &run);
 }
 
+static bool test_realm_plane_n_host_call_no_trap(void)
+{
+	if (!realm_is_plane0()) {
+		(void)rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
+
+		return false;
+	}
+
+	/*
+	 * test_realm_enter_plane_n() sets the entry flags to 0.
+	 * This is why RsiTrap = RSI_NO_TRAP.
+	 */
+	(void)test_realm_enter_plane_n();
+
+	return false;
+}
+
 static bool test_realm_enter_plane_n_reg_rw(void)
 {
 	u_register_t base, plane_index, perm_index, flags = 0U;
@@ -870,6 +887,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_SET_S2AP_RIPAS_CMD:
 			test_succeed = test_realm_set_s2ap_ripas();
+			break;
+		case REALM_PLANE_N_HOST_CALL_NO_TRAP_CMD:
+			test_succeed = test_realm_plane_n_host_call_no_trap();
 			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);

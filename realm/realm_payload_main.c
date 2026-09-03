@@ -578,6 +578,61 @@ static bool test_realm_feat_tcr2(void)
 }
 
 /*
+ * Deny instruction access to Plane N's entry page. Then, Plane 0
+ * handles the resulting direct stage 2 permission fault and resumes
+ * Plane N.
+ */
+static bool test_realm_plane_n_direct_s2_perm_fault(void)
+{
+	u_register_t base;
+	u_register_t perm_index;
+	u_register_t plane_index;
+	u_register_t no_access_perm_index;
+	u_register_t ret;
+	u_register_t new_base;
+	u_register_t response;
+	u_register_t new_cookie = 0UL;
+
+	if (!realm_is_plane0()) {
+		/* Plane N reaches this point after Plane 0 restores its S2AP. */
+		return true;
+	}
+
+	plane_index = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	base = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
+	/*
+	 * Keep separate permission indices for fault injection and recovery
+	 */
+	perm_index = plane_index + 1U;
+	no_access_perm_index = perm_index + 1U;
+
+	if (!plane_common_init(plane_index, perm_index, base, &run)) {
+		return false;
+	}
+
+	ret = rsi_mem_set_perm_value(plane_index, no_access_perm_index,
+		PERM_LABEL_NO_ACCESS);
+	if (ret != RSI_SUCCESS) {
+		ERROR("Failed to configure no-access permissions\n");
+		return false;
+	}
+
+	new_base = base;
+	while (new_base != (base + PAGE_SIZE)) {
+		ret = rsi_mem_set_perm_index(new_base, base + PAGE_SIZE,
+					no_access_perm_index, new_cookie,
+					&new_base, &response, &new_cookie);
+
+		if ((ret != RSI_SUCCESS) || (response == RSI_REJECT)) {
+			ERROR("Failed to apply no-access permissions\n");
+			return false;
+		}
+	}
+
+	return realm_plane_enter(plane_index, perm_index, 0UL, &run);
+}
+
+/*
  * This is the entry function for Realm payload, it first requests the shared buffer
  * IPA address from Host using HOST_CALL/RSI, it reads the command to be executed,
  * performs the request, and returns to Host with the execution state SUCCESS/FAILED
@@ -756,6 +811,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_GIC_TRAP_CMD:
 			test_succeed = test_realm_gic_trap();
+			break;
+		case REALM_PLANE_N_DIRECT_S2_PERM_FAULT_CMD:
+			test_succeed = test_realm_plane_n_direct_s2_perm_fault();
 			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);

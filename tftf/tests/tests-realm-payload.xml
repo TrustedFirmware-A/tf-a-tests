@@ -18,6 +18,8 @@
 	  function="host_test_realm_plane_n_direct_s2_perm_fault" />
 	  <testcase name="Realm payload Planes multi rec multiple cpu"
 	  function="host_realm_multi_planes_multi_rec_multiple_cpu" />
+	  <testcase name="Test Plane N host call with trapping disabled"
+	  function="host_test_realm_plane_n_host_call_no_trap" />
 	  <testcase name="Access SVE registers from Plane N"
 	  function="host_realm_check_sve_in_planes" />
 	  <testcase name="Realm EL1 creation and execution test"

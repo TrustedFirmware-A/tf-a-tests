@@ -199,6 +199,8 @@
 	  <!-- Invoke DA RSI calls -->
 	  <testcase name="Trigger RSI_VDEV_GET_INFO with various params"
 	  function="host_da_get_info_parameter_test" />
+	  <testcase name="Architectural device ABI stubs"
+	  function="host_arch_dev_abi_test" />
 	  <!-- PDEV lifecycle and device-communication state coverage -->
 	  <testcase name="PDEV SPDM lifecycle and negative state coverage"
 	  function="host_pdev_test_spdm_lifecycle" />

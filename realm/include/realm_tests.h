@@ -38,6 +38,7 @@ bool test_realm_attestation_fault(void);
 bool test_realm_mpam_undef_abort(void);
 bool test_realm_write_brbcr_el1_reg(void);
 bool test_realm_da_rsi_vdev_get_info(void);
+bool test_realm_da_rsi_arch_dev_activate(void);
 bool test_realm_smmuv3(void);
 bool test_realm_feat_mops(void);
 bool test_realm_el1_timer(void);

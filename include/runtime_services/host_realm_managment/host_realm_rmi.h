@@ -429,6 +429,30 @@
 #define SMC_RMI_RTT_DEV_UNMAP			SMC64_RMI_FID(U(0xA8))
 
 /*
+ * FID: 0xC40001F9
+ *
+ * arg0 == PA of the RD for the target Realm
+ * arg1 == PA of the architectural device
+ * arg2 == Base of the target IPA range
+ * arg3 == Top of the target IPA range
+ *
+ * ret1 == Top IPA of range which has been mapped
+ */
+#define SMC_RMI_RTT_ARCH_DEV_MAP		SMC64_RMI_FID(U(0xA9))
+
+/*
+ * FID: 0xC40001FA
+ *
+ * arg0 == PA of the RD for the target Realm
+ * arg1 == PA of the architectural device
+ * arg2 == Base of the target IPA range
+ * arg3 == Top of the target IPA range
+ *
+ * ret1 == Top IPA of range which has been unmapped
+ */
+#define SMC_RMI_RTT_ARCH_DEV_UNMAP		SMC64_RMI_FID(U(0xAA))
+
+/*
  * FID: 0xC4000174
  */
 #define SMC_RMI_PDEV_ABORT			SMC64_RMI_FID(U(0x24))
@@ -2117,6 +2141,14 @@ u_register_t host_rmi_rtt_dev_unmap(u_register_t rd_ptr,
 			       u_register_t oaddr,
 			       u_register_t *out_top, u_register_t *out_range,
 			       u_register_t *out_count);
+u_register_t host_rmi_rtt_arch_dev_map(u_register_t rd_ptr,
+					 u_register_t dev_ptr,
+					 u_register_t base, u_register_t top,
+					 u_register_t *out_top);
+u_register_t host_rmi_rtt_arch_dev_unmap(u_register_t rd_ptr,
+					   u_register_t dev_ptr,
+					   u_register_t base, u_register_t top,
+					   u_register_t *out_top);
 u_register_t host_rmi_vdev_get_measurements(u_register_t rd_ptr, u_register_t pdev_ptr,
 					    u_register_t vdev_ptr, u_register_t params_ptr);
 u_register_t host_rmi_vdev_lock(u_register_t rd_ptr, u_register_t pdev_ptr,

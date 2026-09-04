@@ -3053,6 +3053,32 @@ u_register_t host_rmi_rtt_dev_unmap(u_register_t rd_ptr,
 	return rets.ret0;
 }
 
+u_register_t host_rmi_rtt_arch_dev_map(u_register_t rd_ptr,
+					 u_register_t dev_ptr,
+					 u_register_t base, u_register_t top,
+					 u_register_t *out_top)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_ARCH_DEV_MAP,
+				rd_ptr, dev_ptr, base, top}, 5U);
+	*out_top = rets.ret1;
+	return rets.ret0;
+}
+
+u_register_t host_rmi_rtt_arch_dev_unmap(u_register_t rd_ptr,
+					   u_register_t dev_ptr,
+					   u_register_t base, u_register_t top,
+					   u_register_t *out_top)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_ARCH_DEV_UNMAP,
+				rd_ptr, dev_ptr, base, top}, 5U);
+	*out_top = rets.ret1;
+	return rets.ret0;
+}
+
 u_register_t host_rmi_vdev_get_measurements(u_register_t rd_ptr, u_register_t pdev_ptr,
 					    u_register_t vdev_ptr, u_register_t params_ptr)
 {

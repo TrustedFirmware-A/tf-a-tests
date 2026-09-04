@@ -562,6 +562,50 @@ static const uint8_t pdev_test_p384_public_key[97] = {
   0x44
 };
 
+/*
+ * Exercise the architectural device ABI stubs and their basic input checks.
+ */
+test_result_t host_arch_dev_abi_test(void)
+{
+	u_register_t rmi_feat_reg0, out_top, ret;
+	struct realm realm;
+	test_result_t result = TEST_RESULT_FAIL;
+
+	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
+
+	if (host_create_realm_with_feat_da(&realm, true) != 0) {
+		ERROR("Realm create with feat_da failed\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = host_rmi_rtt_arch_dev_map(realm.rd, 1UL, 0UL,
+					GRANULE_SIZE, &out_top);
+	if (ret != RMI_ERROR_INPUT) {
+		ERROR("RMI_RTT_ARCH_DEV_MAP returned 0x%lx\n", ret);
+		goto out;
+	}
+
+	ret = host_rmi_rtt_arch_dev_unmap(realm.rd, 1UL, 0UL,
+					  GRANULE_SIZE, &out_top);
+	if (ret != RMI_ERROR_INPUT) {
+		ERROR("RMI_RTT_ARCH_DEV_UNMAP returned 0x%lx\n", ret);
+		goto out;
+	}
+
+	if (!host_enter_realm_execute(&realm, REALM_DA_RSI_ARCH_DEV_ACTIVATE,
+				      RMI_EXIT_HOST_CALL, 0U)) {
+		ERROR("RSI_ARCH_DEV_ACTIVATE test failed\n");
+		goto out;
+	}
+
+	result = TEST_RESULT_SUCCESS;
+out:
+	if (!destroy_psmmu_realm(&realm)) {
+		result = TEST_RESULT_FAIL;
+	}
+	return result;
+}
+
 static test_result_t pdev_test_init(struct host_pdev **h_pdev)
 {
 	u_register_t rmi_feat_reg0;

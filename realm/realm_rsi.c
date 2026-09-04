@@ -271,6 +271,14 @@ u_register_t rsi_vdev_get_info(u_register_t vdev_id, u_register_t vdev_info_ptr)
 	return res.ret0;
 }
 
+u_register_t rsi_arch_dev_activate(u_register_t base, u_register_t dev_type)
+{
+	smc_ret_values res = {};
+
+	res = tftf_smc(&(smc_args) {SMC_RSI_ARCH_DEV_ACTIVATE, base, dev_type});
+	return res.ret0;
+}
+
 u_register_t rsi_vdev_vaildate_mapping(u_register_t vdev_id,
 					u_register_t ipa_base,
 					u_register_t ipa_top,

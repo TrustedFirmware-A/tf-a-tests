@@ -15,8 +15,6 @@
 #include <spm_common.h>
 #include <lib/libc/string.h>
 
-static uint32_t spm_version;
-
 static const struct ffa_uuid sp_uuids[] = {
 		{PRIMARY_UUID}, {SECONDARY_UUID}, {TERTIARY_UUID}, {IVY_UUID}, {EL3_SPMD_LP_UUID}
 	};
@@ -122,12 +120,9 @@ static void ffa_partition_info_get_regs_test(void)
 	struct ffa_value ret = { 0 };
 
 	VERBOSE("FF-A Partition Info regs interface tests\n");
-	ret = ffa_version(FFA_VERSION_1_2);
-	uint32_t version = ret.fid;
-
-	if (version == FFA_ERROR_NOT_SUPPORTED) {
-		ERROR("FFA_VERSION 1.2 not supported, skipping"
-			" FFA_PARTITION_INFO_GET_REGS test.\n");
+	if (FFA_VERSION_COMPILED < FFA_VERSION_1_2) {
+		INFO("FFA_PARTITION_INFO_GET_REGS not available before FF-A v1.2; "
+		     "test skipped.\n");
 		return;
 	}
 
@@ -202,25 +197,9 @@ static void ffa_partition_info_get_test(struct mailbox_buffers *mb)
 	ffa_partition_info_wrong_test();
 }
 
-static void ffa_version_test(void)
-{
-	struct ffa_value ret = ffa_version(FFA_VERSION_COMPILED);
-
-	spm_version = (uint32_t)ret.fid;
-
-	bool compatible = ffa_versions_are_compatible(FFA_VERSION_COMPILED, spm_version);
-
-	INFO("Test FFA_VERSION. Return %u.%u; Compatible: %i\n",
-		ffa_version_get_major(spm_version),
-		ffa_version_get_minor(spm_version),
-		(int)compatible);
-
-	EXPECT((int)compatible, (int)true);
-}
-
 static void ffa_spm_id_get_test(void)
 {
-	if (spm_version >= FFA_VERSION_1_1) {
+	if (FFA_VERSION_COMPILED >= FFA_VERSION_1_1) {
 		struct ffa_value ret = ffa_spm_id_get();
 
 		EXPECT(ffa_func_id(ret), FFA_SUCCESS_SMC32);
@@ -247,7 +226,6 @@ void ffa_tests(struct mailbox_buffers *mb, bool el1_partition)
 	announce_test_section_start(test_ffa_str);
 
 	ffa_features_test(el1_partition);
-	ffa_version_test();
 	ffa_spm_id_get_test();
 	ffa_partition_info_get_test(mb);
 	ffa_partition_info_get_regs_test();

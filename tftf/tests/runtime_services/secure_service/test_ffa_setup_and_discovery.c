@@ -219,25 +219,49 @@ test_result_t test_ffa_version_equal(void)
 test_result_t test_ffa_version_bit31(void)
 {
 	return test_ffa_version(FFA_VERSION_MBZ_BIT | SPM_VERSION,
-				FFA_ERROR_NOT_SUPPORTED);
+				SMCCC_RET_INVALID_PARAMETER);
 }
 
 /*
  * @Test_Aim@ Validate what happens for bigger version than SPM's.
+ *
+ * The requested v2.0 is incompatible with and higher than the SPM's version,
+ * so the SPM returns the highest version it implements, such as v1.3.
  */
 test_result_t test_ffa_version_bigger(void)
 {
 	return test_ffa_version(make_ffa_version(2, 0),
-				FFA_ERROR_NOT_SUPPORTED);
+				FFA_VERSION_COMPILED);
 }
 
 /*
  * @Test_Aim@ Validate what happens for smaller version than SPM's.
+ *
+ * The requested v0.9 is incompatible with and lower than the SPM's version.
+ * The SPM may return the closest version it implements (v1.0) or report that
+ * the requested version is not supported.
  */
 test_result_t test_ffa_version_smaller(void)
 {
-	return test_ffa_version(make_ffa_version(0, 9),
-				FFA_ERROR_NOT_SUPPORTED);
+	const uint32_t input_version = make_ffa_version(0, 9);
+	const uint32_t not_supported = (uint32_t)FFA_ERROR_NOT_SUPPORTED;
+	uint32_t spm_version;
+
+	if (should_skip_version_test)
+		return TEST_RESULT_SKIPPED;
+
+	spm_version = (uint32_t)ffa_version(input_version).fid;
+
+	if ((spm_version == FFA_VERSION_1_0) ||
+	    (spm_version == not_supported))
+		return TEST_RESULT_SUCCESS;
+
+	tftf_testcase_printf("Input Version: 0x%x\n"
+			     "Return: 0x%x\nExpected: 0x%x or 0x%x\n",
+			     input_version, spm_version, FFA_VERSION_1_0,
+			     not_supported);
+
+	return TEST_RESULT_FAIL;
 }
 
 /******************************************************************************

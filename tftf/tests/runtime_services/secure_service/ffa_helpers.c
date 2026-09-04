@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -380,18 +380,41 @@ void ffa_hypervisor_retrieve_request_init(struct ffa_memory_region *region,
 
 /*
  * FFA Version ABI helper.
+ *
  * Version fields:
  *	-Bits[30:16]: Major version.
  *	-Bits[15:0]: Minor version.
+ *
+ * Input flags:
+ * 	- Bits[32:2]: Reserved (SBZ)
+ * 	- Bits[1:0]: b'00 Negotiate
+ * 		     b'01 Compatability discovery
+ * 		     b'10 Negotiated version query
  */
-struct ffa_value ffa_version(uint32_t input_version)
+struct ffa_value ffa_version_with_flags(uint32_t input_version,
+					uint32_t input_flags)
 {
 	struct ffa_value args = {
 		.fid = FFA_VERSION,
-		.arg1 = input_version
+		.arg1 = input_version,
+		.arg2 = input_flags,
 	};
 
 	return ffa_service_call(&args);
+}
+
+/** Negotiate the FF-A version using query type 0. */
+struct ffa_value ffa_version(uint32_t input_version)
+{
+	return ffa_version_with_flags(input_version,
+				      FFA_VERSION_QUERY_TYPE_NEGOTIATE);
+}
+
+/** Retrieve the negotiated FF-A version using query type 2. */
+struct ffa_value ffa_version_get_negotiated(void)
+{
+	return ffa_version_with_flags(FFA_VERSION_NULL,
+				      FFA_VERSION_QUERY_TYPE_GET_NEGOTIATED);
 }
 
 struct ffa_value ffa_id_get(void)

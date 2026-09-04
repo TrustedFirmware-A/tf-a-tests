@@ -288,7 +288,7 @@ test_result_t host_realm_fail_del(void)
 {
 	u_register_t retrmm;
 
-	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	retrmm = host_rmi_granule_delegate((u_register_t)&bufferdelegate[0]);
 	if (retrmm != 0UL) {

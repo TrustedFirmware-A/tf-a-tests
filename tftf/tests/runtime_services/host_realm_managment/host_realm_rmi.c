@@ -2032,6 +2032,30 @@ u_register_t host_rmi_granule_undelegate(u_register_t addr)
 	return host_rmi_granule_undelegate_range(addr, addr + PAGE_SIZE);
 }
 
+u_register_t host_rmi_gpt_l1_create(u_register_t addr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_GPT_L1_CREATE, addr},
+				2U).ret0;
+}
+
+u_register_t host_rmi_gpt_l1_destroy(u_register_t addr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_GPT_L1_DESTROY, addr},
+				2U).ret0;
+}
+
+u_register_t host_rmi_gpt_info(u_register_t base, u_register_t top,
+			       u_register_t *out_top, u_register_t *state)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_GPT_INFO, base, top}, 3U);
+	*out_top = rets.ret1;
+	*state = rets.ret2;
+
+	return rets.ret0;
+}
+
 u_register_t host_rmi_version(u_register_t requested_ver)
 {
 	smc_ret_values ret;

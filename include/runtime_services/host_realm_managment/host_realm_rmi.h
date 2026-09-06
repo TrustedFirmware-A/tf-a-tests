@@ -79,6 +79,31 @@
  */
 #define SMC_RMI_GRANULE_RANGE_UNDELEGATE		SMC64_RMI_FID(U(0xA2))
 
+/*
+ * FID: 0xC40001F3
+ *
+ * arg0 == PA of the region aligned to L0GPTSZ
+ */
+#define SMC_RMI_GPT_L1_CREATE			SMC64_RMI_FID(U(0xA3))
+
+/*
+ * FID: 0xC40001F4
+ *
+ * arg0 == PA of the region aligned to L0GPTSZ
+ */
+#define SMC_RMI_GPT_L1_DESTROY			SMC64_RMI_FID(U(0xA4))
+
+/*
+ * FID: 0xC4000211
+ *
+ * arg0 == Base of physical address range
+ * arg1 == Top of physical address range
+ *
+ * ret1 == Top PA of range within which L1GPT state is uniform
+ * ret2 == GPT PAR state
+ */
+#define SMC_RMI_GPT_INFO			SMC64_RMI_FID(U(0xC1))
+
 /* RmiDataMeasureContent type */
 #define RMI_NO_MEASURE_CONTENT	U(0)
 #define RMI_MEASURE_CONTENT	U(1)
@@ -1152,8 +1177,17 @@ typedef enum {
 	 */
 	RMI_BLOCKED = 14,
 
+	/* A GPT walk reached an entry with unexpected level */
+	RMI_ERROR_GPT = 15,
+
 	RMI_ERROR_COUNT
 } status_t;
+
+/* RmiGptParState values returned by RMI_GPT_INFO. */
+#define RMI_GPT_PAR_RESERVED		U(0)
+#define RMI_GPT_PAR_PLAT		U(1)
+#define RMI_GPT_PAR_HOST_NOT_CREATED	U(2)
+#define RMI_GPT_PAR_HOST_CREATED	U(3)
 
 #define RMI_RETURN_STATUS(ret)		((ret) & 0xFF)
 #define RMI_RETURN_INDEX(ret)		(((ret) >> 8U) & 0xFF)
@@ -2004,6 +2038,10 @@ struct rmi_psmmu_params {
 u_register_t host_rmi_version(u_register_t req_ver);
 u_register_t host_rmi_granule_delegate(u_register_t addr);
 u_register_t host_rmi_granule_undelegate(u_register_t addr);
+u_register_t host_rmi_gpt_l1_create(u_register_t addr);
+u_register_t host_rmi_gpt_l1_destroy(u_register_t addr);
+u_register_t host_rmi_gpt_info(u_register_t base, u_register_t top,
+			       u_register_t *out_top, u_register_t *state);
 u_register_t host_rmi_realm_create(u_register_t rd, u_register_t params_ptr);
 u_register_t host_rmi_realm_destroy(u_register_t rd);
 u_register_t host_rmi_realm_terminate(u_register_t rd);

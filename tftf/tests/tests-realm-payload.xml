@@ -80,6 +80,8 @@
 	  function="host_realm_delundel_multi_cpu" />
 	  <testcase name="Testing delegation fails"
 	  function="host_realm_fail_del" />
+	  <testcase name="GPT management ABIs"
+	  function="host_realm_gpt_management" />
 	  <testcase name="Test FEAT_MOPS is enabled"
 	  function="host_realm_feat_mops" />
 	  <testcase name="Verify RMM Configuration"

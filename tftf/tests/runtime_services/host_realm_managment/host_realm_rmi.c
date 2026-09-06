@@ -233,7 +233,8 @@ static smc_ret_values host_rmi_handler(smc_args *args, unsigned int in_reg)
 	if ((regs[0] != SMC_RMI_RTT_READ_ENTRY) &&
 	    (regs[0] != SMC_RMI_RTT_AUX_MAP_PROTECTED) &&
 	    (regs[0] != SMC_RMI_RTT_UNPROT_UNMAP) &&
-	    (regs[0] != SMC_RMI_RTT_DATA_UNMAP)) {
+	    (regs[0] != SMC_RMI_RTT_DATA_UNMAP) &&
+	    (regs[0] != SMC_RMI_PDEV_STREAM_INFO)) {
 		CHECK_RET(4);
 	}
 
@@ -3031,6 +3032,23 @@ u_register_t host_rmi_pdev_stream_key_purge(u_register_t pdev1_ptr, u_register_t
 {
 	return host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_KEY_PURGE, pdev1_ptr, pdev2_ptr,
 			stream_handle}, 4U).ret0;
+}
+
+u_register_t host_rmi_pdev_stream_info(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+			       u_register_t stream_handle, u_register_t *stream_state,
+			       u_register_t *stream_type, u_register_t *key_refresh_count,
+			       u_register_t *key_purge_count)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_INFO, pdev1_ptr, pdev2_ptr,
+					     stream_handle}, 4U);
+	*stream_state = rets.ret1;
+	*stream_type = rets.ret2;
+	*key_refresh_count = rets.ret3;
+	*key_purge_count = rets.ret4;
+
+	return rets.ret0;
 }
 
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,

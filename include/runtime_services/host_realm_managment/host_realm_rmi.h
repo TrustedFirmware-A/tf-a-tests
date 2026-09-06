@@ -891,6 +891,20 @@
  */
 #define SMC_RMI_PDEV_STREAM_KEY_PURGE		SMC64_RMI_FID(U(0xB7))
 
+/*
+ * FID: 0xC4000210
+ *
+ * arg0 == PA of the first PDEV object
+ * arg1 == PA of the second PDEV object
+ * arg2 == Stream handle
+ *
+ * ret1 == PDEV stream state
+ * ret2 == PDEV stream type
+ * ret3 == Successful key refresh count
+ * ret4 == Successful key purge count
+ */
+#define SMC_RMI_PDEV_STREAM_INFO		SMC64_RMI_FID(U(0xC0))
+
 #define GRANULE_SIZE			PAGE_SIZE_4KB
 
 /* Maximum number of auxiliary granules required for a REC */
@@ -1870,6 +1884,15 @@ struct rmi_vdev_measure_params {
 #define RMI_PDEV_STREAM_COH			U(2)
 #define RMI_PDEV_STREAM_NCOH_SYS		U(3)
 #define RMI_PDEV_STREAM_COH_SYS			U(4)
+#define RMI_PDEV_STREAM_TYPE_COUNT		U(5)
+
+/* RmiPdevStreamState */
+#define RMI_PDEV_STREAM_DISCONNECTED		U(0)
+#define RMI_PDEV_STREAM_CONNECTING		U(1)
+#define RMI_PDEV_STREAM_CONNECTED		U(2)
+#define RMI_PDEV_STREAM_DISCONNECTING		U(3)
+#define RMI_PDEV_STREAM_KEY_REFRESHING		U(4)
+#define RMI_PDEV_STREAM_KEY_PURGING		U(5)
 
 #define RMI_PDEV_STREAM_ADDR_RANGE_CNT		U(16)
 
@@ -2166,6 +2189,10 @@ u_register_t host_rmi_pdev_stream_complete(u_register_t pdev1_ptr, u_register_t 
 				  u_register_t stream_handle);
 u_register_t host_rmi_pdev_stream_key_purge(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
 				  u_register_t stream_handle);
+u_register_t host_rmi_pdev_stream_info(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+			       u_register_t stream_handle, u_register_t *stream_state,
+			       u_register_t *stream_type, u_register_t *key_refresh_count,
+			       u_register_t *key_purge_count);
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 				  u_register_t vdev_ptr,
 				  u_register_t params_ptr);

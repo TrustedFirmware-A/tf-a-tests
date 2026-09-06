@@ -1353,6 +1353,10 @@ test_result_t host_pdev_invoke_ide_refresh_reset(void)
 {
 	struct host_pdev *h_pdev;
 	u_register_t rmi_feat_reg0;
+	u_register_t stream_state, stream_type;
+	u_register_t key_refresh_count, key_purge_count;
+	u_register_t stale_stream_handle;
+	u_register_t ret;
 	bool return_error = false;
 	int rc = 0;
 
@@ -1369,10 +1373,98 @@ test_result_t host_pdev_invoke_ide_refresh_reset(void)
 		return TEST_RESULT_FAIL;
 	}
 
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->rp_pdev,
+					h_pdev->pdev_stream_handle, &stream_state,
+					&stream_type, &key_refresh_count,
+					&key_purge_count);
+	if ((ret != RMI_SUCCESS) || (stream_state != RMI_PDEV_STREAM_CONNECTED) ||
+	    (stream_type != RMI_PDEV_STREAM_NCOH) || (key_refresh_count != 0UL) ||
+	    (key_purge_count != 0UL)) {
+		ERROR("PDEV_STREAM_INFO returned unexpected connected stream info\n");
+		return_error = true;
+	}
+
+	/* The COH handle is well-formed, but no COH stream was created. */
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->rp_pdev,
+					(u_register_t)h_pdev->ep_pdev +
+						RMI_PDEV_STREAM_COH,
+					&stream_state, &stream_type,
+					&key_refresh_count, &key_purge_count);
+	if (ret != RMI_ERROR_INPUT) {
+		ERROR("PDEV_STREAM_INFO accepted a non-existent stream\n");
+		return_error = true;
+	}
+
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev + 1UL,
+					(u_register_t)h_pdev->rp_pdev,
+					h_pdev->pdev_stream_handle, &stream_state,
+					&stream_type, &key_refresh_count,
+					&key_purge_count);
+	if (ret != RMI_ERROR_INPUT) {
+		ERROR("PDEV_STREAM_INFO accepted an unaligned first PDEV\n");
+		return_error = true;
+	}
+
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->rp_pdev + 1UL,
+					h_pdev->pdev_stream_handle, &stream_state,
+					&stream_type, &key_refresh_count,
+					&key_purge_count);
+	if (ret != RMI_ERROR_INPUT) {
+		ERROR("PDEV_STREAM_INFO accepted an unaligned second PDEV\n");
+		return_error = true;
+	}
+
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->rp_pdev,
+					(u_register_t)h_pdev->ep_pdev +
+						RMI_PDEV_STREAM_TYPE_COUNT,
+					&stream_state, &stream_type,
+					&key_refresh_count, &key_purge_count);
+	if (ret != RMI_ERROR_INPUT) {
+		ERROR("PDEV_STREAM_INFO accepted a malformed stream handle\n");
+		return_error = true;
+	}
+
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->rp_pdev,
+					(u_register_t)h_pdev->rp_pdev +
+						RMI_PDEV_STREAM_NCOH,
+					&stream_state, &stream_type,
+					&key_refresh_count, &key_purge_count);
+	if (ret != RMI_ERROR_INPUT) {
+		ERROR("PDEV_STREAM_INFO accepted a mismatched first PDEV handle\n");
+		return_error = true;
+	}
+
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->ep_pdev,
+					h_pdev->pdev_stream_handle, &stream_state,
+					&stream_type, &key_refresh_count,
+					&key_purge_count);
+	if (ret != RMI_ERROR_INPUT) {
+		ERROR("PDEV_STREAM_INFO accepted a mismatched second PDEV\n");
+		return_error = true;
+	}
+
 	INFO("Invoke pdev_ide_stream_key_refresh sequence\n");
 	rc = host_pdev_stream_key_refresh(h_pdev);
 	if (rc != 0) {
 		ERROR("pdev_ide_stream_key_refresh failed\n");
+		return_error = true;
+	}
+
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->rp_pdev,
+					h_pdev->pdev_stream_handle, &stream_state,
+					&stream_type, &key_refresh_count,
+					&key_purge_count);
+	if ((ret != RMI_SUCCESS) || (stream_state != RMI_PDEV_STREAM_KEY_REFRESHING) ||
+	    (stream_type != RMI_PDEV_STREAM_NCOH) || (key_refresh_count != 0UL) ||
+	    (key_purge_count != 0UL)) {
+		ERROR("PDEV_STREAM_INFO returned unexpected refreshing stream info\n");
 		return_error = true;
 	}
 
@@ -1382,11 +1474,36 @@ test_result_t host_pdev_invoke_ide_refresh_reset(void)
 		return_error = true;
 	}
 
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->rp_pdev,
+					h_pdev->pdev_stream_handle, &stream_state,
+					&stream_type, &key_refresh_count,
+					&key_purge_count);
+	if ((ret != RMI_SUCCESS) || (stream_state != RMI_PDEV_STREAM_CONNECTED) ||
+	    (stream_type != RMI_PDEV_STREAM_NCOH) || (key_refresh_count != 0UL) ||
+	    (key_purge_count != 0UL)) {
+		ERROR("PDEV_STREAM_INFO returned unexpected completed stream info\n");
+		return_error = true;
+	}
+
+	/* Preserve the valid handle to verify that it becomes stale. */
+	stale_stream_handle = h_pdev->pdev_stream_handle;
+
 	/* Disconnect the device from TSM */
 	rc = tsm_disconnect_device(h_pdev);
 	if (rc != 0) {
 		ERROR("TSM disconnect failed for device 0x%x\n",
 		      h_pdev->dev->bdf);
+		return_error = true;
+	}
+
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->rp_pdev,
+					stale_stream_handle, &stream_state,
+					&stream_type, &key_refresh_count,
+					&key_purge_count);
+	if (ret != RMI_ERROR_INPUT) {
+		ERROR("PDEV_STREAM_INFO accepted a disconnected stream handle\n");
 		return_error = true;
 	}
 

@@ -5014,3 +5014,90 @@ test_result_t host_test_realm_rmi_rmm_config_get(void)
 
 	return TEST_RESULT_SUCCESS;
 }
+
+/*
+ * @Test_Aim@ Test RMI_RMM_DEACTIVATE in the INIT state and with and
+ * without delegated granules in the ACTIVE state.
+ */
+test_result_t host_test_realm_rmi_rmm_activate_deactivate(void)
+{
+	static char delegated_granule[PAGE_SIZE] __aligned(PAGE_SIZE);
+	u_register_t granule;
+	u_register_t initial_state;
+	u_register_t ret;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	ret = host_rmi_rmm_state_get(&initial_state);
+	if (ret != RMI_SUCCESS) {
+		ERROR("RMM_STATE_GET returned 0x%lx\n", ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Establish a known INIT state if an earlier test activated RMM. */
+	if (initial_state == RMI_RMM_STATE_ACTIVE) {
+		if (!host_rmm_deactivate()) {
+			ERROR("Failed to establish INIT state\n");
+			return TEST_RESULT_FAIL;
+		}
+	} else if (initial_state != RMI_RMM_STATE_INIT) {
+		ERROR("Unexpected initial RMM state: 0x%lx\n", initial_state);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* RMM_DEACTIVATE is only permitted while RMM is active. */
+	ret = host_rmi_rmm_deactivate();
+	if (ret != RMI_ERROR_GLOBAL) {
+		ERROR("RMM_DEACTIVATE in INIT state returned 0x%lx\n", ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!host_rmm_activate()) {
+		return TEST_RESULT_FAIL;
+	}
+
+	granule = (u_register_t)delegated_granule;
+
+	ret = host_rmi_granule_delegate(granule);
+	if (ret != RMI_SUCCESS) {
+		ERROR("GRANULE_DELEGATE returned 0x%lx\n", ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = host_rmi_rmm_deactivate();
+	if (ret != RMI_ERROR_GLOBAL) {
+		ERROR("RMM_DEACTIVATE with a delegated granule returned 0x%lx\n",
+		      ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = host_rmi_granule_undelegate(granule);
+	if (ret != RMI_SUCCESS) {
+		ERROR("GRANULE_UNDELEGATE returned 0x%lx\n", ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	/*
+	 * Delegation may have donated fine-tracking metadata. Undelegating
+	 * the test granule leaves that backing owned by RMM in INTERNAL
+	 * state, so reclaim it before expecting deactivation to succeed.
+	 */
+	if (!host_realm_pool_testcase_release()) {
+		ERROR("Failed to reclaim tracking metadata before deactivation\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!host_rmm_deactivate()) {
+		ERROR("RMM_DEACTIVATE without delegated granules Failed.\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	/* A second deactivation must fail because RMM is back in INIT state. */
+	ret = host_rmi_rmm_deactivate();
+	if (ret != RMI_ERROR_GLOBAL) {
+		ERROR("RMM_DEACTIVATE in INIT state returned 0x%lx\n", ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}

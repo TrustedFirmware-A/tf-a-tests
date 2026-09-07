@@ -246,5 +246,7 @@
 	  <!-- Test case for S2AP changes for RIPAS_EMPTY pages -->
 	  <testcase name="Realm S2AP changes for EMPTY and RAM RIPAS"
 	  function="host_test_realm_set_s2ap_ripas" />
+	  <testcase name="RMM activate and deactivate"
+	  function="host_test_realm_rmi_rmm_activate_deactivate" />
   </testsuite>
 </testsuites>

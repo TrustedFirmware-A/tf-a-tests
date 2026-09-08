@@ -2971,8 +2971,17 @@ test_result_t host_realm_pas_validation_new(void)
 	INFO("Test 1\n");
 	base = (u_register_t)page_alloc(PAGE_SIZE);
 
-	/* Create level 3 RTT */
-	ret = host_rmi_create_rtt_levels(&realm, base, 3L, 3L);
+	/*
+	 * The allocation pool can place this page outside the L3 table used for
+	 * the Realm payload. Read the walk level before creating missing tables.
+	 */
+	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_readentry failed\n");
+		goto destroy_realm;
+	}
+
+	ret = host_rmi_create_rtt_levels(&realm, base, rtt.walk_level, 3L);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_create_rtt_levels failed\n");
 		goto destroy_realm;
@@ -4671,8 +4680,11 @@ test_result_t host_test_realm_rmi_rmm_config_get(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	if (host_rmi_rmm_config_get(&config) != RMI_SUCCESS) {
-		return TEST_RESULT_FAIL;
+	/* Activate RMM if not already done */
+	if (host_rmi_rmm_config_get(&config) != RMI_ERROR_GLOBAL) {
+		if (!host_rmm_activate()) {
+			return TEST_RESULT_FAIL;
+		}
 	}
 
 	if ((config.tracking_size != RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB) ||

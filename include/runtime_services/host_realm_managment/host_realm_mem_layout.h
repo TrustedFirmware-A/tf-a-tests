@@ -41,8 +41,11 @@
 #ifdef ENABLE_REALM_PAYLOAD_TESTS
  /* 1MB for shared buffer between Realm and Host */
  #define NS_REALM_SHARED_MEM_SIZE	U(0x100000)
- /* 10MB of memory used as a pool for realm's objects creation */
- #define PAGE_POOL_MAX_SIZE		U(0xA00000)
+ /*
+  * 10MB is required by Realm payload tests. The remaining 6MB retains
+  * tracking SRO metadata donated to the RMM.
+  */
+ #define PAGE_POOL_MAX_SIZE		U(0x1000000)
 #else
  #define NS_REALM_SHARED_MEM_SIZE       U(0x0)
  #define PAGE_POOL_MAX_SIZE             U(0x0)

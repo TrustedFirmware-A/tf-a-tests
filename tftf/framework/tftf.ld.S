@@ -56,7 +56,8 @@ SECTIONS
     * Memory for Realm Image has to follow next as it will appended to end
     * of tftf.bin.
     */
-    realm_payload (NOLOAD) : {
+    /* RMI_RTT_DATA_MAP_INIT requires the Realm image source to be granule aligned. */
+    realm_payload (NOLOAD) : ALIGN(PAGE_SIZE) {
         __REALM_PAYLOAD_START__ = .;
         . = __REALM_PAYLOAD_START__ + REALM_MAX_LOAD_IMG_SIZE;
         __REALM_PAYLOAD_END__ = .;

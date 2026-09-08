@@ -5,6 +5,7 @@
  *
  */
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -16,6 +17,7 @@
 #include <platform_def.h>
 
 static uint64_t memory_used;
+static uint64_t memory_reserved;
 static uint64_t heap_base_addr;
 static u_register_t heap_addr;
 static uint64_t heap_size;
@@ -26,6 +28,9 @@ static spinlock_t mem_lock;
  * Initialize the memory heap space to be used
  * @heap_base: heap base address
  * @heap_len: heap size for use
+ *
+ * Reinitializing an unchanged pool resets its cursor after any memory which
+ * has been reserved for a permanent consumer.
  */
 int page_pool_init(uint64_t heap_base, uint64_t heap_len)
 {
@@ -41,8 +46,15 @@ int page_pool_init(uint64_t heap_base, uint64_t heap_len)
 
 		heap_initialised = HEAP_OUT_OF_RANGE;
 	} else {
+		if ((heap_initialised == HEAP_INIT_SUCCESS) &&
+		    (heap_base_addr == heap_base) && (heap_size == heap_len)) {
+			memory_used = memory_reserved;
+			return HEAP_INIT_SUCCESS;
+		}
+
 		heap_base_addr = heap_base;
 		memory_used = heap_base;
+		memory_reserved = heap_base;
 		heap_size = heap_len;
 		heap_initialised = HEAP_INIT_SUCCESS;
 	}
@@ -140,7 +152,19 @@ unlock_failed:
 }
 
 /*
- * Reset heap memory usage cursor to heap base address
+ * Reserve all allocations made so far across pool resets.
+ *
+ * The caller must ensure that no concurrent allocation can move the cursor.
+ */
+void page_pool_reserve(void)
+{
+	assert(heap_initialised == HEAP_INIT_SUCCESS);
+
+	memory_reserved = memory_used;
+}
+
+/*
+ * Reset heap memory usage cursor to the first unreserved address.
  */
 void page_pool_reset(void)
 {
@@ -148,7 +172,7 @@ void page_pool_reset(void)
 	 * No race condition here, only lead cpu running TFTF test case can
 	 * reset the memory allocation
 	 */
-	memory_used = heap_base_addr;
+	memory_used = memory_reserved;
 }
 
 void page_free(u_register_t address)

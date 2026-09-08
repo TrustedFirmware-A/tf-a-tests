@@ -37,7 +37,14 @@ void *page_alloc(u_register_t bytes_size);
 void *page_alloc_aligned(u_register_t bytes_size, u_register_t alignment);
 
 /*
- * Reset heap memory usage cursor to heap base address
+ * Retain all allocations up to the current cursor across subsequent pool
+ * initializations and resets. This is used for memory donated permanently to
+ * the RMM.
+ */
+void page_pool_reserve(void);
+
+/*
+ * Reset heap memory usage cursor to the first unreserved address.
  */
 void page_pool_reset(void);
 void page_free(u_register_t ptr);

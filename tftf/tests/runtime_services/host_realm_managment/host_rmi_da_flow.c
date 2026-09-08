@@ -260,7 +260,13 @@ test_result_t host_da_get_info_parameter_test(void)
 	valid_ipa = (u_register_t)page_alloc(PAGE_SIZE);
 	empty_ipa = (u_register_t)page_alloc(PAGE_SIZE);
 
-	ret = host_rmi_create_rtt_levels(&realm, valid_ipa, 3L, 3L);
+	ret = host_rmi_rtt_readentry(realm.rd, valid_ipa, 3L, &rtt);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_readentry failed\n");
+		goto destroy_realm;
+	}
+
+	ret = host_rmi_create_rtt_levels(&realm, valid_ipa, rtt.walk_level, 3L);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_create_rtt_levels failed\n");
 		goto destroy_realm;
@@ -272,7 +278,13 @@ test_result_t host_da_get_info_parameter_test(void)
 		goto destroy_realm;
 	}
 
-	ret = host_rmi_create_rtt_levels(&realm, empty_ipa, 3L, 3L);
+	ret = host_rmi_rtt_readentry(realm.rd, empty_ipa, 3L, &rtt);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rtt_readentry failed\n");
+		goto destroy_realm;
+	}
+
+	ret = host_rmi_create_rtt_levels(&realm, empty_ipa, rtt.walk_level, 3L);
 	if (ret != RMI_SUCCESS) {
 		ERROR("host_rmi_create_rtt_levels failed\n");
 		goto destroy_realm;

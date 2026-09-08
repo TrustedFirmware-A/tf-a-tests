@@ -17,12 +17,15 @@
 #include <cactus_test_cmds.h>
 #include <ffa_endpoints.h>
 #include <host_realm_helper.h>
+#include <host_realm_mem_layout.h>
 #include <host_realm_rmi.h>
 #include <spm_common.h>
 #include <spm_test_helpers.h>
 #include <test_helpers.h>
 #include <tftf_lib.h>
 #include <xlat_tables_defs.h>
+
+#include <heap/page_alloc.h>
 
 #define MAILBOX_SIZE PAGE_SIZE
 
@@ -1047,6 +1050,12 @@ static test_result_t test_ffa_mem_send_realm_expect_fail(
 
 	register_custom_sync_exception_handler(data_abort_handler);
 
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
+
 	/* Activate RMM */
 	if (!host_rmm_activate()) {
 		return TEST_RESULT_FAIL;
@@ -1242,6 +1251,12 @@ test_result_t test_ffa_mem_share_tx_realm_expect_fail(void)
 		return TEST_RESULT_FAIL;
 	}
 
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
+
 	/* Activate RMM */
 	if (!host_rmm_activate()) {
 		return TEST_RESULT_FAIL;
@@ -1423,6 +1438,12 @@ test_result_t base_ffa_memory_retrieve_request_fail_buffer_realm(bool delegate_r
 			FFA_MEMORY_INNER_SHAREABLE);
 	}
 
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
+
 	/* Activate RMM */
 	if (!host_rmm_activate()) {
 		return TEST_RESULT_FAIL;
@@ -1556,6 +1577,12 @@ test_result_t test_ffa_memory_relinquish_fail_tx_realm(void)
 	 * Delegate page to a realm. This should make memory sharing operation
 	 * fail.
 	 */
+
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
 
 	/* Activate RMM */
 	if (!host_rmm_activate()) {
@@ -1701,6 +1728,13 @@ test_result_t test_ffa_memory_share_fragmented_tx_realm(void)
 	/* Prepare the next fragment for the operation. */
 	remaining_constituent_count = ffa_memory_fragment_init(
 		mb.send, PAGE_SIZE, &constituents[1], 1, &fragment_length);
+
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
 
 	/* Activate RMM */
 	if (!host_rmm_activate()) {
@@ -1878,6 +1912,13 @@ test_result_t test_ffa_memory_share_fragmented_rx_realm(void)
 	total_size = ffa_mem_retrieve_res_total_size(ffa_ret);
 	fragment_size = ffa_mem_retrieve_res_frag_size(ffa_ret);
 	fragment_offset = fragment_size;
+
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		ret = TEST_RESULT_FAIL;
+		goto exit;
+	}
 
 	/* Activate RMM */
 	if (!host_rmm_activate()) {

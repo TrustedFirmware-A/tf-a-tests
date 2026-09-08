@@ -596,18 +596,6 @@
  */
 
 /*
- * FID: 0xC40001E1
- *
- * arg0 == PA of the tracking region.
- *
- * ret0 == Return code
- * ret1 == Tracking region state
- * ret2 == Memory category
- * ret3 == Tracking granularity
- */
-#define SMC_RMI_GRANULE_TRACKING_GET		SMC64_RMI_FID(U(0x91))
-
-/*
  * FID: 0xC40001EC
  *
  * arg0 == PA of the tracking region.
@@ -625,14 +613,24 @@
 /*
  * FID: 0xC40001E1
  *
- * arg0 == PA of the tracking region.
+ * arg0 == Base PA of the target region
+ * arg1 == Top PA of the target region
  *
  * ret0 == Return code
- * ret1 == Tracking region state
- * ret2 == Memory category
- * ret3 == Tracking granularity
+ * ret1 == Memory category
+ * ret2 == Tracking region state
+ * ret3 == Top PA of region for which Granule tracking is returned
  */
 #define SMC_RMI_GRANULE_TRACKING_GET		SMC64_RMI_FID(U(0x91))
+
+/*
+ * FID: 0xC40001E3
+ *
+ * arg0 == PA of the tracking region.
+ * arg1 == Memory category (RmiMemCategory)
+ * arg2 == Tracking region state to set (RmiTrackingState)
+ */
+#define SMC_RMI_GRANULE_TRACKING_SET		SMC64_RMI_FID(U(0x93))
 
 /*
  * FID: 0xC40001EC
@@ -705,7 +703,8 @@
 #define RMI_COUNT_SHIFT			2UL
 
 #define RMI_OP_DONATE_MEM_CONTIG	BIT(16)
-#define RMI_OP_DONATE_MEM_STATE		BIT(17)
+#define RMI_OP_DONATE_MEM_STATE_WIDTH	2U
+#define RMI_OP_DONATE_MEM_STATE_SHIFT	17UL
 
 /* Values for RMI_ADDR_BLK_SIZE */
 #define RMI_PAGE_L3			0UL
@@ -720,6 +719,7 @@
 /* Values for RMI_OP_DONATE_MEM_STATE */
 #define RMI_OP_MEM_DELEGATE		0UL
 #define RMI_OP_MEM_UNDELEGATE		1UL
+#define RMI_OP_MEM_CONDITIONAL		2UL
 
 /* RmiContinueFlags type definitionns */
 #define RMI_CONTINUE_BEYOND_FLAG	BIT(0)
@@ -1098,6 +1098,10 @@ typedef enum {
 	 * An attribute of RMM global state does not match the expected value
 	 */
 	RMI_ERROR_GLOBAL = 11,
+	/*
+	 * The state of a tracking region does not maatch the expected value.
+	 */
+	RMI_ERROR_TRACKING = 12,
 	/*
 	 * The command initiated a state transition but did not complete,
 	 * leaving the object in an intermediate state.
@@ -1845,6 +1849,17 @@ struct rmi_rmm_config {
 	SET_MEMBER_RMI(unsigned long granule_size, 0, 0x1000);		/* Offset 16 */
 };
 
+/* RmiTrackingRegionState type */
+#define RMI_TRACKING_RESERVED		U(0)
+#define RMI_TRACKING_NONE		U(1)
+#define RMI_TRACKING_FINE		U(2)
+#define RMI_TRACKING_COARSE		U(3)
+
+/* RmiMemCategory type */
+#define RMI_MEM_CATEGORY_CONVENTIONAL	U(0)
+#define RMI_MEM_CATEGORY_DEV_NCOH	U(1)
+#define RMI_MEM_CATEGORY_DEV_COH	U(2)
+
 struct rtt_entry {
 	long walk_level;
 	uint64_t out_addr;
@@ -2001,6 +2016,7 @@ u_register_t host_rmi_rtt_set_s2ap(u_register_t rd,
 u_register_t host_rmi_psci_complete(u_register_t calling_rec, unsigned long status);
 void host_rmi_init_cmp_result(void);
 bool host_rmi_get_cmp_result(void);
+u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t tracking);
 
 /* Realm management */
 u_register_t host_realm_create(struct realm *realm);
@@ -2098,10 +2114,11 @@ u_register_t host_rmi_psmmu_st_l2_destroy(u_register_t psmmu_ptr, u_register_t s
 					  u_register_t *handle, u_register_t *reclaim_req);
 u_register_t host_rmi_rmm_config_set(struct rmi_rmm_config *config);
 u_register_t host_rmi_rmm_config_get(struct rmi_rmm_config *config);
-u_register_t host_rmi_granule_tracking_get(u_register_t addr,
+u_register_t host_rmi_granule_tracking_get(u_register_t base,
+					   u_register_t top,
 					   u_register_t *state,
 					   u_register_t *category,
-					   u_register_t *granularity);
+					   u_register_t *out_top);
 u_register_t host_realm_sro_continue(u_register_t status,
 				     u_register_t *op_handle,
 				     u_register_t *donate_req,

@@ -14,9 +14,12 @@
 #include <ffa_endpoints.h>
 #include <ffa_svc.h>
 #include <host_realm_helper.h>
+#include <host_realm_mem_layout.h>
 #include <platform.h>
 #include <spm_test_helpers.h>
 #include <test_helpers.h>
+
+#include <heap/page_alloc.h>
 
 static const struct ffa_uuid expected_sp_uuids[] = {
 		{PRIMARY_UUID},
@@ -168,6 +171,12 @@ test_result_t test_ffa_indirect_message_sp_to_vm_rx_realm_fail(void)
 	tftf_irq_register_handler(FFA_SCHEDULE_RECEIVER_INTERRUPT_ID,
 				  schedule_receiver_interrupt_handler);
 
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
+
 	/* Activate RMM */
 	if (!host_rmm_activate()) {
 		return TEST_RESULT_FAIL;
@@ -306,6 +315,12 @@ test_result_t test_ffa_indirect_message_vm_to_sp_tx_realm_fail(void)
 
 	/* Fill TX buffer with payload. */
 	memcpy(message->payload, payload, ARRAY_SIZE(payload));
+
+	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
+		!= HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return TEST_RESULT_FAIL;
+	}
 
 	/* Activate RMM */
 	if (!host_rmm_activate()) {

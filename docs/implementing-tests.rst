@@ -67,6 +67,47 @@ One exception to this rule is that CPUs powered on as part of a test must not be
 powered down. As already stated above, as soon as a CPU enters the test, the
 framework expects it to return from the test.
 
+.. _implementing_testcase_hooks:
+
+Registering Testcase Hooks
+--------------------------
+
+Use setup and cleanup hooks when several tests need the same resource
+lifecycle. Define callbacks with the signature described in
+:ref:`design_testcase_hooks`, include ``tftf.h``, and register both
+callbacks in a source file included in the selected test build.
+
+For example, callbacks named ``setup_resources`` and ``cleanup_resources``
+can serve every test in an ``Example tests`` suite:
+
+.. code:: c
+
+   #include <tftf.h>
+
+   TFTF_TESTSUITE_SETUP_HOOK(example_setup_hook,
+                            "Example tests", setup_resources);
+   TFTF_TESTSUITE_CLEANUP_HOOK(example_cleanup_hook,
+                              "Example tests", cleanup_resources);
+
+To apply the lifecycle only to ``Example testcase`` in that suite,
+replace the suite registrations with:
+
+.. code:: c
+
+   TFTF_TESTCASE_SETUP_HOOK(example_setup_hook,
+                           "Example tests", "Example testcase",
+                           setup_resources);
+   TFTF_TESTCASE_CLEANUP_HOOK(example_cleanup_hook,
+                             "Example tests", "Example testcase",
+                             cleanup_resources);
+
+The registration names identify descriptors and must be unique within
+the source file. Suite and testcase strings must match the XML manifest.
+Cleanup should check which resources setup acquired and safely handle
+early returns, skip results, and resources already freed by the test.
+The testcase remains responsible for undoing its own configuration
+changes and releasing resources outside the shared lifecycle.
+
 Template Test Code
 ------------------
 
@@ -110,4 +151,4 @@ See the template test manifest for reference: ``tftf/tests/tests-template.xml``.
 
 --------------
 
-*Copyright (c) 2018-2020, Arm Limited. All rights reserved.*
+*Copyright (c) 2018-2026, Arm Limited. All rights reserved.*

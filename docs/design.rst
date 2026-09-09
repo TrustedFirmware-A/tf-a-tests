@@ -20,6 +20,54 @@ other. Tests results are saved in non-volatile memory as we go along.
 
 Once all tests have completed, a report is printed over the serial console.
 
+.. _design_testcase_hooks:
+
+Testcase Lifecycle Hooks
+------------------------
+
+Setup and cleanup hooks are a generic framework capability. A test group
+can use them to initialise shared state, prepare resources, and restore
+configuration around its testcases. The framework dispatches callbacks;
+the test group defines the work they perform.
+
+The lead CPU runs all matching setup hooks, calls the test entrypoint,
+and then runs all matching cleanup hooks. Secondary CPU entrypoints
+run without this wrapper. Tests must synchronise secondary CPUs before
+returning if those CPUs use resources released by cleanup.
+
+Both phases use ``testcase_hook_fn_t`` for the callback and
+``testcase_hook_t`` for its registration descriptor. Callbacks receive
+the current testsuite and testcase and return a test result. Their
+common signature is:
+
+.. code:: c
+
+   test_result_t hook(const test_suite_t *testsuite,
+                      const test_case_t *testcase);
+
+Registration macros in ``tftf/framework/include/tftf.h`` create constant
+descriptors in linker sections retained by ``tftf/framework/tftf.ld.S``.
+Suite registrations match every testcase in one suite; testcase
+registrations match a named test within a suite. Names match the test
+manifest exactly, and a ``NULL`` filter matches any name. See
+:ref:`implementing_testcase_hooks` for a registration example.
+
+Setup and cleanup descriptors are matched independently and visited in
+linker order. Cleanup does not reverse setup order, and the framework
+provides no priority or dependency ordering between callbacks. Related
+setup and cleanup callbacks should use the same filters.
+
+Setup stops at the first result other than ``TEST_RESULT_SUCCESS``.
+That result becomes the testcase result and the test body is bypassed.
+All matching cleanup hooks still run, including hooks whose corresponding
+setup did not finish or was never reached. Cleanup also runs after a
+testcase failure or skip. Any cleanup result other than success makes
+the testcase fail; otherwise, its setup or body result is preserved.
+
+Each test group must make cleanup tolerate partial setup and resources
+already released by the test. Hooks execute when control returns to the
+wrapper; a crash or platform reset cannot perform normal cleanup.
+
 Global Code Structure
 ---------------------
 
@@ -238,6 +286,6 @@ state.
 
 --------------
 
-*Copyright (c) 2018-2025, Arm Limited. All rights reserved.*
+*Copyright (c) 2018-2026, Arm Limited. All rights reserved.*
 
 .. _Firmware update: https://trustedfirmware-a.readthedocs.io/en/latest/components/firmware-update.html

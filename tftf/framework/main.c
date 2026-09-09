@@ -18,6 +18,7 @@
 #include <platform_def.h>
 #include <power_management.h>
 #include <psci.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <tftf.h>
@@ -33,6 +34,11 @@ unsigned int lead_cpu_mpid;
 
 /* Defined in hotplug.c */
 extern volatile test_function_t test_entrypoint[PLATFORM_CORE_COUNT];
+
+extern const testcase_hook_t __TESTCASE_SETUP_HOOKS_START__[];
+extern const testcase_hook_t __TESTCASE_SETUP_HOOKS_END__[];
+extern const testcase_hook_t __TESTCASE_CLEANUP_HOOKS_START__[];
+extern const testcase_hook_t __TESTCASE_CLEANUP_HOOKS_END__[];
 
 /* Per-CPU results for the current test */
 static test_result_t test_results[PLATFORM_CORE_COUNT];
@@ -64,6 +70,83 @@ static inline const test_case_t *current_testcase(void)
 	tftf_get_test_to_run(&test_to_run);
 	return &testsuites[test_to_run.testsuite_idx].
 		testcases[test_to_run.testcase_idx];
+}
+
+static bool testcase_hook_filter_matches(const char *filter,
+					const char *name)
+{
+	return filter == NULL || strcmp(filter, name) == 0;
+}
+
+static bool testcase_hook_matches(const testcase_hook_t *hook,
+				 const test_suite_t *testsuite,
+				 const test_case_t *testcase)
+{
+	return testcase_hook_filter_matches(hook->testsuite_name,
+					    testsuite->name) &&
+		testcase_hook_filter_matches(hook->testcase_name,
+					     testcase->name);
+}
+
+static test_result_t run_testcase_setup_hooks(void)
+{
+	const test_suite_t *testsuite = current_testsuite();
+	const test_case_t *testcase = current_testcase();
+	const testcase_hook_t *setup_hook;
+	test_result_t result;
+
+	for (setup_hook = __TESTCASE_SETUP_HOOKS_START__;
+	     setup_hook < __TESTCASE_SETUP_HOOKS_END__; setup_hook++) {
+		if (!testcase_hook_matches(setup_hook, testsuite, testcase)) {
+			continue;
+		}
+
+		result = setup_hook->hook(testsuite, testcase);
+		if (result != TEST_RESULT_SUCCESS) {
+			return result;
+		}
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+static test_result_t run_testcase_cleanup_hooks(void)
+{
+	const test_suite_t *testsuite = current_testsuite();
+	const test_case_t *testcase = current_testcase();
+	const testcase_hook_t *cleanup_hook;
+	test_result_t result = TEST_RESULT_SUCCESS;
+
+	for (cleanup_hook = __TESTCASE_CLEANUP_HOOKS_START__;
+	     cleanup_hook < __TESTCASE_CLEANUP_HOOKS_END__; cleanup_hook++) {
+		if (!testcase_hook_matches(cleanup_hook, testsuite, testcase)) {
+			continue;
+		}
+
+		if (cleanup_hook->hook(testsuite, testcase) !=
+		    TEST_RESULT_SUCCESS) {
+			result = TEST_RESULT_FAIL;
+		}
+	}
+
+	return result;
+}
+
+static test_result_t run_current_testcase(void)
+{
+	test_result_t setup_result = run_testcase_setup_hooks();
+	test_result_t test_result;
+	test_result_t cleanup_result;
+
+	if (setup_result == TEST_RESULT_SUCCESS) {
+		test_result = current_testcase()->test();
+	} else {
+		test_result = setup_result;
+	}
+
+	cleanup_result = run_testcase_cleanup_hooks();
+	return (cleanup_result == TEST_RESULT_SUCCESS) ?
+		test_result : cleanup_result;
 }
 
 /*
@@ -155,7 +238,7 @@ static void prepare_next_test(void)
 
 	/* Populate the test entrypoint for the lead CPU */
 	core_pos = platform_get_core_pos(lead_cpu_mpid);
-	test_entrypoint[core_pos] = (test_function_t) current_testcase()->test;
+	test_entrypoint[core_pos] = run_current_testcase;
 
 	for (unsigned int i = 0; i < PLATFORM_CORE_COUNT; ++i)
 		test_results[i] = TEST_RESULT_NA;

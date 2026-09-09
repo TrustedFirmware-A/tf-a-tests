@@ -35,6 +35,13 @@ SECTIONS
     .rodata . : {
         __RODATA_START__ = .;
         *(.rodata*)
+        . = ALIGN(8);
+        __TESTCASE_SETUP_HOOKS_START__ = .;
+        KEEP(*(.tftf_testcase_setup_hooks))
+        __TESTCASE_SETUP_HOOKS_END__ = .;
+        __TESTCASE_CLEANUP_HOOKS_START__ = .;
+        KEEP(*(.tftf_testcase_cleanup_hooks))
+        __TESTCASE_CLEANUP_HOOKS_END__ = .;
         /*
          * Memory page(s) mapped to this section will be marked as
          * read-only, executable.  No RW data from the next section must

@@ -20,6 +20,10 @@ other. Tests results are saved in non-volatile memory as we go along.
 
 Once all tests have completed, a report is printed over the serial console.
 
+The lead CPU wraps each testcase in its matching setup and cleanup hooks.
+See :doc:`implementing-tests/realm-tests` for the shared RME setup and RMM
+activation, and how tests can clean up and restart that lifecycle.
+
 .. _design_testcase_hooks:
 
 Testcase Lifecycle Hooks

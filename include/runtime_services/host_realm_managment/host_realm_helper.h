@@ -150,4 +150,10 @@ void host_do_vdev_communicate(struct realm *realm, u_register_t vdev_ptr);
  */
 bool host_rmm_activate(void);
 
+/*
+ * Initialize the Realm allocation pool. Any memory retained for tracking SRO
+ * metadata remains reserved when the pool is reinitialized.
+ */
+bool host_realm_pool_init(void);
+
 #endif /* HOST_REALM_HELPER_H */

@@ -53,23 +53,6 @@ struct sro_donation_range {
 };
 
 /*
- * Initialize the Realm allocation pool. Any memory retained for tracking SRO
- * metadata remains reserved when the pool is reinitialized.
- */
-static bool host_realm_pool_init(void)
-{
-	int ret;
-
-	ret = page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE);
-	if (ret != HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return false;
-	}
-
-	return true;
-}
-
-/*
  * Return an IPA mask @level
  */
 static unsigned long tte_ipa_lvl_mask(long level, bool lpa2)

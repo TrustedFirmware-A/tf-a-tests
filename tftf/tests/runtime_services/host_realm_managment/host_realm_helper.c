@@ -20,7 +20,9 @@
 #include <plat_topology.h>
 #include <power_management.h>
 #include <realm_def.h>
+#include <smccc.h>
 #include <test_helpers.h>
+#include <tftf.h>
 #include <xlat_tables_v2.h>
 
 #define RMI_EXIT(id)	\
@@ -52,6 +54,19 @@ static u_register_t rmm_feat_reg0;
 static u_register_t rmm_feat_reg2;
 static u_register_t rmm_feat_reg3;
 
+bool host_realm_pool_init(void)
+{
+	int ret;
+
+	ret = page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE);
+	if (ret != HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return false;
+	}
+
+	return true;
+}
+
 /*
  * Ensure RMM is activated. Safe to call multiple times; activation happens
  * only once. Returns true on success, false on failure.
@@ -80,6 +95,81 @@ bool host_rmm_activate(void)
 
 	return true;
 }
+
+static test_result_t host_realm_testcase_setup(const test_suite_t *testsuite,
+					       const test_case_t *testcase)
+{
+	u_register_t retrmm;
+
+	(void)testsuite;
+	(void)testcase;
+
+	if (get_armv9_2_feat_rme_support() == 0U) {
+		return TEST_RESULT_SUCCESS;
+	}
+
+	host_rmi_init_cmp_result();
+	retrmm = host_rmi_version(RMI_ABI_VERSION_VAL);
+	if (retrmm == SMC_UNKNOWN) {
+		return TEST_RESULT_SUCCESS;
+	}
+
+	if (!host_realm_pool_init()) {
+		return TEST_RESULT_FAIL;
+	}
+
+	/*
+	 * TRP reports RMI version 0 and does not require the RMM activation
+	 * path. Let testcase-level skip checks preserve their existing result.
+	 */
+	if (retrmm == 0U) {
+		return TEST_RESULT_SUCCESS;
+	}
+
+	if (!host_rmm_activate()) {
+		ERROR("Failed to activate RMM\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+static test_result_t host_realm_testcase_cleanup(const test_suite_t *testsuite,
+					 const test_case_t *testcase)
+{
+	(void)testsuite;
+	(void)testcase;
+
+	page_pool_reset();
+	return TEST_RESULT_SUCCESS;
+}
+
+TFTF_TESTSUITE_SETUP_HOOK(realm_payload_testcase_setup_hook,
+			  "Realm payload at EL1", host_realm_testcase_setup);
+TFTF_TESTSUITE_CLEANUP_HOOK(realm_payload_testcase_cleanup_hook,
+			    "Realm payload at EL1", host_realm_testcase_cleanup);
+TFTF_TESTSUITE_SETUP_HOOK(rmi_spm_testcase_setup_hook,
+			  "RMI and SPM tests", host_realm_testcase_setup);
+TFTF_TESTSUITE_CLEANUP_HOOK(rmi_spm_testcase_cleanup_hook,
+			    "RMI and SPM tests", host_realm_testcase_cleanup);
+TFTF_TESTSUITE_SETUP_HOOK(sp_exceptions_testcase_setup_hook,
+			  "SP exceptions", host_realm_testcase_setup);
+TFTF_TESTSUITE_CLEANUP_HOOK(sp_exceptions_testcase_cleanup_hook,
+			    "SP exceptions", host_realm_testcase_cleanup);
+TFTF_TESTSUITE_SETUP_HOOK(rme_invalid_access_testcase_setup_hook,
+			  "Invalid memory access with RME extension",
+			  host_realm_testcase_setup);
+TFTF_TESTSUITE_CLEANUP_HOOK(rme_invalid_access_testcase_cleanup_hook,
+			    "Invalid memory access with RME extension",
+			    host_realm_testcase_cleanup);
+TFTF_TESTCASE_SETUP_HOOK(spm_smmu_invalid_access_testcase_setup_hook,
+			 "SMMUv3 tests",
+			 "Check secure peripheral access to a realm region is aborted",
+			 host_realm_testcase_setup);
+TFTF_TESTCASE_CLEANUP_HOOK(spm_smmu_invalid_access_testcase_cleanup_hook,
+			   "SMMUv3 tests",
+			   "Check secure peripheral access to a realm region is aborted",
+			   host_realm_testcase_cleanup);
 
 /*
  * The function handler to print the Realm logged buffer,

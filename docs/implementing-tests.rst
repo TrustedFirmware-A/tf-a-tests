@@ -108,6 +108,13 @@ early returns, skip results, and resources already freed by the test.
 The testcase remains responsible for undoing its own configuration
 changes and releasing resources outside the shared lifecycle.
 
+The RME/RMM use of these hooks is described in:
+
+.. toctree::
+   :maxdepth: 1
+
+   implementing-tests/realm-tests
+
 Template Test Code
 ------------------
 

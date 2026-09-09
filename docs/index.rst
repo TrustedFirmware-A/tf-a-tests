@@ -44,7 +44,7 @@ this project.
 
 --------------
 
-*Copyright (c)2019, Arm Limited. All rights reserved.*
+*Copyright (c) 2019-2026, Arm Limited. All rights reserved.*
 
 .. _Juno Arm Development Platform: https://developer.arm.com/products/system-design/development-boards/juno-development-board
 .. _trustedfirmware.org: https://git.trustedfirmware.org/TF-A/tf-a-tests.git

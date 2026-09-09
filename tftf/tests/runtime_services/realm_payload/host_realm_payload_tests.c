@@ -5003,11 +5003,8 @@ test_result_t host_test_realm_rmi_rmm_config_get(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	/* Activate RMM if not already done */
-	if (host_rmi_rmm_config_get(&config) != RMI_ERROR_GLOBAL) {
-		if (!host_rmm_activate()) {
-			return TEST_RESULT_FAIL;
-		}
+	if (host_rmi_rmm_config_get(&config) != RMI_SUCCESS) {
+		return TEST_RESULT_FAIL;
 	}
 
 	if ((config.tracking_size != RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB) ||

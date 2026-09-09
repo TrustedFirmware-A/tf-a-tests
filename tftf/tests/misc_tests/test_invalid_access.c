@@ -16,7 +16,6 @@
 #include <sync.h>
 #endif
 #include <host_realm_helper.h>
-#include <heap/page_alloc.h>
 #include <host_realm_mem_layout.h>
 #include <lib/aarch64/arch_features.h>
 #include <test_helpers.h>
@@ -133,12 +132,6 @@ test_result_t rl_memory_cannot_be_accessed_in_ns(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
-	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
-		!= HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return TEST_RESULT_FAIL;
-	}
-
 	sync_exception_triggered = false;
 	data_abort_triggered = false;
 	register_custom_sync_exception_handler(data_abort_handler);
@@ -149,11 +142,6 @@ test_result_t rl_memory_cannot_be_accessed_in_ns(void)
 	if ((sync_exception_triggered != false) ||
 	    (data_abort_triggered != false)) {
 		goto out_unregister;
-	}
-
-	/* Activate RMM */
-	if (!host_rmm_activate()) {
-		return TEST_RESULT_FAIL;
 	}
 
 	host_rmi_init_cmp_result();
@@ -247,23 +235,6 @@ static test_result_t memory_cannot_be_accessed_in_rl(u_register_t params)
 	static char rd[GRANULE_SIZE] __aligned(GRANULE_SIZE);
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
-
-	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
-		!= HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return TEST_RESULT_FAIL;
-	}
-
-	/* Activate RMM */
-	if (!host_rmm_activate()) {
-		return TEST_RESULT_FAIL;
-	}
-
-	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE) !=
-	    HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return TEST_RESULT_FAIL;
-	}
 
 	retrmm = host_rmi_granule_delegate((u_register_t)&rd[0]);
 	if (retrmm != 0UL) {

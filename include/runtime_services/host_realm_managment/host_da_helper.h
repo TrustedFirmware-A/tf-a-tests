@@ -157,8 +157,17 @@ int host_pdev_state_transition(struct host_pdev *h_pdev,
 int host_pdev_transition(struct host_pdev *h_pdev, bool ep_pdev, unsigned char to_state);
 int host_pdev_reclaim(struct host_pdev *h_pdev);
 int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev);
-int host_pdev_stop_from_error(struct host_pdev *h_pdev, bool ep_pdev);
-int host_pdev_stop_from_stopped(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_get_state(struct host_pdev *h_pdev, bool ep_pdev,
+			u_register_t *state);
+int host_pdev_communicate_incomplete(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_communicate_complete(struct host_pdev *h_pdev, bool ep_pdev,
+				   unsigned char target_state);
+int host_pdev_communicate_until_wait(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_inject_communication_error(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_set_pubkey(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_stop(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_abort(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_destroy(struct host_pdev *h_pdev, bool ep_pdev);
 int host_pdev_stream_connect(struct host_pdev *h_pdev);
 int host_pdev_stream_connect_with_ranges(struct host_pdev *h_pdev,
 					 const struct rmi_address_range *addr_range,

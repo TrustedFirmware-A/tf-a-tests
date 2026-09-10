@@ -199,11 +199,21 @@
 	  <!-- Invoke DA RSI calls -->
 	  <testcase name="Trigger RSI_VDEV_GET_INFO with various params"
 	  function="host_da_get_info_parameter_test" />
-	  <!-- Invoke all possible PDEV state transitions -->
-	  <testcase name="PDEV test valid state transitions"
-	  function="host_pdev_test_valid_state_transition" />
-	  <testcase name="PDEV stop from different states"
-	  function="host_pdev_test_stop_from_different_states" />
+	  <!-- PDEV lifecycle and device-communication state coverage -->
+	  <testcase name="PDEV SPDM lifecycle and negative state coverage"
+	  function="host_pdev_test_spdm_lifecycle" />
+	  <testcase name="PDEV stop from NEEDS_KEY"
+	  function="host_pdev_test_stop_from_needs_key" />
+	  <testcase name="PDEV abort communication in NEW"
+	  function="host_pdev_test_abort_new" />
+	  <testcase name="PDEV abort communication in HAS_KEY"
+	  function="host_pdev_test_abort_has_key" />
+	  <testcase name="PDEV stream lifecycle and communication"
+	  function="host_pdev_test_stream_lifecycle" />
+	  <testcase name="PDEV stream communication error"
+	  function="host_pdev_test_stream_communication_error" />
+	  <testcase name="PDEV stop communication error"
+	  function="host_pdev_test_stop_communication_error" />
 	  <!-- Invoke all possible VDEV state transitions -->
 	  <testcase name="VDEV test valid state transitions"
 	  function="host_vdev_test_valid_state_transition" />

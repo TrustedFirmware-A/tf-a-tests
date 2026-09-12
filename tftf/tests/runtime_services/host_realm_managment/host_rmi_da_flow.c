@@ -678,7 +678,7 @@ static int pdev_expect_negative(struct host_pdev *h_pdev, bool ep_pdev,
 	return 0;
 }
 
-static int pdev_create_spdm(struct host_pdev *h_pdev, bool ep_pdev)
+int pdev_create_spdm(struct host_pdev *h_pdev, bool ep_pdev)
 {
 	if ((host_pdev_create(h_pdev, ep_pdev) != 0) ||
 	    (pdev_expect_state(h_pdev, ep_pdev, RMI_PDEV_STATE_NEW) != 0)) {
@@ -688,7 +688,7 @@ static int pdev_create_spdm(struct host_pdev *h_pdev, bool ep_pdev)
 	return 0;
 }
 
-static int pdev_advance_to_ready(struct host_pdev *h_pdev, bool ep_pdev)
+int pdev_advance_to_ready(struct host_pdev *h_pdev, bool ep_pdev)
 {
 	/* The current RMM implementation completes Root Port setup directly. */
 	if (!ep_pdev) {
@@ -714,7 +714,7 @@ static int pdev_advance_to_ready(struct host_pdev *h_pdev, bool ep_pdev)
 	return pdev_expect_state(h_pdev, ep_pdev, RMI_PDEV_STATE_READY);
 }
 
-static int pdev_stop_and_destroy(struct host_pdev *h_pdev, bool ep_pdev)
+int pdev_stop_and_destroy(struct host_pdev *h_pdev, bool ep_pdev)
 {
 	if ((host_pdev_stop(h_pdev, ep_pdev) != 0) ||
 	    (host_pdev_communicate_complete(h_pdev, ep_pdev,

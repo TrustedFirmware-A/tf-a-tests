@@ -63,11 +63,23 @@ bool destroy_psmmu_realm(struct realm *realm)
 	return host_destroy_realm(realm);
 }
 
+static int tsm_cleanup_pdev(struct host_pdev *h_pdev, bool ep_pdev)
+{
+	int rc;
+
+	(void)host_pdev_abort(h_pdev, ep_pdev);
+	rc = pdev_stop_and_destroy(h_pdev, ep_pdev);
+	if (rc != 0) {
+		/* Best-effort retry to release resources after a failed STOP. */
+		(void)host_pdev_abort(h_pdev, ep_pdev);
+		(void)pdev_stop_and_destroy(h_pdev, ep_pdev);
+	}
+
+	return rc;
+}
+
 int tsm_disconnect_device(struct host_pdev *h_pdev)
 {
-	const unsigned char tsm_disconnect_flow[] = {
-		RMI_PDEV_STATE_STOPPED
-	};
 	unsigned int sid, l2_idx, idx_bit;
 	int rc;
 
@@ -97,15 +109,15 @@ int tsm_disconnect_device(struct host_pdev *h_pdev)
 
 	h_pdev->pdev_stream_handle_valid = false;
 
-	rc = host_pdev_state_transition(h_pdev, true, tsm_disconnect_flow,
-					sizeof(tsm_disconnect_flow));
+	/* Stop and reclaim the endpoint PDEV. */
+	rc = tsm_cleanup_pdev(h_pdev, true);
 	if (rc != 0) {
 		ERROR("PDEV TSM disconnect state transitions: failed\n");
 		return -1;
 	}
 
-	rc = host_pdev_state_transition(h_pdev, false, tsm_disconnect_flow,
-					sizeof(tsm_disconnect_flow));
+	/* Stop and reclaim the Root Port PDEV. */
+	rc = tsm_cleanup_pdev(h_pdev, false);
 	if (rc != 0) {
 		ERROR("PDEV TSM disconnect state transitions: failed, %d\n", rc);
 		return rc;
@@ -159,17 +171,8 @@ int tsm_connect_device_with_ranges(struct host_pdev *h_pdev,
 				   const struct rmi_address_range *addr_range,
 				   size_t num_addr_range)
 {
-	const unsigned char tsm_connect_ep_flow[] = {
-		RMI_PDEV_STATE_NEW,
-		RMI_PDEV_STATE_NEEDS_KEY,
-		RMI_PDEV_STATE_HAS_KEY,
-		RMI_PDEV_STATE_READY
-	};
-	const unsigned char tsm_connect_rp_flow[] = {
-		RMI_PDEV_STATE_NEW,
-		RMI_PDEV_STATE_READY
-	};
 	unsigned int sid, l2_idx, idx_bit;
+	bool cleanup_ep_pdev;
 	bool psmmu_activate = false;
 	int rc;
 
@@ -196,11 +199,14 @@ int tsm_connect_device_with_ranges(struct host_pdev *h_pdev,
 	INFO("======================================\n");
 
 	/* move rp and ep pdevs to ready state */
-	rc = host_pdev_state_transition(h_pdev, false, tsm_connect_rp_flow,
-					sizeof(tsm_connect_rp_flow));
+	cleanup_ep_pdev = false;
+	rc = pdev_create_spdm(h_pdev, false);
+	if (rc == 0) {
+		rc = pdev_advance_to_ready(h_pdev, false);
+	}
 	if (rc != 0) {
 		ERROR("PDEV TSM connect state transitions: failed, %d\n", rc);
-		return rc;
+		goto cleanup_pdev;
 	}
 
 	rc = activate_psmmu();
@@ -210,11 +216,14 @@ int tsm_connect_device_with_ranges(struct host_pdev *h_pdev,
 
 	psmmu_activate = true;
 
-	rc = host_pdev_state_transition(h_pdev, true, tsm_connect_ep_flow,
-					sizeof(tsm_connect_ep_flow));
+	cleanup_ep_pdev = true;
+	rc = pdev_create_spdm(h_pdev, true);
+	if (rc == 0) {
+		rc = pdev_advance_to_ready(h_pdev, true);
+	}
 	if (rc != 0) {
 		ERROR("PDEV TSM connect state transitions for ep_pdev: failed\n");
-		return rc;
+		goto cleanup_pdev;
 	}
 
 	/* Add stream to connect ep and rp pdev */
@@ -273,6 +282,17 @@ destroy_psmmu:
 		psmmu_ptr = 0UL;
 	}
 
+	return rc;
+
+cleanup_pdev:
+	(void)host_pdev_abort(h_pdev, cleanup_ep_pdev);
+	(void)pdev_stop_and_destroy(h_pdev, cleanup_ep_pdev);
+
+	/* The Root Port PDEV was created before the endpoint PDEV. */
+	if (cleanup_ep_pdev) {
+		(void)host_pdev_abort(h_pdev, false);
+		(void)pdev_stop_and_destroy(h_pdev, false);
+	}
 	return rc;
 }
 

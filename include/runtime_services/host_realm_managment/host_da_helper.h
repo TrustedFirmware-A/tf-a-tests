@@ -13,8 +13,6 @@
 
 #define DEV_TYPE_INDEPENDENTLY_ATTESTED		(0)
 
-#define PDEV_STATE_TRANSITION_MAX		(10)
-
 /*
  * Init DA specific globals
  * Skip DA test if any of the below check is true
@@ -73,11 +71,6 @@ struct host_pdev {
 	unsigned long pdev_stream_handle;
 	bool has_ide;
 	struct rmi_dev_comm_data *dev_comm_data;
-	/*
-	 * Whether to corrupt the device response on DOE communicate.
-	 * Set to false when the response is corrupted.
-	 */
-	bool corrupt_device_response;
 
 	/* Algorithm used to generate device digests */
 	uint8_t pdev_hash_algo;
@@ -144,18 +137,9 @@ void host_pdevs_init(void);
 bool is_host_pdev_independently_attested(struct host_pdev *h_pdev);
 struct host_pdev *get_host_pdev_by_type(uint8_t type);
 
-/*
- * Transition PDEV to sequence of states mentioned in 'pdev_states'. During
- * state transition if any error is detected, this api will try to transition
- * the PDEV to STOPPED state and cleanup the resources held by PDEV.
- */
-int host_pdev_state_transition(struct host_pdev *h_pdev,
-			       bool ep_pdev,
-			       const unsigned char pdev_states[],
-			       size_t pdev_states_max);
-
-int host_pdev_transition(struct host_pdev *h_pdev, bool ep_pdev, unsigned char to_state);
-int host_pdev_reclaim(struct host_pdev *h_pdev);
+int pdev_create_spdm(struct host_pdev *h_pdev, bool ep_pdev);
+int pdev_advance_to_ready(struct host_pdev *h_pdev, bool ep_pdev);
+int pdev_stop_and_destroy(struct host_pdev *h_pdev, bool ep_pdev);
 int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev);
 int host_pdev_get_state(struct host_pdev *h_pdev, bool ep_pdev,
 			u_register_t *state);

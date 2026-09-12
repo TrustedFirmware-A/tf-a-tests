@@ -1,12 +1,14 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "eemi_api.h"
 #include "xpm_defs.h"
+#include "xpm_defs_plat.h"
 #include "xpm_nodeid.h"
+#include "xpm_nodeid_plat.h"
 
 /*
  * This function will request the power management controller to
@@ -16,15 +18,15 @@ test_result_t test_op_characteristics(void)
 {
 	int32_t status;
 	uint32_t result;
-	uint32_t type = PM_OPCHAR_TYPE_TEMP;
+	uint32_t type = PM_OPCHAR_TEST_TYPE;
 
-	status = xpm_op_characteristics(PM_DEV_SOC, type, &result);
+	status = xpm_op_characteristics(PM_OPCHAR_TEST_DEV, type, &result);
 	if (status != PM_RET_SUCCESS) {
 		tftf_testcase_printf("%s ERROR getting op characteristics, type = %x, "
 				     "Status: 0x%x\n", __func__, type, status);
 		return TEST_RESULT_FAIL;
 	}
-	tftf_testcase_printf("Temp = %x\n", result);
+	tftf_testcase_printf("Characteristic %x = %x\n", type, result);
 
 	return TEST_RESULT_SUCCESS;
 }
@@ -45,13 +47,12 @@ test_result_t test_op_characteristics_invalid_param(void)
 	uint32_t result;
 	uint32_t type = PM_OPCHAR_TYPE_LATENCY + 1U;
 
-	status = xpm_op_characteristics(PM_DEV_SOC, type, &result);
+	status = xpm_op_characteristics(PM_OPCHAR_TEST_DEV, type, &result);
 	if (status == PM_RET_SUCCESS) {
-		tftf_testcase_printf("%s ERROR getting op characteristics, type = %x, "
-				     "Status: 0x%x\n", __func__, type, status);
+		tftf_testcase_printf("%s ERROR invalid op characteristic type %x "
+				     "accepted\n", __func__, type);
 		return TEST_RESULT_FAIL;
 	}
-	tftf_testcase_printf("Temp = %x\n", result);
 
 	return TEST_RESULT_SUCCESS;
 }

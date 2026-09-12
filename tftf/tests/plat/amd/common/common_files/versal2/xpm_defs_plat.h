@@ -9,6 +9,8 @@
 #ifndef XPM_DEFS_PLAT_H_
 #define XPM_DEFS_PLAT_H_
 
+#include "xpm_nodeid_plat.h"
+
 /*
  * Versal Gen 2 SMC dispatch constants.
  *
@@ -30,5 +32,26 @@
  */
 #define PACK_PM_PAIR(hi, lo) \
 	(((uint64_t)(uint32_t)(hi) << 32U) | (uint64_t)(uint32_t)(lo))
+
+/* The firmware returns the status directly, so no acknowledge is asked for. */
+#define PM_REQ_ACK_DEFAULT      0U
+
+/* Device and characteristic the supported case reads. */
+#define PM_OPCHAR_TEST_DEV              PM_DEV_SOC
+#define PM_OPCHAR_TEST_TYPE             PM_OPCHAR_TYPE_TEMP
+
+/* Values the PLL set cases pass, rejected without touching live hardware. */
+#define PM_PLL_TEST_SET_MODE            PM_PLL_MODE_RESET
+#define PM_PLL_TEST_SET_PARAM           PM_PLL_PARAM_ID_FBDIV
+#define PM_PLL_TEST_SET_PARAM_VALUE     10U
+
+/* The divider is a plain value, returned unchanged. */
+#define PM_CLK_TEST_PARENT              1U
+
+#define PM_CLK_SET_DIVIDER(val)         (val)
+#define PM_CLK_DIVIDER_MASK             0xFFFFFFFFU
+
+/** Settling time, in milliseconds, before a restart test resets the platform. */
+#define PM_RESTART_SETTLE_MS		0U
 
 #endif /* XPM_DEFS_PLAT_H_ */

@@ -8,9 +8,6 @@
 ################################################################################
 # Disable the listed tests for zynqmp platform
 ################################################################################
-#TESTS: AMD-Xilinx tests
-AMD-Xilinx tests
-
 #TESTS: tftf-validation
 Framework Validation/IRQ handling
 Framework Validation/Events API
@@ -70,3 +67,10 @@ PSCI CPU ON OFF Stress Tests/Random hotplug cores in a large iteration to stress
 
 #TESTS: SDEI
 SDEI
+
+#TESTS: AMD-Xilinx tests unsupported on ZynqMP
+AMD-Xilinx tests/Notifier EEMI API
+AMD-Xilinx tests/TF-A register sgi
+AMD-Xilinx tests/TF-A feature check
+AMD-Xilinx tests/Set Wake Up Source
+AMD-Xilinx tests/CPU suspend to powerdown at level 0 (secondary)

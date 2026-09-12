@@ -1,17 +1,14 @@
 /*
- * Copyright (c) 2025, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025-2026, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "eemi_api.h"
+#include "xpm_defs_plat.h"
 #include "xpm_nodeid.h"
-
-struct test_pll_api test_pll[] = {
-	{
-		.clock_id = PM_CLK_RPU_PLL,
-	},
-};
+#include "xpm_nodeid_plat.h"
+#include "xpm_test.h"
 
 /*
  * This function is used to set the parameters for specified PLL clock.
@@ -20,10 +17,11 @@ test_result_t test_pll_set_parameter(void)
 {
 	int32_t status, i;
 
-	for (i = 0; i < ARRAY_SIZE(test_pll); i++) {
-		uint32_t clock_id = test_pll[i].clock_id;
+	for (i = 0; i < (int32_t)test_pll_list_size; i++) {
+		uint32_t clock_id = test_pll_list[i].clock_id;
 
-		status = xpm_pll_set_parameter(clock_id, PM_PLL_PARAM_ID_FBDIV, 10);
+		status = xpm_pll_set_parameter(clock_id, PM_PLL_TEST_SET_PARAM,
+					       PM_PLL_TEST_SET_PARAM_VALUE);
 		if (status == PM_RET_SUCCESS) {
 			tftf_testcase_printf("%s ERROR PLL Set Parameter for Clock ID: 0x%x, "
 					     "Status: 0x%x\n", __func__, clock_id, status);
@@ -42,8 +40,8 @@ test_result_t test_pll_get_parameter(void)
 	int32_t status, i;
 	uint32_t value;
 
-	for (i = 0; i < ARRAY_SIZE(test_pll); i++) {
-		uint32_t clock_id = test_pll[i].clock_id;
+	for (i = 0; i < (int32_t)test_pll_list_size; i++) {
+		uint32_t clock_id = test_pll_list[i].clock_id;
 
 		status = xpm_pll_get_parameter(clock_id, PM_PLL_PARAM_ID_FBDIV, &value);
 		if (status != PM_RET_SUCCESS) {
@@ -64,10 +62,10 @@ test_result_t test_pll_set_mode(void)
 {
 	int32_t status, i;
 
-	for (i = 0; i < ARRAY_SIZE(test_pll); i++) {
-		uint32_t clock_id = test_pll[i].clock_id;
+	for (i = 0; i < (int32_t)test_pll_list_size; i++) {
+		uint32_t clock_id = test_pll_list[i].clock_id;
 
-		status = xpm_pll_set_mode(clock_id, PM_PLL_MODE_RESET);
+		status = xpm_pll_set_mode(clock_id, PM_PLL_TEST_SET_MODE);
 		if (status == PM_RET_SUCCESS) {
 			tftf_testcase_printf("%s ERROR PLL Set Mode for Clock ID: 0x%x, "
 					     "Status: 0x%x\n", __func__, clock_id, status);
@@ -86,8 +84,8 @@ test_result_t test_pll_get_mode(void)
 	int32_t status, i;
 	uint32_t value;
 
-	for (i = 0; i < ARRAY_SIZE(test_pll); i++) {
-		uint32_t clock_id = test_pll[i].clock_id;
+	for (i = 0; i < (int32_t)test_pll_list_size; i++) {
+		uint32_t clock_id = test_pll_list[i].clock_id;
 
 		status = xpm_pll_get_mode(clock_id, &value);
 		if (status != PM_RET_SUCCESS) {

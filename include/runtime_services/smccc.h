@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -21,6 +21,9 @@
 
 #define SMC_UNKNOWN			-1
 #define SMC_OK				0
+
+/* Standard SMCCC return codes. */
+#define SMCCC_RET_INVALID_PARAMETER	-3
 
 /* Return codes for Arm Architecture Service SMC calls */
 #define SMC_ARCH_CALL_SUCCESS           0

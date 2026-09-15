@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -14,8 +14,17 @@
 
 #define SKIP_TEST_IF_FFA_VERSION_LESS_THAN(major, minor)			\
 	do {									\
-		struct ffa_value ret = ffa_version(FFA_VERSION_COMPILED);	\
+		struct ffa_value ret;						\
 		enum ffa_version version;					\
+										\
+		if (FFA_VERSION_COMPILED >= FFA_VERSION_1_3) {		\
+			ret = ffa_version_get_negotiated();			\
+			if (ret.fid == FFA_VERSION_NULL) {			\
+				ret = ffa_version(FFA_VERSION_COMPILED);	\
+			}							\
+		} else {							\
+			ret = ffa_version(FFA_VERSION_COMPILED);		\
+		}								\
 										\
 		if (ret.fid == FFA_ERROR_NOT_SUPPORTED) {			\
 			tftf_testcase_printf("FFA_VERSION not supported.\n");	\

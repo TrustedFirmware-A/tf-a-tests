@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -20,6 +20,7 @@
  * and the lower 16 bits denoting the minor revision.
  */
 enum ffa_version {
+	FFA_VERSION_NULL = 0,
 	FFA_VERSION_1_0 = 0x10000,
 	FFA_VERSION_1_1 = 0x10001,
 	FFA_VERSION_1_2 = 0x10002,
@@ -30,6 +31,10 @@ enum ffa_version {
 	FFA_VERSION_COMPILED = FFA_VERSION_1_3,
 #endif
 };
+
+#define FFA_VERSION_QUERY_TYPE_NEGOTIATE	U(0x0)
+#define FFA_VERSION_QUERY_TYPE_COMPATIBILITY	U(0x1)
+#define FFA_VERSION_QUERY_TYPE_GET_NEGOTIATED	U(0x2)
 
 #define FFA_VERSION_MBZ_BIT (1U << 31U)
 #define FFA_VERSION_MAJOR_SHIFT (16U)
@@ -991,6 +996,9 @@ struct ffa_value ffa_framework_msg_send_direct_resp(ffa_id_t source_id,
 struct ffa_value ffa_run(uint32_t dest_id, uint32_t vcpu_id);
 struct ffa_value ffa_yield(void);
 struct ffa_value ffa_version(uint32_t input_version);
+struct ffa_value ffa_version_with_flags(uint32_t input_version,
+					uint32_t input_flags);
+struct ffa_value ffa_version_get_negotiated(void);
 struct ffa_value ffa_id_get(void);
 struct ffa_value ffa_spm_id_get(void);
 struct ffa_value ffa_msg_wait(void);

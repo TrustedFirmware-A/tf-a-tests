@@ -82,6 +82,8 @@ typedef enum {
 } rsi_status_t;
 
 #define RSI_EXIT_SYNC	0U
+#define RSI_EXIT_IRQ	1U
+#define RSI_EXIT_HOST	2U
 
 /* Size of Realm Personalization Value */
 #define RSI_RPV_SIZE			64U

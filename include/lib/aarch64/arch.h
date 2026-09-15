@@ -217,6 +217,12 @@
 #define HFGWTR_EL2		S3_4_C1_C1_5
 #define HFGWTR2_EL2		S3_4_C3_C1_3
 #define HPFAR_EL2		S3_4_C6_C0_4
+
+/* HPFAR_EL2 definitions */
+#define HPFAR_EL2_FIPA_SHIFT	4
+#define HPFAR_EL2_FIPA_WIDTH	U(40)
+#define HPFAR_EL2_FIPA_OFFSET	8
+
 #define ICH_HCR_EL2		S3_4_C12_C11_0
 #define ICH_VMCR_EL2		S3_4_C12_C11_7
 #define PMSCR_EL2		S3_4_C9_C9_0

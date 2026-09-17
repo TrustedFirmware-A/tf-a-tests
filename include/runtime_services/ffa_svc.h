@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -57,7 +57,7 @@ static inline const char *ffa_error_name(enum ffa_error error)
 
 /* The macros below are used to identify FFA calls from the SMC function ID */
 #define FFA_FNUM_MIN_VALUE	U(0x60)
-#define FFA_FNUM_MAX_VALUE	U(0x97)
+#define FFA_FNUM_MAX_VALUE	U(0x8C)
 #define is_ffa_fid(fid) __extension__ ({		\
 	__typeof__(fid) _fid = (fid);			\
 	((GET_SMC_NUM(_fid) >= FFA_FNUM_MIN_VALUE) &&	\
@@ -132,12 +132,6 @@ static inline const char *ffa_error_name(enum ffa_error error)
 /* FF-A v1.3 ALP1 */
 #define FFA_FNUM_ABORT				U(0x90)
 
-/* FF-A v1.3 ALP2 */
-#define FFA_FNUM_NOTIFICATION_BIND2		U(0x94)
-#define FFA_FNUM_NOTIFICATION_UNBIND2		U(0x95)
-#define FFA_FNUM_NOTIFICATION_SET2		U(0x96)
-#define FFA_FNUM_NOTIFICATION_GET2		U(0x97)
-
 /* FFA SMC32 FIDs */
 #define FFA_ERROR		FFA_FID(SMC_32, FFA_FNUM_ERROR)
 #define FFA_SUCCESS_SMC32	FFA_FID(SMC_32, FFA_FNUM_SUCCESS)
@@ -211,15 +205,6 @@ static inline const char *ffa_error_name(enum ffa_error error)
 #define FFA_PARTITION_INFO_GET_REGS_SMC64 \
 	FFA_FID(SMC_64, FFA_FNUM_PARTITION_INFO_GET_REGS)
 #define FFA_ABORT_64		FFA_FID(SMC_64, FFA_FNUM_ABORT)
-
-#define FFA_NOTIFICATION_BIND2_SMC64 \
-	FFA_FID(SMC_64, FFA_FNUM_NOTIFICATION_BIND2)
-#define FFA_NOTIFICATION_UNBIND2_SMC64 \
-	FFA_FID(SMC_64, FFA_FNUM_NOTIFICATION_UNBIND2)
-#define FFA_NOTIFICATION_SET2_SMC64 \
-	FFA_FID(SMC_64, FFA_FNUM_NOTIFICATION_SET2)
-#define FFA_NOTIFICATION_GET2_SMC64 \
-	FFA_FID(SMC_64, FFA_FNUM_NOTIFICATION_GET2)
 
 /* Implementation defined SMC64 FIDs */
 #define FFA_CONSOLE_LOG_SMC64	FFA_FID(SMC_64, FFA_FNUM_CONSOLE_LOG)
@@ -315,14 +300,6 @@ static inline const char *ffa_func_name(uint32_t func)
 		return "FFA_PARTITION_INFO_GET_REGS_SMC64";
 	case FFA_CONSOLE_LOG_SMC64:
 		return "FFA_CONSOLE_LOG_SMC64";
-	case FFA_NOTIFICATION_BIND2_SMC64:
-		return "FFA_NOTIFICATION_BIND2_SMC64";
-	case FFA_NOTIFICATION_UNBIND2_SMC64:
-		return "FFA_NOTIFICATION_UNBIND2_SMC64";
-	case FFA_NOTIFICATION_SET2_SMC64:
-		return "FFA_NOTIFICATION_SET2_SMC64";
-	case FFA_NOTIFICATION_GET2_SMC64:
-		return "FFA_NOTIFICATION_GET2_SMC64";
 	default:
 		return "UNKNOWN";
 	}

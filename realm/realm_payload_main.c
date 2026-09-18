@@ -453,22 +453,6 @@ static bool test_realm_data_access_cmd(void)
 	return false;
 }
 
-static bool test_realm_wfxt_cmd(void)
-{
-	u_register_t instruction =
-		realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
-	u_register_t timeout =
-		realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
-
-	if (instruction == 0UL) {
-		wfit(timeout);
-	} else {
-		wfet(timeout);
-	}
-
-	return true;
-}
-
 static bool test_realm_plane_n_inst_fetch(void)
 {
 	u_register_t esr, far, test_ipa;
@@ -906,9 +890,6 @@ void realm_payload_main(void)
 			break;
 		case REALM_PLANE_N_HOST_CALL_NO_TRAP_CMD:
 			test_succeed = test_realm_plane_n_host_call_no_trap();
-			break;
-		case REALM_WFXT_CMD:
-			test_succeed = test_realm_wfxt_cmd();
 			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);

@@ -54,6 +54,15 @@ static void restore_plane_context(rsi_plane_run *run)
 	run->enter.pc = run->exit.elr;
 }
 
+static void restore_plane_entry_sysregs(rsi_plane_run *run)
+{
+	if ((run->exit.exit_reason == RSI_EXIT_SYNC) ||
+	    (run->exit.exit_reason == RSI_EXIT_HOST)) {
+		run->enter.pstate = run->exit.pstate;
+		run->enter.elr_el1 = run->exit.elr_el1;
+	}
+}
+
 static u_register_t realm_exit_to_host_as_plane_n(enum host_call_cmd exit_code,
 		u_register_t plane_num)
 {
@@ -77,14 +86,19 @@ u_register_t handle_plane_exit(u_register_t plane_index,
 	u_register_t ec = EC_BITS(run->exit.esr);
 	u_register_t ret;
 
-	if (((run->exit.esr & ISS_FSC_MASK) >= FSC_L0_PERM_FAULT) &&
+	if ((run->exit.exit_reason == RSI_EXIT_SYNC) &&
+	    ((ec == EC_IABORT_LOWER_EL) || (ec == EC_DABORT_LOWER_EL)) &&
+	    ((run->exit.esr & ISS_FSC_MASK) >= FSC_L0_PERM_FAULT) &&
 		((run->exit.esr & ISS_FSC_MASK) <= FSC_L3_PERM_FAULT)) {
 
 		/* If Plane N exit is due to permission fault, change s2ap */
 		u_register_t base, new_base, response, ret;
 		u_register_t new_cookie = 0UL;
 
-		new_base = base = (run->exit.far & ~PAGE_SIZE_MASK);
+		/* HPFAR_EL2 holds the faulting IPA page for both abort types. */
+		new_base = base =
+			(run->exit.hpfar & MASK(HPFAR_EL2_FIPA)) <<
+			HPFAR_EL2_FIPA_OFFSET;
 
 		VERBOSE("P0 set s2ap 0x%lx\n", base);
 		while (new_base != (base + PAGE_SIZE)) {
@@ -207,9 +221,8 @@ bool realm_plane_enter(u_register_t plane_index,
 	while (true) {
 		ret = rsi_plane_enter(plane_index, (u_register_t)run);
 
-		/* Restore PSTATE and ELR_EL1 with the value on run->exit for the next entry */
-		run->enter.pstate = run->exit.pstate;
-		run->enter.elr_el1 = run->exit.elr_el1;
+		/* Restore fields which are defined for this Plane exit reason. */
+		restore_plane_entry_sysregs(run);
 
 		if (ret != RSI_SUCCESS) {
 			ERROR("Plane %u enter failed ret= 0x%lx\n", plane_index, ret);
@@ -235,9 +248,8 @@ bool realm_resume_plane_n(rsi_plane_run *run, u_register_t plane_index,
 {
 	u_register_t perm_index = plane_index + 1U;
 
-	/* Restore PSTATE and ELR_EL1 on the plane */
-	run->enter.pstate = run->exit.pstate;
-	run->enter.elr_el1 = run->exit.elr_el1;
+	/* Restore fields which are defined for this Plane exit reason. */
+	restore_plane_entry_sysregs(run);
 
 	restore_plane_context(run);
 

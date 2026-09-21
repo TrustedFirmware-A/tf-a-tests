@@ -517,8 +517,7 @@ test_result_t host_test_realm_pn_access_outside_par(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	/* Test is skipped if S2POE is not supported so to keep it simpler */
-	if (!(are_planes_supported() && is_single_rtt_supported())) {
+	if (!are_planes_supported()) {
 		return TEST_RESULT_SKIPPED;
 	}
 
@@ -609,7 +608,7 @@ test_result_t host_test_realm_pn_access_outside_par(void)
 	 * An instruction fetch outside PAR from Plane N causes a Plane exit
 	 * due to instruction abort. We pass here the expected address at
 	 * which the attempted fetch took place so that Plane 0 can match it
-	 * against the address reported at run.exit.far.
+	 * against the address reported by run.exit.hpfar.
 	 */
 	host_shared_data_set_host_val(&realm, 0U, 1U, HOST_ARG2_INDEX, test_ipa);
 
@@ -2182,7 +2181,7 @@ test_result_t host_realm_sea_empty(void)
 {
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, base, esr, num_aux_planes = 0UL, far;
+	u_register_t ret, base, esr, num_aux_planes = 0UL, far, hpfar;
 	bool lpa2 = false, rtt_tree_single = false, rtt_s2ap_encoding_indirect = false;
 	struct realm realm;
 	struct rtt_entry rtt;
@@ -2200,13 +2199,14 @@ test_result_t host_realm_sea_empty(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	/* Test are skipped if S2POE is not supported to keep test simple */
-	if (are_planes_supported() && is_single_rtt_supported()) {
+	if (are_planes_supported()) {
 		num_aux_planes = 1UL;
 
-		/* use single RTT for all planes */
-		rtt_tree_single = true;
-		rtt_s2ap_encoding_indirect = true;
+		if (is_single_rtt_supported()) {
+			/* Use a single RTT for all Planes when supported. */
+			rtt_tree_single = true;
+			rtt_s2ap_encoding_indirect = true;
+		}
 	}
 
 	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
@@ -2296,6 +2296,7 @@ test_result_t host_realm_sea_empty(void)
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
 	}
+
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (rtt.state != RMI_ASSIGNED ||
 			(rtt.ripas != RMI_EMPTY)) {
@@ -2347,6 +2348,15 @@ test_result_t host_realm_sea_empty(void)
 	INFO("Running test on Plane 1\n");
 	base += PAGE_SIZE;
 
+	if (!realm.rtt_tree_single) {
+		ret = host_realm_create_rtt_aux_levels(&realm, base,
+				realm.start_level, 3L, 1U);
+		if (ret != RMI_SUCCESS) {
+			ERROR("Failed to create Plane 1 RTT levels\n");
+			goto destroy_realm;
+		}
+	}
+
 	/*
 	 * Args used by Plane 1, Rec 4/5/6/7
 	 * Plane1 will access base, causing Plane exit to P0
@@ -2377,11 +2387,12 @@ test_result_t host_realm_sea_empty(void)
 		goto destroy_realm;
 	}
 
-	/* get ESR FAR set by P0 */
+	/* Get ESR and HPFAR set by P0. */
 	esr = host_shared_data_get_realm_val(&realm, 0U, 4U, HOST_ARG2_INDEX);
-	far = host_shared_data_get_realm_val(&realm, 0U, 4U, HOST_ARG3_INDEX);
-	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) || (far != base)) {
-		ERROR("Rec4 incorrect ESR=0x%lx FAR=0x%lx\n", esr, far);
+	hpfar = host_shared_data_get_realm_val(&realm, 0U, 4U, HOST_ARG3_INDEX);
+	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) ||
+	    ((hpfar >> HPFAR_EL2_FIPA_SHIFT) != (base >> PAGE_SIZE_SHIFT))) {
+		ERROR("Rec4 incorrect ESR=0x%lx HPFAR=0x%lx\n", esr, hpfar);
 		goto destroy_realm;
 	}
 	INFO("Rec4 ESR=0x%lx\n", esr);
@@ -2409,6 +2420,7 @@ test_result_t host_realm_sea_empty(void)
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
 	}
+
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (rtt.state != RMI_ASSIGNED ||
 			(rtt.ripas != RMI_EMPTY)) {
@@ -2427,12 +2439,13 @@ test_result_t host_realm_sea_empty(void)
 		goto undelegate_destroy;
 	}
 
-	/* get ESR FAR set by P0 */
+	/* Get ESR and HPFAR set by P0. */
 	esr = host_shared_data_get_realm_val(&realm, 0U, 6U, HOST_ARG2_INDEX);
-	far = host_shared_data_get_realm_val(&realm, 0U, 6U, HOST_ARG3_INDEX);
+	hpfar = host_shared_data_get_realm_val(&realm, 0U, 6U, HOST_ARG3_INDEX);
 
-	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) || (far != base)) {
-		ERROR("Rec6 incorrect ESR=0x%lx\n", esr);
+	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) ||
+	    ((hpfar >> HPFAR_EL2_FIPA_SHIFT) != (base >> PAGE_SIZE_SHIFT))) {
+		ERROR("Rec6 incorrect ESR=0x%lx HPFAR=0x%lx\n", esr, hpfar);
 		goto undelegate_destroy;
 	}
 	INFO("Rec6 ESR=0x%lx\n", esr);
@@ -2487,7 +2500,7 @@ test_result_t host_realm_sea_unprotected(void)
 
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, base, base_ipa, esr, far;
+	u_register_t ret, base, base_ipa, esr, hpfar;
 	unsigned int host_call_result;
 	u_register_t exit_reason;
 	struct realm realm;
@@ -2508,13 +2521,14 @@ test_result_t host_realm_sea_unprotected(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	/* Test are skipped if S2POE is not supported to keep test simple */
-	if (are_planes_supported() && is_single_rtt_supported()) {
+	if (are_planes_supported()) {
 		num_aux_planes = 1UL;
 
-		/* use single RTT for all planes */
-		rtt_tree_single = true;
-		rtt_s2ap_encoding_indirect = true;
+		if (is_single_rtt_supported()) {
+			/* Use a single RTT for all Planes when supported. */
+			rtt_tree_single = true;
+			rtt_s2ap_encoding_indirect = true;
+		}
 	}
 
 	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
@@ -2634,12 +2648,13 @@ test_result_t host_realm_sea_unprotected(void)
 		goto destroy_realm;
 	}
 
-	/* get ESR/FAR set by P0 */
+	/* Get ESR and HPFAR set by P0. */
 	esr = host_shared_data_get_realm_val(&realm, 0U, 2U, HOST_ARG2_INDEX);
-	far = host_shared_data_get_realm_val(&realm, 0U, 2U, HOST_ARG3_INDEX);
+	hpfar = host_shared_data_get_realm_val(&realm, 0U, 2U, HOST_ARG3_INDEX);
 
-	if (((EC_BITS(esr) != EC_IABORT_LOWER_EL) || (far != base_ipa))) {
-		ERROR("Rec2 incorrect ESR=0x%lx far=0x%lx\n", esr, far);
+	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) ||
+	    ((hpfar >> HPFAR_EL2_FIPA_SHIFT) != (base_ipa >> PAGE_SIZE_SHIFT))) {
+		ERROR("Rec2 incorrect ESR=0x%lx HPFAR=0x%lx\n", esr, hpfar);
 		goto destroy_realm;
 	}
 	INFO("Rec2 ESR=0x%lx\n", esr);

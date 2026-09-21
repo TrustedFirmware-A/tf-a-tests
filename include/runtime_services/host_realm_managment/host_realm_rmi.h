@@ -1994,6 +1994,10 @@ u_register_t host_rmi_create_rtt_level(struct realm *realm,
 u_register_t host_rmi_create_rtt_levels(struct realm *realm,
 					u_register_t map_addr,
 					long level, long max_level);
+u_register_t host_realm_create_rtt_aux_levels(struct realm *realm,
+					      u_register_t map_addr,
+					      long level, long max_level,
+					      u_register_t tree_index);
 u_register_t host_rmi_rtt_unmap_unprotected(u_register_t rd,
 					    u_register_t base,
 					    u_register_t top,

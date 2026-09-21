@@ -928,7 +928,7 @@ u_register_t host_rmi_create_rtt_levels(struct realm *realm,
 	return REALM_SUCCESS;
 }
 
-static u_register_t host_realm_create_rtt_aux_levels(struct realm *realm,
+u_register_t host_realm_create_rtt_aux_levels(struct realm *realm,
 					    u_register_t map_addr,
 					    long level, long max_level,
 					    u_register_t tree_index)
@@ -953,6 +953,17 @@ static u_register_t host_realm_create_rtt_aux_levels(struct realm *realm,
 		ret = host_rmi_rtt_aux_create(realm->rd, rtt, ipa_align, level,
 				tree_index);
 		if (ret != RMI_SUCCESS) {
+			/*
+			 * There is no RMI_RTT_AUX_READ_ENTRY ABI. Infer an
+			 * existing table from the level returned by RTT_AUX_CREATE.
+			 */
+			if ((RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT_AUX) &&
+			    ((long)(int8_t)RMI_RETURN_INDEX(ret) == (level - 1L))) {
+				host_rmi_granule_undelegate(rtt);
+				page_free(rtt);
+				continue;
+			}
+
 			ERROR("%s() failed, map_addr =0x%lx ipa_align=0x%lx level=%lx ret=0x%lx\n",
 				"host_realm_rtt_aux_create", map_addr, ipa_align, level, ret);
 			host_rmi_granule_undelegate(rtt);

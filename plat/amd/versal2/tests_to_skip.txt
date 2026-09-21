@@ -41,6 +41,10 @@ AMD-Xilinx tests/Set pin configuration parameter
 AMD-Xilinx tests/Set pin function without requesting pin
 AMD-Xilinx tests/Set pin parameter without requesting pin
 
+#TESTS: Get operating characteristics is not supported on Versal Gen 2
+AMD-Xilinx tests/Get operating characteristics
+AMD-Xilinx tests/Get operating characteristics with invalid params
+
 #TESTS: psci
 PSCI Affinity Info/Affinity info level0 powerdown
 PSCI CPU Suspend/CPU suspend to powerdown at level 0

@@ -406,17 +406,19 @@ static bool test_plane_exception_cmd(void)
 	 * if capability is added in future.
 	 */
 	if (ret1 && (run.exit.exit_reason == RSI_EXIT_SYNC)) {
-		u_register_t far, esr, elr;
+		u_register_t far, hpfar, esr, elr, fault_addr;
 
 		far = run.exit.far;
+		hpfar = run.exit.hpfar;
 		esr = run.exit.esr;
 		elr = run.exit.elr;
+		fault_addr = (EC_BITS(esr) == EC_IABORT_LOWER_EL) ? hpfar : far;
 
-		/* Return ESR FAR to Host */
+		/* Return ESR and the architecturally valid fault address to Host. */
 		realm_shared_data_set_my_realm_val(HOST_ARG2_INDEX, esr);
-		realm_shared_data_set_my_realm_val(HOST_ARG3_INDEX, far);
-		realm_printf("Plane exit FAR=0x%lx ESR=0x%lx ELR=0x%lx\n",
-			far, esr, elr);
+		realm_shared_data_set_my_realm_val(HOST_ARG3_INDEX, fault_addr);
+		realm_printf("Plane exit FAR=0x%lx HPFAR=0x%lx ESR=0x%lx ELR=0x%lx\n",
+			far, hpfar, esr, elr);
 		rsi_exit_to_host(HOST_CALL_EXIT_SUCCESS_CMD);
 	}
 	return false;
@@ -455,7 +457,7 @@ static bool test_realm_data_access_cmd(void)
 
 static bool test_realm_plane_n_inst_fetch(void)
 {
-	u_register_t esr, far, test_ipa;
+	u_register_t esr, hpfar, test_ipa;
 
 	bool ret = test_realm_enter_plane_n();
 
@@ -465,11 +467,13 @@ static bool test_realm_plane_n_inst_fetch(void)
 	}
 
 	esr = run.exit.esr;
-	far = run.exit.far;
+	hpfar = run.exit.hpfar;
 	test_ipa = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
 
-	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) || (far != test_ipa)) {
-		ERROR("Plane N: incorrect ESR=0x%lx FAR=0x%lx\n", esr, far);
+	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) ||
+	    ((hpfar >> HPFAR_EL2_FIPA_SHIFT) !=
+	     (test_ipa >> PAGE_SIZE_SHIFT))) {
+		ERROR("Plane N: incorrect ESR=0x%lx HPFAR=0x%lx\n", esr, hpfar);
 		return false;
 	}
 

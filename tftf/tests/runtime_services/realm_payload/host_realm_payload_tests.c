@@ -2182,7 +2182,7 @@ test_result_t host_realm_sea_empty(void)
 {
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, base, esr, num_aux_planes = 0UL, far;
+	u_register_t ret, base, esr, num_aux_planes = 0UL, far, hpfar;
 	bool lpa2 = false, rtt_tree_single = false, rtt_s2ap_encoding_indirect = false;
 	struct realm realm;
 	struct rtt_entry rtt;
@@ -2377,11 +2377,12 @@ test_result_t host_realm_sea_empty(void)
 		goto destroy_realm;
 	}
 
-	/* get ESR FAR set by P0 */
+	/* Get ESR and HPFAR set by P0. */
 	esr = host_shared_data_get_realm_val(&realm, 0U, 4U, HOST_ARG2_INDEX);
-	far = host_shared_data_get_realm_val(&realm, 0U, 4U, HOST_ARG3_INDEX);
-	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) || (far != base)) {
-		ERROR("Rec4 incorrect ESR=0x%lx FAR=0x%lx\n", esr, far);
+	hpfar = host_shared_data_get_realm_val(&realm, 0U, 4U, HOST_ARG3_INDEX);
+	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) ||
+	    ((hpfar >> HPFAR_EL2_FIPA_SHIFT) != (base >> PAGE_SIZE_SHIFT))) {
+		ERROR("Rec4 incorrect ESR=0x%lx HPFAR=0x%lx\n", esr, hpfar);
 		goto destroy_realm;
 	}
 	INFO("Rec4 ESR=0x%lx\n", esr);
@@ -2427,12 +2428,13 @@ test_result_t host_realm_sea_empty(void)
 		goto undelegate_destroy;
 	}
 
-	/* get ESR FAR set by P0 */
+	/* Get ESR and HPFAR set by P0. */
 	esr = host_shared_data_get_realm_val(&realm, 0U, 6U, HOST_ARG2_INDEX);
-	far = host_shared_data_get_realm_val(&realm, 0U, 6U, HOST_ARG3_INDEX);
+	hpfar = host_shared_data_get_realm_val(&realm, 0U, 6U, HOST_ARG3_INDEX);
 
-	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) || (far != base)) {
-		ERROR("Rec6 incorrect ESR=0x%lx\n", esr);
+	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) ||
+	    ((hpfar >> HPFAR_EL2_FIPA_SHIFT) != (base >> PAGE_SIZE_SHIFT))) {
+		ERROR("Rec6 incorrect ESR=0x%lx HPFAR=0x%lx\n", esr, hpfar);
 		goto undelegate_destroy;
 	}
 	INFO("Rec6 ESR=0x%lx\n", esr);
@@ -2487,7 +2489,7 @@ test_result_t host_realm_sea_unprotected(void)
 
 	bool ret1, ret2;
 	test_result_t res = TEST_RESULT_FAIL;
-	u_register_t ret, base, base_ipa, esr, far;
+	u_register_t ret, base, base_ipa, esr, hpfar;
 	unsigned int host_call_result;
 	u_register_t exit_reason;
 	struct realm realm;
@@ -2634,12 +2636,13 @@ test_result_t host_realm_sea_unprotected(void)
 		goto destroy_realm;
 	}
 
-	/* get ESR/FAR set by P0 */
+	/* Get ESR and HPFAR set by P0. */
 	esr = host_shared_data_get_realm_val(&realm, 0U, 2U, HOST_ARG2_INDEX);
-	far = host_shared_data_get_realm_val(&realm, 0U, 2U, HOST_ARG3_INDEX);
+	hpfar = host_shared_data_get_realm_val(&realm, 0U, 2U, HOST_ARG3_INDEX);
 
-	if (((EC_BITS(esr) != EC_IABORT_LOWER_EL) || (far != base_ipa))) {
-		ERROR("Rec2 incorrect ESR=0x%lx far=0x%lx\n", esr, far);
+	if ((EC_BITS(esr) != EC_IABORT_LOWER_EL) ||
+	    ((hpfar >> HPFAR_EL2_FIPA_SHIFT) != (base_ipa >> PAGE_SIZE_SHIFT))) {
+		ERROR("Rec2 incorrect ESR=0x%lx HPFAR=0x%lx\n", esr, hpfar);
 		goto destroy_realm;
 	}
 	INFO("Rec2 ESR=0x%lx\n", esr);

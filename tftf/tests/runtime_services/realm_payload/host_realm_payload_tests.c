@@ -517,8 +517,7 @@ test_result_t host_test_realm_pn_access_outside_par(void)
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
-	/* Test is skipped if S2POE is not supported so to keep it simpler */
-	if (!(are_planes_supported() && is_single_rtt_supported())) {
+	if (!are_planes_supported()) {
 		return TEST_RESULT_SKIPPED;
 	}
 
@@ -609,7 +608,7 @@ test_result_t host_test_realm_pn_access_outside_par(void)
 	 * An instruction fetch outside PAR from Plane N causes a Plane exit
 	 * due to instruction abort. We pass here the expected address at
 	 * which the attempted fetch took place so that Plane 0 can match it
-	 * against the address reported at run.exit.far.
+	 * against the address reported by run.exit.hpfar.
 	 */
 	host_shared_data_set_host_val(&realm, 0U, 1U, HOST_ARG2_INDEX, test_ipa);
 
@@ -2200,13 +2199,14 @@ test_result_t host_realm_sea_empty(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	/* Test are skipped if S2POE is not supported to keep test simple */
-	if (are_planes_supported() && is_single_rtt_supported()) {
+	if (are_planes_supported()) {
 		num_aux_planes = 1UL;
 
-		/* use single RTT for all planes */
-		rtt_tree_single = true;
-		rtt_s2ap_encoding_indirect = true;
+		if (is_single_rtt_supported()) {
+			/* Use a single RTT for all Planes when supported. */
+			rtt_tree_single = true;
+			rtt_s2ap_encoding_indirect = true;
+		}
 	}
 
 	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
@@ -2296,6 +2296,7 @@ test_result_t host_realm_sea_empty(void)
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
 	}
+
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (rtt.state != RMI_ASSIGNED ||
 			(rtt.ripas != RMI_EMPTY)) {
@@ -2346,6 +2347,15 @@ test_result_t host_realm_sea_empty(void)
 
 	INFO("Running test on Plane 1\n");
 	base += PAGE_SIZE;
+
+	if (!realm.rtt_tree_single) {
+		ret = host_realm_create_rtt_aux_levels(&realm, base,
+				realm.start_level, 3L, 1U);
+		if (ret != RMI_SUCCESS) {
+			ERROR("Failed to create Plane 1 RTT levels\n");
+			goto destroy_realm;
+		}
+	}
 
 	/*
 	 * Args used by Plane 1, Rec 4/5/6/7
@@ -2410,6 +2420,7 @@ test_result_t host_realm_sea_empty(void)
 		ERROR("host_realm_delegate_map_protected_data failed\n");
 		goto destroy_realm;
 	}
+
 	ret = host_rmi_rtt_readentry(realm.rd, base, 3L, &rtt);
 	if (rtt.state != RMI_ASSIGNED ||
 			(rtt.ripas != RMI_EMPTY)) {
@@ -2510,13 +2521,14 @@ test_result_t host_realm_sea_unprotected(void)
 		sl = RTT_MIN_LEVEL_LPA2;
 	}
 
-	/* Test are skipped if S2POE is not supported to keep test simple */
-	if (are_planes_supported() && is_single_rtt_supported()) {
+	if (are_planes_supported()) {
 		num_aux_planes = 1UL;
 
-		/* use single RTT for all planes */
-		rtt_tree_single = true;
-		rtt_s2ap_encoding_indirect = true;
+		if (is_single_rtt_supported()) {
+			/* Use a single RTT for all Planes when supported. */
+			rtt_tree_single = true;
+			rtt_s2ap_encoding_indirect = true;
+		}
 	}
 
 	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;

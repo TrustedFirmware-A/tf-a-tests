@@ -9,6 +9,7 @@
 
 #include <arch_features.h>
 #include <debug.h>
+#include <drivers/arm/gic_v3.h>
 #include <fpu.h>
 #include <host_realm_helper.h>
 #include <host_shared_data.h>
@@ -566,6 +567,71 @@ static bool test_realm_plane_n_wfx_cmd(void)
 	return true;
 }
 
+/*
+ * Run WFI or WFE in Plane N without requesting a synchronous WFx trap.
+ *
+ * WFI flow:
+ *  - Plane N owns the virtual GIC, programs its virtual timer, and waits in
+ *    WFI for the timer interrupt.
+ *  - RMM reports the pending timer to the host as an IRQ exit. The host
+ *    injects the timer vIRQ and re-enters the REC with Plane N still active.
+ *  - Plane N handles the timer ISR, resumes after WFI, and reports completion
+ *    to Plane 0 through the shared buffer.
+ *
+ * WFE flow:
+ *  - Plane N sets its local event register and executes WFE with trapping
+ *    disabled. WFE consumes the event and completes without a synchronous
+ *    Plane exit.
+ */
+static bool test_realm_plane_n_wfx_no_trap_cmd(void)
+{
+	u_register_t base, flags, instruction, perm_index, plane_index;
+	u_register_t priority, priority_bits, ticks;
+
+	if (!realm_is_plane0()) {
+		instruction = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+
+		if (instruction == ISS_WFX_TI_WFI) {
+			priority_bits = ((read_icv_ctlr_el1() >>
+				ICV_CTLR_EL1_PRIbits_SHIFT) &
+				ICV_CTLR_EL1_PRIbits_MASK) + 1UL;
+			priority = (0xffUL << (8UL - priority_bits)) & 0xffUL;
+			write_icv_pmr_el1(priority);
+			write_icv_igrpen1_el1(ICV_IGRPEN1_EL1_Enable);
+			enable_irq();
+
+			write_cntv_ctl_el0(0UL);
+			ticks = read_cntfrq_el0() / 100UL;
+			write_cntv_tval_el0(ticks);
+			write_cntv_ctl_el0(1UL);
+			wfi();
+			realm_shared_data_set_my_realm_val(HOST_ARG1_INDEX, 1UL);
+			return true;
+		}
+
+		sevl();
+		wfe();
+		realm_shared_data_set_my_realm_val(HOST_ARG1_INDEX, 1UL);
+		return true;
+	}
+
+	plane_index = realm_shared_data_get_my_host_val(HOST_ARG1_INDEX);
+	base = realm_shared_data_get_my_host_val(HOST_ARG2_INDEX);
+	perm_index = plane_index + 1U;
+	instruction = realm_shared_data_get_plane_n_host_val(plane_index,
+		REC_IDX(read_mpidr_el1()), HOST_ARG1_INDEX);
+	flags = (instruction == ISS_WFX_TI_WFI) ?
+		RSI_PLANE_ENTRY_FLAG_OWN_GIC : 0UL;
+
+	if (!plane_common_init(plane_index, perm_index, base, &run) ||
+	    !realm_plane_enter(plane_index, perm_index, flags, &run)) {
+		return false;
+	}
+
+	return realm_shared_data_get_plane_n_val(plane_index,
+		REC_IDX(read_mpidr_el1()), HOST_ARG1_INDEX) == 1UL;
+}
+
 static bool test_realm_plane_n_inst_fetch(void)
 {
 	u_register_t esr, hpfar, test_ipa;
@@ -1017,6 +1083,9 @@ void realm_payload_main(void)
 			break;
 		case REALM_PLANE_N_WFX_CMD:
 			test_succeed = test_realm_plane_n_wfx_cmd();
+			break;
+		case REALM_PLANE_N_WFX_NO_TRAP_CMD:
+			test_succeed = test_realm_plane_n_wfx_no_trap_cmd();
 			break;
 		default:
 			realm_printf("%s() invalid cmd %u\n", __func__, cmd);

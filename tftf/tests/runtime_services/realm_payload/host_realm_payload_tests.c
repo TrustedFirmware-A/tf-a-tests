@@ -67,6 +67,86 @@ static unsigned int tftf_get_timer_virq(void)
 		return EL1_VIRT_TIMER_IRQ;
 }
 
+static bool host_realm_check_wfx_exit(u_register_t ti,
+				      u_register_t trap_flag)
+{
+	u_register_t rec_flag[] = {RMI_RUNNABLE};
+	struct test_realm_params params = {0};
+	struct rmi_rec_run *run;
+	struct realm realm;
+	u_register_t exit_reason;
+	u_register_t timeout;
+	unsigned int host_call_result = TEST_RESULT_FAIL;
+	u_register_t ret;
+	bool timed = (ti == ISS_WFX_TI_WFIT) || (ti == ISS_WFX_TI_WFET);
+	bool success = false;
+
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
+		return false;
+	}
+
+	run = (struct rmi_rec_run *)realm.run[0];
+	/* WFxT takes an absolute counter value, so choose a future deadline. */
+	timeout = read_cntvct_el0() + read_cntfrq_el0();
+	run->entry.flags = trap_flag;
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U,
+		HOST_ARG1_INDEX, ti);
+	host_shared_data_set_host_val(&realm, PRIMARY_PLANE_ID, 0U,
+		HOST_ARG2_INDEX, timeout);
+	host_shared_data_set_realm_cmd(&realm, REALM_WFX_CMD,
+		PRIMARY_PLANE_ID, 0U);
+
+	ret = host_realm_rec_enter(&realm, &exit_reason, &host_call_result, 0U);
+	if ((ret != RMI_SUCCESS) || (exit_reason != RMI_EXIT_SYNC)) {
+		ERROR("WFx did not cause a synchronous REC exit: "
+		      "ret=0x%lx exit=0x%lx\n", ret, exit_reason);
+		goto destroy_realm;
+	}
+
+	if ((EC_BITS(run->exit.esr) != EC_WFE_WFI) ||
+	    (EXTRACT(ISS_WFX_TI, run->exit.esr) != ti) ||
+	    (((run->exit.esr & ISS_WFX_RV_BIT) != 0UL) != timed) ||
+	    (EXTRACT(ISS_WFX_RN, run->exit.esr) != 0UL) ||
+	    (timed && (run->exit.gprs[0] != timeout))) {
+		ERROR("Invalid WFx exit: ESR=0x%lx X0=0x%lx\n",
+		      run->exit.esr, run->exit.gprs[0]);
+		goto destroy_realm;
+	}
+
+	success = true;
+
+destroy_realm:
+	if (!host_destroy_realm(&realm)) {
+		return false;
+	}
+
+	return success;
+}
+
+/*
+ * @Test_Aim@ Verify that WFI/WFIT/WFET REC exits follow DEN0137 A4.3.4.1.
+ */
+test_result_t host_realm_wfx_exit(void)
+{
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+	SKIP_TEST_IF_WFXT_NOT_SUPPORTED();
+
+	if (!host_realm_check_wfx_exit(ISS_WFX_TI_WFI,
+				       REC_ENTRY_FLAG_TRAP_WFI) ||
+	    !host_realm_check_wfx_exit(ISS_WFX_TI_WFIT,
+				       REC_ENTRY_FLAG_TRAP_WFI) ||
+	    !host_realm_check_wfx_exit(ISS_WFX_TI_WFET,
+					REC_ENTRY_FLAG_TRAP_WFE)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
 /*
  * @Test_Aim@ Test RSI_PLANE_SYSREG_READ/WRITE
  */

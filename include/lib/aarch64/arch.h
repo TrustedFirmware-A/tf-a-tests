@@ -1280,6 +1280,18 @@
 #define ESR_EC_LENGTH			U(6)
 #define ESR_ISS_SHIFT			U(0x0)
 #define ESR_ISS_MASK			U(0x1ffffff)
+
+/* WFI/WFE trapped instruction ISS fields */
+#define ISS_WFX_TI_SHIFT		U(0)
+#define ISS_WFX_TI_WIDTH		U(2)
+#define ISS_WFX_TI_WFI			UL(0x0)
+#define ISS_WFX_TI_WFE			UL(0x1)
+#define ISS_WFX_TI_WFIT			UL(0x2)
+#define ISS_WFX_TI_WFET			UL(0x3)
+#define ISS_WFX_RV_BIT			(UL(1) << 2)
+#define ISS_WFX_RN_SHIFT		U(5)
+#define ISS_WFX_RN_WIDTH		U(5)
+
 #define EC_UNKNOWN			U(0x0)
 #define EC_WFE_WFI			U(0x1)
 #define EC_AARCH32_CP15_MRC_MCR		U(0x3)

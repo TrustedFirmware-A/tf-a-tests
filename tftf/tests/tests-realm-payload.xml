@@ -26,6 +26,8 @@
 	  function="host_test_realm_create_enter" />
 	  <testcase name="Realm WFI and timed WFx REC exits"
 	  function="host_realm_wfx_exit" />
+	  <testcase name="Realm auxiliary Plane WFI and timed WFx REC exits"
+	  function="host_realm_plane_n_wfx_exit" />
 	  <testcase name="Realm RTT fold unfold test Unassigned Empty"
 	  function="host_test_rtt_fold_unfold_unassigned_empty" />
 	  <testcase name="Realm RTT fold unfold test Unassigned RAM"

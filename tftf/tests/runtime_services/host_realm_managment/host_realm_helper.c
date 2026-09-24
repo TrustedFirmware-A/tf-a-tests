@@ -54,19 +54,6 @@ static u_register_t rmm_feat_reg0;
 static u_register_t rmm_feat_reg2;
 static u_register_t rmm_feat_reg3;
 
-bool host_realm_pool_init(void)
-{
-	int ret;
-
-	ret = page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE);
-	if (ret != HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return false;
-	}
-
-	return true;
-}
-
 /*
  * Ensure RMM is activated. Safe to call multiple times; activation happens
  * only once. Returns true on success, false on failure.
@@ -131,6 +118,11 @@ static test_result_t host_realm_testcase_setup(const test_suite_t *testsuite,
 		return TEST_RESULT_FAIL;
 	}
 
+	if (!host_realm_pool_testcase_begin()) {
+		ERROR("Failed to start Realm testcase pool lifecycle\n");
+		return TEST_RESULT_FAIL;
+	}
+
 	return TEST_RESULT_SUCCESS;
 }
 
@@ -140,7 +132,11 @@ static test_result_t host_realm_testcase_cleanup(const test_suite_t *testsuite,
 	(void)testsuite;
 	(void)testcase;
 
-	page_pool_reset();
+	if (!host_realm_pool_testcase_release()) {
+		ERROR("Failed to release Realm testcase pool\n");
+		return TEST_RESULT_FAIL;
+	}
+
 	return TEST_RESULT_SUCCESS;
 }
 

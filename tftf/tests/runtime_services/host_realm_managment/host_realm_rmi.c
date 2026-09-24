@@ -40,6 +40,20 @@ static bool rmi_cmp_result;
 static unsigned short vmid;
 static spinlock_t pool_lock;
 static unsigned int pool_counter;
+static bool pool_testcase_active;
+static bool pool_testcase_cleanup_pending;
+
+/*
+ * Fine tracking regions outside the Realm heap, including regions crossing
+ * PAGE_POOL_BASE or PAGE_POOL_END, need explicit testcase bookkeeping.
+ * Regions fully inside the heap are found automatically by the framework
+ * cleanup hook's pool scan and do not need entries here.
+ */
+#define MAX_TESTCASE_EXTERNAL_TRACKING_REGIONS	U(64)
+static u_register_t
+	testcase_external_tracking_regions[MAX_TESTCASE_EXTERNAL_TRACKING_REGIONS];
+static unsigned int testcase_external_tracking_region_count;
+static bool testcase_external_tracking_region_overflow;
 
 #define SRO_LIST_ENTRIES		(GRANULE_SIZE/sizeof(unsigned long))
 #define GRANULE_TRACKING_REGION_SIZE	(1UL << 30)
@@ -64,6 +78,93 @@ struct sro_donation_range {
 	u_register_t base;
 	u_register_t top;
 };
+
+bool host_realm_pool_init(void)
+{
+	int ret;
+
+	spin_lock(&pool_lock);
+	if (pool_testcase_cleanup_pending) {
+		spin_unlock(&pool_lock);
+		ERROR("Realm testcase pool cleanup is still pending\n");
+		return false;
+	}
+	if (pool_testcase_active) {
+		/* A later Realm must not rewind over other testcase objects. */
+		spin_unlock(&pool_lock);
+		return true;
+	}
+
+	ret = page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE);
+	spin_unlock(&pool_lock);
+	if (ret != HEAP_INIT_SUCCESS) {
+		ERROR("%s() failed\n", "page_pool_init");
+		return false;
+	}
+
+	return true;
+}
+
+bool host_realm_pool_testcase_begin(void)
+{
+	bool success = false;
+
+	spin_lock(&pool_lock);
+	if (!pool_testcase_active && !pool_testcase_cleanup_pending &&
+	    (pool_counter == 0U)) {
+		pool_testcase_active = true;
+		testcase_external_tracking_region_count = 0U;
+		testcase_external_tracking_region_overflow = false;
+		success = true;
+	}
+	spin_unlock(&pool_lock);
+
+	return success;
+}
+
+/*
+ * Record fine tracking regions not fully contained by the Realm heap.
+ * Their descriptors may use metadata pages donated from that heap, so they
+ * must be restored before the heap is reset for the next testcase.
+ * Returns false when there is no active testcase pool or the registry is full.
+ */
+static bool host_realm_pool_record_tracking_region(u_register_t base)
+{
+	const u_register_t region_size = GRANULE_TRACKING_REGION_SIZE;
+	unsigned int i;
+	bool managed = false;
+
+	spin_lock(&pool_lock);
+	if (!pool_testcase_active) {
+		goto out;
+	}
+
+	if ((base >= PAGE_POOL_BASE) &&
+	    ((base + region_size) <= PAGE_POOL_END)) {
+		managed = true;
+		goto out;
+	}
+
+	for (i = 0U; i < testcase_external_tracking_region_count; i++) {
+		if (testcase_external_tracking_regions[i] == base) {
+			managed = true;
+			goto out;
+		}
+	}
+
+	if (testcase_external_tracking_region_count >=
+	    MAX_TESTCASE_EXTERNAL_TRACKING_REGIONS) {
+		testcase_external_tracking_region_overflow = true;
+		goto out;
+	}
+
+	testcase_external_tracking_regions[
+		testcase_external_tracking_region_count++] = base;
+	managed = true;
+out:
+	spin_unlock(&pool_lock);
+	return managed;
+}
 
 /*
  * Return an IPA mask @level
@@ -1669,6 +1770,7 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 	int res = 0;
 	unsigned int i = 0U;
 	smc_ret_values rets;
+	u_register_t ret;
 	u_register_t category = RMI_MEM_CATEGORY_CONVENTIONAL;
 
 	/* Find out the type of memory the region belongs to */
@@ -1693,6 +1795,7 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 
 	rets = host_rmi_handler(&(smc_args) {SMC_RMI_GRANULE_TRACKING_SET,
 				base, category, tracking, (u_register_t)&rets}, 5U);
+	ret = rets.ret0;
 
 	if (RMI_RETURN_STATUS(rets.ret0) == RMI_INCOMPLETE) {
 		unsigned long tracking_handle = rets.ret1;
@@ -1702,22 +1805,211 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 			.top = base
 		};
 
-		u_register_t ret;
-
 		if (category == RMI_MEM_CATEGORY_CONVENTIONAL) {
 			donation_range.top += GRANULE_TRACKING_REGION_SIZE;
 		}
 		ret = host_realm_sro_continue_with_donation_range(rets.ret0,
 				&tracking_handle, &donate_req, NULL, &donation_range);
-		if (ret == RMI_SUCCESS) {
-			/* Fine-tracking descriptors remain owned by the RMM. */
-			page_pool_reserve();
-		}
-
-		return ret;
 	}
 
-	return rets.ret0;
+	if ((ret == RMI_SUCCESS) && (tracking == RMI_TRACKING_FINE) &&
+	    !host_realm_pool_record_tracking_region(base)) {
+		/*
+		 * No testcase cleanup owns this transition. Keep any metadata
+		 * donated from the page pool out of subsequent allocations.
+		 */
+		page_pool_reserve();
+	}
+
+	return ret;
+}
+
+static bool host_realm_restore_tracking_region(u_register_t base,
+					       bool report_errors)
+{
+	const u_register_t region_size = GRANULE_TRACKING_REGION_SIZE;
+	const u_register_t region_top = base + region_size;
+	u_register_t cursor = base;
+	u_register_t category;
+	u_register_t out_top;
+	u_register_t state;
+	u_register_t target = RMI_TRACKING_COARSE;
+	u_register_t ret;
+	bool fine = false;
+
+	/*
+	 * A diverse tracking region is reported as multiple category/state
+	 * segments. Such a region starts in NONE because a single coarse
+	 * descriptor cannot represent holes or mixed memory categories, so restore
+	 * it to NONE rather than COARSE after its fine descriptors are released.
+	 */
+	while (cursor < region_top) {
+		ret = host_rmi_granule_tracking_get(cursor, region_top,
+						    &state, &category, &out_top);
+		if ((ret != RMI_SUCCESS) || (out_top <= cursor) ||
+		    (out_top > region_top)) {
+			if (report_errors) {
+				ERROR("Failed to get tracking state for 0x%lx, ret=0x%lx out_top=0x%lx\n",
+				      cursor, ret, out_top);
+			}
+			return false;
+		}
+
+		if ((cursor != base) || (out_top != region_top)) {
+			target = RMI_TRACKING_NONE;
+		}
+		if (state == RMI_TRACKING_FINE) {
+			fine = true;
+		}
+		cursor = out_top;
+	}
+
+	if (!fine) {
+		return true;
+	}
+
+	ret = host_rmi_granule_tracking_set(base, target);
+	if ((ret != RMI_SUCCESS) && report_errors) {
+		ERROR("Failed to restore tracking for 0x%lx to 0x%lx, ret=0x%lx\n",
+		      base, target, ret);
+	}
+
+	return ret == RMI_SUCCESS;
+}
+
+/*
+ * Scan the known Realm heap range (PAGE_POOL_BASE..PAGE_POOL_END) to restore
+ * every intersecting fine tracking region to its initial state. The framework
+ * cleanup hook runs this automatically, so heap-contained regions need no
+ * registry entry. The caller must ensure that no Realm remains, so all ordinary
+ * Granules in these regions have returned to NS state.
+ */
+static bool host_realm_restore_pool_tracking(bool report_errors)
+{
+	const u_register_t region_size = GRANULE_TRACKING_REGION_SIZE;
+	const u_register_t pool_top = round_up(PAGE_POOL_END, region_size);
+	u_register_t base = ALIGN_DOWN(PAGE_POOL_BASE, region_size);
+	bool success = true;
+
+	while (base < pool_top) {
+		if (!host_realm_restore_tracking_region(base, report_errors)) {
+			success = false;
+		}
+
+		base += region_size;
+	}
+
+	return success;
+}
+
+/*
+ * Called by the framework's Realm testcase cleanup hook after test resources
+ * have been released. Restore registered external and boundary regions first,
+ * then scan the heap to reclaim tracking metadata before resetting it.
+ */
+bool host_realm_pool_testcase_release(void)
+{
+	unsigned int region_count;
+	unsigned int users;
+	unsigned int i;
+	bool overflow;
+	bool success = true;
+
+	spin_lock(&pool_lock);
+	if (!pool_testcase_active && !pool_testcase_cleanup_pending) {
+		spin_unlock(&pool_lock);
+		return true;
+	}
+
+	pool_testcase_active = false;
+	pool_testcase_cleanup_pending = true;
+	region_count = testcase_external_tracking_region_count;
+	overflow = testcase_external_tracking_region_overflow;
+	users = pool_counter;
+	spin_unlock(&pool_lock);
+
+	if (users != 0U) {
+		ERROR("Cannot release testcase pool with %u Realm user(s)\n",
+		      users);
+		success = false;
+	} else {
+		/*
+		 * Restore external and boundary regions in reverse completion order.
+		 * Their tracking metadata can own pages in the Realm pool and prevent
+		 * pool regions from becoming coarse. Nested transitions complete
+		 * before their parent, so they must be unwound as a stack.
+		 */
+		for (i = region_count; i > 0U; i--) {
+			u_register_t base =
+				testcase_external_tracking_regions[i - 1U];
+
+			if (!host_realm_restore_tracking_region(base, true)) {
+				success = false;
+			}
+		}
+
+		if (!host_realm_restore_pool_tracking(true)) {
+			success = false;
+		}
+	}
+
+	if (overflow) {
+		ERROR("Testcase external tracking-region registry exhausted\n");
+		success = false;
+	}
+
+	if (!success) {
+		/* Retain the registry and cursor; initialization cannot reset them. */
+		return false;
+	}
+
+	spin_lock(&pool_lock);
+	testcase_external_tracking_region_count = 0U;
+	testcase_external_tracking_region_overflow = false;
+	pool_testcase_cleanup_pending = false;
+	spin_unlock(&pool_lock);
+
+	page_pool_reset();
+	return true;
+}
+
+/* Release one Realm pool user and reset the pool after the last Realm. */
+static bool host_realm_pool_release(void)
+{
+	bool last_user;
+	bool testcase_active;
+	bool cleanup_pending;
+
+	spin_lock(&pool_lock);
+	assert(pool_counter != 0U);
+	pool_counter--;
+	last_user = (pool_counter == 0U);
+	testcase_active = pool_testcase_active;
+	cleanup_pending = pool_testcase_cleanup_pending;
+	spin_unlock(&pool_lock);
+
+	if (!last_user || cleanup_pending) {
+		return true;
+	}
+
+	if (!host_realm_restore_pool_tracking(!testcase_active)) {
+		/*
+		 * Another RMM object in this testcase may still own a Granule in
+		 * the pool. The testcase cleanup retries after all objects have
+		 * been released.
+		 */
+		if (testcase_active) {
+			return true;
+		}
+
+		/* Do not allow a subsequent pool reset to reuse RMM-owned pages. */
+		page_pool_reserve();
+		return false;
+	}
+
+	INFO("Reset pool\n");
+	page_pool_reset();
+	return true;
 }
 
 u_register_t host_rmi_granule_delegate(u_register_t addr)
@@ -1972,14 +2264,8 @@ err_free_par:
 
 pool_reset:
 	/* Free test resources */
-	spin_lock(&pool_lock);
-	pool_counter--;
-	count = pool_counter;
-	spin_unlock(&pool_lock);
-
-	if (count == 0U) {
-		INFO("Reset pool\n");
-		page_pool_reset();
+	if (!host_realm_pool_release()) {
+		ERROR("Failed to clean up Realm pool tracking\n");
 	}
 
 	return REALM_ERROR;
@@ -2376,9 +2662,10 @@ u_register_t host_realm_destroy(struct realm *realm)
 
 
 	/* Free test resources */
-	spin_lock(&pool_lock);
-	pool_counter--;
-	spin_unlock(&pool_lock);
+	if (!host_realm_pool_release()) {
+		ERROR("Failed to clean up Realm pool tracking\n");
+		return REALM_ERROR;
+	}
 
 	return REALM_SUCCESS;
 }

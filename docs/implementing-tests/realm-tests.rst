@@ -62,8 +62,12 @@ Cleanup and a test-controlled restart
 and then deactivates the RMM. The known Realm heap range is scanned
 automatically. Fine tracking regions outside the heap, including regions
 crossing its boundaries, are recorded explicitly and restored first.
-The heap is reset only after its tracking metadata has been reclaimed;
-pages still owned by the RMM remain reserved if cleanup fails.
+The heap is reset only after its tracking metadata has been reclaimed.
+Reinitialising the pool during an active testcase preserves its allocation
+cursor, including when another RMM object prevents cleanup after the last
+Realm is destroyed. Failed testcase cleanup retains the registry and cursor
+for a retry and blocks pool reinitialisation and a new pool lifecycle until
+reclamation succeeds.
 
 A test that does not need the default active RMM, or that needs a
 different configuration, can perform the same cleanup sequence at the

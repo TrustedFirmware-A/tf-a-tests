@@ -2021,6 +2021,8 @@ u_register_t host_rmi_psci_complete(u_register_t calling_rec, unsigned long stat
 void host_rmi_init_cmp_result(void);
 bool host_rmi_get_cmp_result(void);
 u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t tracking);
+bool host_realm_pool_testcase_begin(void);
+bool host_realm_pool_testcase_release(void);
 
 /* Realm management */
 u_register_t host_realm_create(struct realm *realm);

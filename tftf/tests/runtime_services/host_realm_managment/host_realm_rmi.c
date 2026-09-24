@@ -41,10 +41,23 @@ static unsigned short vmid;
 static spinlock_t pool_lock;
 static unsigned int pool_counter;
 
-static unsigned long list_buffer[PLATFORM_CORE_COUNT][PAGE_SIZE] __aligned(GRANULE_SIZE);
-
 #define SRO_LIST_ENTRIES		(GRANULE_SIZE/sizeof(unsigned long))
 #define GRANULE_TRACKING_REGION_SIZE	(1UL << 30)
+#define SRO_MAX_NESTING			U(4)
+
+/*
+ * For example, an SRO donation can nest on the same CPU:
+ *   donate_mem() -> host_rmi_granule_delegate()
+ *     -> RMI_ERROR_TRACKING -> host_rmi_granule_tracking_set()
+ *       -> RMI_INCOMPLETE -> donate_mem() for tracking metadata.
+ * The inner donation must complete before delegation can be retried and the
+ * outer donation submitted. Give each nesting level its own list so building
+ * the inner list cannot overwrite descriptors already prepared by the outer
+ * operation.
+ */
+static unsigned long list_buffer[PLATFORM_CORE_COUNT][SRO_MAX_NESTING]
+				[SRO_LIST_ENTRIES] __aligned(GRANULE_SIZE);
+static unsigned int sro_nesting[PLATFORM_CORE_COUNT];
 
 /* Address range whose pages are self-describing for a conditional donation. */
 struct sro_donation_range {
@@ -210,12 +223,13 @@ static inline u_register_t host_rmi_op_continue(u_register_t flags,
 }
 
 /* Only 4K Granularity is supported */
-static inline u_register_t reclaim_mem(u_register_t handle)
+static inline u_register_t reclaim_mem(u_register_t handle,
+				       unsigned long *list_addr)
 {
 	unsigned long reclaim_count;
 	u_register_t retval =
 		host_rmi_op_reclaim(handle,
-				(u_register_t)list_buffer[platform_get_core_pos(read_mpidr_el1())],
+				(u_register_t)list_addr,
 				SRO_LIST_ENTRIES,
 				&reclaim_count);
 
@@ -227,7 +241,7 @@ static inline u_register_t reclaim_mem(u_register_t handle)
 
 	/* Iterate over the RMI Address List and free the memory */
 	for (unsigned long i = 0UL; i < reclaim_count; i++) {
-		unsigned long entry = list_buffer[platform_get_core_pos(read_mpidr_el1())][i];
+		unsigned long entry = list_addr[i];
 		unsigned long n_blocks = EXTRACT(RMI_ADDR_RDESC_4K_CNT, entry);
 		unsigned long size = XLAT_BLOCK_SIZE(XLAT_TABLE_LEVEL_MAX -
 					    EXTRACT(RMI_ADDR_RDESC_4K_SZ, entry));
@@ -263,7 +277,8 @@ static inline u_register_t reclaim_mem(u_register_t handle)
  * At the moment, only 4KB Granularity size is supported.
  */
 static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_req,
-				      const struct sro_donation_range *donation_range)
+				      const struct sro_donation_range *donation_range,
+				      unsigned long *sro_list)
 {
 	u_register_t size = XLAT_BLOCK_SIZE(XLAT_TABLE_LEVEL_MAX -
 					    EXTRACT(RMI_ADDR_BLK_SIZE, *donate_req));
@@ -296,7 +311,7 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
 
 	alignment = allocation_size;
 	delegation_per_entry = allocation_size / GRANULE_SIZE;
-	list_addr = &list_buffer[platform_get_core_pos(read_mpidr_el1())][LIST_START_OFFSET];
+	list_addr = &sro_list[LIST_START_OFFSET];
 
 	/*
 	 * For simplicity, the list will not cross granules, so ensure we do
@@ -397,9 +412,22 @@ static u_register_t host_realm_sro_continue_with_donation_range(
 {
 	u_register_t cmd_status;
 	u_register_t ret_status;
+	unsigned int core_pos;
+	unsigned int nesting;
+	unsigned long *sro_list;
 
 	assert(op_handle != NULL);
 	assert(donate_req != NULL);
+
+	/*
+	 * Claim this CPU's next list before processing requests: delegating
+	 * donation pages can re-enter this helper for a tracking SRO.
+	 */
+	core_pos = platform_get_core_pos(read_mpidr_el1());
+	nesting = sro_nesting[core_pos];
+	assert(nesting < SRO_MAX_NESTING);
+	sro_nesting[core_pos]++;
+	sro_list = list_buffer[core_pos][nesting];
 
 	ret_status = status;
 	cmd_status = RMI_RETURN_STATUS(ret_status);
@@ -416,9 +444,11 @@ static u_register_t host_realm_sro_continue_with_donation_range(
 				if (mem_req != RMI_OP_MEM_REQ_NONE) {
 					if (mem_req == RMI_OP_MEM_REQ_DONATE) {
 						ret_status = donate_mem(*op_handle, donate_req,
-									donation_range);
+									donation_range,
+									sro_list);
 					} else if (mem_req == RMI_OP_MEM_REQ_RECLAIM) {
-						ret_status = reclaim_mem(*op_handle);
+						ret_status = reclaim_mem(*op_handle,
+									sro_list);
 					}
 
 					cmd_status = RMI_RETURN_STATUS(ret_status);
@@ -449,6 +479,7 @@ static u_register_t host_realm_sro_continue_with_donation_range(
 		cmd_status = RMI_RETURN_STATUS(ret_status);
 	}
 
+	sro_nesting[core_pos]--;
 	return cmd_status;
 }
 

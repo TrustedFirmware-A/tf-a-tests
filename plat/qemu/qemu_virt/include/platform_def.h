@@ -115,8 +115,6 @@
 /*
  * FIXME: Dummy definitions that we need just to compile...
  */
-#define ARM_SECURE_SERVICE_BUFFER_BASE	0
-#define ARM_SECURE_SERVICE_BUFFER_SIZE	100
 #define SYS_CNT_BASE1			0
 #define IRQ_TWDOG_INTID			56
 

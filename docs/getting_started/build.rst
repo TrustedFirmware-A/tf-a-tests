@@ -33,7 +33,7 @@ Building TF-A Tests
 
 -  Currently, the following TF-A Tests targets are supported for clang build:
 
-   ``tftf, ivy, realm, cactus, cactus_mm, ns_bl1u``
+   ``tftf, ivy, realm, cactus, ns_bl1u``
 
 -  Change to the root directory of the TF-A Tests source tree and build.
 
@@ -67,7 +67,6 @@ Building TF-A Tests
       -  ``build/<platform>/<build-type>/ns_bl1u.bin``
       -  ``build/<platform>/<build-type>/ns_bl2u.bin``
       -  ``build/<platform>/<build-type>/el3_payload.bin``
-      -  ``build/<platform>/<build-type>/cactus_mm.bin``
       -  ``build/<platform>/<build-type>/cactus.bin``
       -  ``build/<platform>/<build-type>/ivy.bin``
 
@@ -240,10 +239,9 @@ about its behaviour and how to build and run it.
 SPM test images
 ```````````````
 
-This repository contains three sample Secure Partitions (SP) meant to be used
+This repository contains two sample Secure Partitions (SP) meant to be used
 with one implementation of a Secure Partition Manager (SPM):
 
-- Cactus-MM
 - Cactus and Ivy
 
 They are only supported on AArch64 FVP. They can be built independently of the
@@ -251,44 +249,12 @@ other test images using the following command:
 
 ::
 
-   make PLAT=fvp cactus ivy cactus_mm
+   make PLAT=fvp cactus ivy
 
 To run the full set of tests in the Secure Partitions, they should be used in
 conjunction with the TFTF image.
 
 Please refer to the `TF-A documentation`_ for further details.
-
-Cactus-MM
-'''''''''
-
-Cactus-MM is designed to test the TF-A EL3 SPM implementation
-(`TF-A Secure Partition Manager (MM)`_) based on the
-`Arm Management Mode Interface`_ (MM)
-
-This SP runs in Secure-EL0 and performs the following tasks:
-
--  Test that TF-A has correctly setup the secure partition environment: it
-   should be allowed to perform cache maintenance operations, access floating
-   point registers, etc.
-
--  Test that TF-A accepts to change data access permissions and instruction
-   permissions on behalf of the Secure Partition for memory regions the latter
-   owns.
-
--  Test communication with SPM through MM interface.
-
-In the TF-A boot flow, the partition replaces the ``BL32`` image and should be
-injected in the FIP image. To test SPM-MM with Cactus-MM, it is enough to use
-``cactus_mm.bin`` as BL32 image.
-
-For SPM-MM, build TF-A following `Building TF-A Secure Partition Manager (MM)`_ and the following
-commands can be used to build the tests:
-
-::
-
-    # TF-A-Tests repository:
-
-    make PLAT=fvp TESTS=spm-mm tftf cactus_mm
 
 Cactus and Ivy
 ''''''''''''''

@@ -131,9 +131,7 @@ include fwu/ns_bl2u/ns_bl2u.mk
 # List of secure partitions present.
 SECURE_PARTITIONS	:=
 
-# Only platform fvp and rdv3 supports cactus_mm
 ifeq (${ARCH}-${PLAT},$(filter ${ARCH}-${PLAT},aarch64-fvp aarch64-rdv3))
-include spm/cactus_mm/cactus_mm.mk
 include realm/realm.mk
 endif
 
@@ -304,7 +302,6 @@ ifeq (${ARCH},aarch64)
 TFTF_CFLAGS		+= -mbranch-protection=standard
 NS_BL1U_CFLAGS		+= -mbranch-protection=standard
 NS_BL2U_CFLAGS		+= -mbranch-protection=standard
-CACTUS_MM_CFLAGS	+= -mbranch-protection=standard
 CACTUS_CFLAGS		+= -mbranch-protection=standard
 IVY_CFLAGS		+= -mbranch-protection=standard
 REALM_CFLAGS		+= -mbranch-protection=standard
@@ -333,12 +330,6 @@ NS_BL2U_INCLUDES	+= ${PLAT_INCLUDES}
 NS_BL2U_CFLAGS		+= ${COMMON_CFLAGS}
 NS_BL2U_ASFLAGS		+= ${COMMON_ASFLAGS}
 NS_BL2U_LDFLAGS		+= ${COMMON_LDFLAGS}
-
-CACTUS_MM_SOURCES	+= ${LIBC_SRCS}
-CACTUS_MM_INCLUDES	+= ${PLAT_INCLUDES}
-CACTUS_MM_CFLAGS	+= ${COMMON_CFLAGS}
-CACTUS_MM_ASFLAGS	+= ${COMMON_ASFLAGS}
-CACTUS_MM_LDFLAGS	+= ${COMMON_LDFLAGS}
 
 CACTUS_SOURCES		+= ${LIBC_SRCS}
 CACTUS_INCLUDES		+= ${CACTUS_PLAT_INCLUDES} ${PLAT_INCLUDES}
@@ -424,11 +415,6 @@ ns_bl1u ns_bl2u:
 endif
 
 ifneq (${ARCH}-${PLAT},$(filter ${ARCH}-${PLAT},aarch64-fvp aarch64-rdv3))
-.PHONY: cactus_mm
-cactus_mm:
-	@echo "ERROR: $@ is supported only on AArch64 FVP."
-	@exit 1
-
 .PHONY: realm
 realm:
 	@echo "ERROR: $@ is supported only on AArch64 FVP and RD-V3."
@@ -586,7 +572,6 @@ ifeq ($(FIRMWARE_UPDATE), 1)
 endif
 
 ifeq (${ARCH}-${PLAT},aarch64-fvp)
-  $(eval $(call MAKE_IMG,cactus_mm))
   $(eval $(call MAKE_IMG,cactus))
   $(eval $(call MAKE_IMG,ivy))
 endif
@@ -660,7 +645,6 @@ help:
 	echo "  ns_bl1u        Build the NS_BL1U image"
 	echo "  ns_bl2u        Build the NS_BL2U image"
 	echo "  cactus         Build the Cactus image (FF-A S-EL1 test payload)."
-	echo "  cactus_mm      Build the Cactus-MM image (SPM-MM S-EL0 test payload)."
 	echo "  ivy            Build the Ivy image (FF-A S-EL0 test payload)."
 	echo "  el3_payload    Build the EL3 test payload"
 	echo "  checkcodebase  Check the coding style of the entire source tree"

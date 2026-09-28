@@ -99,7 +99,5 @@
 /*
  * Dummy definitions that we need just to compile...
  */
-#define ARM_SECURE_SERVICE_BUFFER_BASE	0
-#define ARM_SECURE_SERVICE_BUFFER_SIZE	100
 
 #endif /* PLATFORM_DEF_H */

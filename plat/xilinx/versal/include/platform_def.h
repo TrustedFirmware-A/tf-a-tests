@@ -107,8 +107,6 @@
 /*
  * Dummy definitions that we need just to compile...
  */
-#define ARM_SECURE_SERVICE_BUFFER_BASE		U(0)
-#define ARM_SECURE_SERVICE_BUFFER_SIZE		U(100)
 
 /* LPD_SWDT_INT, AM011(v1.5), Chapter 50, Page 428 */
 #define IRQ_TWDOG_INTID				U(0x51)

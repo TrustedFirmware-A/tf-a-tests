@@ -6,6 +6,7 @@
 
 TESTS_SOURCES	+=						\
 	$(addprefix tftf/tests/runtime_services/firme_service/,	\
+		test_firme_attestation.c			\
 		test_firme_service.c				\
 		test_firme_ide_km.c				\
 	)

@@ -68,7 +68,7 @@ int page_pool_init(uint64_t heap_base, uint64_t heap_len)
 void *page_alloc(u_register_t bytes_size)
 {
 	if (heap_initialised != HEAP_INIT_SUCCESS) {
-		ERROR("heap need to be initialised first\n");
+		ERROR("heap needs to be initialised first\n");
 		return HEAP_NULL_PTR;
 	}
 	if (bytes_size == 0UL) {
@@ -109,7 +109,7 @@ void *page_alloc_aligned(u_register_t bytes_size, u_register_t alignment)
 	u_register_t total_bytes_size;
 
 	if (heap_initialised != HEAP_INIT_SUCCESS) {
-		ERROR("heap need to be initialised first\n");
+		ERROR("heap needs to be initialised first\n");
 		return HEAP_NULL_PTR;
 	}
 

@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <stdint.h>
+
 #include <arch_features.h>
 #include <arch_helpers.h>
 #include <debug.h>
@@ -114,7 +116,7 @@ test_result_t test_firme_granule_mgmt_version(void)
 test_result_t test_firme_base_features(void)
 {
 	uint64_t feat_reg = 0xDEADBEEFDEADBEEF;
-	uint64_t feat_reg_0_expected = 0x3;
+	uint64_t min_sh_buf_sz;
 	int32_t res;
 
 	tftf_testcase_printf("Checking base service feature register...\n");
@@ -128,11 +130,20 @@ test_result_t test_firme_base_features(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	/* Check feature reg against expected value. */
-	if (feat_reg != feat_reg_0_expected) {
+	res = firme_features(FIRME_BASE_SERVICE_ID, 1, &feat_reg);
+	if (res != FIRME_SUCCESS) {
+		tftf_testcase_printf("Error: SMC call returned %d\n", res);
+		return TEST_RESULT_FAIL;
+	}
+
+	min_sh_buf_sz = (feat_reg >> FIRME_BASE_MIN_SH_BUF_SZ_SHIFT) &
+			FIRME_BASE_MIN_SH_BUF_SZ_MASK;
+	if ((min_sh_buf_sz != FIRME_BASE_MIN_SH_BUF_SZ_4KB) &&
+	    (min_sh_buf_sz != FIRME_BASE_MIN_SH_BUF_SZ_16KB) &&
+	    (min_sh_buf_sz != FIRME_BASE_MIN_SH_BUF_SZ_64KB)) {
 		tftf_testcase_printf(
-			"Error: received reg 0x%llx, expected 0x%llx\n",
-			feat_reg, feat_reg_0_expected);
+			"Error: invalid MIN_SH_BUF_SZ encoding 0x%llx\n",
+			min_sh_buf_sz);
 		return TEST_RESULT_FAIL;
 	}
 

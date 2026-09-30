@@ -455,6 +455,50 @@ static bool test_realm_data_access_cmd(void)
 	return false;
 }
 
+static bool test_realm_data_pair_access_cmd(void)
+{
+	u_register_t base, new_top;
+	rsi_ripas_type ripas;
+
+	base = realm_shared_data_get_my_host_val(HOST_ARG3_INDEX);
+	rsi_ipa_state_get(base, base + PAGE_SIZE, &new_top, &ripas);
+	realm_printf("Initial ripas=%u\n", ripas);
+
+	/* Causes data abort */
+	realm_printf("Generate Data Pair Access Abort base=0x%lx\n", base);
+	__asm__ volatile("ldp x0, x1, [%0]\n"
+			 :
+			 : "r" (base)
+			 : "x0", "x1", "memory");
+
+	/* An expected data abort did not happen */
+	ERROR("Expected data abort did not happen\n");
+	return false;
+}
+
+static bool test_realm_data_pair_store_cmd(void)
+{
+	u_register_t base, new_top;
+	rsi_ripas_type ripas;
+
+	base = realm_shared_data_get_my_host_val(HOST_ARG3_INDEX);
+	rsi_ipa_state_get(base, base + PAGE_SIZE, &new_top, &ripas);
+	realm_printf("Initial ripas=%u\n", ripas);
+
+	/* Causes data abort */
+	realm_printf("Generate Data Pair Store Abort base=0x%lx\n", base);
+	__asm__ volatile("mov x0, xzr\n"
+			 "mov x1, xzr\n"
+			 "stp x0, x1, [%0]\n"
+			 :
+			 : "r" (base)
+			 : "x0", "x1", "memory");
+
+	/* An expected data abort did not happen */
+	ERROR("Expected data abort did not happen\n");
+	return false;
+}
+
 static bool test_realm_plane_n_inst_fetch(void)
 {
 	u_register_t esr, hpfar, test_ipa;
@@ -771,6 +815,12 @@ void realm_payload_main(void)
 			break;
 		case REALM_DATA_ACCESS_CMD:
 			test_succeed = test_realm_data_access_cmd();
+			break;
+		case REALM_DATA_PAIR_ACCESS_CMD:
+			test_succeed = test_realm_data_pair_access_cmd();
+			break;
+		case REALM_DATA_PAIR_STORE_CMD:
+			test_succeed = test_realm_data_pair_store_cmd();
 			break;
 		case REALM_PLANE_N_EXCEPTION_CMD:
 			test_succeed = test_plane_exception_cmd();

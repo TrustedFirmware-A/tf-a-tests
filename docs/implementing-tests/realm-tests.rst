@@ -38,28 +38,46 @@ Basic setup and RMM activation
 
 1. Check RME support, reset the RMI register-comparison result, and
    probe RMI version. Tests retain their own feature and skip checks.
-2. Initialise the host Realm heap used for test allocations and memory
+2. Retry any previous pool cleanup and deactivate the previous RMM
+   lifecycle. Stop if it still owns resources; do not change tracking
+   size or reset its allocation cursor.
+3. Initialise the host Realm heap used for test allocations and memory
    donated to the RMM.
-3. Select the tracking size, configure the RMM with 4 KB granules,
-   and activate it if it is inactive. The common setup selects either
-   1 GB or 2 MB tracking regions for each testcase.
-4. Begin the testcase pool lifecycle so tracking metadata can be
+4. Select the tracking size, configure the RMM with 4 KB granules,
+   and activate it. The common setup selects either 1 GB or 2 MB
+   tracking regions for each testcase.
+5. Begin the testcase pool lifecycle so tracking metadata can be
    reclaimed at cleanup.
 
 If RME or the RMI interface is unavailable, setup leaves the testcase to
 perform its usual skip checks. The Test Realm Payload (TRP), which
 reports RMI version zero, does not use the RMM activation path.
+Both hooks reuse ``SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP()`` through
+an availability check. Its skip result makes the hooks return success
+without RMM lifecycle operations, leaving each test's own checks to
+determine its skip or TRP result.
+
+The RMM used with this lifecycle must implement ``RMI_RMM_STATE_GET``,
+``RMI_RMM_CONFIG_GET``, ``RMI_RMM_CONFIG_SET``, ``RMI_RMM_ACTIVATE``, and
+``RMI_RMM_DEACTIVATE``, and support both tracking sizes with 4 KB granules.
+Setup fails if the required lifecycle commands are unavailable.
 
 The setup hook prepares the host environment; the test still creates
 and destroys its own Realms, RECs, mappings, and device objects.
 ``host_rmm_activate()`` checks the RMM state and returns successfully if
-it is already active.
+it is already active with the selected configuration. An active RMM with
+a different configuration is rejected without changing the host helpers.
+
+The common setup uses ``rand()`` to choose the layout before each testcase.
+At ``LOG_LEVEL=40`` or higher, it logs the testcase name, selected size,
+and configuration request/result.
 
 Cleanup and a test-controlled restart
 -------------------------------------
 
 ``host_realm_testcase_cleanup()`` reclaims testcase tracking metadata
-and then deactivates the RMM. The known Realm heap range is scanned
+and then deactivates the RMM only after reclamation succeeds. The known
+Realm heap range is scanned
 automatically. Fine tracking regions outside the heap, including regions
 crossing its boundaries, are recorded explicitly and restored first.
 The heap is reset only after its tracking metadata has been reclaimed.
@@ -80,17 +98,42 @@ lifecycle helpers rather than calling the callbacks directly:
 2. Call ``host_realm_pool_testcase_release()`` to reclaim tracking
    metadata, then ``host_rmm_deactivate()`` to return the RMM to its
    inactive state. Stop and report failure if either operation fails.
-3. Run the test's inactive-state checks or configure and activate the
-   RMM through its own RMI sequence. Before an activation that can
-   donate memory, initialise the heap with ``host_realm_pool_init()``.
-   To reuse the default configuration, call ``host_rmm_activate()``.
+3. Run the test's inactive-state checks. To restart, initialise the heap
+   with ``host_realm_pool_init()`` and call
+   ``host_rmm_activate_with_tracking_size()`` with either
+   ``RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB`` or
+   ``RMI_GRAN_4KB_TRACKING_REGION_SIZE_2MB``. This helper configures and
+   activates the RMM and updates the host tracking helpers only on
+   success. To reuse the last selected size, call ``host_rmm_activate()``.
 4. After activation succeeds, call ``host_realm_pool_testcase_begin()``
    before creating objects or fine tracking regions for the new
    lifecycle. Check every return value and release the test's objects
    before leaving its body.
 
-Any test-selected tracking layout must agree with the region size used
-by the host tracking helpers.
+For example, a test can restart with 2 MB tracking before creating its
+objects:
+
+.. code:: c
+
+   #include <host_realm_helper.h>
+   #include <host_realm_rmi.h>
+   #include <tftf.h>
+
+   test_result_t test_realm_with_2mb_tracking(void)
+   {
+       if (!host_realm_pool_testcase_release() || !host_rmm_deactivate()) {
+           return TEST_RESULT_FAIL;
+       }
+       if (!host_realm_pool_init() ||
+           !host_rmm_activate_with_tracking_size(
+               RMI_GRAN_4KB_TRACKING_REGION_SIZE_2MB) ||
+           !host_realm_pool_testcase_begin()) {
+           return TEST_RESULT_FAIL;
+       }
+
+       /* Create, exercise, and destroy the test's RMM objects here. */
+       return TEST_RESULT_SUCCESS;
+   }
 
 Framework cleanup still runs when the test returns. Releasing an
 inactive testcase pool or deactivating an already inactive RMM succeeds,

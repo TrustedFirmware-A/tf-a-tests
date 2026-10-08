@@ -56,7 +56,6 @@ static unsigned int testcase_external_tracking_region_count;
 static bool testcase_external_tracking_region_overflow;
 
 #define SRO_LIST_ENTRIES		(GRANULE_SIZE/sizeof(unsigned long))
-#define GRANULE_TRACKING_REGION_SIZE	(1UL << 30)
 #define SRO_MAX_NESTING			U(4)
 
 /*
@@ -130,7 +129,7 @@ bool host_realm_pool_testcase_begin(void)
  */
 static bool host_realm_pool_record_tracking_region(u_register_t base)
 {
-	const u_register_t region_size = GRANULE_TRACKING_REGION_SIZE;
+	const u_register_t region_size = host_rmm_get_tracking_region_size();
 	unsigned int i;
 	bool managed = false;
 
@@ -1707,20 +1706,16 @@ static u_register_t host_rmi_granule_delegate_range(u_register_t base,
 		if (RMI_RETURN_STATUS(err_code) == RMI_ERROR_TRACKING) {
 			assert(top != res_top);
 
-			/*
-			 * @TODO: For now, assume 1GB granule tracking size.
-			 * Later, we need to query RMM for the granule tracking
-			 * size and align the res_top accordingly.
-			 */
 			INFO("Setting fine tracking for 0x%lx. Range starts from 0x%llx\n",
-			     res_top, ALIGN_DOWN(res_top, GRANULE_TRACKING_REGION_SIZE));
+			     res_top, ALIGN_DOWN(res_top,
+						 host_rmm_get_tracking_region_size()));
 
 			/*
 			 * Invoke RMI_GRANULE_TRACKING_SET to set fine tracking
 			 * and retry delegation. Align the base to tracking granule size
 			 */
 			err_code = host_rmi_granule_tracking_set(ALIGN_DOWN(res_top,
-								     GRANULE_TRACKING_REGION_SIZE),
+								     host_rmm_get_tracking_region_size()),
 								 RMI_TRACKING_FINE);
 
 			if (err_code == RMI_SUCCESS) {
@@ -1757,8 +1752,8 @@ static u_register_t host_rmi_granule_undelegate_range(u_register_t base,
 	 * undelegated.  Single-granule callers cannot meet that condition and
 	 * would otherwise generate one expected RMI_ERROR_INPUT per page.
 	 */
-	if (IS_ALIGNED(base, GRANULE_TRACKING_REGION_SIZE) &&
-	    ((top - base) == GRANULE_TRACKING_REGION_SIZE)) {
+	if (IS_ALIGNED(base, host_rmm_get_tracking_region_size()) &&
+	    ((top - base) == host_rmm_get_tracking_region_size())) {
 		(void)host_rmi_granule_tracking_set(base, RMI_TRACKING_COARSE);
 	}
 
@@ -1786,7 +1781,7 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 		 * and check if the base falls within the region.
 		 */
 		if ((res == 0) && ((base >= ALIGN_DOWN(mem_region,
-								     GRANULE_TRACKING_REGION_SIZE)) &&
+								     host_rmm_get_tracking_region_size())) &&
 				   (base < (mem_region + mem_region_size)))) {
 			category = RMI_MEM_CATEGORY_DEV_NCOH;
 			break;
@@ -1806,7 +1801,7 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 		};
 
 		if (category == RMI_MEM_CATEGORY_CONVENTIONAL) {
-			donation_range.top += GRANULE_TRACKING_REGION_SIZE;
+			donation_range.top += host_rmm_get_tracking_region_size();
 		}
 		ret = host_realm_sro_continue_with_donation_range(rets.ret0,
 				&tracking_handle, &donate_req, NULL, &donation_range);
@@ -1827,7 +1822,7 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 static bool host_realm_restore_tracking_region(u_register_t base,
 					       bool report_errors)
 {
-	const u_register_t region_size = GRANULE_TRACKING_REGION_SIZE;
+	const u_register_t region_size = host_rmm_get_tracking_region_size();
 	const u_register_t region_top = base + region_size;
 	u_register_t cursor = base;
 	u_register_t category;
@@ -1886,7 +1881,7 @@ static bool host_realm_restore_tracking_region(u_register_t base,
  */
 static bool host_realm_restore_pool_tracking(bool report_errors)
 {
-	const u_register_t region_size = GRANULE_TRACKING_REGION_SIZE;
+	const u_register_t region_size = host_rmm_get_tracking_region_size();
 	const u_register_t pool_top = round_up(PAGE_POOL_END, region_size);
 	u_register_t base = ALIGN_DOWN(PAGE_POOL_BASE, region_size);
 	bool success = true;
@@ -3167,8 +3162,12 @@ u_register_t host_rmi_rmm_config_set(struct rmi_rmm_config *config)
 {
 	smc_ret_values rets;
 
+	INFO("RMI_RMM_CONFIG_SET request: addr=0x%lx granule=0x%lx "
+	     "tracking=0x%lx\n", (u_register_t)config,
+	     config->granule_size, config->tracking_size);
 	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RMM_CONFIG_SET,
 				(u_register_t)config}, 2U);
+	INFO("RMI_RMM_CONFIG_SET response: 0x%lx\n", rets.ret0);
 
 	return rets.ret0;
 }
@@ -3226,6 +3225,21 @@ u_register_t host_rmi_rmm_activate(void)
 
 		return ret;
 	}
+
+	return rets.ret0;
+}
+
+u_register_t host_rmi_rmm_deactivate(void)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_RMM_DEACTIVATE}, 1U).ret0;
+}
+
+u_register_t host_rmi_rmm_state_get(u_register_t *state)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RMM_STATE_GET}, 1U);
+	*state = rets.ret1;
 
 	return rets.ret0;
 }

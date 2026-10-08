@@ -5007,7 +5007,7 @@ test_result_t host_test_realm_rmi_rmm_config_get(void)
 		return TEST_RESULT_FAIL;
 	}
 
-	if ((config.tracking_size != RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB) ||
+	if ((config.tracking_size != host_rmm_get_tracking_config_size()) ||
 	    (config.granule_size != RMI_GRANULE_SIZE_4K)) {
 		return TEST_RESULT_FAIL;
 	}

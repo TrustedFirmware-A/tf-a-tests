@@ -146,9 +146,26 @@ void host_do_vdev_communicate(struct realm *realm, u_register_t vdev_ptr);
 
 /*
  * Ensure RMM is activated. Safe to call multiple times; activation happens
- * only once. Returns true on success, false on failure.
+ * only while RMM is inactive. An active RMM must match the selected tracking
+ * configuration. Returns true on success, false on failure.
  */
 bool host_rmm_activate(void);
+
+/*
+ * Configure and activate with a 4 KB granule tracking-size encoding. Accept an
+ * active RMM only if its configuration matches. Update the host tracking helpers
+ * only after success. Release the testcase pool before changing the layout.
+ */
+bool host_rmm_activate_with_tracking_size(u_register_t tracking_size);
+
+/* Return the selected tracking-region size in bytes. */
+u_register_t host_rmm_get_tracking_region_size(void);
+
+/* Return the RMI encoding for the selected tracking-region size. */
+u_register_t host_rmm_get_tracking_config_size(void);
+
+/* Deactivate the RMM after all testcase resources have been released. */
+bool host_rmm_deactivate(void);
 
 /*
  * Initialize the Realm allocation pool, preserving the cursor during an active

@@ -107,7 +107,10 @@ enum realm_cmd {
 	REALM_GIC_TRAP_CMD,
 	REALM_PLANE_N_DIRECT_S2_PERM_FAULT_CMD,
 	REALM_SET_S2AP_RIPAS_CMD,
-	REALM_PLANE_N_HOST_CALL_NO_TRAP_CMD
+	REALM_PLANE_N_HOST_CALL_NO_TRAP_CMD,
+	REALM_WFX_CMD,
+	REALM_PLANE_N_WFX_CMD,
+	REALM_PLANE_N_WFX_NO_TRAP_CMD
 };
 
 /*
@@ -189,6 +192,12 @@ host_shared_data_t *realm_get_my_shared_structure(void);
  * Return Host's data at index
  */
 u_register_t realm_shared_data_get_my_host_val(uint8_t index);
+
+/*
+ * Return Host's data for a Plane N REC.
+ */
+u_register_t realm_shared_data_get_plane_n_host_val(unsigned int plane_num,
+		unsigned int rec_num, uint8_t index);
 
 /*
  * Get command sent from Host to my Rec

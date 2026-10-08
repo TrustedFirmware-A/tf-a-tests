@@ -38,6 +38,14 @@ static el2_sysregs_t el2_ctx_after = {0};
 static uint128_t pauth_keys_before[NUM_KEYS];
 static uint128_t pauth_keys_after[NUM_KEYS];
 
+static int host_maint_interrupt(void *data);
+static int host_timer_interrupt(void *data);
+static bool host_realm_handle_timer_irq_exit(struct realm *realm_ptr,
+		unsigned int rec_num);
+
+/* GIC Maintenance Interrupt ID (PPI 25) */
+#define GIC_MAINT_IRQ		25U
+
 /* EL1 Virtual Timer IRQ */
 #define EL1_VIRT_TIMER_IRQ	27U
 #define ESR_ISS_DABORT_WNR_BIT	U(6)
@@ -65,6 +73,223 @@ static unsigned int tftf_get_timer_virq(void)
 		return EL1_VIRT_TIMER_IRQ | INPLACE(INT_TYPE, INT_PPI);
 	else
 		return EL1_VIRT_TIMER_IRQ;
+}
+
+static bool host_realm_check_wfx_exit(u_register_t ti,
+				      u_register_t trap_flag,
+				      unsigned int plane_num)
+{
+	u_register_t rec_flag[] = {RMI_RUNNABLE};
+	struct test_realm_params params = {0};
+	struct rmi_rec_run *run;
+	struct realm realm;
+	u_register_t exit_reason;
+	u_register_t timeout;
+	unsigned int host_call_result = TEST_RESULT_FAIL;
+	u_register_t ret;
+	bool timed = (ti == ISS_WFX_TI_WFIT) || (ti == ISS_WFX_TI_WFET);
+	bool success = false;
+
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+	params.num_aux_planes = (plane_num == PRIMARY_PLANE_ID) ? 0U : 1U;
+	if ((params.num_aux_planes > 0U) && is_single_rtt_supported()) {
+		params.rtt_tree_single = true;
+		params.rtt_s2ap_encoding_indirect = true;
+	}
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
+		return false;
+	}
+
+	run = (struct rmi_rec_run *)realm.run[0];
+	/* WFxT takes an absolute counter value, so choose a future deadline. */
+	timeout = read_cntvct_el0() + read_cntfrq_el0();
+	run->entry.flags = trap_flag;
+	host_shared_data_set_host_val(&realm, plane_num, 0U,
+		HOST_ARG1_INDEX, ti);
+	host_shared_data_set_host_val(&realm, plane_num, 0U,
+		HOST_ARG2_INDEX, timeout);
+
+	if (plane_num == PRIMARY_PLANE_ID) {
+		host_shared_data_set_realm_cmd(&realm, REALM_WFX_CMD,
+			PRIMARY_PLANE_ID, 0U);
+	} else {
+		host_shared_data_set_realm_cmd(&realm, REALM_PLANE_N_WFX_CMD,
+			plane_num, 0U);
+		host_realm_set_aux_plane_args(&realm, plane_num, 0U);
+	}
+
+	if (plane_num != PRIMARY_PLANE_ID) {
+		success = host_enter_realm_execute(&realm,
+			REALM_PLANE_N_WFX_CMD, RMI_EXIT_HOST_CALL, 0U);
+	} else {
+		ret = host_realm_rec_enter(&realm, &exit_reason,
+			&host_call_result, 0U);
+		if ((ret != RMI_SUCCESS) || (exit_reason != RMI_EXIT_SYNC)) {
+			ERROR("WFx did not cause a synchronous REC exit: "
+			      "ret=0x%lx exit=0x%lx\n", ret, exit_reason);
+			goto destroy_realm;
+		}
+
+		if ((EC_BITS(run->exit.esr) != EC_WFE_WFI) ||
+		    (run->exit.plane != plane_num) ||
+		    (EXTRACT(ISS_WFX_TI, run->exit.esr) != ti) ||
+		    (((run->exit.esr & ISS_WFX_RV_BIT) != 0UL) != timed) ||
+		    (EXTRACT(ISS_WFX_RN, run->exit.esr) != 0UL) ||
+		    (timed && (run->exit.gprs[0] != timeout))) {
+			ERROR("Invalid WFx exit: ESR=0x%lx X0=0x%lx\n",
+			      run->exit.esr, run->exit.gprs[0]);
+			goto destroy_realm;
+		}
+
+		success = true;
+	}
+
+destroy_realm:
+	if (!host_destroy_realm(&realm)) {
+		return false;
+	}
+
+	return success;
+}
+
+/*
+ * @Test_Aim@ Verify that WFI/WFIT/WFET REC exits follow DEN0137 A4.3.4.1.
+ */
+test_result_t host_realm_wfx_exit(void)
+{
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+	SKIP_TEST_IF_WFXT_NOT_SUPPORTED();
+
+	if (!host_realm_check_wfx_exit(ISS_WFX_TI_WFI,
+				       REC_ENTRY_FLAG_TRAP_WFI,
+				       PRIMARY_PLANE_ID) ||
+	    !host_realm_check_wfx_exit(ISS_WFX_TI_WFIT,
+				       REC_ENTRY_FLAG_TRAP_WFI,
+				       PRIMARY_PLANE_ID) ||
+	    !host_realm_check_wfx_exit(ISS_WFX_TI_WFET,
+				       REC_ENTRY_FLAG_TRAP_WFE,
+				       PRIMARY_PLANE_ID)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+/*
+ * @Test_Aim@ Verify WFI/WFIT/WFET REC exits from an auxiliary Plane.
+ */
+test_result_t host_realm_plane_n_wfx_exit(void)
+{
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+	SKIP_TEST_IF_WFXT_NOT_SUPPORTED();
+
+	if (!are_planes_supported()) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	if (!host_realm_check_wfx_exit(ISS_WFX_TI_WFI,
+				       0UL, 1U) ||
+	    !host_realm_check_wfx_exit(ISS_WFX_TI_WFIT,
+				       0UL, 1U) ||
+	    !host_realm_check_wfx_exit(ISS_WFX_TI_WFET,
+				       0UL, 1U)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+static bool host_realm_check_plane_n_wfx_no_trap(u_register_t instruction)
+{
+	u_register_t rec_flag[] = {RMI_RUNNABLE};
+	struct test_realm_params params = {0};
+	struct realm realm;
+	bool success;
+
+	params.realm_payload_adr = (u_register_t)REALM_IMAGE_BASE;
+	params.rec_flag = rec_flag;
+	params.rec_count = 1U;
+	params.num_aux_planes = 1U;
+	if (is_single_rtt_supported()) {
+		params.rtt_tree_single = true;
+		params.rtt_s2ap_encoding_indirect = true;
+	}
+
+	if (!host_create_activate_realm_payload(&realm, &params)) {
+		return false;
+	}
+
+	host_shared_data_set_host_val(&realm, 1U, 0U,
+		HOST_ARG1_INDEX, instruction);
+	host_shared_data_set_realm_cmd(&realm,
+		REALM_PLANE_N_WFX_NO_TRAP_CMD, 1U, 0U);
+	host_realm_set_aux_plane_args(&realm, 1U, 0U);
+
+	if (instruction == ISS_WFX_TI_WFI) {
+		success = host_enter_realm_execute(&realm,
+			REALM_PLANE_N_WFX_NO_TRAP_CMD, RMI_EXIT_IRQ, 0U) &&
+			host_realm_handle_timer_irq_exit(&realm, 0U);
+	} else {
+		success = host_enter_realm_execute(&realm,
+			REALM_PLANE_N_WFX_NO_TRAP_CMD, RMI_EXIT_HOST_CALL, 0U);
+	}
+
+	return host_destroy_realm(&realm) && success;
+}
+
+/*
+ * @Test_Aim@ Verify untrapped WFI/WFE execution in an auxiliary Plane.
+ *
+ * Test flow:
+ *  1. Enter Plane N with trap_wfi and trap_wfe clear.
+ *  2. For WFI, give Plane N virtual-GIC ownership and wait for its virtual
+ *     timer. Handle the host IRQ exit, inject the timer vIRQ, and re-enter so
+ *     Plane N runs the timer ISR and resumes after WFI.
+ *  3. For WFE, set a local event before executing WFE. Verify that it consumes
+ *     the event and completes without a synchronous Plane exit.
+ *  4. In both cases, Plane N reports completion to Plane 0, which returns the
+ *     result to the host.
+ */
+test_result_t host_realm_plane_n_wfx_no_trap(void)
+{
+	bool success;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	if (!are_planes_supported()) {
+		return TEST_RESULT_SKIPPED;
+	}
+
+	if (tftf_irq_register_handler(GIC_MAINT_IRQ,
+			host_maint_interrupt) != 0) {
+		return TEST_RESULT_FAIL;
+	}
+	tftf_irq_enable(GIC_MAINT_IRQ, GIC_HIGHEST_NS_PRIORITY);
+
+	if (tftf_irq_register_handler(tftf_get_timer_virq(),
+			host_timer_interrupt) != 0) {
+		tftf_irq_disable(GIC_MAINT_IRQ);
+		tftf_irq_unregister_handler(GIC_MAINT_IRQ);
+		return TEST_RESULT_FAIL;
+	}
+	tftf_irq_enable(tftf_get_timer_virq(), GIC_HIGHEST_NS_PRIORITY);
+
+	success = host_realm_check_plane_n_wfx_no_trap(ISS_WFX_TI_WFI);
+
+	tftf_irq_disable(tftf_get_timer_virq());
+	tftf_irq_disable(GIC_MAINT_IRQ);
+	tftf_irq_unregister_handler(tftf_get_timer_virq());
+	tftf_irq_unregister_handler(GIC_MAINT_IRQ);
+
+	if (!success ||
+	    !host_realm_check_plane_n_wfx_no_trap(ISS_WFX_TI_WFE)) {
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }
 
 /*
@@ -927,9 +1152,6 @@ static bool host_realm_handle_irq_exit(struct realm *realm_ptr,
 	}
 	return false;
 }
-
-/* GIC Maintenance Interrupt ID (PPI 25) */
-#define GIC_MAINT_IRQ		25U
 
 /*
  * IRQ handler for GIC Maintenance Interrupt.

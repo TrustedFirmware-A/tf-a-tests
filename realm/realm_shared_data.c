@@ -44,6 +44,17 @@ u_register_t realm_shared_data_get_my_host_val(uint8_t index)
 	return (*guest_shared_data)[realm_get_my_plane_num()][REC_IDX(read_mpidr_el1())].host_param_val[index];
 }
 
+u_register_t realm_shared_data_get_plane_n_host_val(unsigned int plane_num,
+		unsigned int rec_num, uint8_t index)
+{
+	assert(index < MAX_DATA_SIZE);
+	assert(plane_num < MAX_PLANE_COUNT);
+	assert(rec_num < MAX_REC_COUNT);
+	assert(is_plane0);
+
+	return (*guest_shared_data)[plane_num][rec_num].host_param_val[index];
+}
+
 /*
  * Get command sent from Host to this rec
  */

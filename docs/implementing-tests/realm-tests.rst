@@ -79,7 +79,12 @@ Cleanup and a test-controlled restart
 and then deactivates the RMM only after reclamation succeeds. The known
 Realm heap range is scanned
 automatically. Fine tracking regions outside the heap, including regions
-crossing its boundaries, are recorded explicitly and restored first.
+crossing its boundaries, are recorded explicitly and attempted first in
+reverse completion order. Cleanup repeats passes over both sets while
+regions are successfully restored from FINE tracking. This allows later
+reclamations to release metadata that blocked earlier regions. Cleanup
+stops when all regions are restored or a pass makes no progress; regions
+already restored do not count as progress.
 The heap is reset only after its tracking metadata has been reclaimed.
 Reinitialising the pool during an active testcase preserves its allocation
 cursor, including when another RMM object prevents cleanup after the last

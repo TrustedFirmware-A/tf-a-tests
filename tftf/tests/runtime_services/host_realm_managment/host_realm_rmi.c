@@ -1819,8 +1819,12 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 	return ret;
 }
 
+/*
+ * The caller initializes *progress to false before each restoration pass.
+ * Only set it to true here so progress from earlier regions is preserved.
+ */
 static bool host_realm_restore_tracking_region(u_register_t base,
-					       bool report_errors)
+					       bool *progress)
 {
 	const u_register_t region_size = host_rmm_get_tracking_region_size();
 	const u_register_t region_top = base + region_size;
@@ -1843,10 +1847,8 @@ static bool host_realm_restore_tracking_region(u_register_t base,
 						    &state, &category, &out_top);
 		if ((ret != RMI_SUCCESS) || (out_top <= cursor) ||
 		    (out_top > region_top)) {
-			if (report_errors) {
-				ERROR("Failed to get tracking state for 0x%lx, ret=0x%lx out_top=0x%lx\n",
-				      cursor, ret, out_top);
-			}
+			VERBOSE("Failed to get tracking state for 0x%lx, ret=0x%lx out_top=0x%lx\n",
+				cursor, ret, out_top);
 			return false;
 		}
 
@@ -1864,34 +1866,65 @@ static bool host_realm_restore_tracking_region(u_register_t base,
 	}
 
 	ret = host_rmi_granule_tracking_set(base, target);
-	if ((ret != RMI_SUCCESS) && report_errors) {
-		ERROR("Failed to restore tracking for 0x%lx to 0x%lx, ret=0x%lx\n",
-		      base, target, ret);
+	if (ret != RMI_SUCCESS) {
+		VERBOSE("Failed to restore tracking for 0x%lx to 0x%lx, ret=0x%lx\n",
+			base, target, ret);
+		return false;
 	}
 
-	return ret == RMI_SUCCESS;
+	/* Already-restored regions return above without counting as progress. */
+	*progress = true;
+	return true;
 }
 
 /*
- * Scan the known Realm heap range (PAGE_POOL_BASE..PAGE_POOL_END) to restore
- * every intersecting fine tracking region to its initial state. The framework
- * cleanup hook runs this automatically, so heap-contained regions need no
- * registry entry. The caller must ensure that no Realm remains, so all ordinary
- * Granules in these regions have returned to NS state.
+ * Try external and boundary regions in reverse completion order, then scan
+ * PAGE_POOL_BASE..PAGE_POOL_END. Heap-contained regions need no registry entry.
+ * Metadata for a later region may keep an earlier region fine during this pass.
+ * The caller must ensure that all ordinary Granules have returned to NS state.
  */
-static bool host_realm_restore_pool_tracking(bool report_errors)
+static bool host_realm_restore_tracking_pass(unsigned int region_count,
+					    bool *progress)
 {
 	const u_register_t region_size = host_rmm_get_tracking_region_size();
 	const u_register_t pool_top = round_up(PAGE_POOL_END, region_size);
 	u_register_t base = ALIGN_DOWN(PAGE_POOL_BASE, region_size);
+	unsigned int i;
 	bool success = true;
 
+	for (i = region_count; i > 0U; i--) {
+		if (!host_realm_restore_tracking_region(
+				testcase_external_tracking_regions[i - 1U],
+				progress)) {
+			success = false;
+		}
+	}
+
 	while (base < pool_top) {
-		if (!host_realm_restore_tracking_region(base, report_errors)) {
+		if (!host_realm_restore_tracking_region(base, progress)) {
 			success = false;
 		}
 
 		base += region_size;
+	}
+
+	return success;
+}
+
+static bool host_realm_restore_tracking(unsigned int region_count,
+					bool report_errors)
+{
+	bool progress;
+	bool success;
+
+	/* Each progressing pass removes at least one fine tracking region. */
+	do {
+		progress = false;
+		success = host_realm_restore_tracking_pass(region_count, &progress);
+	} while (!success && progress);
+
+	if (!success && report_errors) {
+		ERROR("Failed to restore tracking metadata: no reclamation progress\n");
 	}
 
 	return success;
@@ -1906,7 +1939,6 @@ bool host_realm_pool_testcase_release(void)
 {
 	unsigned int region_count;
 	unsigned int users;
-	unsigned int i;
 	bool overflow;
 	bool success = true;
 
@@ -1927,25 +1959,8 @@ bool host_realm_pool_testcase_release(void)
 		ERROR("Cannot release testcase pool with %u Realm user(s)\n",
 		      users);
 		success = false;
-	} else {
-		/*
-		 * Restore external and boundary regions in reverse completion order.
-		 * Their tracking metadata can own pages in the Realm pool and prevent
-		 * pool regions from becoming coarse. Nested transitions complete
-		 * before their parent, so they must be unwound as a stack.
-		 */
-		for (i = region_count; i > 0U; i--) {
-			u_register_t base =
-				testcase_external_tracking_regions[i - 1U];
-
-			if (!host_realm_restore_tracking_region(base, true)) {
-				success = false;
-			}
-		}
-
-		if (!host_realm_restore_pool_tracking(true)) {
-			success = false;
-		}
+	} else if (!host_realm_restore_tracking(region_count, true)) {
+		success = false;
 	}
 
 	if (overflow) {
@@ -1987,7 +2002,7 @@ static bool host_realm_pool_release(void)
 		return true;
 	}
 
-	if (!host_realm_restore_pool_tracking(!testcase_active)) {
+	if (!host_realm_restore_tracking(0U, !testcase_active)) {
 		/*
 		 * Another RMM object in this testcase may still own a Granule in
 		 * the pool. The testcase cleanup retries after all objects have

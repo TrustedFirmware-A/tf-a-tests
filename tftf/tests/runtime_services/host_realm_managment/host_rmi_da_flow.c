@@ -1115,23 +1115,12 @@ test_result_t host_vdev_test_valid_state_transition(void)
 		goto out_unassign_vdev;
 	}
 
-	/* Start a lock operation, leave its communication pending and verify
-	 * that destroy still fails.
-	 */
-	INFO("VDEV states: destroy with pending communication must fail\n");
+	/* Start a lock operation and leave its communication pending. */
+	INFO("VDEV states: abort pending communication\n");
 	ret = host_rmi_vdev_lock(realm.rd, (u_register_t)h_pdev->ep_pdev,
 				 (u_register_t)h_vdev->vdev_ptr);
 	if (ret != RMI_SUCCESS) {
 		ERROR("VDEV lock from UNLOCKED returned 0x%lx\n", ret);
-		return_error = true;
-		goto out_unassign_vdev;
-	}
-
-	ret = host_rmi_vdev_destroy(realm.rd, (u_register_t)h_pdev->ep_pdev,
-				    (u_register_t)h_vdev->vdev_ptr);
-	if (ret != RMI_ERROR_DEVICE) {
-		ERROR("VDEV destroy with pending communication returned 0x%lx\n",
-		      ret);
 		return_error = true;
 		goto out_unassign_vdev;
 	}
@@ -1256,12 +1245,24 @@ test_result_t host_vdev_test_valid_state_transition(void)
 		return_error = true;
 	}
 
-	/* RMI_VDEV_DESTROY succeeds only from UNLOCKED. */
-	INFO("VDEV states: destroy from UNLOCKED must succeed\n");
+	/*
+	 * RMI_VDEV_LOCK leaves the VDEV UNLOCKED with communication pending.
+	 * RMI_VDEV_DESTROY is permitted in this state before the DA app runs.
+	 */
+	INFO("VDEV states: destroy with pending communication must succeed\n");
+	ret = host_rmi_vdev_lock(realm.rd, (u_register_t)h_pdev->ep_pdev,
+				 (u_register_t)h_vdev->vdev_ptr);
+	if (ret != RMI_SUCCESS) {
+		ERROR("VDEV lock from UNLOCKED returned 0x%lx\n", ret);
+		return_error = true;
+		goto out_unassign_vdev;
+	}
+
 	ret = host_rmi_vdev_destroy(realm.rd, (u_register_t)h_pdev->ep_pdev,
 				    (u_register_t)h_vdev->vdev_ptr);
 	if (ret != RMI_SUCCESS) {
-		ERROR("VDEV destroy from UNLOCKED returned 0x%lx\n", ret);
+		ERROR("VDEV destroy with pending communication returned 0x%lx\n",
+		      ret);
 		return_error = true;
 		goto out_unassign_vdev;
 	}

@@ -60,10 +60,6 @@ $(eval $(call add_define,CACTUS_DEFINES,FVP_CLUSTER_COUNT))
 $(eval $(call add_define,CACTUS_DEFINES,FVP_MAX_CPUS_PER_CLUSTER))
 $(eval $(call add_define,CACTUS_DEFINES,FVP_MAX_PE_PER_CPU))
 
-$(eval $(call add_define,CACTUS_MM_DEFINES,FVP_CLUSTER_COUNT))
-$(eval $(call add_define,CACTUS_MM_DEFINES,FVP_MAX_CPUS_PER_CLUSTER))
-$(eval $(call add_define,CACTUS_MM_DEFINES,FVP_MAX_PE_PER_CPU))
-
 $(eval $(call add_define,IVY_DEFINES,FVP_CLUSTER_COUNT))
 $(eval $(call add_define,IVY_DEFINES,FVP_MAX_CPUS_PER_CLUSTER))
 $(eval $(call add_define,IVY_DEFINES,FVP_MAX_PE_PER_CPU))

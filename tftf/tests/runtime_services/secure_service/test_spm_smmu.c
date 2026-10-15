@@ -14,8 +14,6 @@
 #include <spm_test_helpers.h>
 #include <test_helpers.h>
 
-#include <heap/page_alloc.h>
-
 #if PLAT_fvp || PLAT_tc
 #include <sp_platform_def.h>
 static const struct ffa_uuid expected_sp_uuids[] = { {PRIMARY_UUID} };
@@ -140,17 +138,6 @@ test_result_t test_smmu_spm_invalid_access(void)
 	 * Check SPMC has ffa_version and expected FFA endpoints are deployed.
 	 **********************************************************************/
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
-
-	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
-		!= HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return TEST_RESULT_FAIL;
-	}
-
-	/* Activate RMM */
-	if (!host_rmm_activate()) {
-		return TEST_RESULT_FAIL;
-	}
 
 	/* Update the NS buffer to Realm PAS. */
 	retmm = host_rmi_granule_delegate((u_register_t)PLAT_CACTUS_NS_MEMCPY_BASE);

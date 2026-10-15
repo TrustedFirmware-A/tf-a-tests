@@ -18,8 +18,6 @@
 #include "rmi_spm_tests.h"
 #include <test_helpers.h>
 
-#include <heap/page_alloc.h>
-
 static test_result_t host_multi_cpu_payload_dev_del_undel(void);
 
 /* Test 2MB of PCIe memory region */
@@ -94,17 +92,6 @@ test_result_t host_dev_mem_delegate_undelegate(void)
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
-	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
-		!= HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return TEST_RESULT_FAIL;
-	}
-
-	if (!host_rmm_activate()) {
-		ERROR("Failed to activate RMM\n");
-		return TEST_RESULT_FAIL;
-	}
-
 	host_rmi_init_cmp_result();
 
 	while (true) {
@@ -161,12 +148,6 @@ test_result_t host_dev_mem_delundel_multi_cpu(void)
 	unsigned int num_reg = 0U;
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
-
-	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
-		!= HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return TEST_RESULT_FAIL;
-	}
 
 	lead_mpid = read_mpidr_el1() & MPID_MASK;
 
@@ -294,12 +275,6 @@ test_result_t host_fail_dev_mem_del(void)
 	unsigned int num_reg = 0U;
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
-
-	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
-		!= HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return TEST_RESULT_FAIL;
-	}
 
 	host_rmi_init_cmp_result();
 

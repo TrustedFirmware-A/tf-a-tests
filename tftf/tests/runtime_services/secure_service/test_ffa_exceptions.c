@@ -20,8 +20,6 @@
 #include <spm_test_helpers.h>
 #include <test_helpers.h>
 
-#include <heap/page_alloc.h>
-
 #define SENDER HYP_ID
 #define RECEIVER SP_ID(1)
 
@@ -76,17 +74,6 @@ test_result_t rl_memory_cannot_be_accessed_in_s(void)
 
 	VERBOSE("TFTF - Handle: %llx Address: %p\n",
 		handle, constituents[0].address);
-
-	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
-		!= HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return TEST_RESULT_FAIL;
-	}
-
-	/* Activate RMM */
-	if (!host_rmm_activate()) {
-		return TEST_RESULT_FAIL;
-	}
 
 	host_rmi_init_cmp_result();
 
@@ -149,17 +136,6 @@ test_result_t test_ffa_rxtx_to_realm_pas(void)
 	 * Check if SPMC has ffa_version and expected FFA endpoints are deployed.
 	 **********************************************************************/
 	CHECK_SPMC_TESTING_SETUP(1, 2, expected_sp_uuids);
-
-	if (page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE)
-		!= HEAP_INIT_SUCCESS) {
-		ERROR("%s() failed\n", "page_pool_init");
-		return TEST_RESULT_FAIL;
-	}
-
-	/* Activate RMM */
-	if (!host_rmm_activate()) {
-		return TEST_RESULT_FAIL;
-	}
 
 	/* Delegate the shared page to Realm. */
 	retmm = host_rmi_granule_delegate((u_register_t)mb.recv);

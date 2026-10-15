@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Arm Limited. All rights reserved.
+ * Copyright (c) 2018-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,6 +8,7 @@
 #define __TFTF_H__
 
 #ifndef __ASSEMBLY__
+#include <cdefs.h>
 #include <status.h>
 #include <stddef.h>
 #include <tftf_lib.h>
@@ -50,6 +51,39 @@ typedef struct {
 	const char		*description;
 	const test_case_t	*testcases;
 } test_suite_t;
+
+typedef test_result_t (*testcase_hook_fn_t)
+	(const test_suite_t *testsuite, const test_case_t *testcase);
+
+typedef struct {
+	const char		*testsuite_name;
+	const char		*testcase_name;
+	testcase_hook_fn_t	hook;
+} testcase_hook_t;
+
+#define TFTF_TESTCASE_SETUP_HOOK(_name, _testsuite_name, _testcase_name,	\
+				 _hook)					\
+	static const testcase_hook_t _name __used			\
+		__section(".tftf_testcase_setup_hooks") = {		\
+			.testsuite_name = (_testsuite_name),		\
+			.testcase_name = (_testcase_name),		\
+			.hook = (_hook),				\
+		}
+
+#define TFTF_TESTSUITE_SETUP_HOOK(_name, _testsuite_name, _hook)		\
+	TFTF_TESTCASE_SETUP_HOOK(_name, _testsuite_name, NULL, _hook)
+
+#define TFTF_TESTCASE_CLEANUP_HOOK(_name, _testsuite_name, _testcase_name,\
+				   _hook)				\
+	static const testcase_hook_t _name __used			\
+		__section(".tftf_testcase_cleanup_hooks") = {		\
+			.testsuite_name = (_testsuite_name),		\
+			.testcase_name = (_testcase_name),		\
+			.hook = (_hook),				\
+		}
+
+#define TFTF_TESTSUITE_CLEANUP_HOOK(_name, _testsuite_name, _hook)	\
+	TFTF_TESTCASE_CLEANUP_HOOK(_name, _testsuite_name, NULL, _hook)
 
 /*
  * Reference to a specific test.

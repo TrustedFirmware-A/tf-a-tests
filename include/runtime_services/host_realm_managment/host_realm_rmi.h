@@ -606,9 +606,21 @@
 #define SMC_RMI_RMM_CONFIG_GET			SMC64_RMI_FID(U(0x9C))
 
 /*
+ * FID: 0xC40001EE
+ *
+ * ret1 == RMM state
+ */
+#define SMC_RMI_RMM_STATE_GET			SMC64_RMI_FID(U(0x9E))
+
+/*
  * FID: 0xC4000202
  */
 #define SMC_RMI_RMM_ACTIVATE			SMC64_RMI_FID(U(0xB2))
+
+/*
+ * FID: 0xC400020F
+ */
+#define SMC_RMI_RMM_DEACTIVATE			SMC64_RMI_FID(U(0xBF))
 
 /*
  * FID: 0xC40001E1
@@ -666,8 +678,8 @@
  * arg2	== Number of entries in RMI Address List
  *
  * ret0 == Return code
- * ret1 == Memory donation requirements
- * ret2 == Number of granules consumed from RMI Address List
+ * ret1 == Number of granules consumed from RMI Address List
+ * ret2 == Memory donation requirements
  */
 #define SMC_RMI_OP_MEM_DONATE			SMC64_RMI_FID(U(0xB8))
 
@@ -1824,6 +1836,7 @@ struct rmi_pdev_stream_params {
 
 /* Tracking Region Size with GRANULE_SIZE = 4KB */
 #define RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB		UL(0)
+#define RMI_GRAN_4KB_TRACKING_REGION_SIZE_2MB		UL(1)
 
 /* Tracking Region Size with GRANULE_SIZE = 16KB */
 #define RMI_GRAN_16KB_TRACKING_REGION_SIZE_32MB		UL(0)
@@ -1839,6 +1852,10 @@ struct rmi_pdev_stream_params {
 #define RMI_GRANULE_SIZE_4K			UL(0)
 #define RMI_GRANULE_SIZE_16K			UL(1)
 #define RMI_GRANULE_SIZE_64K			UL(2)
+
+/* RmiRmmState enumeration values. */
+#define RMI_RMM_STATE_INIT			UL(0)
+#define RMI_RMM_STATE_ACTIVE			UL(1)
 
 /*
  * The RMM config parameters shared with the Host via
@@ -2021,6 +2038,8 @@ u_register_t host_rmi_psci_complete(u_register_t calling_rec, unsigned long stat
 void host_rmi_init_cmp_result(void);
 bool host_rmi_get_cmp_result(void);
 u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t tracking);
+bool host_realm_pool_testcase_begin(void);
+bool host_realm_pool_testcase_release(void);
 
 /* Realm management */
 u_register_t host_realm_create(struct realm *realm);
@@ -2034,6 +2053,8 @@ unsigned int host_realm_find_rec_by_mpidr(unsigned int mpidr, struct realm *real
 u_register_t host_realm_activate(struct realm *realm);
 u_register_t host_realm_terminate(struct realm *realm);
 u_register_t host_rmi_rmm_activate(void);
+u_register_t host_rmi_rmm_deactivate(void);
+u_register_t host_rmi_rmm_state_get(u_register_t *state);
 u_register_t host_realm_destroy(struct realm *realm);
 u_register_t host_realm_rec_enter(struct realm *realm,
 				  u_register_t *exit_reason,

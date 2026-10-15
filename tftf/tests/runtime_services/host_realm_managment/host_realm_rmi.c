@@ -40,11 +40,37 @@ static bool rmi_cmp_result;
 static unsigned short vmid;
 static spinlock_t pool_lock;
 static unsigned int pool_counter;
+static bool pool_testcase_active;
+static bool pool_testcase_cleanup_pending;
 
-static unsigned long list_buffer[PLATFORM_CORE_COUNT][PAGE_SIZE] __aligned(GRANULE_SIZE);
+/*
+ * Fine tracking regions outside the Realm heap, including regions crossing
+ * PAGE_POOL_BASE or PAGE_POOL_END, need explicit testcase bookkeeping.
+ * Regions fully inside the heap are found automatically by the framework
+ * cleanup hook's pool scan and do not need entries here.
+ */
+#define MAX_TESTCASE_EXTERNAL_TRACKING_REGIONS	U(64)
+static u_register_t
+	testcase_external_tracking_regions[MAX_TESTCASE_EXTERNAL_TRACKING_REGIONS];
+static unsigned int testcase_external_tracking_region_count;
+static bool testcase_external_tracking_region_overflow;
 
 #define SRO_LIST_ENTRIES		(GRANULE_SIZE/sizeof(unsigned long))
-#define GRANULE_TRACKING_REGION_SIZE	(1UL << 30)
+#define SRO_MAX_NESTING			U(4)
+
+/*
+ * For example, an SRO donation can nest on the same CPU:
+ *   donate_mem() -> host_rmi_granule_delegate()
+ *     -> RMI_ERROR_TRACKING -> host_rmi_granule_tracking_set()
+ *       -> RMI_INCOMPLETE -> donate_mem() for tracking metadata.
+ * The inner donation must complete before delegation can be retried and the
+ * outer donation submitted. Give each nesting level its own list so building
+ * the inner list cannot overwrite descriptors already prepared by the outer
+ * operation.
+ */
+static unsigned long list_buffer[PLATFORM_CORE_COUNT][SRO_MAX_NESTING]
+				[SRO_LIST_ENTRIES] __aligned(GRANULE_SIZE);
+static unsigned int sro_nesting[PLATFORM_CORE_COUNT];
 
 /* Address range whose pages are self-describing for a conditional donation. */
 struct sro_donation_range {
@@ -52,21 +78,91 @@ struct sro_donation_range {
 	u_register_t top;
 };
 
-/*
- * Initialize the Realm allocation pool. Any memory retained for tracking SRO
- * metadata remains reserved when the pool is reinitialized.
- */
-static bool host_realm_pool_init(void)
+bool host_realm_pool_init(void)
 {
 	int ret;
 
+	spin_lock(&pool_lock);
+	if (pool_testcase_cleanup_pending) {
+		spin_unlock(&pool_lock);
+		ERROR("Realm testcase pool cleanup is still pending\n");
+		return false;
+	}
+	if (pool_testcase_active) {
+		/* A later Realm must not rewind over other testcase objects. */
+		spin_unlock(&pool_lock);
+		return true;
+	}
+
 	ret = page_pool_init(PAGE_POOL_BASE, PAGE_POOL_MAX_SIZE);
+	spin_unlock(&pool_lock);
 	if (ret != HEAP_INIT_SUCCESS) {
 		ERROR("%s() failed\n", "page_pool_init");
 		return false;
 	}
 
 	return true;
+}
+
+bool host_realm_pool_testcase_begin(void)
+{
+	bool success = false;
+
+	spin_lock(&pool_lock);
+	if (!pool_testcase_active && !pool_testcase_cleanup_pending &&
+	    (pool_counter == 0U)) {
+		pool_testcase_active = true;
+		testcase_external_tracking_region_count = 0U;
+		testcase_external_tracking_region_overflow = false;
+		success = true;
+	}
+	spin_unlock(&pool_lock);
+
+	return success;
+}
+
+/*
+ * Record fine tracking regions not fully contained by the Realm heap.
+ * Their descriptors may use metadata pages donated from that heap, so they
+ * must be restored before the heap is reset for the next testcase.
+ * Returns false when there is no active testcase pool or the registry is full.
+ */
+static bool host_realm_pool_record_tracking_region(u_register_t base)
+{
+	const u_register_t region_size = host_rmm_get_tracking_region_size();
+	unsigned int i;
+	bool managed = false;
+
+	spin_lock(&pool_lock);
+	if (!pool_testcase_active) {
+		goto out;
+	}
+
+	if ((base >= PAGE_POOL_BASE) &&
+	    ((base + region_size) <= PAGE_POOL_END)) {
+		managed = true;
+		goto out;
+	}
+
+	for (i = 0U; i < testcase_external_tracking_region_count; i++) {
+		if (testcase_external_tracking_regions[i] == base) {
+			managed = true;
+			goto out;
+		}
+	}
+
+	if (testcase_external_tracking_region_count >=
+	    MAX_TESTCASE_EXTERNAL_TRACKING_REGIONS) {
+		testcase_external_tracking_region_overflow = true;
+		goto out;
+	}
+
+	testcase_external_tracking_regions[
+		testcase_external_tracking_region_count++] = base;
+	managed = true;
+out:
+	spin_unlock(&pool_lock);
+	return managed;
 }
 
 /*
@@ -227,12 +323,13 @@ static inline u_register_t host_rmi_op_continue(u_register_t flags,
 }
 
 /* Only 4K Granularity is supported */
-static inline u_register_t reclaim_mem(u_register_t handle)
+static inline u_register_t reclaim_mem(u_register_t handle,
+				       unsigned long *list_addr)
 {
 	unsigned long reclaim_count;
 	u_register_t retval =
 		host_rmi_op_reclaim(handle,
-				(u_register_t)list_buffer[platform_get_core_pos(read_mpidr_el1())],
+				(u_register_t)list_addr,
 				SRO_LIST_ENTRIES,
 				&reclaim_count);
 
@@ -244,7 +341,7 @@ static inline u_register_t reclaim_mem(u_register_t handle)
 
 	/* Iterate over the RMI Address List and free the memory */
 	for (unsigned long i = 0UL; i < reclaim_count; i++) {
-		unsigned long entry = list_buffer[platform_get_core_pos(read_mpidr_el1())][i];
+		unsigned long entry = list_addr[i];
 		unsigned long n_blocks = EXTRACT(RMI_ADDR_RDESC_4K_CNT, entry);
 		unsigned long size = XLAT_BLOCK_SIZE(XLAT_TABLE_LEVEL_MAX -
 					    EXTRACT(RMI_ADDR_RDESC_4K_SZ, entry));
@@ -280,7 +377,8 @@ static inline u_register_t reclaim_mem(u_register_t handle)
  * At the moment, only 4KB Granularity size is supported.
  */
 static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_req,
-				      const struct sro_donation_range *donation_range)
+				      const struct sro_donation_range *donation_range,
+				      unsigned long *sro_list)
 {
 	u_register_t size = XLAT_BLOCK_SIZE(XLAT_TABLE_LEVEL_MAX -
 					    EXTRACT(RMI_ADDR_BLK_SIZE, *donate_req));
@@ -313,7 +411,7 @@ static inline u_register_t donate_mem(u_register_t handle, u_register_t *donate_
 
 	alignment = allocation_size;
 	delegation_per_entry = allocation_size / GRANULE_SIZE;
-	list_addr = &list_buffer[platform_get_core_pos(read_mpidr_el1())][LIST_START_OFFSET];
+	list_addr = &sro_list[LIST_START_OFFSET];
 
 	/*
 	 * For simplicity, the list will not cross granules, so ensure we do
@@ -414,9 +512,22 @@ static u_register_t host_realm_sro_continue_with_donation_range(
 {
 	u_register_t cmd_status;
 	u_register_t ret_status;
+	unsigned int core_pos;
+	unsigned int nesting;
+	unsigned long *sro_list;
 
 	assert(op_handle != NULL);
 	assert(donate_req != NULL);
+
+	/*
+	 * Claim this CPU's next list before processing requests: delegating
+	 * donation pages can re-enter this helper for a tracking SRO.
+	 */
+	core_pos = platform_get_core_pos(read_mpidr_el1());
+	nesting = sro_nesting[core_pos];
+	assert(nesting < SRO_MAX_NESTING);
+	sro_nesting[core_pos]++;
+	sro_list = list_buffer[core_pos][nesting];
 
 	ret_status = status;
 	cmd_status = RMI_RETURN_STATUS(ret_status);
@@ -433,9 +544,11 @@ static u_register_t host_realm_sro_continue_with_donation_range(
 				if (mem_req != RMI_OP_MEM_REQ_NONE) {
 					if (mem_req == RMI_OP_MEM_REQ_DONATE) {
 						ret_status = donate_mem(*op_handle, donate_req,
-									donation_range);
+									donation_range,
+									sro_list);
 					} else if (mem_req == RMI_OP_MEM_REQ_RECLAIM) {
-						ret_status = reclaim_mem(*op_handle);
+						ret_status = reclaim_mem(*op_handle,
+									sro_list);
 					}
 
 					cmd_status = RMI_RETURN_STATUS(ret_status);
@@ -466,6 +579,7 @@ static u_register_t host_realm_sro_continue_with_donation_range(
 		cmd_status = RMI_RETURN_STATUS(ret_status);
 	}
 
+	sro_nesting[core_pos]--;
 	return cmd_status;
 }
 
@@ -1592,20 +1706,16 @@ static u_register_t host_rmi_granule_delegate_range(u_register_t base,
 		if (RMI_RETURN_STATUS(err_code) == RMI_ERROR_TRACKING) {
 			assert(top != res_top);
 
-			/*
-			 * @TODO: For now, assume 1GB granule tracking size.
-			 * Later, we need to query RMM for the granule tracking
-			 * size and align the res_top accordingly.
-			 */
 			INFO("Setting fine tracking for 0x%lx. Range starts from 0x%llx\n",
-			     res_top, ALIGN_DOWN(res_top, GRANULE_TRACKING_REGION_SIZE));
+			     res_top, ALIGN_DOWN(res_top,
+						 host_rmm_get_tracking_region_size()));
 
 			/*
 			 * Invoke RMI_GRANULE_TRACKING_SET to set fine tracking
 			 * and retry delegation. Align the base to tracking granule size
 			 */
 			err_code = host_rmi_granule_tracking_set(ALIGN_DOWN(res_top,
-								     GRANULE_TRACKING_REGION_SIZE),
+								     host_rmm_get_tracking_region_size()),
 								 RMI_TRACKING_FINE);
 
 			if (err_code == RMI_SUCCESS) {
@@ -1642,8 +1752,8 @@ static u_register_t host_rmi_granule_undelegate_range(u_register_t base,
 	 * undelegated.  Single-granule callers cannot meet that condition and
 	 * would otherwise generate one expected RMI_ERROR_INPUT per page.
 	 */
-	if (IS_ALIGNED(base, GRANULE_TRACKING_REGION_SIZE) &&
-	    ((top - base) == GRANULE_TRACKING_REGION_SIZE)) {
+	if (IS_ALIGNED(base, host_rmm_get_tracking_region_size()) &&
+	    ((top - base) == host_rmm_get_tracking_region_size())) {
 		(void)host_rmi_granule_tracking_set(base, RMI_TRACKING_COARSE);
 	}
 
@@ -1655,6 +1765,7 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 	int res = 0;
 	unsigned int i = 0U;
 	smc_ret_values rets;
+	u_register_t ret;
 	u_register_t category = RMI_MEM_CATEGORY_CONVENTIONAL;
 
 	/* Find out the type of memory the region belongs to */
@@ -1670,7 +1781,7 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 		 * and check if the base falls within the region.
 		 */
 		if ((res == 0) && ((base >= ALIGN_DOWN(mem_region,
-								     GRANULE_TRACKING_REGION_SIZE)) &&
+								     host_rmm_get_tracking_region_size())) &&
 				   (base < (mem_region + mem_region_size)))) {
 			category = RMI_MEM_CATEGORY_DEV_NCOH;
 			break;
@@ -1679,6 +1790,7 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 
 	rets = host_rmi_handler(&(smc_args) {SMC_RMI_GRANULE_TRACKING_SET,
 				base, category, tracking, (u_register_t)&rets}, 5U);
+	ret = rets.ret0;
 
 	if (RMI_RETURN_STATUS(rets.ret0) == RMI_INCOMPLETE) {
 		unsigned long tracking_handle = rets.ret1;
@@ -1688,22 +1800,226 @@ u_register_t host_rmi_granule_tracking_set(u_register_t base, u_register_t track
 			.top = base
 		};
 
-		u_register_t ret;
-
 		if (category == RMI_MEM_CATEGORY_CONVENTIONAL) {
-			donation_range.top += GRANULE_TRACKING_REGION_SIZE;
+			donation_range.top += host_rmm_get_tracking_region_size();
 		}
 		ret = host_realm_sro_continue_with_donation_range(rets.ret0,
 				&tracking_handle, &donate_req, NULL, &donation_range);
-		if (ret == RMI_SUCCESS) {
-			/* Fine-tracking descriptors remain owned by the RMM. */
-			page_pool_reserve();
-		}
-
-		return ret;
 	}
 
-	return rets.ret0;
+	if ((ret == RMI_SUCCESS) && (tracking == RMI_TRACKING_FINE) &&
+	    !host_realm_pool_record_tracking_region(base)) {
+		/*
+		 * No testcase cleanup owns this transition. Keep any metadata
+		 * donated from the page pool out of subsequent allocations.
+		 */
+		page_pool_reserve();
+	}
+
+	return ret;
+}
+
+/*
+ * The caller initializes *progress to false before each restoration pass.
+ * Only set it to true here so progress from earlier regions is preserved.
+ */
+static bool host_realm_restore_tracking_region(u_register_t base,
+					       bool *progress)
+{
+	const u_register_t region_size = host_rmm_get_tracking_region_size();
+	const u_register_t region_top = base + region_size;
+	u_register_t cursor = base;
+	u_register_t category;
+	u_register_t out_top;
+	u_register_t state;
+	u_register_t target = RMI_TRACKING_COARSE;
+	u_register_t ret;
+	bool fine = false;
+
+	/*
+	 * A diverse tracking region is reported as multiple category/state
+	 * segments. Such a region starts in NONE because a single coarse
+	 * descriptor cannot represent holes or mixed memory categories, so restore
+	 * it to NONE rather than COARSE after its fine descriptors are released.
+	 */
+	while (cursor < region_top) {
+		ret = host_rmi_granule_tracking_get(cursor, region_top,
+						    &state, &category, &out_top);
+		if ((ret != RMI_SUCCESS) || (out_top <= cursor) ||
+		    (out_top > region_top)) {
+			VERBOSE("Failed to get tracking state for 0x%lx, ret=0x%lx out_top=0x%lx\n",
+				cursor, ret, out_top);
+			return false;
+		}
+
+		if ((cursor != base) || (out_top != region_top)) {
+			target = RMI_TRACKING_NONE;
+		}
+		if (state == RMI_TRACKING_FINE) {
+			fine = true;
+		}
+		cursor = out_top;
+	}
+
+	if (!fine) {
+		return true;
+	}
+
+	ret = host_rmi_granule_tracking_set(base, target);
+	if (ret != RMI_SUCCESS) {
+		VERBOSE("Failed to restore tracking for 0x%lx to 0x%lx, ret=0x%lx\n",
+			base, target, ret);
+		return false;
+	}
+
+	/* Already-restored regions return above without counting as progress. */
+	*progress = true;
+	return true;
+}
+
+/*
+ * Try external and boundary regions in reverse completion order, then scan
+ * PAGE_POOL_BASE..PAGE_POOL_END. Heap-contained regions need no registry entry.
+ * Metadata for a later region may keep an earlier region fine during this pass.
+ * The caller must ensure that all ordinary Granules have returned to NS state.
+ */
+static bool host_realm_restore_tracking_pass(unsigned int region_count,
+					    bool *progress)
+{
+	const u_register_t region_size = host_rmm_get_tracking_region_size();
+	const u_register_t pool_top = round_up(PAGE_POOL_END, region_size);
+	u_register_t base = ALIGN_DOWN(PAGE_POOL_BASE, region_size);
+	unsigned int i;
+	bool success = true;
+
+	for (i = region_count; i > 0U; i--) {
+		if (!host_realm_restore_tracking_region(
+				testcase_external_tracking_regions[i - 1U],
+				progress)) {
+			success = false;
+		}
+	}
+
+	while (base < pool_top) {
+		if (!host_realm_restore_tracking_region(base, progress)) {
+			success = false;
+		}
+
+		base += region_size;
+	}
+
+	return success;
+}
+
+static bool host_realm_restore_tracking(unsigned int region_count,
+					bool report_errors)
+{
+	bool progress;
+	bool success;
+
+	/* Each progressing pass removes at least one fine tracking region. */
+	do {
+		progress = false;
+		success = host_realm_restore_tracking_pass(region_count, &progress);
+	} while (!success && progress);
+
+	if (!success && report_errors) {
+		ERROR("Failed to restore tracking metadata: no reclamation progress\n");
+	}
+
+	return success;
+}
+
+/*
+ * Called by the framework's Realm testcase cleanup hook after test resources
+ * have been released. Restore registered external and boundary regions first,
+ * then scan the heap to reclaim tracking metadata before resetting it.
+ */
+bool host_realm_pool_testcase_release(void)
+{
+	unsigned int region_count;
+	unsigned int users;
+	bool overflow;
+	bool success = true;
+
+	spin_lock(&pool_lock);
+	if (!pool_testcase_active && !pool_testcase_cleanup_pending) {
+		spin_unlock(&pool_lock);
+		return true;
+	}
+
+	pool_testcase_active = false;
+	pool_testcase_cleanup_pending = true;
+	region_count = testcase_external_tracking_region_count;
+	overflow = testcase_external_tracking_region_overflow;
+	users = pool_counter;
+	spin_unlock(&pool_lock);
+
+	if (users != 0U) {
+		ERROR("Cannot release testcase pool with %u Realm user(s)\n",
+		      users);
+		success = false;
+	} else if (!host_realm_restore_tracking(region_count, true)) {
+		success = false;
+	}
+
+	if (overflow) {
+		ERROR("Testcase external tracking-region registry exhausted\n");
+		success = false;
+	}
+
+	if (!success) {
+		/* Retain the registry and cursor; initialization cannot reset them. */
+		return false;
+	}
+
+	spin_lock(&pool_lock);
+	testcase_external_tracking_region_count = 0U;
+	testcase_external_tracking_region_overflow = false;
+	pool_testcase_cleanup_pending = false;
+	spin_unlock(&pool_lock);
+
+	page_pool_reset();
+	return true;
+}
+
+/* Release one Realm pool user and reset the pool after the last Realm. */
+static bool host_realm_pool_release(void)
+{
+	bool last_user;
+	bool testcase_active;
+	bool cleanup_pending;
+
+	spin_lock(&pool_lock);
+	assert(pool_counter != 0U);
+	pool_counter--;
+	last_user = (pool_counter == 0U);
+	testcase_active = pool_testcase_active;
+	cleanup_pending = pool_testcase_cleanup_pending;
+	spin_unlock(&pool_lock);
+
+	if (!last_user || cleanup_pending) {
+		return true;
+	}
+
+	if (!host_realm_restore_tracking(0U, !testcase_active)) {
+		/*
+		 * Another RMM object in this testcase may still own a Granule in
+		 * the pool. The testcase cleanup retries after all objects have
+		 * been released.
+		 */
+		if (testcase_active) {
+			return true;
+		}
+
+		/* Do not allow a subsequent pool reset to reuse RMM-owned pages. */
+		page_pool_reserve();
+		return false;
+	}
+
+	INFO("Reset pool\n");
+	page_pool_reset();
+	return true;
 }
 
 u_register_t host_rmi_granule_delegate(u_register_t addr)
@@ -1958,14 +2274,8 @@ err_free_par:
 
 pool_reset:
 	/* Free test resources */
-	spin_lock(&pool_lock);
-	pool_counter--;
-	count = pool_counter;
-	spin_unlock(&pool_lock);
-
-	if (count == 0U) {
-		INFO("Reset pool\n");
-		page_pool_reset();
+	if (!host_realm_pool_release()) {
+		ERROR("Failed to clean up Realm pool tracking\n");
 	}
 
 	return REALM_ERROR;
@@ -2362,9 +2672,10 @@ u_register_t host_realm_destroy(struct realm *realm)
 
 
 	/* Free test resources */
-	spin_lock(&pool_lock);
-	pool_counter--;
-	spin_unlock(&pool_lock);
+	if (!host_realm_pool_release()) {
+		ERROR("Failed to clean up Realm pool tracking\n");
+		return REALM_ERROR;
+	}
 
 	return REALM_SUCCESS;
 }
@@ -2866,8 +3177,12 @@ u_register_t host_rmi_rmm_config_set(struct rmi_rmm_config *config)
 {
 	smc_ret_values rets;
 
+	INFO("RMI_RMM_CONFIG_SET request: addr=0x%lx granule=0x%lx "
+	     "tracking=0x%lx\n", (u_register_t)config,
+	     config->granule_size, config->tracking_size);
 	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RMM_CONFIG_SET,
 				(u_register_t)config}, 2U);
+	INFO("RMI_RMM_CONFIG_SET response: 0x%lx\n", rets.ret0);
 
 	return rets.ret0;
 }
@@ -2925,6 +3240,21 @@ u_register_t host_rmi_rmm_activate(void)
 
 		return ret;
 	}
+
+	return rets.ret0;
+}
+
+u_register_t host_rmi_rmm_deactivate(void)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_RMM_DEACTIVATE}, 1U).ret0;
+}
+
+u_register_t host_rmi_rmm_state_get(u_register_t *state)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RMM_STATE_GET}, 1U);
+	*state = rets.ret1;
 
 	return rets.ret0;
 }

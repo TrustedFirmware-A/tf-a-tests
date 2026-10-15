@@ -20,7 +20,9 @@
 #include <plat_topology.h>
 #include <power_management.h>
 #include <realm_def.h>
+#include <smccc.h>
 #include <test_helpers.h>
+#include <tftf.h>
 #include <xlat_tables_v2.h>
 
 #define RMI_EXIT(id)	\
@@ -51,35 +53,216 @@ static spinlock_t realm_id_bitmap_lock;
 static u_register_t rmm_feat_reg0;
 static u_register_t rmm_feat_reg2;
 static u_register_t rmm_feat_reg3;
+static u_register_t rmm_tracking_config_size =
+	RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB;
+static u_register_t rmm_tracking_region_size = (1UL << 30);
+
+static u_register_t host_rmm_select_tracking_size(void)
+{
+	return (rand() & 1) != 0 ?
+		RMI_GRAN_4KB_TRACKING_REGION_SIZE_2MB :
+		RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB;
+}
+
+u_register_t host_rmm_get_tracking_region_size(void)
+{
+	return rmm_tracking_region_size;
+}
+
+u_register_t host_rmm_get_tracking_config_size(void)
+{
+	return rmm_tracking_config_size;
+}
 
 /*
- * Ensure RMM is activated. Safe to call multiple times; activation happens
- * only once. Returns true on success, false on failure.
+ * Keep the host helpers synchronized with the layout actually active in RMM.
+ * A different layout requires successful pool cleanup and deactivation first.
  */
-bool host_rmm_activate(void)
+bool host_rmm_activate_with_tracking_size(u_register_t tracking_size)
 {
-	static bool rmm_is_active;
-	struct rmi_rmm_config config __aligned(PAGE_SIZE);
+	struct rmi_rmm_config config __aligned(PAGE_SIZE) = {0};
+	u_register_t state;
+	u_register_t ret;
 
-	/* Configure and activate RMM if it is not already activated */
-	if (!rmm_is_active) {
-		config.tracking_size = RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB;
+	if ((tracking_size != RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB) &&
+	    (tracking_size != RMI_GRAN_4KB_TRACKING_REGION_SIZE_2MB)) {
+		ERROR("Unsupported RMM tracking size 0x%lx\n", tracking_size);
+		return false;
+	}
+
+	ret = host_rmi_rmm_state_get(&state);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rmm_state_get failed, ret=0x%lx\n", ret);
+		return false;
+	}
+	if (state == RMI_RMM_STATE_ACTIVE) {
+		ret = host_rmi_rmm_config_get(&config);
+		if ((ret != RMI_SUCCESS) ||
+		    (config.tracking_size != tracking_size) ||
+		    (config.granule_size != RMI_GRANULE_SIZE_4K)) {
+			ERROR("Active RMM configuration does not match tracking size 0x%lx\n",
+			      tracking_size);
+			return false;
+		}
+	} else if (state == RMI_RMM_STATE_INIT) {
+		config.tracking_size = tracking_size;
 		config.granule_size = RMI_GRANULE_SIZE_4K;
 
-		if (host_rmi_rmm_config_set(&config) != REALM_SUCCESS) {
-			ERROR("host_rmi_rmm_config_set failed\n");
+		INFO("RMM CONFIG_SET: granule=4KB tracking=%s (encoding=0x%lx)\n",
+		     tracking_size == RMI_GRAN_4KB_TRACKING_REGION_SIZE_2MB ?
+			"2MB" : "1GB", tracking_size);
+		ret = host_rmi_rmm_config_set(&config);
+		if (ret != RMI_SUCCESS) {
+			ERROR("host_rmi_rmm_config_set failed, ret=0x%lx\n", ret);
 			return false;
 		}
 
-		if (host_rmi_rmm_activate() != REALM_SUCCESS) {
-			ERROR("host_rmi_rmm_activate failed\n");
+		ret = host_rmi_rmm_activate();
+		if (ret != RMI_SUCCESS) {
+			ERROR("host_rmi_rmm_activate failed, ret=0x%lx\n", ret);
 			return false;
 		}
-		rmm_is_active = true;
+	} else {
+		ERROR("Unexpected RMM state 0x%lx\n", state);
+		return false;
+	}
+
+	rmm_tracking_config_size = tracking_size;
+	rmm_tracking_region_size =
+		tracking_size == RMI_GRAN_4KB_TRACKING_REGION_SIZE_2MB ?
+			(1UL << 21) : (1UL << 30);
+	return true;
+}
+
+bool host_rmm_activate(void)
+{
+	return host_rmm_activate_with_tracking_size(rmm_tracking_config_size);
+}
+
+bool host_rmm_deactivate(void)
+{
+	u_register_t state;
+	u_register_t ret;
+
+	ret = host_rmi_rmm_state_get(&state);
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rmm_state_get failed, ret=0x%lx\n", ret);
+		return false;
+	}
+	if (state == RMI_RMM_STATE_INIT) {
+		return true;
+	}
+	if (state != RMI_RMM_STATE_ACTIVE) {
+		ERROR("Unexpected RMM state 0x%lx\n", state);
+		return false;
+	}
+
+	ret = host_rmi_rmm_deactivate();
+	if (ret != RMI_SUCCESS) {
+		ERROR("host_rmi_rmm_deactivate failed, ret=0x%lx\n", ret);
+		return false;
 	}
 
 	return true;
 }
+
+static test_result_t host_realm_testcase_check_rmm(void)
+{
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
+
+	return TEST_RESULT_SUCCESS;
+}
+
+static test_result_t host_realm_testcase_setup(const test_suite_t *testsuite,
+					       const test_case_t *testcase)
+{
+	u_register_t tracking_size;
+
+	(void)testsuite;
+
+	/* Leave skip decisions, including TRP-supported tests, to the body. */
+	if (host_realm_testcase_check_rmm() != TEST_RESULT_SUCCESS) {
+		return TEST_RESULT_SUCCESS;
+	}
+
+	/* Recover the old layout before selecting or resetting anything new. */
+	if (!host_realm_pool_testcase_release() || !host_rmm_deactivate()) {
+		ERROR("Previous RMM testcase lifecycle is still in use\n");
+		return TEST_RESULT_FAIL;
+	}
+	if (!host_realm_pool_init()) {
+		return TEST_RESULT_FAIL;
+	}
+
+	tracking_size = host_rmm_select_tracking_size();
+	INFO("RMM testcase tracking: '%s' uses %s regions\n",
+	     testcase->name,
+	     tracking_size == RMI_GRAN_4KB_TRACKING_REGION_SIZE_2MB ?
+		"2MB" : "1GB");
+
+	if (!host_rmm_activate_with_tracking_size(tracking_size)) {
+		ERROR("Failed to activate RMM\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!host_realm_pool_testcase_begin()) {
+		ERROR("Failed to start Realm testcase pool lifecycle\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+static test_result_t host_realm_testcase_cleanup(const test_suite_t *testsuite,
+					 const test_case_t *testcase)
+{
+	(void)testsuite;
+	(void)testcase;
+
+	/* A skipped availability check is a successful cleanup no-op. */
+	if (host_realm_testcase_check_rmm() != TEST_RESULT_SUCCESS) {
+		return TEST_RESULT_SUCCESS;
+	}
+
+	if (!host_realm_pool_testcase_release()) {
+		ERROR("Failed to release Realm testcase pool\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	if (!host_rmm_deactivate()) {
+		ERROR("Failed to deactivate RMM after Realm testcase\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
+}
+
+TFTF_TESTSUITE_SETUP_HOOK(realm_payload_testcase_setup_hook,
+			  "Realm payload at EL1", host_realm_testcase_setup);
+TFTF_TESTSUITE_CLEANUP_HOOK(realm_payload_testcase_cleanup_hook,
+			    "Realm payload at EL1", host_realm_testcase_cleanup);
+TFTF_TESTSUITE_SETUP_HOOK(rmi_spm_testcase_setup_hook,
+			  "RMI and SPM tests", host_realm_testcase_setup);
+TFTF_TESTSUITE_CLEANUP_HOOK(rmi_spm_testcase_cleanup_hook,
+			    "RMI and SPM tests", host_realm_testcase_cleanup);
+TFTF_TESTSUITE_SETUP_HOOK(sp_exceptions_testcase_setup_hook,
+			  "SP exceptions", host_realm_testcase_setup);
+TFTF_TESTSUITE_CLEANUP_HOOK(sp_exceptions_testcase_cleanup_hook,
+			    "SP exceptions", host_realm_testcase_cleanup);
+TFTF_TESTSUITE_SETUP_HOOK(rme_invalid_access_testcase_setup_hook,
+			  "Invalid memory access with RME extension",
+			  host_realm_testcase_setup);
+TFTF_TESTSUITE_CLEANUP_HOOK(rme_invalid_access_testcase_cleanup_hook,
+			    "Invalid memory access with RME extension",
+			    host_realm_testcase_cleanup);
+TFTF_TESTCASE_SETUP_HOOK(spm_smmu_invalid_access_testcase_setup_hook,
+			 "SMMUv3 tests",
+			 "Check secure peripheral access to a realm region is aborted",
+			 host_realm_testcase_setup);
+TFTF_TESTCASE_CLEANUP_HOOK(spm_smmu_invalid_access_testcase_cleanup_hook,
+			   "SMMUv3 tests",
+			   "Check secure peripheral access to a realm region is aborted",
+			   host_realm_testcase_cleanup);
 
 /*
  * The function handler to print the Realm logged buffer,

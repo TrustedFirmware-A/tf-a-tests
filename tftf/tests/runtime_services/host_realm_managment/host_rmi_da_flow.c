@@ -85,7 +85,6 @@ test_result_t host_vdev_create_rejects_out_of_range_tdi_id(void)
 {
 	test_result_t result = TEST_RESULT_SUCCESS;
 	bool return_error = false;
-	int rc;
 	u_register_t ret;
 	u_register_t rmi_feat_reg0;
 	unsigned long invalid_tdi_id;
@@ -94,13 +93,6 @@ test_result_t host_vdev_create_rejects_out_of_range_tdi_id(void)
 	struct host_vdev *h_vdev = &gbl_host_vdev;
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
-
-	rc = page_pool_init((u_register_t)PAGE_POOL_BASE,
-			    (u_register_t)PAGE_POOL_MAX_SIZE);
-	if (rc != HEAP_INIT_SUCCESS) {
-		ERROR("Failed to init heap pool %d\n", rc);
-		return TEST_RESULT_FAIL;
-	}
 
 	ret = host_create_realm_with_feat_da(&realm, true);
 	if (ret != 0UL) {
@@ -451,22 +443,9 @@ test_result_t host_pdev_test_valid_state_transition(void)
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
-	/* Activate RMM */
-	if (!host_rmm_activate()) {
-		return TEST_RESULT_FAIL;
-	}
-
 	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
 	if (h_pdev == NULL) {
 		return TEST_RESULT_SKIPPED;
-	}
-
-	/* Initialize Host NS heap memory */
-	rc = page_pool_init((u_register_t)PAGE_POOL_BASE,
-			     (u_register_t)PAGE_POOL_MAX_SIZE);
-	if (rc != HEAP_INIT_SUCCESS) {
-		ERROR("Failed to init heap pool %d\n", rc);
-		return TEST_RESULT_FAIL;
 	}
 
 	/* only test ep_pdev */
@@ -508,14 +487,6 @@ test_result_t host_vdev_test_valid_state_transition(void)
 	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
 	if (h_pdev == NULL) {
 		return TEST_RESULT_SKIPPED;
-	}
-
-	/* Initialize Host NS heap memory */
-	rc = page_pool_init((u_register_t)PAGE_POOL_BASE,
-			     (u_register_t)PAGE_POOL_MAX_SIZE);
-	if (rc != HEAP_INIT_SUCCESS) {
-		ERROR("Failed to init heap pool %d\n", rc);
-		return TEST_RESULT_FAIL;
 	}
 
 	rc = host_create_realm_with_feat_da(&realm, true);
@@ -699,22 +670,9 @@ test_result_t host_pdev_invoke_ide_refresh_reset(void)
 
 	INIT_AND_SKIP_DA_TEST_IF_PREREQS_NOT_MET(rmi_feat_reg0);
 
-	/* Activate RMM */
-	if (!host_rmm_activate()) {
-		return TEST_RESULT_FAIL;
-	}
-
 	h_pdev = get_host_pdev_by_type(DEV_TYPE_INDEPENDENTLY_ATTESTED);
 	if (h_pdev == NULL) {
 		return TEST_RESULT_SKIPPED;
-	}
-
-	/* Initialize Host NS heap memory */
-	rc = page_pool_init((u_register_t)PAGE_POOL_BASE,
-			     (u_register_t)PAGE_POOL_MAX_SIZE);
-	if (rc != HEAP_INIT_SUCCESS) {
-		ERROR("Failed to init heap pool %d\n", rc);
-		return TEST_RESULT_FAIL;
 	}
 
 	rc = tsm_connect_device(h_pdev);
@@ -764,21 +722,12 @@ test_result_t host_realm_test_root_port_key_management(void)
 	u_register_t rmi_rc;
 	u_register_t create_handle;
 	u_register_t donate_req;
-	int ret;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
 
 	if (host_rmi_version(RMI_ABI_VERSION_VAL) != 0U) {
 		tftf_testcase_printf("RMM is not TRP\n");
 		return TEST_RESULT_SKIPPED;
-	}
-
-	/* Initialize Host NS heap memory */
-	ret = page_pool_init((u_register_t)PAGE_POOL_BASE,
-			     (u_register_t)PAGE_POOL_MAX_SIZE);
-	if (ret != HEAP_INIT_SUCCESS) {
-		ERROR("Failed to init heap pool %d\n", ret);
-		return TEST_RESULT_FAIL;
 	}
 
 	/*
@@ -794,7 +743,8 @@ test_result_t host_realm_test_root_port_key_management(void)
 	 * that the host will donate all the memory in one go.
 	 */
 	if (RMI_RETURN_STATUS(rmi_rc) == RMI_INCOMPLETE) {
-		rmi_rc = host_realm_sro_continue(ret, &create_handle, &donate_req, NULL);
+		rmi_rc = host_realm_sro_continue(rmi_rc, &create_handle,
+						 &donate_req, NULL);
 	}
 
 	if (rmi_rc != RMI_SUCCESS) {

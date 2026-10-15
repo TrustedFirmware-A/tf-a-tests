@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-  Copyright (c) 2018-2024, Arm Limited. All rights reserved.
+  Copyright (c) 2018-2026, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-3-Clause
 -->
@@ -235,6 +235,8 @@
                function="test_ffa_notifications_info_get_none" />
      <testcase name="Notifications VM signals SP, with SRI flag set and fail"
                function="test_ffa_notifications_vm_signals_sp_delay_sri_fail" />
+     <testcase name="Notification counts at NS physical interface"
+               function="test_ffa_notifications_count_at_ns_physical_interface" />
   </testsuite>
 
   <testsuite name="FF-A Indirect Messaging"

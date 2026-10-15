@@ -199,6 +199,25 @@ struct ffa_boot_info_header {
 /** Query interrupt ID of the Managed Exit Interrupt. */
 #define FFA_FEATURE_MEI 0x3U
 
+/** Query notification capabilities and implemented notification counts. */
+#define FFA_FEATURE_NOTIFICATION 0x4U
+
+/** Per-vCPU notifications are not supported for VM endpoints. */
+#define FFA_NOTIFY_FEAT_NO_PER_VCPU_VM (UINT32_C(1) << 0)
+
+/** Per-vCPU notifications are not supported for SP endpoints. */
+#define FFA_NOTIFY_FEAT_NO_PER_VCPU_SP (UINT32_C(1) << 1)
+
+/*
+ * FF-A encodes the implemented notification counts above the legacy base
+ * of 64 notification IDs.
+ */
+#define FFA_NOTIFICATION_COUNT_BASE	UINT32_C(64)
+#define FFA_NOTIFY_COUNT_VM_SHIFT	UINT32_C(2)
+#define FFA_NOTIFY_COUNT_VM_MASK	UINT32_C(0x1FF)
+#define FFA_NOTIFY_COUNT_SP_SHIFT	UINT32_C(11)
+#define FFA_NOTIFY_COUNT_SP_MASK	UINT32_C(0x1FF)
+
 /** Minimum and maximum buffer size reported by FFA_FEATURES(FFA_RXTX_MAP) */
 #define FFA_RXTX_MAP_MIN_BUF_4K 0
 #define FFA_RXTX_MAP_MAX_BUF_PAGE_COUNT 1

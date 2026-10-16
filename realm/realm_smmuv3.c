@@ -70,9 +70,9 @@ static bool realm_validate_mapping(u_register_t vdev_id, struct rsi_vdev_info *v
 	while (new_ipa_base < ipa_top) {
 		ret = rsi_vdev_vaildate_mapping(vdev_id, new_ipa_base,
 						ipa_top, pa_base, flags,
-						vdev_info->lock_nonce,
-						vdev_info->meas_nonce,
-						vdev_info->report_nonce,
+						vdev_info->lock_seq,
+						vdev_info->meas_seq,
+						vdev_info->report_seq,
 						&new_ipa_base, &response);
 		if ((ret != RSI_SUCCESS) || (response != RSI_ACCEPT)) {
 			realm_printf("%s() failed, 0x%lx\n", "rsi_vdev_vaildate_mapping", ret);
@@ -170,9 +170,9 @@ bool test_realm_smmuv3(void)
 	}
 
 	ret = rsi_vdev_dma_enable(vdev_id, flags, non_ats_plane,
-					vdev_info->lock_nonce,
-					vdev_info->meas_nonce,
-					vdev_info->report_nonce);
+					vdev_info->lock_seq,
+					vdev_info->meas_seq,
+					vdev_info->report_seq);
 	if (ret != RSI_SUCCESS) {
 		ERROR("%s() failed, 0x%lx", "rsi_vdev_dma_enable", ret);
 		return false;

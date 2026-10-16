@@ -16,9 +16,9 @@ void realm_rsi_vdev_print_info(const struct rsi_vdev_info *vdev_info)
 	realm_printf("\tflags: 0x%lx\n", vdev_info->flags);
 	realm_printf("\tcert_id: 0x%lx\n", vdev_info->cert_id);
 	realm_printf("\thash_algo: 0x%lx\n", vdev_info->hash_algo);
-	realm_printf("\tlock_nonce: 0x%lx\n", vdev_info->lock_nonce);
-	realm_printf("\tmeas_nonce: 0x%lx\n", vdev_info->meas_nonce);
-	realm_printf("\treport_nonce: 0x%lx\n", vdev_info->report_nonce);
+	realm_printf("\tlock_seq: 0x%lx\n", vdev_info->lock_seq);
+	realm_printf("\tmeas_seq: 0x%lx\n", vdev_info->meas_seq);
+	realm_printf("\treport_seq: 0x%lx\n", vdev_info->report_seq);
 	realm_printf("\tformat_type: 0x%lx\n", vdev_info->format_type);
 	realm_printf("\tformat_version: 0x%lx\n", vdev_info->format_version);
 	realm_printf("\tstate: 0x%lx\n", vdev_info->state);

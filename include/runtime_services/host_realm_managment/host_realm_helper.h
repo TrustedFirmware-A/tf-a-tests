@@ -35,6 +35,8 @@ struct test_realm_params {
 	bool pmu;
 	unsigned int pmu_num_ctrs;
 	bool da;
+	bool set_max_num_vdevs;
+	u_register_t max_num_vdevs;
 	bool shared_mec;
 	bool rtt_tree_single;
 	bool rtt_s2ap_encoding_indirect;

@@ -2197,6 +2197,7 @@ u_register_t host_realm_create(struct realm *realm)
 	/* Enabled RMI FEAT_DA */
 	if (realm->da_enabled) {
 		params->flags0 |= RMI_REALM_FLAGS0_DA;
+		params->max_num_vdevs = realm->max_num_vdevs;
 	}
 
 	/* MEC policy: use private MECID unless shared_mec is requested */
@@ -2226,6 +2227,7 @@ u_register_t host_realm_create(struct realm *realm)
 					&create_handle, &donate_req);
 	if (RMI_RETURN_STATUS(ret) == RMI_INCOMPLETE) {
 		ret = host_realm_sro_continue(ret, &create_handle, &donate_req, NULL);
+		realm->last_host_rmi_ret = ret;
 	}
 
 	if (RMI_RETURN_STATUS(ret) != RMI_SUCCESS) {
@@ -3098,10 +3100,11 @@ u_register_t host_rmi_vdev_get_state(u_register_t vdev_ptr, u_register_t *state)
 	return rets.ret0;
 }
 
-u_register_t host_rmi_vdev_abort(u_register_t vdev_ptr)
+u_register_t host_rmi_vdev_abort(u_register_t rd_ptr, u_register_t pdev_ptr,
+				  u_register_t vdev_ptr)
 {
-	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_ABORT, vdev_ptr},
-				2U).ret0;
+	return host_rmi_handler(&(smc_args) {SMC_RMI_VDEV_ABORT, rd_ptr,
+			pdev_ptr, vdev_ptr}, 4U).ret0;
 }
 
 u_register_t host_rmi_vdev_destroy(u_register_t rd_ptr, u_register_t pdev_ptr,

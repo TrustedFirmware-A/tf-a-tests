@@ -12,6 +12,9 @@
 
 int realm_assign_unassign_devices(struct realm *realm_ptr);
 int tsm_connect_device(struct host_pdev *h_pdev);
+int tsm_connect_device_with_ranges(struct host_pdev *h_pdev,
+				   const struct rmi_address_range *addr_range,
+				   size_t num_addr_range);
 int tsm_connect_first_device(struct host_pdev **h_pdev);
 int tsm_connect_devices(unsigned int *count);
 int tsm_disconnect_device(struct host_pdev *h_pdev);

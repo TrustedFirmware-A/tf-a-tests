@@ -359,6 +359,7 @@ static u_register_t default_realm_s2sz(bool lpa2, u_register_t max_s2sz)
 static bool validate_realm_params(struct realm *realm_ptr,
 				   struct test_realm_params *params,
 				   u_register_t feat_reg0,
+				   u_register_t feat_reg2,
 				   u_register_t feat_reg3)
 {
 	long sl;
@@ -488,6 +489,19 @@ static bool validate_realm_params(struct realm *realm_ptr,
 
 	/* Store FEAT_DA configuration */
 	realm_ptr->da_enabled = params->da;
+	if (params->da) {
+		if (params->set_max_num_vdevs) {
+			realm_ptr->max_num_vdevs = params->max_num_vdevs;
+		} else {
+			unsigned long max_vdevs_order;
+
+			max_vdevs_order = EXTRACT(RMI_FEATURE_REGISTER_2_REALM_MAX_VDEVS_ORDER,
+						  feat_reg2);
+			realm_ptr->max_num_vdevs = 1UL << max_vdevs_order;
+		}
+	} else {
+		realm_ptr->max_num_vdevs = 0UL;
+	}
 	realm_ptr->shared_mec = params->shared_mec;
 
 	realm_ptr->num_aux_planes = params->num_aux_planes;
@@ -516,7 +530,8 @@ bool host_prepare_realm_payload(struct realm *realm_ptr,
 	}
 
 	/* Validate parameters (including feature-dependent checks) and assign realm_ptr members */
-	if (!validate_realm_params(realm_ptr, params, rmm_feat_reg0, rmm_feat_reg3)) {
+	if (!validate_realm_params(realm_ptr, params, rmm_feat_reg0, rmm_feat_reg2,
+				   rmm_feat_reg3)) {
 		return false;
 	}
 

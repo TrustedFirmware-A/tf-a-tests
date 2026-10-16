@@ -199,15 +199,33 @@
 	  <!-- Invoke DA RSI calls -->
 	  <testcase name="Trigger RSI_VDEV_GET_INFO with various params"
 	  function="host_da_get_info_parameter_test" />
-	  <!-- Invoke all possible PDEV state transitions -->
-	  <testcase name="PDEV test valid state transitions"
-	  function="host_pdev_test_valid_state_transition" />
+	  <!-- PDEV lifecycle and device-communication state coverage -->
+	  <testcase name="PDEV SPDM lifecycle and negative state coverage"
+	  function="host_pdev_test_spdm_lifecycle" />
+	  <testcase name="PDEV stop from NEEDS_KEY"
+	  function="host_pdev_test_stop_from_needs_key" />
+	  <testcase name="PDEV abort communication in NEW"
+	  function="host_pdev_test_abort_new" />
+	  <testcase name="PDEV abort communication in HAS_KEY"
+	  function="host_pdev_test_abort_has_key" />
+	  <testcase name="PDEV stream lifecycle and communication"
+	  function="host_pdev_test_stream_lifecycle" />
+	  <testcase name="PDEV stream communication error"
+	  function="host_pdev_test_stream_communication_error" />
+	  <testcase name="PDEV stop communication error"
+	  function="host_pdev_test_stop_communication_error" />
 	  <!-- Invoke all possible VDEV state transitions -->
 	  <testcase name="VDEV test valid state transitions"
 	  function="host_vdev_test_valid_state_transition" />
 	  <!-- Reject out-of-range TDI IDs during VDEV create -->
 	  <testcase name="VDEV create rejects out-of-range tdi_id"
 	  function="host_vdev_create_rejects_out_of_range_tdi_id" />
+	  <!-- Reject VDEV create when the Realm allows zero VDEVs -->
+	  <testcase name="VDEV create rejects Realm vdev limit of zero"
+	  function="host_vdev_create_rejects_realm_vdev_limit" />
+	  <!-- Reject out-of-range Realm max_num_vdevs during realm create -->
+	  <testcase name="Realm create rejects out-of-range max_num_vdevs"
+	  function="host_realm_create_rejects_out_of_range_vdev_limit" />
 	  <!-- Invoke IDE refresh and reset on PDEV -->
 	  <testcase name="Invoke IDE refresh and reset on PDEV"
 	  function="host_pdev_invoke_ide_refresh_reset" />

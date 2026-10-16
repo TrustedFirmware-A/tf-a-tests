@@ -13,8 +13,6 @@
 
 #define DEV_TYPE_INDEPENDENTLY_ATTESTED		(0)
 
-#define PDEV_STATE_TRANSITION_MAX		(10)
-
 /*
  * Init DA specific globals
  * Skip DA test if any of the below check is true
@@ -139,25 +137,32 @@ void host_pdevs_init(void);
 bool is_host_pdev_independently_attested(struct host_pdev *h_pdev);
 struct host_pdev *get_host_pdev_by_type(uint8_t type);
 
-/*
- * Transition PDEV to sequence of states mentioned in 'pdev_states'. During
- * state transition if any error is detected, this api will try to transition
- * the PDEV to STOPPED state and cleanup the resources held by PDEV.
- */
-int host_pdev_state_transition(struct host_pdev *h_pdev,
-			       bool ep_pdev,
-			       const unsigned char pdev_states[],
-			       size_t pdev_states_max);
-
-int host_pdev_transition(struct host_pdev *h_pdev, bool ep_pdev, unsigned char to_state);
-int host_pdev_reclaim(struct host_pdev *h_pdev);
+int pdev_create_spdm(struct host_pdev *h_pdev, bool ep_pdev);
+int pdev_advance_to_ready(struct host_pdev *h_pdev, bool ep_pdev);
+int pdev_stop_and_destroy(struct host_pdev *h_pdev, bool ep_pdev);
 int host_pdev_create(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_get_state(struct host_pdev *h_pdev, bool ep_pdev,
+			u_register_t *state);
+int host_pdev_communicate_incomplete(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_communicate_complete(struct host_pdev *h_pdev, bool ep_pdev,
+				   unsigned char target_state);
+int host_pdev_communicate_until_wait(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_inject_communication_error(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_set_pubkey(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_stop(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_abort(struct host_pdev *h_pdev, bool ep_pdev);
+int host_pdev_destroy(struct host_pdev *h_pdev, bool ep_pdev);
 int host_pdev_stream_connect(struct host_pdev *h_pdev);
+int host_pdev_stream_connect_with_ranges(struct host_pdev *h_pdev,
+					 const struct rmi_address_range *addr_range,
+					 size_t num_addr_range);
 int host_pdev_stream_complete(struct host_pdev *h_pdev);
 int host_pdev_stream_disconnect(struct host_pdev *h_pdev);
 int host_pdev_stream_key_refresh(struct host_pdev *h_pdev);
 
 int host_create_realm_with_feat_da(struct realm *realm, bool activate);
+int host_create_realm_with_feat_da_vdev_limit(struct realm *realm, bool activate,
+					      u_register_t max_num_vdevs);
 int host_vdev_transition(struct realm *realm, struct host_vdev *h_vdev,
 			 unsigned char to_state);
 int host_vdev_get_interface_report(struct realm *realm,

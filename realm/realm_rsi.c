@@ -276,9 +276,9 @@ u_register_t rsi_vdev_vaildate_mapping(u_register_t vdev_id,
 					u_register_t ipa_top,
 					u_register_t pa_base,
 					u_register_t flags,
-					u_register_t lock_nonce,
-					u_register_t meas_nonce,
-					u_register_t report_nonce,
+					u_register_t lock_seq,
+					u_register_t meas_seq,
+					u_register_t report_seq,
 					u_register_t *new_ipa_base,
 					rsi_response_type *response)
 {
@@ -287,7 +287,7 @@ u_register_t rsi_vdev_vaildate_mapping(u_register_t vdev_id,
 	tftf_smc_no_retval_x8(&(smc_args_ext) {
 			SMC_RSI_VDEV_VALIDATE_MAPPING,
 			vdev_id, ipa_base, ipa_top, pa_base, flags,
-			lock_nonce, meas_nonce, report_nonce
+			lock_seq, meas_seq, report_seq
 			},
 			&res);
 
@@ -302,16 +302,16 @@ u_register_t rsi_vdev_vaildate_mapping(u_register_t vdev_id,
 u_register_t rsi_vdev_dma_enable(u_register_t vdev_id,
 				 u_register_t flags,
 				 u_register_t non_ats_plane,
-				 u_register_t lock_nonce,
-				 u_register_t meas_nonce,
-				 u_register_t report_nonce)
+				 u_register_t lock_seq,
+				 u_register_t meas_seq,
+				 u_register_t report_seq)
 {
 	smc_ret_values res = {};
 
 	res = tftf_smc(&(smc_args) {
 			SMC_RSI_VDEV_DMA_ENABLE, vdev_id,
-			flags, non_ats_plane, lock_nonce,
-			meas_nonce, report_nonce
+			flags, non_ats_plane, lock_seq,
+			meas_seq, report_seq
 			});
 	return res.ret0;
 }

@@ -73,7 +73,8 @@ static test_result_t check_nzcv(bool rndrrs) {
 
 #if defined __aarch64__
 	const char *reg_name;
-	uint64_t reg;
+	uint64_t reg = 0;
+	uint64_t nzcv = NZCV_N_BIT | NZCV_Z_BIT | NZCV_C_BIT | NZCV_V_BIT;
 
 	SKIP_TEST_IF_RNG_TRAP_NOT_SUPPORTED();
 
@@ -83,19 +84,35 @@ static test_result_t check_nzcv(bool rndrrs) {
 		reg_name = "RNDR";
 	}
 
-	write_nzcv(NZCV_N_BIT | NZCV_Z_BIT | NZCV_C_BIT | NZCV_V_BIT);
 	if (rndrrs) {
-		reg = read_rndrrs();
+		__asm__ volatile(
+			"msr nzcv, %[nzcv]\n"
+			"mrs %[rndr], " __XSTRING(RNDRRS) "\n"
+			"mrs %[nzcv], nzcv"
+			: [rndr] "=r" (reg),
+			[nzcv] "+r" (nzcv)
+			:
+			: "cc"
+		);
 	} else {
-		reg = read_rndr();
+		__asm__ volatile(
+			"msr nzcv, %[nzcv]\n"
+			"mrs %[rndr], " __XSTRING(RNDR) "\n"
+			"mrs %[nzcv], nzcv"
+			: [rndr] "=r" (reg),
+			[nzcv] "+r" (nzcv)
+			:
+			: "cc"
+		);
 	}
 	if (reg == 0) {
-		if ((read_nzcv() & NZCV_Z_BIT) == 0) {
+		if ((nzcv & NZCV_Z_BIT) == 0) {
 			ERROR("%s returned no entropy but PSTATE.Z wasn't set.\n", reg_name);
 			return TEST_RESULT_FAIL;
 		}
 	}
-	if (read_nzcv() != 0) {
+
+	if (nzcv != 0) {
 		ERROR("%s returned entropy but was set.\n", reg_name);
 		return TEST_RESULT_FAIL;
 	}

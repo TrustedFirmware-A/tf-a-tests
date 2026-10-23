@@ -233,7 +233,8 @@ static smc_ret_values host_rmi_handler(smc_args *args, unsigned int in_reg)
 	if ((regs[0] != SMC_RMI_RTT_READ_ENTRY) &&
 	    (regs[0] != SMC_RMI_RTT_AUX_MAP_PROTECTED) &&
 	    (regs[0] != SMC_RMI_RTT_UNPROT_UNMAP) &&
-	    (regs[0] != SMC_RMI_RTT_DATA_UNMAP)) {
+	    (regs[0] != SMC_RMI_RTT_DATA_UNMAP) &&
+	    (regs[0] != SMC_RMI_PDEV_STREAM_INFO)) {
 		CHECK_RET(4);
 	}
 
@@ -2032,6 +2033,30 @@ u_register_t host_rmi_granule_undelegate(u_register_t addr)
 	return host_rmi_granule_undelegate_range(addr, addr + PAGE_SIZE);
 }
 
+u_register_t host_rmi_gpt_l1_create(u_register_t addr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_GPT_L1_CREATE, addr},
+				2U).ret0;
+}
+
+u_register_t host_rmi_gpt_l1_destroy(u_register_t addr)
+{
+	return host_rmi_handler(&(smc_args) {SMC_RMI_GPT_L1_DESTROY, addr},
+				2U).ret0;
+}
+
+u_register_t host_rmi_gpt_info(u_register_t base, u_register_t top,
+			       u_register_t *out_top, u_register_t *state)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_GPT_INFO, base, top}, 3U);
+	*out_top = rets.ret1;
+	*state = rets.ret2;
+
+	return rets.ret0;
+}
+
 u_register_t host_rmi_version(u_register_t requested_ver)
 {
 	smc_ret_values ret;
@@ -3009,6 +3034,23 @@ u_register_t host_rmi_pdev_stream_key_purge(u_register_t pdev1_ptr, u_register_t
 			stream_handle}, 4U).ret0;
 }
 
+u_register_t host_rmi_pdev_stream_info(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+			       u_register_t stream_handle, u_register_t *stream_state,
+			       u_register_t *stream_type, u_register_t *key_refresh_count,
+			       u_register_t *key_purge_count)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_PDEV_STREAM_INFO, pdev1_ptr, pdev2_ptr,
+					     stream_handle}, 4U);
+	*stream_state = rets.ret1;
+	*stream_type = rets.ret2;
+	*key_refresh_count = rets.ret3;
+	*key_purge_count = rets.ret4;
+
+	return rets.ret0;
+}
+
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 				  u_register_t vdev_ptr,
 				  u_register_t params_ptr)
@@ -3050,6 +3092,32 @@ u_register_t host_rmi_rtt_dev_unmap(u_register_t rd_ptr,
 	*out_top = rets.ret1;
 	*out_range = rets.ret2;
 	*out_count = rets.ret3;
+	return rets.ret0;
+}
+
+u_register_t host_rmi_rtt_arch_dev_map(u_register_t rd_ptr,
+					 u_register_t dev_ptr,
+					 u_register_t base, u_register_t top,
+					 u_register_t *out_top)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_ARCH_DEV_MAP,
+				rd_ptr, dev_ptr, base, top}, 5U);
+	*out_top = rets.ret1;
+	return rets.ret0;
+}
+
+u_register_t host_rmi_rtt_arch_dev_unmap(u_register_t rd_ptr,
+					   u_register_t dev_ptr,
+					   u_register_t base, u_register_t top,
+					   u_register_t *out_top)
+{
+	smc_ret_values rets;
+
+	rets = host_rmi_handler(&(smc_args) {SMC_RMI_RTT_ARCH_DEV_UNMAP,
+				rd_ptr, dev_ptr, base, top}, 5U);
+	*out_top = rets.ret1;
 	return rets.ret0;
 }
 

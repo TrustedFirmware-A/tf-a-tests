@@ -56,6 +56,7 @@ static u_register_t rmm_feat_reg3;
 static u_register_t rmm_tracking_config_size =
 	RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB;
 static u_register_t rmm_tracking_region_size = (1UL << 30);
+static bool rmm_is_active;
 
 static u_register_t host_rmm_select_tracking_size(void)
 {
@@ -83,6 +84,20 @@ bool host_rmm_activate_with_tracking_size(u_register_t tracking_size)
 	struct rmi_rmm_config config __aligned(PAGE_SIZE) = {0};
 	u_register_t state;
 	u_register_t ret;
+	u_register_t expected_state;
+
+	expected_state = rmm_is_active ? RMI_RMM_STATE_ACTIVE :
+					 RMI_RMM_STATE_INIT;
+	if (host_rmi_rmm_state_get(&state) != RMI_SUCCESS) {
+		ERROR("host_rmi_rmm_state_get failed\n");
+		return false;
+	}
+
+	if (state != expected_state) {
+		ERROR("Unexpected RMM state: 0x%lx, expected: 0x%lx\n",
+		      state, expected_state);
+		return false;
+	}
 
 	if ((tracking_size != RMI_GRAN_4KB_TRACKING_REGION_SIZE_1GB) &&
 	    (tracking_size != RMI_GRAN_4KB_TRACKING_REGION_SIZE_2MB)) {
@@ -122,6 +137,13 @@ bool host_rmm_activate_with_tracking_size(u_register_t tracking_size)
 			ERROR("host_rmi_rmm_activate failed, ret=0x%lx\n", ret);
 			return false;
 		}
+
+		if ((host_rmi_rmm_state_get(&state) != RMI_SUCCESS) ||
+		    (state != RMI_RMM_STATE_ACTIVE)) {
+			ERROR("RMM did not enter active state: 0x%lx\n", state);
+			return false;
+		}
+		rmm_is_active = true;
 	} else {
 		ERROR("Unexpected RMM state 0x%lx\n", state);
 		return false;
@@ -162,6 +184,8 @@ bool host_rmm_deactivate(void)
 		ERROR("host_rmi_rmm_deactivate failed, ret=0x%lx\n", ret);
 		return false;
 	}
+
+	rmm_is_active = false;
 
 	return true;
 }

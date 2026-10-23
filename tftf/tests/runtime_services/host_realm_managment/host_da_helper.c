@@ -227,6 +227,7 @@ int host_pdev_stream_connect_with_ranges(struct host_pdev *h_pdev,
 					 size_t num_addr_range)
 {
 	struct rmi_pdev_stream_params *stream_params;
+	u_register_t state, type, refresh_count, purge_count;
 	u_register_t ret;
 	u_register_t handle;
 	size_t stream_range_count;
@@ -273,11 +274,22 @@ int host_pdev_stream_connect_with_ranges(struct host_pdev *h_pdev,
 	h_pdev->pdev_stream_handle = handle;
 	h_pdev->pdev_stream_handle_valid = true;
 
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->rp_pdev, handle,
+					&state, &type, &refresh_count, &purge_count);
+	if ((ret != RMI_SUCCESS) || (state != RMI_PDEV_STREAM_CONNECTING) ||
+	    (type != RMI_PDEV_STREAM_NCOH) || (refresh_count != 0UL) ||
+	    (purge_count != 0UL)) {
+		ERROR("PDEV_STREAM_INFO returned unexpected connecting stream info\n");
+		return -1;
+	}
+
 	return 0;
 }
 
 int host_pdev_stream_disconnect(struct host_pdev *h_pdev)
 {
+	u_register_t state, type, refresh_count, purge_count;
 	u_register_t ret;
 
 	assert(h_pdev->pdev_stream_handle_valid);
@@ -288,6 +300,17 @@ int host_pdev_stream_disconnect(struct host_pdev *h_pdev)
 		h_pdev->pdev_stream_handle);
 
 	if (ret != RMI_SUCCESS) {
+		return -1;
+	}
+
+	ret = host_rmi_pdev_stream_info((u_register_t)h_pdev->ep_pdev,
+					(u_register_t)h_pdev->rp_pdev,
+					h_pdev->pdev_stream_handle, &state, &type,
+					&refresh_count, &purge_count);
+	if ((ret != RMI_SUCCESS) || (state != RMI_PDEV_STREAM_DISCONNECTING) ||
+	    (type != RMI_PDEV_STREAM_NCOH) || (refresh_count != 0UL) ||
+	    (purge_count != 0UL)) {
+		ERROR("PDEV_STREAM_INFO returned unexpected disconnecting stream info\n");
 		return -1;
 	}
 

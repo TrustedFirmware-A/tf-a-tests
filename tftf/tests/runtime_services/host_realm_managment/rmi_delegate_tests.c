@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include <arch_features.h>
+#include <common_def.h>
 #include <host_realm_helper.h>
 #include <host_realm_mem_layout.h>
 #include <host_shared_data.h>
@@ -323,4 +324,45 @@ test_result_t host_realm_fail_del(void)
 	}
 
 	return host_cmp_result();
+}
+
+/* Exercise the initial GPT management ABI contracts. */
+test_result_t host_realm_gpt_management(void)
+{
+	u_register_t ret, out_top, state;
+
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
+
+	ret = host_rmi_gpt_l1_create(0UL);
+	if (RMI_RETURN_STATUS(ret) != RMI_ERROR_GLOBAL) {
+		tftf_testcase_printf("GPT L1 create returned 0x%lx\n", ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = host_rmi_gpt_l1_destroy(0UL);
+	if (ret != RMI_ERROR_GLOBAL) {
+		tftf_testcase_printf("GPT L1 destroy returned 0x%lx\n", ret);
+		return TEST_RESULT_FAIL;
+	}
+
+	ret = host_rmi_gpt_info(0UL, SZ_1G, &out_top, &state);
+	if ((ret != RMI_SUCCESS) || (out_top != SZ_1G) ||
+	    (state != RMI_GPT_PAR_RESERVED)) {
+		tftf_testcase_printf("GPT info returned 0x%lx, top 0x%lx, state 0x%lx\n",
+				     ret, out_top, state);
+		return TEST_RESULT_FAIL;
+	}
+
+	/* Addresses must be aligned to L0GPTSZ (currently 1 GiB). */
+	if ((host_rmi_gpt_l1_create(GRANULE_SIZE) != RMI_ERROR_INPUT) ||
+	    (host_rmi_gpt_l1_destroy(GRANULE_SIZE) != RMI_ERROR_INPUT) ||
+	    (host_rmi_gpt_info(GRANULE_SIZE, SZ_1G, &out_top, &state) !=
+							RMI_ERROR_INPUT) ||
+	    (host_rmi_gpt_info(SZ_1G, SZ_1G, &out_top, &state) !=
+							RMI_ERROR_INPUT)) {
+		tftf_testcase_printf("GPT ABI accepted invalid input\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	return TEST_RESULT_SUCCESS;
 }

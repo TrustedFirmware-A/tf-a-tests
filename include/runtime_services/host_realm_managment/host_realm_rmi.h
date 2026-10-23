@@ -79,6 +79,31 @@
  */
 #define SMC_RMI_GRANULE_RANGE_UNDELEGATE		SMC64_RMI_FID(U(0xA2))
 
+/*
+ * FID: 0xC40001F3
+ *
+ * arg0 == PA of the region aligned to L0GPTSZ
+ */
+#define SMC_RMI_GPT_L1_CREATE			SMC64_RMI_FID(U(0xA3))
+
+/*
+ * FID: 0xC40001F4
+ *
+ * arg0 == PA of the region aligned to L0GPTSZ
+ */
+#define SMC_RMI_GPT_L1_DESTROY			SMC64_RMI_FID(U(0xA4))
+
+/*
+ * FID: 0xC4000211
+ *
+ * arg0 == Base of physical address range
+ * arg1 == Top of physical address range
+ *
+ * ret1 == Top PA of range within which L1GPT state is uniform
+ * ret2 == GPT PAR state
+ */
+#define SMC_RMI_GPT_INFO			SMC64_RMI_FID(U(0xC1))
+
 /* RmiDataMeasureContent type */
 #define RMI_NO_MEASURE_CONTENT	U(0)
 #define RMI_MEASURE_CONTENT	U(1)
@@ -427,6 +452,30 @@
  *         If flags.oaddr_type != RMI_ADDR_TYPE_LIST then this value is zero.
  */
 #define SMC_RMI_RTT_DEV_UNMAP			SMC64_RMI_FID(U(0xA8))
+
+/*
+ * FID: 0xC40001F9
+ *
+ * arg0 == PA of the RD for the target Realm
+ * arg1 == PA of the architectural device
+ * arg2 == Base of the target IPA range
+ * arg3 == Top of the target IPA range
+ *
+ * ret1 == Top IPA of range which has been mapped
+ */
+#define SMC_RMI_RTT_ARCH_DEV_MAP		SMC64_RMI_FID(U(0xA9))
+
+/*
+ * FID: 0xC40001FA
+ *
+ * arg0 == PA of the RD for the target Realm
+ * arg1 == PA of the architectural device
+ * arg2 == Base of the target IPA range
+ * arg3 == Top of the target IPA range
+ *
+ * ret1 == Top IPA of range which has been unmapped
+ */
+#define SMC_RMI_RTT_ARCH_DEV_UNMAP		SMC64_RMI_FID(U(0xAA))
 
 /*
  * FID: 0xC4000174
@@ -842,6 +891,20 @@
  */
 #define SMC_RMI_PDEV_STREAM_KEY_PURGE		SMC64_RMI_FID(U(0xB7))
 
+/*
+ * FID: 0xC4000210
+ *
+ * arg0 == PA of the first PDEV object
+ * arg1 == PA of the second PDEV object
+ * arg2 == Stream handle
+ *
+ * ret1 == PDEV stream state
+ * ret2 == PDEV stream type
+ * ret3 == Successful key refresh count
+ * ret4 == Successful key purge count
+ */
+#define SMC_RMI_PDEV_STREAM_INFO		SMC64_RMI_FID(U(0xC0))
+
 #define GRANULE_SIZE			PAGE_SIZE_4KB
 
 /* Maximum number of auxiliary granules required for a REC */
@@ -1128,8 +1191,17 @@ typedef enum {
 	 */
 	RMI_BLOCKED = 14,
 
+	/* A GPT walk reached an entry with unexpected level */
+	RMI_ERROR_GPT = 15,
+
 	RMI_ERROR_COUNT
 } status_t;
+
+/* RmiGptParState values returned by RMI_GPT_INFO. */
+#define RMI_GPT_PAR_RESERVED		U(0)
+#define RMI_GPT_PAR_PLAT		U(1)
+#define RMI_GPT_PAR_HOST_NOT_CREATED	U(2)
+#define RMI_GPT_PAR_HOST_CREATED	U(3)
 
 #define RMI_RETURN_STATUS(ret)		((ret) & 0xFF)
 #define RMI_RETURN_INDEX(ret)		(((ret) >> 8U) & 0xFF)
@@ -1812,6 +1884,15 @@ struct rmi_vdev_measure_params {
 #define RMI_PDEV_STREAM_COH			U(2)
 #define RMI_PDEV_STREAM_NCOH_SYS		U(3)
 #define RMI_PDEV_STREAM_COH_SYS			U(4)
+#define RMI_PDEV_STREAM_TYPE_COUNT		U(5)
+
+/* RmiPdevStreamState */
+#define RMI_PDEV_STREAM_DISCONNECTED		U(0)
+#define RMI_PDEV_STREAM_CONNECTING		U(1)
+#define RMI_PDEV_STREAM_CONNECTED		U(2)
+#define RMI_PDEV_STREAM_DISCONNECTING		U(3)
+#define RMI_PDEV_STREAM_KEY_REFRESHING		U(4)
+#define RMI_PDEV_STREAM_KEY_PURGING		U(5)
 
 #define RMI_PDEV_STREAM_ADDR_RANGE_CNT		U(16)
 
@@ -1980,6 +2061,10 @@ struct rmi_psmmu_params {
 u_register_t host_rmi_version(u_register_t req_ver);
 u_register_t host_rmi_granule_delegate(u_register_t addr);
 u_register_t host_rmi_granule_undelegate(u_register_t addr);
+u_register_t host_rmi_gpt_l1_create(u_register_t addr);
+u_register_t host_rmi_gpt_l1_destroy(u_register_t addr);
+u_register_t host_rmi_gpt_info(u_register_t base, u_register_t top,
+			       u_register_t *out_top, u_register_t *state);
 u_register_t host_rmi_realm_create(u_register_t rd, u_register_t params_ptr);
 u_register_t host_rmi_realm_destroy(u_register_t rd);
 u_register_t host_rmi_realm_terminate(u_register_t rd);
@@ -2104,6 +2189,10 @@ u_register_t host_rmi_pdev_stream_complete(u_register_t pdev1_ptr, u_register_t 
 				  u_register_t stream_handle);
 u_register_t host_rmi_pdev_stream_key_purge(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
 				  u_register_t stream_handle);
+u_register_t host_rmi_pdev_stream_info(u_register_t pdev1_ptr, u_register_t pdev2_ptr,
+			       u_register_t stream_handle, u_register_t *stream_state,
+			       u_register_t *stream_type, u_register_t *key_refresh_count,
+			       u_register_t *key_purge_count);
 u_register_t host_rmi_vdev_create(u_register_t rd_ptr, u_register_t pdev_ptr,
 				  u_register_t vdev_ptr,
 				  u_register_t params_ptr);
@@ -2117,6 +2206,14 @@ u_register_t host_rmi_rtt_dev_unmap(u_register_t rd_ptr,
 			       u_register_t oaddr,
 			       u_register_t *out_top, u_register_t *out_range,
 			       u_register_t *out_count);
+u_register_t host_rmi_rtt_arch_dev_map(u_register_t rd_ptr,
+					 u_register_t dev_ptr,
+					 u_register_t base, u_register_t top,
+					 u_register_t *out_top);
+u_register_t host_rmi_rtt_arch_dev_unmap(u_register_t rd_ptr,
+					   u_register_t dev_ptr,
+					   u_register_t base, u_register_t top,
+					   u_register_t *out_top);
 u_register_t host_rmi_vdev_get_measurements(u_register_t rd_ptr, u_register_t pdev_ptr,
 					    u_register_t vdev_ptr, u_register_t params_ptr);
 u_register_t host_rmi_vdev_lock(u_register_t rd_ptr, u_register_t pdev_ptr,

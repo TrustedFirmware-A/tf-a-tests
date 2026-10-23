@@ -256,8 +256,13 @@ struct rsi_host_call {
 
 /*
  * FID: 0xC400019B
+ *
+ * arg0 == Base IPA of the architectural device
+ * arg1 == Architectural device type
  */
-#define SMC_RSI_VSMMU_ACTIVATE		SMC64_RSI_FID(U(0xB))
+#define SMC_RSI_ARCH_DEV_ACTIVATE	SMC64_RSI_FID(U(0xB))
+
+#define RSI_ARCH_DEV_SMMUV3		UL(0)
 
 /*
  * FID: 0xC400019C
@@ -755,6 +760,7 @@ u_register_t rsi_realm_config(struct rsi_realm_config *s);
 u_register_t rsi_plane_enter(u_register_t plane_index, u_register_t run);
 
 u_register_t rsi_vdev_get_info(u_register_t vdev_id, u_register_t vdev_info_ptr);
+u_register_t rsi_arch_dev_activate(u_register_t base, u_register_t dev_type);
 
 /* Function to validate Realm device memory mappings */
 u_register_t rsi_vdev_vaildate_mapping(u_register_t vdev_id, u_register_t ipa_base,

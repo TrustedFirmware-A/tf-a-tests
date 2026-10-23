@@ -1051,6 +1051,9 @@ void realm_payload_main(void)
 		case REALM_DA_RSI_VDEV_GET_INFO:
 			test_succeed = test_realm_da_rsi_vdev_get_info();
 			break;
+		case REALM_DA_RSI_ARCH_DEV_ACTIVATE:
+			test_succeed = test_realm_da_rsi_arch_dev_activate();
+			break;
 		case REALM_PLANE_N_INST_FETCH_ABORT:
 			test_succeed = test_realm_plane_n_inst_fetch();
 			break;

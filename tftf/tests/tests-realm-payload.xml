@@ -80,6 +80,8 @@
 	  function="host_realm_delundel_multi_cpu" />
 	  <testcase name="Testing delegation fails"
 	  function="host_realm_fail_del" />
+	  <testcase name="GPT management ABIs"
+	  function="host_realm_gpt_management" />
 	  <testcase name="Test FEAT_MOPS is enabled"
 	  function="host_realm_feat_mops" />
 	  <testcase name="Verify RMM Configuration"
@@ -199,6 +201,8 @@
 	  <!-- Invoke DA RSI calls -->
 	  <testcase name="Trigger RSI_VDEV_GET_INFO with various params"
 	  function="host_da_get_info_parameter_test" />
+	  <testcase name="Architectural device ABI stubs"
+	  function="host_arch_dev_abi_test" />
 	  <!-- PDEV lifecycle and device-communication state coverage -->
 	  <testcase name="PDEV SPDM lifecycle and negative state coverage"
 	  function="host_pdev_test_spdm_lifecycle" />
@@ -244,5 +248,7 @@
 	  <!-- Test case for S2AP changes for RIPAS_EMPTY pages -->
 	  <testcase name="Realm S2AP changes for EMPTY and RAM RIPAS"
 	  function="host_test_realm_set_s2ap_ripas" />
+	  <testcase name="RMM activate and deactivate"
+	  function="host_test_realm_rmi_rmm_activate_deactivate" />
   </testsuite>
 </testsuites>

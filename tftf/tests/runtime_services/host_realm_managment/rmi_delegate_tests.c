@@ -331,7 +331,7 @@ test_result_t host_realm_gpt_management(void)
 {
 	u_register_t ret, out_top, state;
 
-	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
+	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_RMM_IS_TRP();
 
 	ret = host_rmi_gpt_l1_create(0UL);
 	if (RMI_RETURN_STATUS(ret) != RMI_ERROR_GLOBAL) {

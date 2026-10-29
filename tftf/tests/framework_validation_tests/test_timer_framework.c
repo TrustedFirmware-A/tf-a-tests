@@ -268,7 +268,13 @@ test_result_t test_timer_target_power_down_cpu(void)
 	}
 
 	if (timer_switch_count != valid_cpu_count) {
-		tftf_testcase_printf("Expected timer switch: %d Actual: %d\n",
+		/*
+		 * tftf_timer_framework_handler() will nicely send an SGI to all
+		 * cores which registerd timers but didn't get it in time. This
+		 * logic triggering can mean the platform's delays are
+		 * configured too short.
+		 */
+		tftf_testcase_printf("Expected %d cores to receive an IRQ, only %d did\n",
 					valid_cpu_count, timer_switch_count);
 		return TEST_RESULT_FAIL;
 	}

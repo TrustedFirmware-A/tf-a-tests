@@ -153,6 +153,23 @@ static test_result_t test_invalid_power_level(void)
 	}
 }
 
+static void wait_for_other_cpus_hw_off(u_register_t my_mpidr)
+{
+	int cpu_node;
+	u_register_t mpidr;
+
+	for_each_cpu(cpu_node) {
+		mpidr = tftf_get_mpidr_from_node(cpu_node);
+		if (mpidr == my_mpidr)
+			continue;
+
+		/* Loop until other CPU is powered down */
+		while (tftf_psci_node_hw_state(mpidr, MPIDR_AFFLVL0) !=
+				PSCI_HW_STATE_OFF)
+			tftf_timer_sleep(10);
+	}
+}
+
 /*
  * @Test_Aim@ Call NODE_HW_STATE on all powered-down CPUs on the system. Verify
  * that the state was PSCI_HW_STATE_OFF before, but is PSCI_HW_STATE_ON
@@ -169,10 +186,17 @@ static test_result_t test_online_all(void)
 	for (i = 0; i < ARRAY_SIZE(cpu_continue); i++)
 		tftf_init_event(&cpu_continue[i]);
 
-	DBGMSG("%s: powering cores on...\n", __func__);
 	my_mpidr = read_mpidr_el1() & MPID_MASK;
+
+	/* Other tests may have power cycled other cores. Wait for them to
+	 * actually be off in hardware before commencing the test. */
+	INFO("%s: waiting for previous tests' other CPUs to power down\n", __func__);
+	wait_for_other_cpus_hw_off(my_mpidr);
+
+	DBGMSG("%s: powering cores on...\n", __func__);
 	DBGMSG("%s: my mpidr: %llx\n", __func__,
 			(unsigned long long) my_mpidr);
+
 	for_each_cpu(cpu_node) {
 		mpidr = tftf_get_mpidr_from_node(cpu_node);
 		if (mpidr == my_mpidr)
@@ -210,34 +234,8 @@ static test_result_t test_online_all(void)
 		tftf_send_event(&cpu_continue[pos]);
 	}
 
-	/* Wait for other CPUs to power down */
 	INFO("%s: waiting for all other CPUs to power down\n", __func__);
-	for_each_cpu(cpu_node) {
-		mpidr = tftf_get_mpidr_from_node(cpu_node);
-		if (mpidr == my_mpidr)
-			continue;
-
-		/* Loop until other CPU is powered down */
-		while (tftf_psci_affinity_info(mpidr, MPIDR_AFFLVL0) !=
-				PSCI_STATE_OFF)
-			tftf_timer_sleep(10);
-	}
-
-	/* Now verify that all CPUs have powered off */
-	for_each_cpu(cpu_node) {
-		mpidr = tftf_get_mpidr_from_node(cpu_node);
-		if (mpidr == my_mpidr)
-			continue;
-
-		/* Verify that the other CPU is turned off */
-		state = tftf_psci_node_hw_state(mpidr, 0);
-		if (state != PSCI_HW_STATE_OFF) {
-			DBGMSG("%s: mpidr %llx: state %u, expected %u\n",
-					__func__, (unsigned long long)mpidr,
-					state, PSCI_HW_STATE_OFF);
-			return TEST_RESULT_FAIL;
-		}
-	}
+	wait_for_other_cpus_hw_off(my_mpidr);
 
 	return TEST_RESULT_SUCCESS;
 }
@@ -310,7 +308,7 @@ test_result_t test_psci_node_hw_state_multi(void)
 	/* Initialize peer MPDIRs */
 	native_peer = find_peer(0);
 	foreign_peer = find_peer(1);
-	DBGMSG("native=%x foreign=%x\n", native_peer, foreign_peer);
+	DBGMSG("native=%lx foreign=%lx\n", native_peer, foreign_peer);
 
 	TEST_FUNC(test_offline_cpu);
 	TEST_FUNC(test_offline_cluster);

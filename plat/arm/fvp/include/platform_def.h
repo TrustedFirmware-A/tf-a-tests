@@ -291,8 +291,8 @@
 
 
 /* Times(in ms) used by test code for completion of different events */
-#define PLAT_SUSPEND_ENTRY_TIME		15
-#define PLAT_SUSPEND_ENTRY_EXIT_TIME	30
+#define PLAT_SUSPEND_ENTRY_TIME		100
+#define PLAT_SUSPEND_ENTRY_EXIT_TIME	200
 
 
 #endif /* __PLATFORM_DEF_H__ */

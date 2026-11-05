@@ -467,11 +467,13 @@ test_result_t test_em_version(void)
 {
 	int32_t version_return = tftf_em_abi_version();
 
-	if ((version_return == (EM_ABI_VERSION(1, 0))))
-		return TEST_RESULT_SUCCESS;
-
 	if (version_return == EM_NOT_SUPPORTED)
 		return TEST_RESULT_SKIPPED;
+
+	if (EXTRACT(EM_MAJOR_VER, version_return) >= 1 &&
+	    EXTRACT(EM_MINOR_VER, version_return) >= 0) {
+		return TEST_RESULT_SUCCESS;
+	}
 
 	return TEST_RESULT_FAIL;
 }

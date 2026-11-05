@@ -69,11 +69,11 @@ smc_ret_values tftf_em_abi_cpu_feature_implemented(uint32_t cpu_erratum, uint32_
  * Errata ABI Version
  ******************************************************************************/
 #define EM_MAJOR_VER_SHIFT	(16)
-#define EM_MAJOR_VER_MASK	(0xFFFF)
+#define EM_MAJOR_VER_WIDTH	(16)
 #define EM_MINOR_VER_SHIFT	(0)
-#define EM_MINOR_VER_MASK	(0xFFFF)
-#define EM_ABI_VERSION(major, minor)	(((major & EM_MAJOR_VER_MASK) << EM_MAJOR_VER_SHIFT) \
-					| ((minor & EM_MINOR_VER_MASK) << EM_MINOR_VER_SHIFT))
+#define EM_MINOR_VER_WIDTH	(16)
+#define EM_ABI_VERSION(major, minor)	(INPLACE(EM_MAJOR_VER, major) |		\
+					 INPLACE(EM_MINOR_VER, minor))
 /*******************************************************************************
  * Error codes
  ******************************************************************************/

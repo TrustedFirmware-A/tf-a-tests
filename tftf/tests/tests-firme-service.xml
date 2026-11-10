@@ -31,6 +31,10 @@
     function="test_firme_attestation_pat_get_chunked" />
     <testcase name="Test FIRME attestation PAT_GET invalid shared buffer configurations"
     function="test_firme_attestation_pat_get_invalid_buffer_config" />
+    <testcase name="Test FIRME attestation recovery from a GPF while reading"
+    function="test_firme_attestation_gpf_read" />
+    <testcase name="Test FIRME attestation recovery from a GPF while writing"
+    function="test_firme_attestation_gpf_write" />
   </testsuite>
 
 </testsuites>

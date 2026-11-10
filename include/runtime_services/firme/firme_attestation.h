@@ -7,6 +7,7 @@
 #ifndef FIRME_ATTESTATION_H
 #define FIRME_ATTESTATION_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include <firme.h>
@@ -53,6 +54,8 @@
  */
 #define FIRME_ATTEST_PAT_GET_FID			\
 	SMC64_FIRME_FID(FIRME_ATTEST_FNUM_PAT_GET)
+
+bool is_firme_pat_get_supported(void);
 
 int32_t firme_attest_pat_get(uint64_t shared_buf_addr, uint64_t write_offset,
 			     uint64_t shared_buf_page_count,

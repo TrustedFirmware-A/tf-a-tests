@@ -36,6 +36,27 @@ int32_t firme_features(uint8_t service_id, uint8_t reg_index, uint64_t *reg)
 	return ret.ret0;
 }
 
+bool is_firme_pat_get_supported(void)
+{
+	uint64_t features;
+	int32_t ret;
+
+	ret = firme_version(FIRME_ATTESTATION_SERVICE_ID);
+	if (ret < 0) {
+		tftf_testcase_printf("FIRME attestation service not supported\n");
+		return false;
+	}
+
+	ret = firme_features(FIRME_ATTESTATION_SERVICE_ID, 0U, &features);
+	if ((ret != FIRME_SUCCESS) ||
+	    ((features & FIRME_ATTEST_FEAT_REG0_PAT_GET_BIT) == 0U)) {
+		tftf_testcase_printf("FIRME PAT_GET not supported\n");
+		return false;
+	}
+
+	return true;
+}
+
 int32_t firme_attest_pat_get(uint64_t shared_buf_addr, uint64_t write_offset,
 			     uint64_t shared_buf_page_count,
 			     uint64_t challenge_size, uint64_t *written_size,

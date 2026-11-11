@@ -104,9 +104,11 @@ test_result_t test_firme_attestation_gpf_read(void)
 	int32_t status;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
-	if (!is_firme_pat_get_supported()) {
+	if ((host_rmi_version(RMI_ABI_VERSION_VAL) == 0U) ||
+	    !is_firme_pat_get_supported()) {
 		return TEST_RESULT_SKIPPED;
 	}
+
 	if (!host_rmm_activate()) {
 		ERROR("RMM activation failed\n");
 		return TEST_RESULT_FAIL;
@@ -161,7 +163,8 @@ test_result_t test_firme_attestation_gpf_write(void)
 	bool delegated = false;
 
 	SKIP_TEST_IF_RME_NOT_SUPPORTED_OR_NO_RMM();
-	if (!is_firme_pat_get_supported()) {
+	if ((host_rmi_version(RMI_ABI_VERSION_VAL) == 0U) ||
+	    !is_firme_pat_get_supported()) {
 		return TEST_RESULT_SKIPPED;
 	}
 	if (!host_rmm_activate()) {

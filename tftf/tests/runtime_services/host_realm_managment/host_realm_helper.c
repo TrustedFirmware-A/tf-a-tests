@@ -526,7 +526,12 @@ static bool validate_realm_params(struct realm *realm_ptr,
 	} else {
 		realm_ptr->max_num_vdevs = 0UL;
 	}
+
+	/* MEC configuration */
 	realm_ptr->shared_mec = params->shared_mec;
+
+	/* LFA configuration */
+	realm_ptr->lfa_disallowed = params->lfa_disallowed;
 
 	realm_ptr->num_aux_planes = params->num_aux_planes;
 	realm_ptr->ats_plane = 0U;

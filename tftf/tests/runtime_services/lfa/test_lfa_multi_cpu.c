@@ -35,6 +35,24 @@ static test_result_t non_lead_cpu_fn_rmm(void);
 static test_result_t non_lead_cpu_fn_bl31(void);
 static test_result_t non_lead_cpu_fn_bl31_cancel(void);
 
+static bool lfa_success_on_failure = false;
+
+/*
+ * Converts the test result. This is necessary in order to prevent secondary CPUs from
+ * marking a failed LFA activation as a failed test on secondary cores.
+ */
+static test_result_t convert_lfa_test_result(test_result_t result)
+{
+	switch (result) {
+	case TEST_RESULT_SUCCESS:
+		return lfa_success_on_failure ? TEST_RESULT_FAIL : TEST_RESULT_SUCCESS;
+	case TEST_RESULT_FAIL:
+		return lfa_success_on_failure ? TEST_RESULT_SUCCESS : TEST_RESULT_FAIL;
+	default:
+		return result;
+	}
+}
+
 static bool lfa_test_is_target(const struct lfa_test_target *target,
 			       const struct lfa_test_target *match)
 {
@@ -87,7 +105,6 @@ static void set_timer_period (uint64_t time_period)
  *
  * Specified by the lead CPU when bringing up other CPUs.
  */
-
 static test_result_t non_lead_cpu_fn_rmm(void)
 {
 	smc_args args = lfa_test_init_fw_args(LFA_ACTIVATE, fw_id);
@@ -97,9 +114,9 @@ static test_result_t non_lead_cpu_fn_rmm(void)
 	if (ret.ret0 != SMC_OK) {
 		tftf_testcase_printf("%s: LFA_ACTIVATE error: 0x%08lx\n",
 				     __func__, ret.ret0);
-		return TEST_RESULT_FAIL;
+		return convert_lfa_test_result(TEST_RESULT_FAIL);
 	}
-	return TEST_RESULT_SUCCESS;
+	return convert_lfa_test_result(TEST_RESULT_SUCCESS);
 }
 
 static test_result_t non_lead_cpu_fn_bl31(void)
@@ -192,7 +209,7 @@ static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target
 	if (ret.ret0 != SMC_OK) {
 		tftf_testcase_printf("%s: LFA_GET_INFO error: 0x%08lx\n",
 				     __func__, ret.ret0);
-		return TEST_RESULT_FAIL;
+		return convert_lfa_test_result(TEST_RESULT_FAIL);
 	}
 	j = ret.ret1;
 
@@ -203,7 +220,7 @@ static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target
 		if (ret.ret0 != 0) {
 			tftf_testcase_printf("%s: LFA_GET_INVENTORY error: 0x%08lx\n",
 					     __func__, ret.ret0);
-			return TEST_RESULT_FAIL;
+			return convert_lfa_test_result(TEST_RESULT_FAIL);
 		}
 		tftf_testcase_printf("ID %lld: 0x%16lx 0x%16lx - capable: %s, pending: %s\n",
 			i, ret.ret1, ret.ret2,
@@ -223,7 +240,7 @@ static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target
 
 	if (found == false) {
 		tftf_testcase_printf("%s: Firmware not found\n", __func__);
-		return TEST_RESULT_SKIPPED;
+		return convert_lfa_test_result(TEST_RESULT_SKIPPED);
 	}
 
 	args = lfa_test_init_fw_args(LFA_PRIME, fw_id);
@@ -231,7 +248,7 @@ static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target
 	if (ret.ret0 != SMC_OK) {
 		tftf_testcase_printf("%s: LFA_PRIME error: 0x%08lx\n",
 				     __func__, ret.ret0);
-		return TEST_RESULT_FAIL;
+		return convert_lfa_test_result(TEST_RESULT_FAIL);
 	}
 
 	if(perform_rendezvous || rmm_activation) {
@@ -258,7 +275,7 @@ static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target
 				tftf_testcase_printf(
 					"Failed to power on CPU 0x%x (%d)\n",
 					cpu_mpid, psci_ret);
-				return TEST_RESULT_SKIPPED;
+				return convert_lfa_test_result(TEST_RESULT_SKIPPED);
 			}
 		}
 
@@ -303,7 +320,7 @@ static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target
 
 	if (ret.ret0 != SMC_OK) {
 		tftf_testcase_printf("%s: LFA_%s error: 0x%08lx\n", __func__, cancel_test ? "CANCEL" : "ACTIVATE", ret.ret0);
-		return TEST_RESULT_FAIL;
+		return convert_lfa_test_result(TEST_RESULT_FAIL);
 	}
 
 	if(bl31_activation) {
@@ -324,7 +341,7 @@ static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target
 		}
 	}
 
-	return TEST_RESULT_SUCCESS;
+	return convert_lfa_test_result(TEST_RESULT_SUCCESS);
 }
 
 /*
@@ -332,6 +349,16 @@ static test_result_t test_lfa_activate_flow(const struct lfa_test_target *target
  */
 test_result_t test_lfa_activate_rmm_multiple_cpu(void)
 {
+	lfa_success_on_failure = false;
+	return test_lfa_activate_flow(&lfa_test_rmm);
+}
+
+/*
+ * @Test_Aim@ Test RMM Live activation failure.
+ */
+test_result_t test_lfa_activate_rmm_failure_multiple_cpu(void)
+{
+	lfa_success_on_failure = true;
 	return test_lfa_activate_flow(&lfa_test_rmm);
 }
 
@@ -341,6 +368,7 @@ test_result_t test_lfa_activate_rmm_multiple_cpu(void)
  test_result_t test_lfa_late_cancel_bl31(void)
  {
 	 cancel_test = true;
+	 lfa_success_on_failure = false;
 	 return test_lfa_activate_flow(&lfa_test_bl31);
  }
 
@@ -350,5 +378,6 @@ test_result_t test_lfa_activate_rmm_multiple_cpu(void)
 test_result_t test_lfa_activate_bl31(void)
 {
 	cancel_test = false;
+	lfa_success_on_failure = false;
 	return test_lfa_activate_flow(&lfa_test_bl31);
 }

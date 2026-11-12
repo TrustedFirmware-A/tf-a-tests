@@ -38,6 +38,7 @@ struct test_realm_params {
 	bool set_max_num_vdevs;
 	u_register_t max_num_vdevs;
 	bool shared_mec;
+	bool lfa_disallowed;
 	bool rtt_tree_single;
 	bool rtt_s2ap_encoding_indirect;
 };
